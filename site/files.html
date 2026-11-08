@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>My files</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--low:#b3261e;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--drop:#e3f1ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--drop:#1d3a31;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--drop:#1d3a31;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.4}
+main{max-width:40rem;margin:0 auto;padding:1.25rem 1rem calc(2.5rem + env(safe-area-inset-bottom,0px))}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:0 0 .8rem}
+.sub{color:var(--mute);margin:0;font-size:.95rem}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.5rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.small{min-height:2rem;padding:.15rem .55rem;font-size:.82rem}
+.btn.danger{color:var(--low)}
+.btn:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pseg{display:flex;gap:.35rem;flex-wrap:wrap;margin:0 0 1rem}
+.pseg .btn{border-radius:1.2rem;border-width:1px;min-height:2.3rem}
+.pseg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.intro{color:var(--mute);font-size:.9rem;margin:0 0 1rem}
+.cat{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem;transition:background .15s}
+.cat.over{background:var(--drop);border-color:var(--accent)}
+.cat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem}
+.cat-head h2{font-size:1.05rem;margin:0}
+.cat-head h2 small{font-weight:400;color:var(--mute);font-size:.82rem;margin-left:.3rem}
+.hint{color:var(--mute);font-size:.85rem;margin:.2rem 0 0}
+.where{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.75rem;color:var(--mute);margin:.35rem 0 0;overflow-wrap:anywhere}
+.files{list-style:none;margin:.7rem 0 0;padding:0;border-top:1px solid var(--line)}
+.files li{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+.files li:last-child{border-bottom:0}
+.files .nm{flex:1;min-width:0}
+.files a{color:var(--ink);text-decoration:none;font-weight:700;overflow-wrap:anywhere}
+.files a:hover{text-decoration:underline}
+.files .meta{display:block;color:var(--mute);font-size:.8rem;font-variant-numeric:tabular-nums}
+.empty{color:var(--mute);font-size:.88rem;margin:.6rem 0 0}
+.prog{margin:.6rem 0 0;font-size:.85rem}
+.prog .bar{height:.4rem;background:var(--line);border-radius:1rem;overflow:hidden;margin-top:.25rem}
+.prog .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.msg{border-radius:.6rem;padding:.6rem .8rem;margin:.6rem 0 0;font-size:.9rem}
+.msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
+.msg.ok{background:color-mix(in srgb,var(--accent) 14%,var(--card));border:1px solid var(--accent)}
+.privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>My files</h1><p class="sub" id="sub">Loading…</p></div>
+    <a class="btn" href="./">← Back to the app</a>
+  </div>
+  <div id="pmsg"></div>
+  <div id="app" hidden>
+    <div class="pseg" id="people" hidden role="group" aria-label="Whose files"></div>
+    <p class="intro">Upload anything that helps with the meal and exercise plan. Each kind of file has its own folder. Tap <b>Upload</b>, or drag files onto a box.</p>
+    <div id="cats"></div>
+    <p class="privacy" id="privacy"></p>
+  </div>
+</main>
+<script>
+"use strict";
+var ME=null,PERSON=null,DATA=null,BUSY=0;
+function $(id){return document.getElementById(id);}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function size(n){if(n<1024)return n+" B";if(n<1048576)return Math.round(n/1024)+" KB";if(n<1073741824)return (n/1048576).toFixed(n<10485760?1:0)+" MB";return (n/1073741824).toFixed(2)+" GB";}
+function when(ms){return new Date(ms).toLocaleString("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"});}
+function q(o){return Object.keys(o).map(function(k){return encodeURIComponent(k)+"="+encodeURIComponent(o[k]);}).join("&");}
+function api(method,url){
+  return fetch(url,{method:method,cache:"no-store",headers:{"X-Requested-With":"files"}}).then(function(r){
+    return r.json().catch(function(){return {};}).then(function(d){if(!r.ok)throw new Error(d.error||("Request failed ("+r.status+")"));return d;});
+  });
+}
+function load(){
+  return api("GET","/api/uploads?"+q({person:PERSON})).then(function(d){DATA=d;PERSON=d.person;render();});
+}
+function render(){
+  $("sub").textContent=(PERSON===ME.person?"Your":cap(PERSON)+"’s")+" uploads";
+  var pp=$("people");pp.textContent="";pp.hidden=DATA.people.length<2;
+  DATA.people.forEach(function(p){
+    var b=el("button","btn",cap(p)+(p===ME.person?" (me)":""));b.type="button";b.setAttribute("aria-pressed",p===PERSON);
+    b.onclick=function(){if(BUSY){alert("Wait for the upload to finish first.");return;}PERSON=p;load();};pp.appendChild(b);
+  });
+  var box=$("cats");box.textContent="";
+  DATA.categories.forEach(function(c){box.appendChild(catCard(c));});
+  $("privacy").textContent=ME.admin?"Each person can only see their own files. As an admin you can see everyone’s.":"Only you and the plan’s admin can see these files.";
+}
+function catCard(c){
+  var card=el("section","cat");card.setAttribute("aria-labelledby","h-"+c.id);
+  var head=el("div","cat-head"),t=el("div"),h=el("h2");h.id="h-"+c.id;h.textContent=c.label;
+  h.appendChild(el("small",null,c.files.length?c.files.length+(c.files.length===1?" file":" files"):""));
+  t.appendChild(h);t.appendChild(el("p","hint",c.hint));t.appendChild(el("p","where","Saved in uploads/"+PERSON+"/"+c.id+"/"));head.appendChild(t);
+  var inp=el("input");inp.type="file";inp.multiple=true;inp.accept=c.accept;inp.id="f-"+c.id;inp.setAttribute("aria-label","Upload to "+c.label);
+  var up=el("label","btn primary small","Upload");up.htmlFor=inp.id;up.setAttribute("role","button");up.tabIndex=0;
+  up.onkeydown=function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();inp.click();}};
+  head.appendChild(up);card.appendChild(head);card.appendChild(inp);
+  var status=el("div");card.appendChild(status);
+  inp.onchange=function(){var fs=[].slice.call(inp.files);inp.value="";uploadAll(c,fs,status);};
+  // Drag and drop onto the box.
+  card.addEventListener("dragover",function(e){e.preventDefault();card.classList.add("over");});
+  card.addEventListener("dragleave",function(e){if(!card.contains(e.relatedTarget))card.classList.remove("over");});
+  card.addEventListener("drop",function(e){e.preventDefault();card.classList.remove("over");uploadAll(c,[].slice.call(e.dataTransfer.files||[]),status);});
+  if(!c.files.length){card.appendChild(el("p","empty","Nothing here yet."));return card;}
+  var ul=el("ul","files");
+  c.files.forEach(function(f){
+    var li=el("li"),nm=el("div","nm"),a=el("a",null,f.name),base="/api/uploads/file?"+q({person:PERSON,category:c.id,name:f.name});
+    a.href=base;a.target="_blank";a.rel="noopener";nm.appendChild(a);nm.appendChild(el("span","meta",size(f.size)+" · added "+when(f.at)));li.appendChild(nm);
+    var dl=el("a","btn small","Download");dl.href=base+"&download=1";dl.setAttribute("aria-label","Download "+f.name);li.appendChild(dl);
+    var del=el("button","btn small danger","Delete");del.type="button";del.setAttribute("aria-label","Delete "+f.name);
+    del.onclick=function(){
+      if(!confirm("Delete “"+f.name+"”? This can’t be undone."))return;
+      del.disabled=true;api("DELETE",base).then(load).catch(function(e){del.disabled=false;alert("Could not delete it: "+e.message);});
+    };
+    li.appendChild(del);ul.appendChild(li);
+  });
+  card.appendChild(ul);return card;
+}
+// Uploads one file at a time with a progress bar (big Apple Health exports can take a while).
+function uploadAll(c,files,status){
+  if(!files.length)return;
+  var okExt=c.accept.split(","),bad=files.filter(function(f){var e=(f.name.match(/\.[^.]+$/)||[""])[0].toLowerCase();return okExt.indexOf(e)<0;});
+  status.textContent="";
+  if(bad.length){var m=el("div","msg err",c.label+" takes "+okExt.join(", ")+" files, so "+bad.map(function(f){return f.name;}).join(", ")+(bad.length===1?" was":" were")+" skipped.");status.appendChild(m);}
+  files=files.filter(function(f){return bad.indexOf(f)<0;});
+  if(!files.length)return;
+  var i=0,done=[],prog=el("div","prog"),label=el("div"),bar=el("div","bar"),fill=el("i");bar.appendChild(fill);prog.appendChild(label);prog.appendChild(bar);status.appendChild(prog);
+  BUSY++;
+  function next(){
+    if(i>=files.length){BUSY--;prog.remove();load().then(function(){
+      var s=$("cats").querySelectorAll(".cat")[DATA.categories.map(function(x){return x.id;}).indexOf(c.id)];
+      if(s&&done.length){var m=el("div","msg ok","Uploaded "+done.length+(done.length===1?" file.":" files."));s.insertBefore(m,s.querySelector(".files,.empty"));setTimeout(function(){m.remove();},4000);}
+    });return;}
+    var f=files[i++],x=new XMLHttpRequest();
+    label.textContent="Uploading "+f.name+" ("+size(f.size)+")"+(files.length>1?" · "+i+" of "+files.length:"");fill.style.width="0";
+    x.open("POST","/api/uploads?"+q({person:PERSON,category:c.id,name:f.name}));
+    x.setRequestHeader("X-Requested-With","files");x.setRequestHeader("Content-Type","application/octet-stream");
+    x.upload.onprogress=function(e){if(e.lengthComputable)fill.style.width=Math.round(e.loaded/e.total*100)+"%";};
+    x.onload=function(){
+      var d={};try{d=JSON.parse(x.responseText);}catch(e){}
+      if(x.status===200)done.push(d.name);else status.insertBefore(el("div","msg err",f.name+": "+(d.error||"upload failed ("+x.status+")")),prog);
+      next();
+    };
+    x.onerror=function(){status.insertBefore(el("div","msg err",f.name+": the upload failed. Check your connection and try again."),prog);next();};
+    x.send(f);
+  }
+  next();
+}
+window.addEventListener("beforeunload",function(e){if(BUSY){e.preventDefault();e.returnValue="";}});
+fetch("/auth/me",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(me){
+  if(!me){location.href="/login?next=%2Ffiles.html";return;}
+  ME=me;PERSON=me.person;
+  return load().then(function(){$("app").hidden=false;});
+}).catch(function(e){$("sub").textContent="";$("pmsg").appendChild(el("div","msg err","Could not load your files: "+e.message));});
+</script>
+</body>
+</html>

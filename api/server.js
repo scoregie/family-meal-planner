@@ -1,5 +1,5 @@
 // Tiny tick-sync API. No dependencies. Stores everything in one JSON file.
-const http=require('http'),fs=require('fs'),path=require('path'),auth=require('./auth'),calendar=require('./calendar');
+const http=require('http'),fs=require('fs'),path=require('path'),auth=require('./auth'),calendar=require('./calendar'),uploads=require('./uploads');
 const DIR=process.env.DATA_DIR||'/data',FILE=path.join(DIR,'state.json');
 const STATIC=process.env.STATIC_DIR||'';          // only used for local testing
 const PORT=+process.env.PORT||3000,MAX=1e6;
@@ -113,6 +113,7 @@ http.createServer(async(req,res)=>{
     if(p.startsWith('/api/')){me=auth.session(req);if(!me)return send(res,401,{error:'login needed'});auth.refresh(req,res,me);}
     if(calendar.handle(req,res,p,u))return;
     if(await handlePlan(req,res,p,me))return;
+    if(await uploads.handle(req,res,p,u,me,people()))return;
     if(p==='/api/state'&&req.method==='GET'){
       if(me.admin)return send(res,200,state);
       // Everyone sees the shared shopping list; meal and exercise ticks only for their own person.
@@ -150,4 +151,7 @@ http.createServer(async(req,res)=>{
       fs.readFile(f,(e,d)=>{if(e)return send(res,404,{});res.writeHead(200,{'Content-Type':MIME[path.extname(f)]||'application/octet-stream'});res.end(d);});return;}
     send(res,404,{error:'not found'});
   }catch(e){send(res,400,{error:String(e.message||e)});}
-}).listen(PORT,()=>console.log('tick API on',PORT,'logins:',auth.users().join(', ')||'NONE - add LOGIN_<NAME> lines to .env'));
+})
+// Long enough for a big Apple Health export over slow Wi-Fi (Node's default is 5 minutes).
+.on('listening',function(){this.requestTimeout=60*60*1000;})
+.listen(PORT,()=>console.log('tick API on',PORT,'logins:',auth.users().join(', ')||'NONE - add LOGIN_<NAME> lines to .env'));

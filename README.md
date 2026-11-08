@@ -66,6 +66,16 @@ People in the app (whose ticks and ratings are whose) come from the `"people"` b
 - 10 wrong passwords from one address locks logins from that address for 15 minutes.
 - The login cookie is signed with a random key in `data/session-secret`. Deleting it logs everyone out.
 
+## Uploading files
+
+Everyone gets a **My files** page in the account menu (top right) for things that help with the plan: Lose It exports, Apple Health exports, blood tests, photos and anything else. Each person only sees their own files. Admins can see, add and delete everyone's.
+
+Files are stored in plain folders on the server, one per person and then one per type, with the upload date at the front of the name:
+
+    data/uploads/alex/blood-tests/2026-11-08 Blood results.pdf
+
+The types are `lose-it`, `apple-health`, `blood-tests`, `photos` and `other`. `data/uploads/README.txt` explains the layout. Files can be up to 2 GB, which is enough for an Apple Health export. You can also add or remove files in these folders directly; the page just lists what is there.
+
 ## Changing the plan
 
 Everything the page shows (meals, recipes, shopping lists and exercise) comes from `site/plan.json`. Replace that file to change the plan. No restart is needed.
