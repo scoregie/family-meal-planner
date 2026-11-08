@@ -93,7 +93,7 @@ Each meal week is one tab along the top of the page. A stock-up week has no tab 
 | `people` | Optional. A different meal for one person that day, keyed by their person key (see [People](#people)). |
 | `note` | Optional. Advice for that day, shown under the day's meals (for example "Cook a double batch of chilli tonight for tomorrow's lunch."). |
 
-The Meals tab shows one day at a time. Under the meals it shows advice for the day: the `note`, the person's exercise that day (and which snacks that changes), and one of their `tips`.
+The Meals tab shows one day at a time. Under the meals it shows "Today's considerations": the `note`, the person's exercise that day (and which snacks that changes), and one of their `tips`.
 
 Example of a different dinner for one person:
 
@@ -221,15 +221,15 @@ The top-level `exercise` holds things that apply to every week. Like the weekly 
       "workouts": [ { "name": "Strength A", "time": "About 50 minutes", "items": ["Warm-up (5 minutes): easy walk", "Goblet squat (3 × 10): feet shoulder-width apart"] } ],
       "videos": { "Goblet squat": "https://example.com/goblet-squat" },
       "notes": ["If a session feels too hard, do less rather than skipping it."],
-      "medical": ["Your physio has cleared squats and lunges. Avoid running and jumping for now."]
+      "medical": ["You said your physio is happy for you to do squats and lunges, and to avoid running and jumping for now."]
     }
 
 | Field | What it does |
 | --- | --- |
 | `workouts` | Each workout's `name`, rough `time`, and `items` (the exercises, one per line). |
 | `videos` | Exercise name → link to a demo video. A workout item written as `"Goblet squat (3 × 10): ..."` gets a **Demo** link when the text before the colon (without the brackets) matches a name here, plus a YouTube search link. |
-| `notes` | General tips, shown as "Good to know" near the bottom of the Exercise tab. |
-| `medical` | Advice from a doctor, physio or other health professional, and when to stop and get checked. Shown in its own "Medical and doctor's advice" box at the bottom of the Exercise tab. |
+| `notes` | General tips, shown in a "Good to know" box (closed until tapped) near the bottom of the Exercise tab. |
+| `medical` | What the person said their doctor, physio or other health professional told them, and when to stop and get checked. Shown in its own "Medical considerations" box (closed until tapped) at the bottom of the Exercise tab, with a line saying it is general information and their health professional comes first. Write it as what the person reported ("You said your physio is happy for you to do squats"), not as fact or instruction ("Your physio has cleared squats"). |
 
 The Exercise tab shows one day at a time. A workout shows open under the day when that day's session mentions its name (the part before the colon, such as "Strength A"), so it's easy to follow mid-workout.
 

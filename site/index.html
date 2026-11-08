@@ -351,7 +351,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 .advice{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem;margin:0 0 .9rem}
 .advice h3{margin:0 0 .3rem;font-size:1.02rem}
 .advice .bul{margin:.2rem 0}
-.advice.medical{border-color:var(--mid);box-shadow:inset 4px 0 0 var(--mid)}
+.exfold.medical{border-color:var(--mid);box-shadow:inset 4px 0 0 var(--mid)}
 </style>
 <script src="appearance.js"></script>
 </head>
@@ -2002,7 +2002,7 @@ function swipeDays(target, step) {
   });
 }
 
-// A titled box of advice lines (strings), or null if there are none.
+// A titled box of lines (strings), or null if there are none.
 function adviceBox(title, lines, cls) {
   lines = lines.filter(Boolean);
   if (!lines.length) return null;
@@ -2012,6 +2012,20 @@ function adviceBox(title, lines, cls) {
   lines.forEach(function (t) { list.appendChild(el("li", null, t)); });
   box.appendChild(list);
   return box;
+}
+
+// The same as a box that opens and closes (closed to start), or null if there are no lines.
+function noteFold(title, lines, cls) {
+  lines = lines.filter(Boolean);
+  if (!lines.length) return null;
+  var fold = el("details", "exfold" + (cls ? " " + cls : ""));
+  fold.appendChild(el("summary", null, title));
+  var inner = el("div");
+  var list = el("ul", "bul");
+  lines.forEach(function (t) { list.appendChild(el("li", null, t)); });
+  inner.appendChild(list);
+  fold.appendChild(inner);
+  return fold;
 }
 
 // ---------- exercise for a person and day ----------
@@ -2076,7 +2090,7 @@ function sessionLines(exDay) {
 // ---------- meals ----------
 
 // The Meals view: the person picker, then one day: its meals and that person's snacks to tick,
-// that day's advice, the recipes for the day, and the person's eating guide and times.
+// things to consider that day, the recipes for the day, and the person's eating guide and times.
 function renderMeals() {
   var panel = $("meals");
   panel.textContent = "";
@@ -2112,7 +2126,7 @@ function renderMeals() {
   panel.appendChild(card);
   swipeDays(card, nav.step);
 
-  // The day's advice: training today and what that means for snacks, the plan's note for the
+  // Things to consider today: training today and what that means for snacks, the plan's note for the
   // day, and a tip (a different one each day).
   var lines = [];
   if (day.note) lines.push(day.note);
@@ -2130,9 +2144,9 @@ function renderMeals() {
     }
     if (person.tips && person.tips.length) lines.push("Tip: " + person.tips[nav.index % person.tips.length]);
   } else if (ppl) {
-    lines.push("Pick a person above to see their snacks and advice for the day.");
+    lines.push("Pick a person above to see their snacks and notes for the day.");
   }
-  var advice = adviceBox("Advice for " + (FULLDAY[short(day.day)] || day.day), lines);
+  var advice = adviceBox("Today’s considerations" + (short(day.day) === TODAY ? "" : ": " + (FULLDAY[short(day.day)] || day.day)), lines);
   if (advice) panel.appendChild(advice);
 
   // Recipes for the dishes on this day, then the rest of the week's in a fold.
@@ -2317,7 +2331,7 @@ function exFor(weekIndex) {
   return exPlanFor(weekIndex, pkOf(USER));
 }
 
-// The plan-wide exercise details (workouts, notes, medical advice, videos), shared or for this person.
+// The plan-wide exercise details (workouts, notes, medical considerations, videos), shared or for this person.
 function exExtras() {
   var e = PLAN.exercise || {};
   if (e.workouts || e.notes || e.medical || e.videos) return e;
@@ -2350,7 +2364,7 @@ function workoutsFor(exDay, workouts) {
 
 // The Exercise view: one day's sessions to tick, the workouts for that day (open, to follow
 // mid-workout), the week's focus, all the workouts, general notes, and a separate box of
-// medical and doctor's advice.
+// medical considerations, each in a box that opens.
 function renderExercise() {
   var panel = $("exView");
   panel.textContent = "";
@@ -2379,7 +2393,7 @@ function renderExercise() {
       any = true;
     }
   });
-  if (!any) card.appendChild(el("p", "restday", "Rest day. Nothing planned: a gentle walk is fine if you feel like it."));
+  if (!any) card.appendChild(el("p", "restday", "Rest day. Nothing planned today."));
   panel.appendChild(card);
   swipeDays(card, nav.step);
 
@@ -2420,12 +2434,12 @@ function renderExercise() {
     panel.appendChild(all);
   }
 
-  var notes = adviceBox("Good to know", extras.notes || []);
+  var notes = noteFold("Good to know", extras.notes || []);
   if (notes) panel.appendChild(notes);
 
-  var medical = adviceBox("Medical and doctor’s advice", extras.medical || [], "medical");
+  var medical = noteFold("Medical considerations", extras.medical || [], "medical");
   if (medical) {
-    medical.appendChild(el("p", "note2", "Advice from your doctor, physio or other health professional always comes first. If something here doesn’t match what they told you, follow them."));
+    medical.lastChild.appendChild(el("p", "note2", "This is general information, not medical advice. What your doctor, physio or other health professional tells you comes first. If anything here doesn’t match what they said, follow them."));
     panel.appendChild(medical);
   }
   updateExCount();
