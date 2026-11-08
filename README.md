@@ -88,9 +88,24 @@ The app keeps a small database, `data/app.db` (SQLite, built into Node, so nothi
 
 - **Meal history:** every meal someone ticks as eaten or rates, with the dish, score, note and when it was eaten. It is kept after **Reset all** and after loading a new plan, so you can look back week on week.
 - **Dishes:** every dish and recipe that has been in a plan, with its macros, how often it has been eaten and its average score, even after it leaves the plan.
-- Room for weigh-ins, people's answers to the getting-started questions, change requests and settings (coming next).
+- **Exercise history:** every exercise session ticked as done, kept the same way.
+- **Measurements:** weigh-ins typed in on the Progress page, and numbers read from Lose It and Apple Health exports.
+- People's answers to the About me questions, plus room for change requests and settings (coming next).
 
 `GET /api/history` gives your own history (admins can add `?person=`), and `GET /api/dishes` (admins) lists every dish. To look inside it yourself, use any SQLite viewer, or `sqlite3 data/app.db ".tables"`.
+
+## Progress dashboard
+
+Account menu → **Progress** shows week-by-week charts for one person (admins can switch between people): weight, energy and protein eaten, steps, workout time, exercise sessions ticked and meals ticked. Choose 4 weeks, 12 weeks, 6 months or a year. Every chart has hover (or tap, or the arrow keys) for each week's number, and there is a table view of the same numbers.
+
+Where the numbers come from:
+
+- **Weight:** weigh-ins typed in on the page come first, then Apple Health, then Lose It, for the same day. The chart shows each week's average, so one heavy or light day doesn't swing it. A goal weight from About me shows as a dashed line.
+- **Lose It and Apple Health:** upload the export zips on **My files** (Lose It: Settings → Export data; Apple Health: your picture → Export All Health Data). The Progress page notices a new file and reads it. Only the parts it needs are read straight out of the zip, with size limits; nothing is unpacked. A large Apple Health export takes a few seconds.
+- **Food:** Lose It's food log if there is one. Otherwise an estimate from the meals ticked as eaten in this app, using each dish's macros and the person's portion (these bars are hatched).
+- **Steps and workouts:** Apple Health (if a phone and a watch both count steps, the bigger total is used, not both added together), then Lose It.
+
+Weeks start on Monday and use the browser's time zone.
 
 ## Changing the plan
 

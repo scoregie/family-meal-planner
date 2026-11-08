@@ -14,6 +14,7 @@ const calendar = require('./calendar');  // .ics calendar files of eating times
 const uploads = require('./uploads');    // the "My files" page
 const db = require('./db');              // the long-term database (data/app.db)
 const peopleRoutes = require('./people'); // adding people, the About me questions, passwords
+const progress = require('./progress');   // the progress dashboard, weigh-ins and imports
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -385,6 +386,7 @@ function startDatabase() {
   safely('remember dishes', () => db.rememberDishes(plan));
   for (const [person, saved] of Object.entries(state.users || {})) {
     safely('log meals', () => db.syncMeals(person, plan, state.epoch || 0, saved.eaten, saved.ratings, toKey));
+    safely('log exercise', () => db.syncExercise(person, plan, state.epoch || 0, saved.ex, toKey));
   }
 }
 
@@ -428,7 +430,9 @@ async function putUser(req, res, me, person) {
   state.users[person] = { ex: b.ex, eaten: b.eaten, ratings };
   state.updated[person] = Date.now();
   persist();
-  safely('log meals', () => db.syncMeals(person, readPlan(), state.epoch || 0, b.eaten, ratings, toKey));
+  const plan = readPlan();
+  safely('log meals', () => db.syncMeals(person, plan, state.epoch || 0, b.eaten, ratings, toKey));
+  safely('log exercise', () => db.syncExercise(person, plan, state.epoch || 0, b.ex, toKey));
   return send(res, 200, { ok: true });
 }
 
@@ -525,6 +529,7 @@ async function handleRequest(req, res) {
     if (await handlePlan(req, res, urlPath, me)) return;
     if (await uploads.handle(req, res, urlPath, url, me, people())) return;
     if (await peopleRoutes.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
+    if (await progress.handle(req, res, urlPath, url, me, { readPlan, toKey, people })) return;
 
     if (urlPath === '/api/state' && req.method === 'GET') return getState(res, me);
     if (urlPath === '/api/history' && req.method === 'GET') return getHistory(res, url, me);

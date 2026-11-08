@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Progress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Colours. Dark mode has its own chosen colours (not just the light ones flipped).
+   --mark is the colour of every chart line and bar. Estimated bars use the same colour, hatched. */
+:root{--low:#b3261e;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--faint:#8a9a93;--line:#d6dfdb;--grid:#e8eeeb;--accent:#0e6b57;--on-accent:#fff;--mark:#0e6b57;--chip:#e3f1ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--faint:#6d8079;--line:#2a3a34;--grid:#1f2c27;--accent:#52c7a8;--on-accent:#05221a;--mark:#52c7a8;--chip:#1d3a31;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--faint:#6d8079;--line:#2a3a34;--grid:#1f2c27;--accent:#52c7a8;--on-accent:#05221a;--mark:#52c7a8;--chip:#1d3a31;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.4}
+main{max-width:46rem;margin:0 auto;padding:1.25rem 1rem calc(4rem + env(safe-area-inset-bottom,0px))}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:0 0 .8rem}
+.sub{color:var(--mute);margin:0;font-size:.95rem}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.5rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.small{min-height:2rem;padding:.2rem .6rem;font-size:.85rem;border-width:1px}
+.btn:focus-visible,a:focus-visible,input:focus-visible,svg:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pseg{display:flex;gap:.35rem;flex-wrap:wrap;margin:0 0 .8rem}
+.pseg .btn{border-radius:1.2rem;border-width:1px;min-height:2.3rem}
+.pseg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.filters{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 1rem}
+.filters .pseg{margin:0}
+.filters .lab{color:var(--mute);font-size:.9rem}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem}
+section.card h2{font-size:1.05rem;margin:0}
+section.card .note{color:var(--mute);font-size:.85rem;margin:.15rem 0 .4rem}
+/* The headline numbers */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:.6rem;margin:0 0 .8rem}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.7rem .9rem}
+.tile .k{color:var(--mute);font-size:.85rem}
+.tile .v{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2;margin:.15rem 0 .05rem}
+.tile .v small{font-size:.95rem;font-weight:400;color:var(--mute);margin-left:.2rem}
+.tile .d{color:var(--mute);font-size:.8rem}
+/* Charts */
+.chart{position:relative;margin-top:.3rem}
+.chart svg{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
+.chart text{fill:var(--mute);font-size:11px;font-family:inherit}
+.chart .grid{stroke:var(--grid);stroke-width:1}
+.chart .base{stroke:var(--line);stroke-width:1}
+.chart .goal{stroke:var(--faint);stroke-width:1.5;stroke-dasharray:5 4}
+.chart .ln{fill:none;stroke:var(--mark);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .dot{fill:var(--mark);stroke:var(--card);stroke-width:2}
+.chart .bar{fill:var(--mark)}
+.chart .bar.est{stroke:var(--mark);stroke-width:1.5}
+.chart .hatch line{stroke:var(--mark);stroke-width:1.5}
+.chart .hair{stroke:var(--mute);stroke-width:1}
+.chart .hit{fill:transparent}
+.chart .on .bar,.chart .bar.on{opacity:.75}
+.empty{color:var(--mute);font-size:.9rem;margin:.4rem 0 .2rem}
+.key{display:flex;gap:1rem;flex-wrap:wrap;color:var(--mute);font-size:.82rem;margin:.4rem 0 0}
+.key i{display:inline-block;width:.8rem;height:.8rem;border-radius:2px;background:var(--mark);vertical-align:-.1rem;margin-right:.3rem}
+.key i.est{background:repeating-linear-gradient(135deg,var(--mark) 0 1.5px,transparent 1.5px 4px);box-shadow:inset 0 0 0 1.5px var(--mark)}
+.key i.dash{background:none;height:0;border-top:2px dashed var(--faint);border-radius:0;vertical-align:.2rem}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:.5rem;padding:.35rem .6rem;font-size:.82rem;line-height:1.3;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:2}
+.tip b{font-size:1rem;font-variant-numeric:tabular-nums}
+.tip span{display:block;opacity:.8}
+/* Weigh-ins */
+.weigh form{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end;margin:.5rem 0 0}
+.weigh label{display:block;font-size:.85rem;color:var(--mute);margin:0 0 .2rem}
+input[type=number],input[type=date]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem}
+input[type=number]{width:7rem}
+.weigh ul{list-style:none;margin:.7rem 0 0;padding:0}
+.weigh li{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.3rem 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+/* Table view */
+details.table summary{cursor:pointer;font-weight:700}
+.scroll{overflow-x:auto;margin-top:.6rem}
+table{border-collapse:collapse;font-size:.85rem;font-variant-numeric:tabular-nums;min-width:100%}
+th,td{padding:.3rem .5rem;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:700}
+.msg{border-radius:.6rem;padding:.6rem .8rem;margin:0 0 .8rem;font-size:.9rem}
+.msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
+.msg.info{background:color-mix(in srgb,var(--accent) 12%,var(--card));border:1px solid var(--accent)}
+.status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.status.err{background:var(--low);color:#fff}
+.privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
+#app.loading{opacity:.55;transition:opacity .2s}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Progress</h1><p class="sub" id="sub">Loading…</p></div>
+    <a class="btn" href="./">← Back to the app</a>
+  </div>
+  <div id="pmsg"></div>
+  <div id="app" hidden>
+    <div class="pseg" id="people" hidden role="group" aria-label="Whose progress"></div>
+    <div class="filters">
+      <span class="lab" id="rangeLab">Show</span>
+      <div class="pseg" id="range" role="group" aria-labelledby="rangeLab"></div>
+    </div>
+    <div id="importMsg"></div>
+    <div class="tiles" id="tiles"></div>
+    <div id="charts"></div>
+    <section class="card weigh">
+      <h2>Add a weigh-in</h2>
+      <p class="note">Weigh-ins typed in here are used before Apple Health or Lose It on the same day.</p>
+      <form id="weighForm">
+        <div><label for="wDate">Date</label><input type="date" id="wDate" required></div>
+        <div><label for="wKg">Weight (kg)</label><input type="number" id="wKg" step="0.1" min="20" max="400" inputmode="decimal" required></div>
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+      <ul id="manual"></ul>
+    </section>
+    <section class="card">
+      <details class="table">
+        <summary>Show the numbers as a table</summary>
+        <div class="scroll"><table id="table"></table></div>
+      </details>
+    </section>
+    <section class="card">
+      <h2>Where these numbers come from</h2>
+      <p class="note" id="sources"></p>
+    </section>
+    <p class="privacy">Only you and the plan’s admins can see this page. Weight goes up and down day to day, so look at the trend over a few weeks. Your doctor’s advice always comes first.</p>
+  </div>
+</main>
+<div class="status" id="status" role="status" hidden></div>
+<script>
+// The progress page. It asks the server for week-by-week numbers (GET /api/progress) and draws
+// one chart per measure as an SVG picture. Each chart shows one thing, so it needs no legend:
+// the title says what it is. Hover (or tap, or use the arrow keys) to see each week's number.
+"use strict";
+var ME = null;        // who is logged in: {user, person, admin}
+var PERSON = null;    // whose progress is shown (admins can switch)
+var NAMES = {};       // person key -> name, for admins
+var WEEKS = 12;       // how many weeks to show
+var DATA = null;      // the last answer from /api/progress
+var RANGES = [[4, "4 weeks"], [12, "12 weeks"], [26, "6 months"], [52, "1 year"]];
+var TZ = (function () {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { return ""; }
+})();
+var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+var SVG = "http://www.w3.org/2000/svg";
+var chartCount = 0;   // gives each chart's hatch pattern its own id
+
+// Shortcut for document.getElementById.
+function $(id) {
+  return document.getElementById(id);
+}
+
+// Makes a new element, with an optional class name and text.
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+// Makes an SVG element with attributes: svg("line", {x1: 0, ...}).
+function svg(tag, attrs) {
+  var e = document.createElementNS(SVG, tag);
+  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+// Calls the server and returns its JSON answer, or throws an error with the server's message.
+function api(method, url, body) {
+  var options = {
+    method: method,
+    cache: "no-store",
+    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  };
+  return fetch(url, options).then(function (response) {
+    return response.json().catch(function () { return {}; }).then(function (data) {
+      if (!response.ok) throw new Error(data.error || "The server said " + response.status);
+      return data;
+    });
+  });
+}
+
+// Shows a short message at the bottom of the screen.
+function status(text, isError) {
+  var s = $("status");
+  s.textContent = text;
+  s.className = "status" + (isError ? " err" : "");
+  s.hidden = false;
+  clearTimeout(status.timer);
+  status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 2500);
+}
+
+// "2026-11-02" to "2 Nov".
+function shortDate(date) {
+  var p = date.split("-");
+  return +p[2] + " " + MONTHS[+p[1] - 1];
+}
+
+// The week starting on a Monday, for tooltips and the table: "2 Nov to 8 Nov".
+function weekName(start) {
+  var d = new Date(start + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + 6);
+  var end = d.toISOString().slice(0, 10);
+  var label = shortDate(start) + " to " + shortDate(end);
+  return DATA && end >= DATA.today ? label + " (so far)" : label;
+}
+
+// A number with thousands separators and a fixed number of decimals: 12345.6 -> "12,346".
+function fmt(n, places) {
+  if (n == null) return "–";
+  return Number(n).toLocaleString("en-AU", { minimumFractionDigits: places || 0, maximumFractionDigits: places || 0 });
+}
+
+// ---------------------------------------------------------------------------
+// Charts
+// ---------------------------------------------------------------------------
+
+// Round numbers for the y-axis: about `count` steps that cover low to high.
+function niceTicks(low, high, count) {
+  if (low === high) { low -= 1; high += 1; }
+  var rough = (high - low) / count;
+  var power = Math.pow(10, Math.floor(Math.log10(rough)));
+  var step = [1, 2, 2.5, 5, 10].map(function (m) { return m * power; }).find(function (s) { return s >= rough; });
+  var ticks = [];
+  for (var t = Math.floor(low / step) * step; t <= high + step * 0.001; t += step) ticks.push(Math.round(t * 1e6) / 1e6);
+  if (ticks[ticks.length - 1] < high) ticks.push(ticks[ticks.length - 1] + step);
+  return ticks;
+}
+
+// A bar with rounded top corners (4px) and a square bottom on the baseline.
+function barPath(x, y, w, h) {
+  var r = Math.min(4, w / 2, h);
+  return "M" + x + "," + (y + h) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y +
+    "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + h) + "Z";
+}
+
+// Draws one chart into a card.
+//   spec.title, spec.note   the heading and a line under it
+//   spec.kind               "line" (for weight) or "bar"
+//   spec.points             [{week, value, est}] oldest first (value null = no data that week)
+//   spec.unit, spec.places  for labels: "kg", 1
+//   spec.goal               optional dashed line (goal weight)
+//   spec.key                optional extra key rows [{cls, text}]
+function chartCard(spec) {
+  var card = el("section", "card");
+  card.appendChild(el("h2", null, spec.title));
+  if (spec.note) card.appendChild(el("p", "note", spec.note));
+  var has = spec.points.some(function (p) { return p.value != null; });
+  if (!has) {
+    card.appendChild(el("p", "empty", spec.empty || "Nothing recorded in this time yet."));
+    return card;
+  }
+  var box = el("div", "chart");
+  card.appendChild(box);
+  // Draw once the card is on the page, so we know how wide it is.
+  requestAnimationFrame(function () { drawChart(box, spec); });
+  if (spec.key) {
+    var key = el("div", "key");
+    spec.key.forEach(function (k) {
+      var row = el("span");
+      row.appendChild(el("i", k.cls));
+      row.appendChild(document.createTextNode(k.text));
+      key.appendChild(row);
+    });
+    card.appendChild(key);
+  }
+  box.spec = spec;
+  return card;
+}
+
+function drawChart(box, spec) {
+  box.textContent = "";
+  var W = Math.max(260, Math.round(box.clientWidth || 600));
+  var H = W < 420 ? 170 : 200;
+  var pad = { l: 44, r: 10, t: 10, b: 24 };
+  var plotW = W - pad.l - pad.r;
+  var plotH = H - pad.t - pad.b;
+  var pts = spec.points;
+  var values = pts.map(function (p) { return p.value; }).filter(function (v) { return v != null; });
+  if (spec.goal) values.push(spec.goal);
+
+  // The y-axis. Bars start at zero (their length is the value). A line zooms in on its range.
+  var low = spec.kind === "bar" ? 0 : Math.min.apply(null, values);
+  var high = Math.max.apply(null, values);
+  if (spec.kind !== "bar") {
+    var spare = Math.max((high - low) * 0.15, 0.5);
+    low -= spare;
+    high += spare;
+  }
+  var ticks = niceTicks(low, high, 4);
+  low = ticks[0];
+  high = ticks[ticks.length - 1];
+  var y = function (v) { return pad.t + plotH - (v - low) / (high - low) * plotH; };
+  var step = plotW / pts.length;   // each week gets the same width
+  var cx = function (i) { return pad.l + step * (i + 0.5); };
+
+  chartCount++;
+  var hatchId = "hatch" + chartCount;
+  var root = svg("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H, role: "img", tabindex: 0,
+    "aria-label": spec.title + ". " + describe(spec) + " Use the left and right arrow keys to read each week." });
+  // Diagonal lines for estimated bars, so they differ by pattern as well as by colour.
+  var defs = svg("defs", {});
+  var pattern = svg("pattern", { id: hatchId, "class": "hatch", patternUnits: "userSpaceOnUse", width: 5, height: 5, patternTransform: "rotate(45)" });
+  pattern.appendChild(svg("line", { x1: 0, y1: 0, x2: 0, y2: 5 }));
+  defs.appendChild(pattern);
+  root.appendChild(defs);
+  ticks.forEach(function (t) {
+    root.appendChild(svg("line", { "class": t === low && spec.kind === "bar" ? "base" : "grid", x1: pad.l, x2: W - pad.r, y1: y(t), y2: y(t) }));
+    var label = svg("text", { x: pad.l - 6, y: y(t) + 4, "text-anchor": "end" });
+    label.textContent = fmt(t, spec.tickPlaces || 0);
+    root.appendChild(label);
+  });
+  // Date labels along the bottom: as many as fit without crowding.
+  var every = Math.max(1, Math.ceil(pts.length / Math.floor(plotW / 56)));
+  pts.forEach(function (p, i) {
+    if ((pts.length - 1 - i) % every) return;
+    var label = svg("text", { x: cx(i), y: H - 6, "text-anchor": "middle" });
+    label.textContent = shortDate(p.week);
+    root.appendChild(label);
+  });
+  if (spec.goal) {
+    root.appendChild(svg("line", { "class": "goal", x1: pad.l, x2: W - pad.r, y1: y(spec.goal), y2: y(spec.goal) }));
+  }
+
+  var marks = [];   // one group per week, for the hover
+  if (spec.kind === "bar") {
+    var barW = Math.max(2, Math.min(28, step - Math.max(2, step * 0.3)));
+    pts.forEach(function (p, i) {
+      var g = svg("g", {});
+      if (p.value != null && p.value > 0) {
+        // An outlined bar is drawn 0.75px inside, so its outline lines up with the solid bars.
+        var inset = p.est ? 0.75 : 0;
+        var bar = svg("path", { "class": "bar" + (p.est ? " est" : ""),
+          d: barPath(cx(i) - barW / 2 + inset, y(p.value) + inset, barW - 2 * inset, y(low) - y(p.value) - inset) });
+        if (p.est) bar.style.fill = "url(#" + hatchId + ")";
+        g.appendChild(bar);
+      }
+      root.appendChild(g);
+      marks.push(g);
+    });
+  } else {
+    // The line breaks where a week has no value, rather than guessing across the gap.
+    var d = "";
+    pts.forEach(function (p, i) {
+      if (p.value == null) return;
+      var joined = i > 0 && pts[i - 1].value != null;
+      d += (joined ? "L" : "M") + cx(i).toFixed(1) + "," + y(p.value).toFixed(1);
+    });
+    root.appendChild(svg("path", { "class": "ln", d: d }));
+    pts.forEach(function (p, i) {
+      var g = svg("g", {});
+      if (p.value != null) {
+        // A lone week (no neighbours) still shows as a dot. Otherwise dots are small and only the
+        // last one is drawn, with the others appearing on hover.
+        var alone = !(pts[i - 1] && pts[i - 1].value != null) && !(pts[i + 1] && pts[i + 1].value != null);
+        var last = !pts.slice(i + 1).some(function (q) { return q.value != null; });
+        g.appendChild(svg("circle", { "class": "dot", cx: cx(i), cy: y(p.value), r: 4, opacity: alone || last ? 1 : 0 }));
+      }
+      root.appendChild(g);
+      marks.push(g);
+    });
+  }
+
+  // The hover layer: a full-height strip per week, so you only need to point at the right week.
+  var hair = svg("line", { "class": "hair", y1: pad.t, y2: pad.t + plotH, visibility: "hidden" });
+  root.appendChild(hair);
+  var tip = el("div", "tip");
+  tip.hidden = true;
+  var current = -1;
+  function show(i) {
+    if (i < 0 || i >= pts.length) return;
+    current = i;
+    var p = pts[i];
+    marks.forEach(function (g, j) {
+      g.classList.toggle("on", j === i && spec.kind === "bar");
+      var dot = g.querySelector("circle");
+      if (dot) dot.setAttribute("opacity", j === i || dot.dataset.keep ? 1 : dot.dataset.base);
+    });
+    if (spec.kind !== "bar") {
+      hair.setAttribute("x1", cx(i));
+      hair.setAttribute("x2", cx(i));
+      hair.setAttribute("visibility", "visible");
+    }
+    tip.textContent = "";
+    tip.appendChild(el("b", null, p.value == null ? "No data" : fmt(p.value, spec.places) + " " + spec.unit));
+    if (p.est && p.value != null) tip.appendChild(el("span", null, "estimated from meals ticked"));
+    if (p.extra) tip.appendChild(el("span", null, p.extra));
+    tip.appendChild(el("span", null, weekName(p.week)));
+    tip.hidden = false;
+    var scale = box.clientWidth / W;
+    var left = cx(i) * scale;
+    var top = (p.value == null ? pad.t : y(p.value)) * scale;
+    var tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(box.clientWidth - tw, left - tw / 2)) + "px";
+    tip.style.top = Math.max(-8, top - tip.offsetHeight - 10) + "px";
+  }
+  function hide() {
+    current = -1;
+    tip.hidden = true;
+    hair.setAttribute("visibility", "hidden");
+    marks.forEach(function (g) {
+      g.classList.remove("on");
+      var dot = g.querySelector("circle");
+      if (dot) dot.setAttribute("opacity", dot.dataset.base);
+    });
+  }
+  marks.forEach(function (g) {
+    var dot = g.querySelector("circle");
+    if (dot) dot.dataset.base = dot.getAttribute("opacity");
+  });
+  pts.forEach(function (p, i) {
+    var hit = svg("rect", { "class": "hit", x: pad.l + step * i, y: 0, width: step, height: pad.t + plotH });
+    hit.addEventListener("pointerenter", function () { show(i); });
+    hit.addEventListener("pointerdown", function () { show(i); });
+    root.appendChild(hit);
+  });
+  root.addEventListener("pointerleave", hide);
+  root.addEventListener("blur", hide);
+  root.addEventListener("focus", function () { show(current < 0 ? pts.length - 1 : current); });
+  root.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") { show(Math.max(0, current - 1)); e.preventDefault(); }
+    if (e.key === "ArrowRight") { show(Math.min(pts.length - 1, current + 1)); e.preventDefault(); }
+    if (e.key === "Escape") hide();
+  });
+  box.appendChild(root);
+  box.appendChild(tip);
+}
+
+// A sentence for screen readers: "From 82.4 kg in the week of 4 Aug to 80.9 kg in the week of 3 Nov."
+function describe(spec) {
+  var have = spec.points.filter(function (p) { return p.value != null; });
+  if (!have.length) return "No data.";
+  var first = have[0];
+  var last = have[have.length - 1];
+  return "From " + fmt(first.value, spec.places) + " " + spec.unit + " in the week of " + shortDate(first.week) +
+    " to " + fmt(last.value, spec.places) + " " + spec.unit + " in the week of " + shortDate(last.week) + ".";
+}
+
+// Redraws every chart at its new width when the window size changes.
+var resizeTimer = 0;
+window.addEventListener("resize", function () {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function () {
+    [].forEach.call(document.querySelectorAll(".chart"), function (box) {
+      if (box.spec) drawChart(box, box.spec);
+    });
+  }, 150);
+});
+
+// ---------------------------------------------------------------------------
+// The page
+// ---------------------------------------------------------------------------
+
+// The headline numbers at the top.
+function renderTiles(d) {
+  var tiles = $("tiles");
+  tiles.textContent = "";
+  function tile(label, value, unit, detail) {
+    var t = el("div", "tile");
+    t.appendChild(el("div", "k", label));
+    var v = el("div", "v", value);
+    if (unit) v.appendChild(el("small", null, unit));
+    t.appendChild(v);
+    if (detail) t.appendChild(el("div", "d", detail));
+    tiles.appendChild(t);
+  }
+  var weighIns = d.weighIns;
+  if (weighIns.length) {
+    var latest = weighIns[weighIns.length - 1];
+    tile("Latest weight", fmt(latest.weight, 1), "kg", shortDate(latest.date) + (d.goalWeight ? " · goal " + fmt(d.goalWeight, 1) + " kg" : ""));
+  }
+  // The change from the first week with a weight to the latest one (weekly averages, so one
+  // heavy or light day doesn't swing it).
+  var weights = d.weeks.filter(function (w) { return w.weight != null; });
+  if (weights.length > 1) {
+    var change = weights[weights.length - 1].weight - weights[0].weight;
+    var word = Math.abs(change) < 0.05 ? "No change" : (change > 0 ? "Up " : "Down ") + fmt(Math.abs(change), 1);
+    tile("Weight change", word, Math.abs(change) < 0.05 ? "" : "kg", "weekly average since " + shortDate(weights[0].week));
+  }
+  var lastFull = d.weeks.length > 1 ? d.weeks[d.weeks.length - 2] : null;
+  if (lastFull && lastFull.steps != null) tile("Steps a day", fmt(lastFull.steps), "", "average, week of " + shortDate(lastFull.week));
+  var now = d.weeks[d.weeks.length - 1];
+  if (now) tile("This week so far", fmt(now.meals || 0) + " meals", "", fmt(now.sessions || 0) + " exercise sessions ticked");
+}
+
+// Every chart, in order. Charts with no data say so, rather than disappearing, except the
+// food charts, which pick Lose It when it has numbers and the app's estimate otherwise.
+function renderCharts(d) {
+  var charts = $("charts");
+  charts.textContent = "";
+  var weeks = d.weeks;
+  var points = function (field, extra) {
+    return weeks.map(function (w) { return { week: w.week, value: w[field], extra: extra ? extra(w) : null }; });
+  };
+  // Lose It if it has a number for the week, otherwise the estimate from meals ticked in the app.
+  var food = function (logged, estimate) {
+    return weeks.map(function (w) {
+      var est = w[logged] == null && w[estimate] != null;
+      return { week: w.week, value: w[logged] != null ? w[logged] : w[estimate], est: est };
+    });
+  };
+  var estKey = function (pts) {
+    var mixed = pts.some(function (p) { return p.est && p.value != null; });
+    return mixed ? [{ cls: "", text: "Lose It" }, { cls: "est", text: "Estimated from meals ticked in the app" }] : null;
+  };
+
+  var weightSpec = {
+    title: "Weight (kg)", kind: "line", unit: "kg", places: 1, goal: d.goalWeight,
+    note: "Average of each week’s weigh-ins.",
+    points: weeks.map(function (w) {
+      var n = d.weighIns.filter(function (x) { return x.date >= w.week && x.date < addDays(w.week, 7); }).length;
+      return { week: w.week, value: w.weight, extra: n ? n + (n === 1 ? " weigh-in" : " weigh-ins") : null };
+    }),
+    empty: "No weigh-ins yet. Add one below, or upload a Lose It or Apple Health export on the My files page.",
+  };
+  if (d.goalWeight) weightSpec.key = [{ cls: "dash", text: "Goal " + fmt(d.goalWeight, 1) + " kg (from About me)" }];
+  charts.appendChild(chartCard(weightSpec));
+
+  var energy = food("energy_in", "plan_kj");
+  charts.appendChild(chartCard({ title: "Energy eaten (kJ a day)", kind: "bar", unit: "kJ", points: energy, key: estKey(energy),
+    note: "Average per day logged. From Lose It, or estimated from the meals you ticked." }));
+  var protein = food("protein_in", "plan_protein");
+  charts.appendChild(chartCard({ title: "Protein (grams a day)", kind: "bar", unit: "g", points: protein, key: estKey(protein),
+    note: "Average per day logged." }));
+  charts.appendChild(chartCard({ title: "Steps (a day)", kind: "bar", unit: "steps", points: points("steps"),
+    note: "Average per day, from Apple Health or Lose It." }));
+  charts.appendChild(chartCard({ title: "Workout time (minutes a week)", kind: "bar", unit: "min",
+    points: points("workout_minutes", function (w) { return w.workouts ? fmt(w.workouts) + (w.workouts === 1 ? " workout" : " workouts") : null; }),
+    note: "Workouts recorded in Apple Health.", empty: "No workouts recorded. These come from an Apple Health export." }));
+  charts.appendChild(chartCard({ title: "Exercise sessions ticked (a week)", kind: "bar", unit: "sessions", points: points("sessions"),
+    note: "Sessions ticked as done on the Exercise tab.", empty: "Nothing ticked yet. Tick sessions on the Exercise tab as you do them." }));
+  charts.appendChild(chartCard({ title: "Meals ticked as eaten (a week)", kind: "bar", unit: "meals",
+    points: points("meals", function (w) { return w.score != null ? "average score " + fmt(w.score, 1) + " out of 10" : null; }),
+    note: "Meals ticked on the Meals tab.", empty: "Nothing ticked yet. Tick meals on the Meals tab as you eat them." }));
+}
+
+// Adds days to a "YYYY-MM-DD" date.
+function addDays(date, days) {
+  var d = new Date(date + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// The same numbers as a table, newest week first.
+function renderTable(d) {
+  var table = $("table");
+  table.textContent = "";
+  var cols = [["weight", "Weight (kg)", 1], ["energy_in", "kJ a day (Lose It)", 0], ["plan_kj", "kJ a day (ticked)", 0],
+    ["protein_in", "Protein g (Lose It)", 0], ["plan_protein", "Protein g (ticked)", 0], ["steps", "Steps a day", 0],
+    ["workout_minutes", "Workout min", 0], ["sessions", "Sessions ticked", 0], ["meals", "Meals ticked", 0], ["score", "Meal score", 1]];
+  var head = el("tr");
+  head.appendChild(el("th", null, "Week"));
+  cols.forEach(function (c) { head.appendChild(el("th", null, c[1])); });
+  var thead = el("thead");
+  thead.appendChild(head);
+  table.appendChild(thead);
+  var tbody = el("tbody");
+  d.weeks.slice().reverse().forEach(function (w) {
+    var row = el("tr");
+    row.appendChild(el("td", null, weekName(w.week)));
+    cols.forEach(function (c) { row.appendChild(el("td", null, fmt(w[c[0]], c[2]))); });
+    tbody.appendChild(row);
+  });
+  table.appendChild(tbody);
+}
+
+// The weigh-ins typed in here, with a button to remove each.
+function renderManual(d) {
+  var list = $("manual");
+  list.textContent = "";
+  d.manual.slice(0, 8).forEach(function (m) {
+    var li = el("li");
+    li.appendChild(el("span", null, shortDate(m.date) + ": " + fmt(m.weight, 1) + " kg"));
+    var remove = el("button", "btn small", "Remove");
+    remove.type = "button";
+    remove.setAttribute("aria-label", "Remove the weigh-in on " + shortDate(m.date));
+    remove.onclick = function () {
+      api("DELETE", "/api/measurements?person=" + encodeURIComponent(PERSON) + "&id=" + m.id)
+        .then(function () { status("Removed"); return load(); })
+        .catch(function (e) { status(e.message, true); });
+    };
+    li.appendChild(remove);
+    list.appendChild(li);
+  });
+}
+
+// When each export was last read.
+function renderSources(d) {
+  var names = { "lose-it": "Lose It", "apple-health": "Apple Health" };
+  var parts = (d.imported || []).filter(function (i) { return i.at; }).map(function (i) {
+    return names[i.source] + " (" + i.name + ", read " + new Date(i.at).toLocaleDateString("en-AU") + ")";
+  });
+  $("sources").textContent = "Weight: weigh-ins typed in here, then Apple Health, then Lose It. Steps and workouts: Apple Health, then Lose It. " +
+    "Food: Lose It, or an estimate from the meals ticked in this app, using each dish’s macros and your portion size. " +
+    "Exercise sessions and meals: your ticks in this app. " +
+    (parts.length ? "Files read: " + parts.join("; ") + "." : "No Lose It or Apple Health files have been read yet. Upload them on the My files page.");
+}
+
+function render(d) {
+  DATA = d;
+  var name = NAMES[PERSON] || PERSON;
+  $("sub").textContent = PERSON === ME.person ? "Your week-by-week progress" : name + "’s week-by-week progress";
+  renderTiles(d);
+  renderCharts(d);
+  renderTable(d);
+  renderManual(d);
+  renderSources(d);
+}
+
+// Loads the numbers. Old charts stay (faded) while new ones load, so the page doesn't jump.
+function load() {
+  $("app").classList.add("loading");
+  var url = "/api/progress?person=" + encodeURIComponent(PERSON) + "&weeks=" + WEEKS + "&tz=" + encodeURIComponent(TZ);
+  return api("GET", url).then(function (d) {
+    $("app").classList.remove("loading");
+    $("app").hidden = false;
+    render(d);
+    if (d.waiting && d.waiting.length) importNow(d.waiting);
+  }).catch(function (e) {
+    $("app").classList.remove("loading");
+    $("pmsg").textContent = "";
+    $("pmsg").appendChild(el("div", "msg err", "Could not load progress: " + e.message));
+  });
+}
+
+// New export files were uploaded: read them, then reload the charts.
+var importing = false;
+function importNow(waiting) {
+  if (importing) return;
+  importing = true;
+  var box = $("importMsg");
+  box.textContent = "";
+  var apple = waiting.indexOf("apple-health") > -1;
+  box.appendChild(el("div", "msg info", "Reading your new " + waiting.map(function (w) { return w === "lose-it" ? "Lose It" : "Apple Health"; }).join(" and ") +
+    " file" + (waiting.length > 1 ? "s" : "") + "…" + (apple ? " Apple Health exports are big, so this can take a few seconds." : "")));
+  api("POST", "/api/progress/import?person=" + encodeURIComponent(PERSON)).then(function (r) {
+    importing = false;
+    box.textContent = "";
+    var failed = r.results.filter(function (x) { return x.error; });
+    failed.forEach(function (x) { box.appendChild(el("div", "msg err", "Could not read " + x.file + ": " + x.error)); });
+    if (r.results.length > failed.length) status("Files read");
+    return load();
+  }).catch(function (e) {
+    importing = false;
+    box.textContent = "";
+    box.appendChild(el("div", "msg err", "Could not read the files: " + e.message));
+  });
+}
+
+// Buttons for how many weeks to show, and (for admins) whose progress.
+function renderRange() {
+  var group = $("range");
+  group.textContent = "";
+  RANGES.forEach(function (r) {
+    var b = el("button", "btn", r[1]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", r[0] === WEEKS);
+    b.onclick = function () {
+      WEEKS = r[0];
+      try { localStorage.setItem("progress-weeks", String(WEEKS)); } catch (e) { /* private mode */ }
+      renderRange();
+      load();
+    };
+    group.appendChild(b);
+  });
+}
+
+function renderPicker(list) {
+  var picker = $("people");
+  picker.textContent = "";
+  picker.hidden = list.length < 2;
+  list.forEach(function (person) {
+    var b = el("button", "btn", (NAMES[person] || person) + (person === ME.person ? " (me)" : ""));
+    b.type = "button";
+    b.setAttribute("aria-pressed", person === PERSON);
+    b.onclick = function () {
+      PERSON = person;
+      renderPicker(list);
+      load();
+    };
+    picker.appendChild(b);
+  });
+}
+
+// "Add a weigh-in".
+$("weighForm").onsubmit = function (e) {
+  e.preventDefault();
+  api("POST", "/api/measurements?person=" + encodeURIComponent(PERSON), { date: $("wDate").value, weight: Number($("wKg").value) })
+    .then(function () {
+      $("wKg").value = "";
+      status("Weigh-in added");
+      return load();
+    })
+    .catch(function (err) { status(err.message, true); });
+};
+
+// Start: who is logged in, then (for admins) everyone's names, then the numbers.
+fetch("/auth/me", { cache: "no-store" }).then(function (response) {
+  return response.ok ? response.json() : null;
+}).then(function (me) {
+  if (!me) {
+    location.href = "/login?next=" + encodeURIComponent("/progress.html");
+    return;
+  }
+  ME = me;
+  var asked = new URLSearchParams(location.search).get("person");
+  PERSON = (me.admin && asked) || me.person;
+  try {
+    var saved = +localStorage.getItem("progress-weeks");
+    if (RANGES.some(function (r) { return r[0] === saved; })) WEEKS = saved;
+  } catch (e) { /* private mode */ }
+  var today = new Date();
+  $("wDate").value = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+  $("wDate").max = $("wDate").value;
+  renderRange();
+  var people = me.admin ? api("GET", "/api/people") : Promise.resolve(null);
+  return people.then(function (got) {
+    if (got) {
+      got.people.forEach(function (p) { NAMES[p.person] = p.name; });
+      renderPicker(got.people.map(function (p) { return p.person; }));
+    }
+    return load();
+  });
+}).catch(function (e) {
+  $("sub").textContent = "";
+  $("pmsg").appendChild(el("div", "msg err", "Could not load: " + e.message));
+});
+</script>
+</body>
+</html>

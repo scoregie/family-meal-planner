@@ -9,6 +9,7 @@
 //   requests      changes people have asked an admin to make
 //   settings      app-wide settings such as colours and fonts
 //   logins        logins added from the app (logins in .env still work too)
+//   exercise_log  every exercise session ticked as done, kept like meal_log
 //
 // To look inside it yourself:  sqlite3 data/app.db ".tables"   (or any SQLite viewer)
 const path = require('path');
@@ -98,6 +99,22 @@ const MIGRATIONS = [
     created_at INTEGER NOT NULL,
     created_by TEXT
   );
+  `,
+  // 3: exercise history, for the progress dashboard
+  `
+  CREATE TABLE exercise_log (
+    person     TEXT NOT NULL,
+    plan_id    TEXT NOT NULL,
+    round      INTEGER NOT NULL,
+    week       INTEGER NOT NULL,
+    day        TEXT NOT NULL,     -- "Mon" to "Sun"
+    slot       TEXT NOT NULL,     -- "cardio", "strength", "morning", ...
+    session    TEXT,              -- what the plan said, like "Strength A (about 50 minutes)"
+    done_at    INTEGER NOT NULL,  -- when it was first ticked
+    PRIMARY KEY (person, plan_id, round, week, day, slot)
+  );
+  CREATE INDEX exercise_log_by_person ON exercise_log (person, done_at);
+  CREATE INDEX measurements_by_person ON measurements (person, kind, date);
   `,
 ];
 
@@ -228,6 +245,98 @@ function syncMeals(person, plan, round, eaten, ratings, toKey) {
   });
 }
 
+// Copies one person's exercise ticks ({week: ["Mon-cardio", ...]}) into exercise_log, the same way
+// syncMeals does: unticked sessions in this round are removed, earlier rounds and plans are kept.
+function syncExercise(person, plan, round, ticks, toKey) {
+  if (!plan || !Array.isArray(plan.weeks)) return;
+  const planId = String(plan.id || 'default');
+  const planKey = planKeyFor(plan, person, toKey);
+  const now = Date.now();
+  const current = new Map();   // "week|Day|slot" -> {week, day, slot}
+  for (const [week, ids] of Object.entries(ticks || {})) {
+    for (const id of Array.isArray(ids) ? ids : []) {
+      const dash = String(id).indexOf('-');
+      if (dash < 1) continue;
+      const day = String(id).slice(0, dash);
+      const slot = String(id).slice(dash + 1);
+      current.set(week + '|' + day + '|' + slot, { week: +week, day, slot });
+    }
+  }
+  transaction(d => {
+    const existing = d.prepare('SELECT week, day, slot FROM exercise_log WHERE person = ? AND plan_id = ? AND round = ?').all(person, planId, round);
+    const remove = d.prepare('DELETE FROM exercise_log WHERE person = ? AND plan_id = ? AND round = ? AND week = ? AND day = ? AND slot = ?');
+    for (const r of existing) {
+      if (!current.has(r.week + '|' + r.day + '|' + r.slot)) remove.run(person, planId, round, r.week, r.day, r.slot);
+    }
+    // "INSERT OR IGNORE" keeps the time a session was first ticked.
+    const save = d.prepare('INSERT OR IGNORE INTO exercise_log (person, plan_id, round, week, day, slot, session, done_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    for (const row of current.values()) {
+      const exercise = plan.weeks[row.week] && plan.weeks[row.week].exercise;
+      if (!exercise) continue;
+      const mine = Array.isArray(exercise.days) ? exercise : exercise[planKey];
+      const day = mine && Array.isArray(mine.days) ? mine.days.find(x => x.day === row.day) : null;
+      save.run(person, planId, round, row.week, row.day, row.slot, day && day[row.slot] ? String(day[row.slot]) : null, now);
+    }
+  });
+}
+
+// ---------- measurements (weigh-ins, steps, imports) ----------
+
+// Saves one measurement, replacing any with the same person, date, kind and source.
+function saveMeasurement(person, date, kind, value, unit, source, note) {
+  open().prepare(`INSERT INTO measurements (person, date, kind, value, unit, source, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT (person, date, kind, source) DO UPDATE SET value = excluded.value, unit = excluded.unit, note = excluded.note, created_at = excluded.created_at`)
+    .run(person, date, kind, value, unit || null, source || 'manual', note || null, Date.now());
+}
+
+// Saves many measurements at once ([{date, kind, value, unit}]) from one source, in one transaction.
+function saveMeasurements(person, source, rows) {
+  transaction(() => {
+    for (const r of rows) saveMeasurement(person, r.date, r.kind, r.value, r.unit, source, null);
+  });
+  return rows.length;
+}
+
+// One person's measurements since a date (YYYY-MM-DD), oldest first.
+function measurements(person, since) {
+  return open().prepare('SELECT id, date, kind, value, unit, source, note FROM measurements WHERE person = ? AND date >= ? ORDER BY date, kind').all(person, since);
+}
+
+// Deletes a measurement typed in by hand. Returns true if one was deleted.
+function deleteMeasurement(person, id) {
+  return open().prepare("DELETE FROM measurements WHERE id = ? AND person = ? AND source = 'manual'").run(id, person).changes > 0;
+}
+
+// Meals ticked as eaten since a time, with the macros of each dish (for the dashboard).
+function eatenMeals(person, sinceMs) {
+  return open().prepare(`
+    SELECT m.eaten_at, m.dish, m.score, d.macros
+    FROM meal_log m LEFT JOIN dishes d ON d.key = lower(m.dish)
+    WHERE m.person = ? AND m.eaten = 1 AND m.eaten_at >= ?`).all(person, sinceMs)
+    .map(r => Object.assign({}, r, { macros: r.macros ? JSON.parse(r.macros) : null }));
+}
+
+// Ratings given since a time (whether or not the meal was ticked as eaten).
+function ratingsSince(person, sinceMs) {
+  return open().prepare('SELECT updated_at, score FROM meal_log WHERE person = ? AND score IS NOT NULL AND updated_at >= ?').all(person, sinceMs);
+}
+
+// Exercise sessions ticked since a time.
+function sessionsSince(person, sinceMs) {
+  return open().prepare('SELECT done_at, slot, session FROM exercise_log WHERE person = ? AND done_at >= ?').all(person, sinceMs);
+}
+
+// ---------- settings (small values the app remembers) ----------
+
+function getSetting(key) {
+  const row = open().prepare('SELECT value FROM settings WHERE key = ?').get(key);
+  return row ? row.value : null;
+}
+
+function setSetting(key, value) {
+  open().prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value').run(key, String(value));
+}
+
 // Remembers every dish in a plan (recipes, meals, snacks), with its recipe and macros. Dishes from
 // older plans stay in the table, so they can be found again later.
 function rememberDishes(plan) {
@@ -343,6 +452,7 @@ function saveProfile(person, answers) {
 }
 
 module.exports = {
-  open, transaction, syncMeals, rememberDishes, history, dishes, dishKey, DB_FILE,
+  open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, dishKey, DB_FILE,
+  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, sessionsSince, getSetting, setSetting, planKeyFor,
   getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
 };
