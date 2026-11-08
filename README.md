@@ -76,6 +76,16 @@ Files are stored in plain folders on the server, one per person and then one per
 
 The types are `lose-it`, `apple-health`, `blood-tests`, `photos` and `other`. `data/uploads/README.txt` explains the layout. Files can be up to 2 GB, which is enough for an Apple Health export. You can also add or remove files in these folders directly; the page just lists what is there.
 
+## Meal history (the database)
+
+The app keeps a small database, `data/app.db` (SQLite, built into Node, so nothing to install). `plan.json` is still the current plan and `data/state.json` still holds this fortnight's ticks. The database is for the long run:
+
+- **Meal history:** every meal someone ticks as eaten or rates, with the dish, score, note and when it was eaten. It is kept after **Reset all** and after loading a new plan, so you can look back week on week.
+- **Dishes:** every dish and recipe that has been in a plan, with its macros, how often it has been eaten and its average score, even after it leaves the plan.
+- Room for weigh-ins, people's answers to the getting-started questions, change requests and settings (coming next).
+
+`GET /api/history` gives your own history (admins can add `?person=`), and `GET /api/dishes` (admins) lists every dish. To look inside it yourself, use any SQLite viewer, or `sqlite3 data/app.db ".tables"`.
+
 ## Changing the plan
 
 Everything the page shows (meals, recipes, shopping lists and exercise) comes from `site/plan.json`. Replace that file to change the plan. No restart is needed.
@@ -148,7 +158,7 @@ Logging in over plain HTTP sends the password unencrypted, which is fine on your
 
 ## Backups
 
-Back up `.env` (logins), `site/plan.json` (your plan) and `data/` (ticks, ratings and the login key). None of these are in git.
+Back up `.env` (logins), `site/plan.json` (your plan) and `data/` (ticks, ratings, meal history in `app.db`, uploads and the login key). None of these are in git. To copy `app.db` while the app is running, use `sqlite3 data/app.db ".backup app-backup.db"`, or stop the app first.
 
 ## Notes
 

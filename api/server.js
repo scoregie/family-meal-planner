@@ -12,6 +12,7 @@ const path = require('path');
 const auth = require('./auth');          // logins and the login cookie
 const calendar = require('./calendar');  // .ics calendar files of eating times
 const uploads = require('./uploads');    // the "My files" page
+const db = require('./db');              // the long-term database (data/app.db)
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -273,6 +274,7 @@ function savePlan(plan) {
     remapTicks(oldPlan, plan);
     persist();
   }
+  safely('remember dishes', () => db.rememberDishes(plan));
 }
 
 // The backup file names, newest first.
@@ -352,6 +354,54 @@ async function handlePlan(req, res, urlPath, me) {
 }
 
 // ---------------------------------------------------------------------------
+// The database (meal history and remembered dishes)
+// ---------------------------------------------------------------------------
+
+// Runs a database step. If it fails, the error is logged and the app carries on, because ticks
+// are already safe in state.json and the history can catch up next time.
+function safely(what, step) {
+  try {
+    step();
+  } catch (e) {
+    console.error('database: could not ' + what + ':', e.message);
+  }
+}
+
+// The current plan, or null if it can't be read.
+function readPlan() {
+  try {
+    return JSON.parse(fs.readFileSync(planPath(), 'utf8'));
+  } catch (e) {
+    return null;
+  }
+}
+
+// When the server starts: remember the plan's dishes, and copy any ticks already in state.json
+// into the meal history (so nothing ticked before the database existed is lost).
+function startDatabase() {
+  safely('open data/app.db', () => db.open());
+  const plan = readPlan();
+  safely('remember dishes', () => db.rememberDishes(plan));
+  for (const [person, saved] of Object.entries(state.users || {})) {
+    safely('log meals', () => db.syncMeals(person, plan, state.epoch || 0, saved.eaten, saved.ratings, toKey));
+  }
+}
+
+// GET /api/history?person=...: one person's meal history (your own, or anyone's for admins).
+function getHistory(res, url, me) {
+  const person = String(url.searchParams.get('person') || me.person).toLowerCase();
+  if (!people().includes(person)) return send(res, 404, { error: 'unknown person' });
+  if (!me.admin && person !== me.person) return send(res, 403, { error: 'you can only see your own history' });
+  return send(res, 200, { person, meals: db.history(person) });
+}
+
+// GET /api/dishes: every dish that has been in a plan, with how often it was eaten and its average score.
+function getDishes(res, me) {
+  if (!me.admin) return send(res, 403, { error: 'only an admin can see every dish' });
+  return send(res, 200, { dishes: db.dishes() });
+}
+
+// ---------------------------------------------------------------------------
 // Ticks, ratings and "at home"
 // ---------------------------------------------------------------------------
 
@@ -377,6 +427,7 @@ async function putUser(req, res, me, person) {
   state.users[person] = { ex: b.ex, eaten: b.eaten, ratings };
   state.updated[person] = Date.now();
   persist();
+  safely('log meals', () => db.syncMeals(person, readPlan(), state.epoch || 0, b.eaten, ratings, toKey));
   return send(res, 200, { ok: true });
 }
 
@@ -474,6 +525,8 @@ async function handleRequest(req, res) {
     if (await uploads.handle(req, res, urlPath, url, me, people())) return;
 
     if (urlPath === '/api/state' && req.method === 'GET') return getState(res, me);
+    if (urlPath === '/api/history' && req.method === 'GET') return getHistory(res, url, me);
+    if (urlPath === '/api/dishes' && req.method === 'GET') return getDishes(res, me);
 
     const userMatch = urlPath.match(/^\/api\/user\/([a-z0-9-]+)$/);
     if (userMatch && req.method === 'PUT') return await putUser(req, res, me, userMatch[1]);
@@ -490,6 +543,8 @@ async function handleRequest(req, res) {
     send(res, 400, { error: String(e.message || e) });
   }
 }
+
+startDatabase();
 
 http.createServer(handleRequest)
   // Long enough for a big Apple Health export over slow Wi-Fi (Node's default is 5 minutes).

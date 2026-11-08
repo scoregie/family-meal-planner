@@ -3,7 +3,7 @@ services:
     image: node:22-alpine
     container_name: shopping-list-api
     restart: unless-stopped
-    command: ["node", "/app/server.js"]
+    command: ["node", "--disable-warning=ExperimentalWarning", "/app/server.js"]   # the warning is about built-in SQLite
     env_file: .env          # LOGIN_<NAME>= lines
     volumes:
       - ./api:/app:ro
