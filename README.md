@@ -235,6 +235,13 @@ Logging in over plain HTTP sends the password unencrypted, which is fine on your
 
 ## Backups
 
+**Offsite backup:** `tools/offsite-backup.sh` packs up the whole app folder (code, `.env`, `plan.json` and `data/`, with a safe copy of the database), encrypts it with [age](https://age-encryption.org), and uploads it to a **private** GitHub repository as a release, keeping the newest 14. GitHub only sees the encrypted file. Setup steps are at the top of the script; to run it every night, add a cron file such as `/etc/cron.d/family-planner-backup`:
+
+    15 17 * * * root /home/shopping-list-selfhost/tools/offsite-backup.sh >> /var/log/family-planner-backup.log 2>&1
+
+Keep the backup key (`~/.config/family-planner-backup/key.txt`) somewhere other than the server, like a password manager: without it the backups can't be opened. To restore on a new machine, see [docs/restore.md](docs/restore.md).
+
+
 Back up `.env` (logins), `site/plan.json` (your plan) and `data/` (ticks, ratings, meal history in `app.db`, uploads and the login key). None of these are in git. To copy `app.db` while the app is running, use `sqlite3 data/app.db ".backup app-backup.db"`, or stop the app first.
 
 ## Notes
