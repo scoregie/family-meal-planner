@@ -1,117 +1,280 @@
-// Cookie login for the shopping list. No dependencies.
-// Logins come from env vars named LOGIN_<USERNAME>=<hash> (make a hash with hash-password.js).
-// Usernames are not case-sensitive. Changing someone's password logs them out everywhere.
-const crypto=require('crypto'),fs=require('fs'),path=require('path');
-const DIR=process.env.DATA_DIR||'/data';
+// Logins, using a cookie. No npm packages.
+//
+// Logins come from environment variables named LOGIN_<USERNAME>=<hash> (make a hash with
+// hash-password.js). Usernames are not case-sensitive. Changing someone's password logs them
+// out everywhere, because the password hash is part of what signs their login cookie.
+//
+// How a login cookie works:
+//   1. The person types their username and password on /login.
+//   2. If they are right, the server sends a cookie like "alex.1794101306812.<signature>":
+//      the username, when it expires, and a signature only this server can make (with SECRET).
+//   3. Every later request carries that cookie. The server re-makes the signature and checks it
+//      matches, so nobody can change the username or expiry without being caught.
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+const DATA_DIR = process.env.DATA_DIR || '/data';
+const COOKIE = 'sl_session';
+const ONE_DAY = 864e5;                  // milliseconds in a day (86,400,000)
 // Stay logged in for 400 days (the most browsers allow), renewed each day the app is opened,
 // so people stay logged in unless they log out or do not open the app for over a year.
-const COOKIE='sl_session',MAX_AGE=400*864e5,RENEW_AFTER=864e5;
-const SCRYPT={N:16384,r:8,p:1};
+const MAX_AGE = 400 * ONE_DAY;
+const RENEW_AFTER = ONE_DAY;
+// Settings for scrypt, a deliberately slow way to hash passwords so guessing them takes ages.
+const SCRYPT = { N: 16384, r: 8, p: 1 };
 
-const USERS={};
-for(const [k,v] of Object.entries(process.env)){
-  const m=k.match(/^LOGIN_([A-Za-z0-9_]+)$/);
-  if(m&&v&&v.trim())USERS[m[1].toLowerCase()]=v.trim().replace(/^'(.*)'$/,'$1');
+// Every login from .env: {alex: "scrypt.<salt>.<hash>", ...}
+const USERS = {};
+for (const [name, value] of Object.entries(process.env)) {
+  const match = name.match(/^LOGIN_([A-Za-z0-9_]+)$/);
+  if (match && value && value.trim()) {
+    // Allow the hash to be wrapped in single quotes in .env.
+    USERS[match[1].toLowerCase()] = value.trim().replace(/^'(.*)'$/, '$1');
+  }
 }
 
 // Roles: ADMIN_USERS=admin,... can see and edit everyone's meal and exercise ticks.
-// Each login ticks as a person in the app: PERSON_<USERNAME>=alex (default: the username itself).
-const ADMINS=String(process.env.ADMIN_USERS||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
-function who(user){
-  return {user,admin:ADMINS.includes(user),person:String(process.env['PERSON_'+user.toUpperCase()]||user).trim().toLowerCase()};
+const ADMINS = String(process.env.ADMIN_USERS || '')
+  .split(',')
+  .map(x => x.trim().toLowerCase())
+  .filter(Boolean);
+
+// Describes a login: {user, admin, person}. Each login ticks as a person in the app,
+// set with PERSON_<USERNAME>=alex in .env (by default, the username itself).
+function who(user) {
+  const person = String(process.env['PERSON_' + user.toUpperCase()] || user).trim().toLowerCase();
+  return { user, admin: ADMINS.includes(user), person };
 }
 
-function loadSecret(){
-  if(process.env.SESSION_SECRET)return process.env.SESSION_SECRET;
-  const f=path.join(DIR,'session-secret');
-  try{const s=fs.readFileSync(f,'utf8').trim();if(s)return s;}catch(e){}
-  const s=crypto.randomBytes(32).toString('hex');
-  fs.mkdirSync(DIR,{recursive:true});fs.writeFileSync(f,s,{mode:0o600});return s;
+// The secret key that signs login cookies. It is made once at random and kept in
+// data/session-secret. Deleting that file logs everyone out.
+function loadSecret() {
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  const file = path.join(DATA_DIR, 'session-secret');
+  try {
+    const saved = fs.readFileSync(file, 'utf8').trim();
+    if (saved) return saved;
+  } catch (e) {
+    // No secret yet. Make one below.
+  }
+  const secret = crypto.randomBytes(32).toString('hex');
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(file, secret, { mode: 0o600 });   // 0o600: only the owner can read it
+  return secret;
 }
-const SECRET=loadSecret();
+const SECRET = loadSecret();
 
-function hash(pw){
-  const salt=crypto.randomBytes(16),h=crypto.scryptSync(String(pw),salt,32,SCRYPT);
-  return 'scrypt.'+salt.toString('base64url')+'.'+h.toString('base64url');
-}
-function verify(pw,stored){
-  const p=String(stored||'').split('.');
-  if(p.length!==3||p[0]!=='scrypt')return false;
-  const want=Buffer.from(p[2],'base64url');if(!want.length)return false;
-  const got=crypto.scryptSync(String(pw),Buffer.from(p[1],'base64url'),want.length,SCRYPT);
-  return crypto.timingSafeEqual(got,want);
-}
-const DUMMY=hash(crypto.randomBytes(12).toString('hex'));   // keeps timing the same for unknown usernames
-function checkLogin(user,pw){
-  user=String(user||'').trim().toLowerCase();
-  const ok=verify(pw,USERS[user]||DUMMY);
-  return ok&&USERS[user]?user:null;
+// Turns a password into "scrypt.<salt>.<hash>" for .env. The random salt means two people with
+// the same password still get different hashes.
+function hash(password) {
+  const salt = crypto.randomBytes(16);
+  const hashed = crypto.scryptSync(String(password), salt, 32, SCRYPT);
+  return 'scrypt.' + salt.toString('base64url') + '.' + hashed.toString('base64url');
 }
 
-const sign=(s,user)=>crypto.createHmac('sha256',SECRET).update(s+'|'+USERS[user]).digest('base64url');
-function makeToken(user){const b=user+'.'+(Date.now()+MAX_AGE);return b+'.'+sign(b,user);}
-function readToken(t){
-  const p=String(t||'').split('.');
-  if(p.length!==3||!USERS[p[0]])return null;
-  const b=p[0]+'.'+p[1],want=Buffer.from(sign(b,p[0])),got=Buffer.from(p[2]);
-  if(want.length!==got.length||!crypto.timingSafeEqual(want,got))return null;
-  const exp=+p[1];return exp>Date.now()?Object.assign(who(p[0]),{exp}):null;
+// Checks a typed password against a stored hash. True if it matches.
+function verify(password, stored) {
+  const parts = String(stored || '').split('.');
+  if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
+  const want = Buffer.from(parts[2], 'base64url');
+  if (!want.length) return false;
+  const got = crypto.scryptSync(String(password), Buffer.from(parts[1], 'base64url'), want.length, SCRYPT);
+  // timingSafeEqual takes the same time whether the first or last byte differs,
+  // so an attacker cannot learn anything from how long the check takes.
+  return crypto.timingSafeEqual(got, want);
 }
-function cookies(req){
-  const o={};
-  (req.headers.cookie||'').split(';').forEach(c=>{const i=c.indexOf('=');if(i>0)o[c.slice(0,i).trim()]=c.slice(i+1).trim();});
-  return o;
-}
-const session=req=>readToken(cookies(req)[COOKIE]);
-const isHttps=req=>String(req.headers['x-forwarded-proto']||'').split(',')[0].trim()==='https';
-function cookieFor(req,user){
-  return COOKIE+'='+(user?makeToken(user):'')+'; Path=/; HttpOnly; SameSite=Lax; Max-Age='+
-    (user?MAX_AGE/1000:0)+(isHttps(req)?'; Secure':'');
-}
-// Renew the cookie once a day while the app is used.
-function refresh(req,res,s){if(s&&s.exp-Date.now()<MAX_AGE-RENEW_AFTER)res.setHeader('Set-Cookie',cookieFor(req,s.user));}
 
-// Slow down password guessing: 10 wrong tries per address per 15 minutes.
-const fails=new Map(),WINDOW=15*60e3,LIMIT=10;
-const clientIp=req=>String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'?';
-function recent(k){const now=Date.now(),a=(fails.get(k)||[]).filter(t=>now-t<WINDOW);if(a.length)fails.set(k,a);else fails.delete(k);return a;}
+// A hash of a random password, checked when the username does not exist. That way a wrong
+// username takes just as long as a wrong password, and does not reveal which usernames exist.
+const DUMMY = hash(crypto.randomBytes(12).toString('hex'));
 
-function safeNext(n){
-  n=String(n||'');
-  if(!n.startsWith('/')||n.startsWith('//')||n.startsWith('/\\')||/^\/(login|auth)\b/.test(n))return '/';
-  return n;
+// Returns the username if the username and password are right, otherwise null.
+function checkLogin(user, password) {
+  user = String(user || '').trim().toLowerCase();
+  const passwordOk = verify(password, USERS[user] || DUMMY);
+  return passwordOk && USERS[user] ? user : null;
 }
-function readForm(req){
-  return new Promise((ok,no)=>{let b='';req.on('data',c=>{b+=c;if(b.length>4096){no(new Error('big'));req.destroy();}});
-    req.on('end',()=>ok(new URLSearchParams(b)));});
+
+// The signature for a cookie: an HMAC of the text, keyed with SECRET and the person's password hash.
+function sign(text, user) {
+  return crypto.createHmac('sha256', SECRET).update(text + '|' + USERS[user]).digest('base64url');
 }
-function redirect(res,loc,cookie){
-  const h={Location:loc,'Cache-Control':'no-store'};if(cookie)h['Set-Cookie']=cookie;
-  res.writeHead(303,h);res.end();
+
+// Makes the cookie value for a login: "<user>.<expiry time>.<signature>".
+function makeToken(user) {
+  const unsigned = user + '.' + (Date.now() + MAX_AGE);
+  return unsigned + '.' + sign(unsigned, user);
 }
-const json=(res,code,obj)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(obj));};
+
+// Checks a cookie value. Returns {user, admin, person, exp} if it is genuine and not expired, or null.
+function readToken(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3 || !USERS[parts[0]]) return null;
+  const [user, expires, signature] = parts;
+  const want = Buffer.from(sign(user + '.' + expires, user));
+  const got = Buffer.from(signature);
+  if (want.length !== got.length || !crypto.timingSafeEqual(want, got)) return null;
+  const exp = +expires;
+  return exp > Date.now() ? Object.assign(who(user), { exp }) : null;
+}
+
+// Reads the request's cookies into an object: {sl_session: "...", ...}.
+function cookies(req) {
+  const out = {};
+  (req.headers.cookie || '').split(';').forEach(cookie => {
+    const equals = cookie.indexOf('=');
+    if (equals > 0) out[cookie.slice(0, equals).trim()] = cookie.slice(equals + 1).trim();
+  });
+  return out;
+}
+
+// Who is making this request, or null if they are not logged in.
+function session(req) {
+  return readToken(cookies(req)[COOKIE]);
+}
+
+// True if the visitor reached us over HTTPS (Caddy or a proxy tells us in X-Forwarded-Proto).
+function isHttps(req) {
+  return String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+}
+
+// The Set-Cookie text that logs `user` in, or (with no user) logs out by clearing the cookie.
+// HttpOnly: page scripts cannot read it. SameSite=Lax: other websites cannot use it to make changes.
+// Secure (on HTTPS only): it is never sent unencrypted.
+function cookieFor(req, user) {
+  const value = user ? makeToken(user) : '';
+  const maxAgeSeconds = user ? MAX_AGE / 1000 : 0;
+  return COOKIE + '=' + value + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=' + maxAgeSeconds + (isHttps(req) ? '; Secure' : '');
+}
+
+// Renews the cookie once a day while the app is used, so active people never get logged out.
+function refresh(req, res, s) {
+  if (s && s.exp - Date.now() < MAX_AGE - RENEW_AFTER) res.setHeader('Set-Cookie', cookieFor(req, s.user));
+}
+
+// Slows down password guessing: 10 wrong tries per address per 15 minutes.
+const fails = new Map();   // address -> times of recent wrong passwords
+const WINDOW = 15 * 60e3;
+const LIMIT = 10;
+
+// The visitor's IP address (Caddy passes the real one in X-Forwarded-For).
+function clientIp(req) {
+  return String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '?';
+}
+
+// The wrong-password times for an address in the last 15 minutes (older ones are forgotten).
+function recent(address) {
+  const now = Date.now();
+  const times = (fails.get(address) || []).filter(t => now - t < WINDOW);
+  if (times.length) fails.set(address, times);
+  else fails.delete(address);
+  return times;
+}
+
+// Where to go after logging in. Only addresses on this site are allowed, so a link like
+// /login?next=https://evil.example cannot send people somewhere else.
+function safeNext(next) {
+  next = String(next || '');
+  const isLocal = next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\');
+  if (!isLocal || /^\/(login|auth)\b/.test(next)) return '/';
+  return next;
+}
+
+// Reads a submitted login form (username=...&password=...). Gives up past 4 KB.
+function readForm(req) {
+  return new Promise((resolve, reject) => {
+    let text = '';
+    req.on('data', chunk => {
+      text += chunk;
+      if (text.length > 4096) {
+        reject(new Error('big'));
+        req.destroy();
+      }
+    });
+    req.on('end', () => resolve(new URLSearchParams(text)));
+  });
+}
+
+// Sends the browser to another address, optionally setting a cookie on the way.
+function redirect(res, location, cookie) {
+  const headers = { Location: location, 'Cache-Control': 'no-store' };
+  if (cookie) headers['Set-Cookie'] = cookie;
+  res.writeHead(303, headers);
+  res.end();
+}
+
+// Sends a JSON answer with an HTTP status code.
+function json(res, code, obj) {
+  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+  res.end(JSON.stringify(obj));
+}
+
+// GET /auth/check: Caddy asks this before serving any protected file.
+// Logged in: 200 (Caddy serves the file). Not logged in: send them to the login page.
+function authCheck(req, res) {
+  const s = session(req);
+  if (s) {
+    res.writeHead(200, { 'X-Auth-User': s.user, 'Cache-Control': 'no-store' });
+    res.end('ok');
+    return;
+  }
+  const uri = String(req.headers['x-forwarded-uri'] || '/');
+  if (uri.startsWith('/api/')) {
+    json(res, 401, { error: 'login needed' });
+  } else {
+    res.writeHead(302, { Location: '/login?next=' + encodeURIComponent(safeNext(uri)), 'Cache-Control': 'no-store' });
+    res.end();
+  }
+}
+
+// POST /auth/login: checks the username and password from the login form.
+async function login(req, res) {
+  const form = await readForm(req);
+  const next = safeNext(form.get('next'));
+  const keepNext = '&next=' + encodeURIComponent(next);
+  const ip = clientIp(req);
+  if (recent(ip).length >= LIMIT) return redirect(res, '/login?e=locked' + keepNext);
+  const user = checkLogin(form.get('username'), form.get('password') || '');
+  if (!user) {
+    fails.set(ip, recent(ip).concat(Date.now()));
+    return redirect(res, '/login?e=1' + keepNext);
+  }
+  fails.delete(ip);
+  redirect(res, next, cookieFor(req, user));
+}
+
+// GET /auth/me: tells the page who is logged in.
+function me(req, res) {
+  const s = session(req);
+  refresh(req, res, s);
+  if (s) json(res, 200, { user: s.user, person: s.person, admin: s.admin });
+  else json(res, 401, { error: 'login needed' });
+}
 
 // Handles /auth/*. Returns true if it answered the request.
-async function handle(req,res,p){
-  if(p==='/auth/check'){                      // Caddy asks this before serving any protected file
-    const s=session(req);
-    if(s){res.writeHead(200,{'X-Auth-User':s.user,'Cache-Control':'no-store'});res.end('ok');return true;}
-    const uri=String(req.headers['x-forwarded-uri']||'/');
-    if(uri.startsWith('/api/'))json(res,401,{error:'login needed'});
-    else{res.writeHead(302,{Location:'/login?next='+encodeURIComponent(safeNext(uri)),'Cache-Control':'no-store'});res.end();}
+async function handle(req, res, urlPath) {
+  if (urlPath === '/auth/check') {
+    authCheck(req, res);
     return true;
   }
-  if(p==='/auth/login'&&req.method==='POST'){
-    const f=await readForm(req),next=safeNext(f.get('next')),q='&next='+encodeURIComponent(next),ip=clientIp(req);
-    if(recent(ip).length>=LIMIT){redirect(res,'/login?e=locked'+q);return true;}
-    const user=checkLogin(f.get('username'),f.get('password')||'');
-    if(!user){fails.set(ip,recent(ip).concat(Date.now()));redirect(res,'/login?e=1'+q);return true;}
-    fails.delete(ip);redirect(res,next,cookieFor(req,user));return true;
+  if (urlPath === '/auth/login' && req.method === 'POST') {
+    await login(req, res);
+    return true;
   }
-  if(p==='/auth/logout'){redirect(res,'/login?out=1',cookieFor(req,null));return true;}
-  if(p==='/auth/me'){const s=session(req);refresh(req,res,s);s?json(res,200,{user:s.user,person:s.person,admin:s.admin}):json(res,401,{error:'login needed'});return true;}
-  if(p.startsWith('/auth/')){json(res,404,{error:'not found'});return true;}
+  if (urlPath === '/auth/logout') {
+    redirect(res, '/login?out=1', cookieFor(req, null));
+    return true;
+  }
+  if (urlPath === '/auth/me') {
+    me(req, res);
+    return true;
+  }
+  if (urlPath.startsWith('/auth/')) {
+    json(res, 404, { error: 'not found' });
+    return true;
+  }
   return false;
 }
 
-module.exports={handle,session,refresh,hash,users:()=>Object.keys(USERS)};
+module.exports = { handle, session, refresh, hash, users: () => Object.keys(USERS) };
