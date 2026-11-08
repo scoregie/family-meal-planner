@@ -10,6 +10,8 @@
 //   settings      app-wide settings such as colours and fonts
 //   logins        logins added from the app (logins in .env still work too)
 //   exercise_log  every exercise session ticked as done, kept like meal_log
+//   chats         conversations with the Claude assistant
+//   ai_usage      how many assistant messages each person sent each day (for the daily limit)
 //
 // To look inside it yourself:  sqlite3 data/app.db ".tables"   (or any SQLite viewer)
 const path = require('path');
@@ -115,6 +117,29 @@ const MIGRATIONS = [
   );
   CREATE INDEX exercise_log_by_person ON exercise_log (person, done_at);
   CREATE INDEX measurements_by_person ON measurements (person, kind, date);
+  `,
+  // 4: the Claude assistant
+  `
+  CREATE TABLE chats (
+    id         INTEGER PRIMARY KEY,
+    person     TEXT NOT NULL,     -- whose chat it is
+    user       TEXT NOT NULL,     -- the login that started it
+    title      TEXT,
+    messages   TEXT NOT NULL,     -- the whole conversation, exactly as sent to Claude, as JSON
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE INDEX chats_by_person ON chats (person, updated_at);
+  CREATE TABLE ai_usage (
+    user          TEXT NOT NULL,
+    day           TEXT NOT NULL,  -- YYYY-MM-DD
+    messages      INTEGER NOT NULL DEFAULT 0,
+    input_tokens  INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user, day)
+  );
+  ALTER TABLE requests ADD COLUMN chat_id INTEGER;
+  ALTER TABLE requests ADD COLUMN user TEXT;
   `,
 ];
 
@@ -326,6 +351,79 @@ function sessionsSince(person, sinceMs) {
   return open().prepare('SELECT done_at, slot, session FROM exercise_log WHERE person = ? AND done_at >= ?').all(person, sinceMs);
 }
 
+// ---------- the Claude assistant: chats, requests for changes, and daily usage ----------
+
+function getChat(id) {
+  const row = open().prepare('SELECT * FROM chats WHERE id = ?').get(id);
+  return row ? Object.assign({}, row, { messages: JSON.parse(row.messages) }) : null;
+}
+
+function listChats(person, limit) {
+  return open().prepare('SELECT id, person, user, title, created_at, updated_at FROM chats WHERE person = ? ORDER BY updated_at DESC LIMIT ?').all(person, limit || 30);
+}
+
+// Saves a chat's messages. Makes a new chat when `id` is empty. Returns the id.
+function saveChat(id, person, user, title, messages) {
+  const now = Date.now();
+  if (id) {
+    open().prepare('UPDATE chats SET messages = ?, title = COALESCE(title, ?), updated_at = ? WHERE id = ?').run(JSON.stringify(messages), title || null, now, id);
+    return id;
+  }
+  return Number(open().prepare('INSERT INTO chats (person, user, title, messages, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(person, user, title || null, JSON.stringify(messages), now, now).lastInsertRowid);
+}
+
+function deleteChat(id) {
+  open().prepare('DELETE FROM chats WHERE id = ?').run(id);
+}
+
+// A suggested change. status: "draft" (only the person sees it), "open" (sent to the admins),
+// "done" (applied to the plan), "declined" or "withdrawn" (taken back by the person).
+function addRequest(r) {
+  return Number(open().prepare('INSERT INTO requests (person, user, chat_id, created_at, title, details, change, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(r.person, r.user, r.chatId || null, Date.now(), r.title, r.details || null, JSON.stringify(r.change || null), r.status || 'draft').lastInsertRowid);
+}
+
+function readRequest(row) {
+  return row ? Object.assign({}, row, { change: row.change ? JSON.parse(row.change) : null }) : null;
+}
+
+function getRequest(id) {
+  return readRequest(open().prepare('SELECT * FROM requests WHERE id = ?').get(id));
+}
+
+// Requests: everyone's for admins (all but drafts), or one person's own.
+function listRequests(person) {
+  const rows = person
+    ? open().prepare('SELECT * FROM requests WHERE person = ? ORDER BY created_at DESC LIMIT 100').all(person)
+    : open().prepare("SELECT * FROM requests WHERE status != 'draft' ORDER BY (status = 'open') DESC, created_at DESC LIMIT 200").all();
+  return rows.map(readRequest);
+}
+
+function setRequestChat(id, chatId) {
+  open().prepare('UPDATE requests SET chat_id = ? WHERE id = ? AND chat_id IS NULL').run(chatId, id);
+}
+
+function setRequestStatus(id, status, by, reply) {
+  const decided = status === 'done' || status === 'declined';
+  open().prepare('UPDATE requests SET status = ?, decided_by = ?, decided_at = ?, reply = ? WHERE id = ?')
+    .run(status, decided ? by : null, decided ? Date.now() : null, reply || null, id);
+}
+
+// Adds one assistant message and its tokens to today's count for a login. Returns today's totals.
+function countUsage(user, day, inputTokens, outputTokens, messages) {
+  open().prepare(`INSERT INTO ai_usage (user, day, messages, input_tokens, output_tokens) VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT (user, day) DO UPDATE SET messages = messages + excluded.messages,
+      input_tokens = input_tokens + excluded.input_tokens, output_tokens = output_tokens + excluded.output_tokens`)
+    .run(user, day, messages || 0, inputTokens || 0, outputTokens || 0);
+  return usage(user, day);
+}
+
+function usage(user, day) {
+  return open().prepare('SELECT messages, input_tokens, output_tokens FROM ai_usage WHERE user = ? AND day = ?').get(user, day)
+    || { messages: 0, input_tokens: 0, output_tokens: 0 };
+}
+
 // ---------- settings (small values the app remembers) ----------
 
 function getSetting(key) {
@@ -455,4 +553,5 @@ module.exports = {
   open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, dishKey, DB_FILE,
   saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, sessionsSince, getSetting, setSetting, planKeyFor,
   getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
+  getChat, listChats, saveChat, deleteChat, addRequest, getRequest, listRequests, setRequestChat, setRequestStatus, countUsage, usage,
 };

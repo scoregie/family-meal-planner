@@ -100,6 +100,7 @@ label.check{display:flex;gap:.45rem;align-items:center;font-size:.9rem}
     <a class="btn" href="./">← Back to the app</a>
   </div>
   <div id="msg"></div>
+  <p id="reqLink" hidden style="margin:0 0 .8rem"><a class="btn" href="assistant.html?tab=requests">Requests for changes <b id="reqOpen"></b></a></p>
   <div id="app" hidden>
     <div class="tabs" role="tablist" id="tabs"></div>
     <section id="pMeals" role="tabpanel"></section>
@@ -1145,6 +1146,15 @@ fetch("/auth/me", { cache: "no-store" }).then(function (response) {
   $("sub").textContent = "";
   msg("err", "Could not load the plan: " + e.message);
 });
+</script>
+<script>
+// Shows how many people are waiting for an admin to look at a suggested change (from Ask Claude).
+fetch("/api/requests", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (got) {
+  if (!got || !got.admin) return;
+  var open = got.requests.filter(function (r) { return r.status === "open"; }).length;
+  document.getElementById("reqOpen").textContent = open ? "(" + open + " waiting)" : "";
+  document.getElementById("reqLink").hidden = false;
+}).catch(function () { /* the link just stays hidden */ });
 </script>
 </body>
 </html>

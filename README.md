@@ -16,7 +16,7 @@ Built with [Claude Code](https://claude.com/claude-code).
 
 ## How it is built
 
-Two small Docker containers, no database and no npm packages:
+Two small Docker containers. The only npm package is Anthropic's SDK for the optional Claude assistant (installed when the container starts):
 
 - **Caddy** serves the page (`site/`) and checks every request is logged in.
 - **A tiny Node server** (`api/`) handles logins, saves ticks and ratings to one file (`data/state.json`) and makes calendar files.
@@ -119,6 +119,39 @@ On the **Macros** tab, pick a person to see how their week compares with officia
 Anything that falls short gets a suggestion, and each country's key messages, serve sizes, limits (salt, saturated fat, sugar, alcohol) and official sources are listed underneath. People can choose their country in About me or on the card.
 
 The numbers come from `site/guidelines.json` (with links to each official source, and notes on any figure still to be confirmed) and from the food groups worked out for each dish by `tools/estimate_groups.py`. They are estimates from the recipes, not exact values, and a doctor's or dietitian's advice comes first.
+
+## Ask Claude (the assistant)
+
+**Ask Claude** (in the account menu) is a chat with Claude, Anthropic's AI, that can see the plan. Anyone can use it to work out adjustments: swap a dinner they don't like, make a week cheaper, add vegetables, plan packed lunches, ease off an exercise day, or ask how they're tracking against the healthy-eating guidelines.
+
+Claude can **suggest** a change to the plan, but it can't make one:
+
+1. A suggestion shows up in the chat as a card listing exactly what would change.
+2. People send it to the admins (or discard it). Admins see it under **Requests** (there's a link at the top of **Edit plan**).
+3. An admin taps **Apply to the plan** (or **Decline**, with an optional reply). The plan is checked and saved, with a backup of the old one in `data/plan-backups/`, the same as saving from Edit plan. If the plan has changed since, the change is refused and Claude can suggest it again.
+
+Admins can also chat about anyone's plan and apply their own suggestions straight away.
+
+Coles has no way for other apps to add to a cart or list, so Claude points people to **Copy list** and the **Search Coles** links on the shopping list instead.
+
+**Setting it up:** get an API key from [console.anthropic.com](https://console.anthropic.com), add it to `.env` and restart:
+
+    ANTHROPIC_API_KEY=sk-ant-...
+    docker compose up -d
+
+The app installs Anthropic's SDK the first time it starts (it needs the internet once; after that it's kept in a Docker volume). Without a key, everything else works and the page says the assistant isn't set up.
+
+Optional settings in `.env`:
+
+- `ASSISTANT_MODEL` (default `claude-opus-5-5`)
+- `ASSISTANT_EFFORT`: `low`, `medium` (default) or `high`. Lower is faster and cheaper, higher thinks harder.
+- `ASSISTANT_DAILY_LIMIT`: messages per login per day (default 40).
+
+If Anthropic's safety checks decline a request, it is automatically retried on another suitable Claude model ("fallbacks").
+
+**Cost:** you pay Anthropic for what you use. A typical message, where Claude looks at a week of the plan and answers, is roughly 5 to 15 US cents with the default model and effort (an estimate; check usage at console.anthropic.com). The daily limit stops runaway costs. Token counts per login per day are kept in `data/app.db` (`ai_usage`).
+
+**Privacy:** to answer, Claude is sent the plan details it asks for and, for the person the chat is about, their About me answers, meal history and progress. Nothing is sent until someone types a message. Chats are kept in `data/app.db` so people can come back to them; people can delete their own chats. Anthropic's API doesn't use this data for training. Claude can make mistakes, and a doctor's advice always comes first.
 
 ## Changing the plan
 

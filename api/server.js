@@ -15,6 +15,7 @@ const uploads = require('./uploads');    // the "My files" page
 const db = require('./db');              // the long-term database (data/app.db)
 const peopleRoutes = require('./people'); // adding people, the About me questions, passwords
 const progress = require('./progress');   // the progress dashboard, weigh-ins and imports
+const assistant = require('./assistant'); // the Claude assistant and requests for plan changes
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -530,6 +531,7 @@ async function handleRequest(req, res) {
     if (await uploads.handle(req, res, urlPath, url, me, people())) return;
     if (await peopleRoutes.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await progress.handle(req, res, urlPath, url, me, { readPlan, toKey, people })) return;
+    if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
 
     if (urlPath === '/api/state' && req.method === 'GET') return getState(res, me);
     if (urlPath === '/api/history' && req.method === 'GET') return getHistory(res, url, me);

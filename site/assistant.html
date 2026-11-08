@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Ask Claude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--low:#b3261e;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--chip:#e3f1ec;--mine:#dcefe8;--warn:#8a5a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;--mine:#1d3a31;--warn:#f3c26b;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;--mine:#1d3a31;--warn:#f3c26b;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.45}
+main{max-width:46rem;margin:0 auto;padding:1.25rem 1rem calc(9rem + env(safe-area-inset-bottom,0px))}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+h2{font-size:1.05rem;margin:0 0 .4rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:0 0 .8rem}
+.sub{color:var(--mute);margin:0;font-size:.95rem}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.5rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{border-color:var(--mute)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.small{min-height:2rem;padding:.2rem .6rem;font-size:.85rem;border-width:1px}
+.btn:focus-visible,a:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pseg{display:flex;gap:.35rem;flex-wrap:wrap;margin:0 0 .8rem}
+.pseg .btn{border-radius:1.2rem;border-width:1px;min-height:2.3rem}
+.pseg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tabs{display:flex;gap:1.2rem;border-bottom:1px solid var(--line);margin:0 0 .8rem}
+.tabs .btn{border:0;border-bottom:3px solid transparent;border-radius:0;padding:.4rem .1rem;color:var(--mute);font-weight:700}
+.tabs .btn[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:0 0 .8rem}
+.bar .grow{flex:1}
+.left{color:var(--mute);font-size:.85rem}
+details.chats{position:relative}
+details.chats>summary{list-style:none}
+details.chats>summary::-webkit-details-marker{display:none}
+.chatlist{position:absolute;left:0;top:calc(100% + .3rem);z-index:5;width:min(22rem,calc(100vw - 2rem));max-height:60vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:.7rem;padding:.4rem;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.chatlist button{display:block;width:100%;text-align:left;font:inherit;font-size:.9rem;color:var(--ink);background:none;border:0;border-radius:.4rem;padding:.5rem .6rem;cursor:pointer}
+.chatlist button:hover,.chatlist button[aria-current="true"]{background:var(--chip)}
+.chatlist small{display:block;color:var(--mute);font-size:.78rem}
+.chatlist p{color:var(--mute);font-size:.9rem;margin:.4rem .6rem}
+/* Messages */
+#log{display:grid;gap:.7rem}
+.m{max-width:92%;border-radius:.9rem;padding:.6rem .85rem;overflow-wrap:anywhere}
+.m.user{justify-self:end;background:var(--mine);border-bottom-right-radius:.25rem;white-space:pre-wrap}
+.m.assistant{justify-self:start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:.25rem}
+.m.assistant p{margin:0 0 .55rem}.m.assistant p:last-child{margin:0}
+.m.assistant ul,.m.assistant ol{margin:0 0 .55rem;padding-left:1.3rem}
+.m.assistant li{margin:.15rem 0}
+.m.assistant h3{font-size:1rem;margin:.4rem 0 .3rem}
+.step{justify-self:start;color:var(--mute);font-size:.85rem;display:flex;align-items:center;gap:.45rem}
+.step::before{content:"";width:.7rem;height:.7rem;border-radius:50%;border:2px solid var(--accent);border-right-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(1turn)}}
+@media (prefers-reduced-motion:reduce){.step::before{animation:none;border-right-color:var(--accent)}}
+.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low);border-radius:.6rem;padding:.6rem .8rem;font-size:.9rem}
+.info{background:color-mix(in srgb,var(--accent) 12%,var(--card));border:1px solid var(--accent);border-radius:.6rem;padding:.6rem .8rem;font-size:.9rem}
+/* A suggested change */
+.prop{justify-self:stretch;background:var(--card);border:2px solid var(--accent);border-radius:.8rem;padding:.7rem .9rem}
+.prop .head{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.prop h3{font-size:1rem;margin:0}
+.prop .why{margin:.3rem 0 .4rem;font-size:.92rem}
+.prop ul{margin:.2rem 0 .5rem;padding-left:1.2rem;font-size:.85rem;color:var(--mute)}
+.prop .acts{display:flex;gap:.4rem;flex-wrap:wrap}
+.prop .who{color:var(--mute);font-size:.8rem;margin:.2rem 0 0}
+.prop .reply{font-size:.88rem;margin:.3rem 0 0}
+.chip{font-size:.75rem;font-weight:700;border-radius:1rem;padding:.1rem .55rem;white-space:nowrap;background:var(--chip);color:var(--ink)}
+.chip.open{background:color-mix(in srgb,var(--warn) 20%,var(--card));color:var(--warn)}
+.chip.done{background:var(--accent);color:var(--on-accent)}
+.chip.declined,.chip.withdrawn{background:var(--line);color:var(--mute)}
+/* Starting ideas */
+.ideas{display:flex;flex-wrap:wrap;gap:.4rem;margin:.4rem 0 0}
+.ideas .btn{border-radius:1.2rem;border-width:1px;font-size:.88rem;min-height:2.3rem;text-align:left}
+.hello{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem}
+.hello p{margin:0 0 .5rem}
+.small{color:var(--mute);font-size:.85rem}
+/* The box to type in, fixed to the bottom */
+form.ask{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:.6rem 1rem calc(.6rem + env(safe-area-inset-bottom,0px))}
+form.ask .in{max-width:46rem;margin:0 auto;display:flex;gap:.5rem;align-items:flex-end}
+textarea{flex:1;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:.7rem;padding:.55rem .7rem;min-height:2.75rem;max-height:10rem;resize:none}
+form.ask .note{max-width:46rem;margin:.3rem auto 0;color:var(--mute);font-size:.75rem}
+/* Requests */
+#requests{display:grid;gap:.7rem}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Ask Claude</h1><p class="sub" id="sub">Loading…</p></div>
+    <a class="btn" href="./">← Back to the app</a>
+  </div>
+  <div id="pmsg"></div>
+  <div id="app" hidden>
+    <div class="pseg" id="people" hidden role="group" aria-label="Whose plan"></div>
+    <div class="tabs" role="tablist" aria-label="Show">
+      <button class="btn" role="tab" id="tabChat" aria-pressed="true" aria-selected="true">Chat</button>
+      <button class="btn" role="tab" id="tabReq" aria-pressed="false" aria-selected="false">Requests <span id="openCount"></span></button>
+    </div>
+
+    <div id="chatView">
+      <div class="bar">
+        <details class="chats" id="chats">
+          <summary class="btn small">Earlier chats</summary>
+          <div class="chatlist" id="chatList"></div>
+        </details>
+        <button class="btn small" id="newChat" type="button">New chat</button>
+        <span class="grow"></span>
+        <span class="left" id="left"></span>
+      </div>
+      <div id="log" aria-live="polite"></div>
+    </div>
+
+    <div id="reqView" hidden>
+      <p class="small" id="reqNote"></p>
+      <div id="requests"></div>
+    </div>
+  </div>
+</main>
+<form class="ask" id="ask" hidden>
+  <div class="in">
+    <label class="sr" for="text">Your message</label>
+    <textarea id="text" rows="1" maxlength="4000" placeholder="Ask Claude…"></textarea>
+    <button class="btn primary" id="sendBtn" type="submit">Send</button>
+  </div>
+  <p class="note">Claude can make mistakes. Changes are only suggestions until an admin applies them. Your doctor’s advice comes first.</p>
+</form>
+<script>
+// The Claude assistant page. Messages go to POST /api/assistant/chat and the answer streams back
+// as "server-sent events": bits of text, steps ("Looking at Week 2…"), and suggested changes.
+// Suggested changes appear as cards: people send them to the admins, and admins apply them.
+"use strict";
+var ME = null;          // who is logged in: {user, person, admin}
+var PERSON = null;      // whose plan the chat is about (admins can switch)
+var NAMES = {};         // person key -> name
+var CHAT = null;        // the open chat's id, or null for a new one
+var STATUS = null;      // the answer from GET /api/assistant
+var BUSY = false;       // true while an answer is streaming in
+var IDEAS = [
+  "Swap a dinner I don’t like this week",
+  "Make next week cheaper",
+  "How am I going on vegetables?",
+  "Ideas for packed lunches",
+  "Make Thursday’s exercise easier",
+  "What can I prep on Sunday?",
+];
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+function api(method, url, body) {
+  return fetch(url, {
+    method: method,
+    cache: "no-store",
+    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(function (response) {
+    return response.json().catch(function () { return {}; }).then(function (data) {
+      if (!response.ok) throw new Error(data.error || "The server said " + response.status);
+      return data;
+    });
+  });
+}
+
+function when(ms) {
+  var d = new Date(ms);
+  var today = new Date();
+  if (d.toDateString() === today.toDateString()) return d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+}
+
+// ---------- Claude's text, as safe HTML ----------
+// Claude writes in Markdown. This handles the parts it uses (paragraphs, lists, **bold**, headings)
+// by building elements, never by inserting HTML, so nothing in a message can run as code.
+function inline(parent, text) {
+  var parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/);
+  parts.forEach(function (part) {
+    if (/^\*\*[^*]+\*\*$/.test(part)) parent.appendChild(el("strong", null, part.slice(2, -2)));
+    else if (/^`[^`]+`$/.test(part)) parent.appendChild(el("code", null, part.slice(1, -1)));
+    else if (part) parent.appendChild(document.createTextNode(part.replace(/(^|\s)\*([^*\s][^*]*)\*/g, "$1$2")));
+  });
+}
+
+function markdown(box, text) {
+  box.textContent = "";
+  var list = null;
+  var para = null;
+  text.split("\n").forEach(function (line) {
+    var bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+    var number = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    var heading = line.match(/^#{1,4}\s+(.*)$/);
+    if (bullet || number) {
+      var kind = bullet ? "UL" : "OL";
+      if (!list || list.tagName !== kind) {
+        list = el(kind.toLowerCase());
+        box.appendChild(list);
+      }
+      var li = el("li");
+      inline(li, (bullet || number)[1]);
+      list.appendChild(li);
+      para = null;
+    } else if (heading) {
+      var h = el("h3");
+      inline(h, heading[1]);
+      box.appendChild(h);
+      list = para = null;
+    } else if (!line.trim()) {
+      list = para = null;
+    } else if (para) {
+      para.appendChild(el("br"));
+      inline(para, line);
+    } else {
+      para = el("p");
+      inline(para, line);
+      box.appendChild(para);
+      list = null;
+    }
+  });
+}
+
+// ---------- Suggested changes ----------
+var STATUS_NAMES = { draft: "Draft", open: "Waiting for an admin", done: "Applied", declined: "Declined", withdrawn: "Withdrawn" };
+
+function proposalCard(r) {
+  var card = el("div", "prop");
+  card.dataset.request = r.id;
+  var head = el("div", "head");
+  head.appendChild(el("h3", null, r.title));
+  head.appendChild(el("span", "chip " + r.status, STATUS_NAMES[r.status] || r.status));
+  card.appendChild(head);
+  if (r.details) card.appendChild(el("p", "why", r.details));
+  if (r.summary && r.summary.length) {
+    var d = el("details");
+    d.appendChild(el("summary", "small", "What changes in the plan (" + r.summary.length + ")"));
+    var ul = el("ul");
+    r.summary.forEach(function (line) { ul.appendChild(el("li", null, line)); });
+    d.appendChild(ul);
+    card.appendChild(d);
+  }
+  if (ME.admin && r.user !== ME.user) card.appendChild(el("p", "who", "From " + (NAMES[r.person] || r.person) + " · " + when(r.created_at)));
+  if (r.reply) card.appendChild(el("p", "reply", (r.status === "done" ? "Admin: " : "Reply: ") + r.reply));
+
+  var acts = el("div", "acts");
+  var open = r.status === "draft" || r.status === "open";
+  function button(label, primary, action, ask) {
+    var b = el("button", "btn small" + (primary ? " primary" : ""), label);
+    b.type = "button";
+    b.addEventListener("click", function () {
+      var reply = "";
+      if (ask) {
+        reply = prompt(ask, "");
+        if (reply === null) return;
+      }
+      b.disabled = true;
+      api("POST", "/api/requests/" + r.id + "/" + action, { reply: reply }).then(function (got) {
+        document.querySelectorAll('.prop[data-request="' + r.id + '"]').forEach(function (old) {
+          old.replaceWith(proposalCard(got.request));
+        });
+        if (action === "approve") toast("Applied. The plan was saved (with a backup of the old one).");
+        if (action === "send") toast("Sent to the admins.");
+        loadRequests();
+      }).catch(function (e) {
+        b.disabled = false;
+        toast(e.message, true);
+      });
+    });
+    acts.appendChild(b);
+  }
+  if (open && ME.admin) button("Apply to the plan", true, "approve");
+  if (r.status === "draft" && !ME.admin) button("Send to the admins", true, "send");
+  if (open && ME.admin && r.user !== ME.user) button("Decline", false, "decline", "Why not? (optional, they will see this)");
+  if (open && (r.user === ME.user || r.person === ME.person)) button(r.status === "draft" ? "Discard" : "Withdraw", false, "withdraw");
+  if (acts.children.length) card.appendChild(acts);
+  return card;
+}
+
+// ---------- The chat ----------
+function scrollDown() {
+  window.scrollTo({ top: document.body.scrollHeight });
+}
+
+function hello() {
+  var log = $("log");
+  log.textContent = "";
+  var box = el("div", "hello");
+  var who = PERSON === ME.person ? "your" : (NAMES[PERSON] || PERSON) + "’s";
+  box.appendChild(el("p", null, "Ask about " + who + " meals, shopping, exercise or progress. Claude looks at the plan and can suggest changes, which " + (ME.admin ? "you can apply." : "you can send to the admins to approve.")));
+  var ideas = el("div", "ideas");
+  IDEAS.forEach(function (idea) {
+    var b = el("button", "btn", idea);
+    b.type = "button";
+    b.addEventListener("click", function () { $("text").value = idea; sendMessage(); });
+    ideas.appendChild(b);
+  });
+  box.appendChild(ideas);
+  box.appendChild(el("p", "small", "Coles doesn’t let other apps add to your cart, so use Copy list and the Search Coles links on the shopping list. What you type, and " + who + " About me answers, meal history and progress when needed, are sent to Anthropic (the makers of Claude) to answer."));
+  log.appendChild(box);
+}
+
+function showChat(chat) {
+  var log = $("log");
+  log.textContent = "";
+  chat.messages.forEach(function (m) {
+    if (m.role === "user") log.appendChild(el("div", "m user", m.text));
+    else if (m.role === "assistant") {
+      var box = el("div", "m assistant");
+      markdown(box, m.text);
+      log.appendChild(box);
+    } else if (m.role === "proposal") log.appendChild(proposalCard(m.request));
+  });
+  scrollDown();
+}
+
+function openChat(id) {
+  $("chats").removeAttribute("open");
+  if (!id) {
+    CHAT = null;
+    hello();
+    renderChatList();
+    return Promise.resolve();
+  }
+  return api("GET", "/api/assistant/chat?id=" + id).then(function (chat) {
+    CHAT = chat.id;
+    showChat(chat);
+    renderChatList();
+  }).catch(function (e) { toast(e.message, true); });
+}
+
+function renderChatList() {
+  var list = $("chatList");
+  list.textContent = "";
+  var chats = (STATUS && STATUS.chats) || [];
+  if (!chats.length) list.appendChild(el("p", null, "No earlier chats yet."));
+  chats.forEach(function (c) {
+    var b = el("button", null, c.title || "Chat");
+    b.type = "button";
+    b.appendChild(el("small", null, when(c.updated_at) + (ME.admin && c.user !== ME.user ? " · " + c.user : "")));
+    if (c.id === CHAT) b.setAttribute("aria-current", "true");
+    b.addEventListener("click", function () { openChat(c.id); });
+    list.appendChild(b);
+  });
+  if (CHAT) {
+    var del = el("button", null, "Delete this chat");
+    del.type = "button";
+    del.style.color = "var(--low)";
+    del.addEventListener("click", function () {
+      if (!confirm("Delete this chat? Suggested changes from it stay on the Requests tab.")) return;
+      api("DELETE", "/api/assistant/chat?id=" + CHAT).then(function () { return loadStatus(); }).then(function () { openChat(null); });
+    });
+    list.appendChild(del);
+  }
+}
+
+function leftToday() {
+  if (!STATUS) return;
+  var left = Math.max(0, STATUS.limit - STATUS.used);
+  $("left").textContent = left + " of " + STATUS.limit + " messages left today";
+}
+
+// Reads the streamed answer: "event: text\ndata: \"Hello\"\n\n" and so on.
+function readEvents(response, onEvent) {
+  var reader = response.body.getReader();
+  var decoder = new TextDecoder();
+  var buffer = "";
+  function pump() {
+    return reader.read().then(function (part) {
+      buffer += decoder.decode(part.value || new Uint8Array(), { stream: !part.done });
+      var chunks = buffer.split("\n\n");
+      buffer = chunks.pop();
+      chunks.forEach(function (chunk) {
+        var type = (chunk.match(/^event: (.*)$/m) || [])[1];
+        var data = (chunk.match(/^data: (.*)$/m) || [])[1];
+        if (type && data) onEvent(type, JSON.parse(data));
+      });
+      if (!part.done) return pump();
+    });
+  }
+  return pump();
+}
+
+function sendMessage() {
+  var text = $("text").value.trim();
+  if (!text || BUSY) return;
+  BUSY = true;
+  $("sendBtn").disabled = true;
+  var log = $("log");
+  if (!CHAT) log.textContent = "";
+  log.appendChild(el("div", "m user", text));
+  $("text").value = "";
+  grow();
+  var step = el("div", "step", "Thinking…");
+  log.appendChild(step);
+  var box = null;
+  var said = "";
+  scrollDown();
+
+  function textBox() {
+    if (!box) {
+      box = el("div", "m assistant");
+      log.insertBefore(box, step);
+    }
+    return box;
+  }
+
+  fetch("/api/assistant/chat", {
+    method: "POST",
+    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
+    body: JSON.stringify({ id: CHAT, person: PERSON, text: text }),
+  }).then(function (response) {
+    if (!response.ok) {
+      return response.json().catch(function () { return {}; }).then(function (data) {
+        throw new Error(data.error || "The server said " + response.status);
+      });
+    }
+    return readEvents(response, function (type, data) {
+      if (type === "text") {
+        said += data;
+        markdown(textBox(), said);
+        step.textContent = "Writing…";
+      } else if (type === "step") {
+        step.textContent = data.label;
+        box = null;      // text after a step starts a new bubble
+        said = "";
+      } else if (type === "proposal") {
+        log.insertBefore(proposalCard(data), step);
+      } else if (type === "error") {
+        log.insertBefore(el("div", "err", data.message), step);
+      } else if (type === "done") {
+        if (data.saved) CHAT = data.id;
+      }
+      scrollDown();
+    });
+  }).catch(function (e) {
+    log.insertBefore(el("div", "err", e.message), step);
+  }).then(function () {
+    step.remove();
+    BUSY = false;
+    $("sendBtn").disabled = false;
+    loadStatus();
+    loadRequests();
+  });
+}
+
+// The box grows with what is typed (up to a limit).
+function grow() {
+  var t = $("text");
+  t.style.height = "auto";
+  t.style.height = Math.min(t.scrollHeight + 2, 160) + "px";
+}
+
+// ---------- Requests ----------
+var REQUESTS = [];
+function loadRequests() {
+  return api("GET", "/api/requests").then(function (got) {
+    REQUESTS = got.requests;
+    var open = REQUESTS.filter(function (r) { return r.status === "open"; }).length;
+    $("openCount").textContent = open ? "(" + open + ")" : "";
+    var box = $("requests");
+    box.textContent = "";
+    $("reqNote").textContent = ME.admin
+      ? "Changes people have asked for. Applying one saves the plan (and keeps a backup of the old plan). If the plan has changed since, it may no longer fit; ask Claude to suggest it again."
+      : "Your suggested changes. Drafts are only seen by you until you send them to the admins.";
+    if (!REQUESTS.length) box.appendChild(el("p", "small", "Nothing here yet. Ask Claude for a change on the Chat tab."));
+    REQUESTS.forEach(function (r) { box.appendChild(proposalCard(r)); });
+  }).catch(function () { /* shown on the next try */ });
+}
+
+function showTab(which) {
+  var chat = which === "chat";
+  $("chatView").hidden = !chat;
+  $("reqView").hidden = chat;
+  $("ask").hidden = !chat || !STATUS || !STATUS.enabled;
+  $("tabChat").setAttribute("aria-pressed", chat);
+  $("tabChat").setAttribute("aria-selected", chat);
+  $("tabReq").setAttribute("aria-pressed", !chat);
+  $("tabReq").setAttribute("aria-selected", !chat);
+  if (!chat) loadRequests();
+}
+
+// ---------- Small things ----------
+function toast(text, isError) {
+  var t = $("toast");
+  if (!t) {
+    t = el("div");
+    t.id = "toast";
+    t.setAttribute("role", "status");
+    t.style.cssText = "position:fixed;left:50%;bottom:calc(6.5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2);max-width:90vw;z-index:9";
+    document.body.appendChild(t);
+  }
+  t.textContent = text;
+  t.style.background = isError ? "var(--low)" : "var(--ink)";
+  t.style.color = isError ? "#fff" : "var(--bg)";
+  t.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(function () { t.hidden = true; }, isError ? 6000 : 3000);
+}
+
+function loadStatus() {
+  return api("GET", "/api/assistant?person=" + encodeURIComponent(PERSON)).then(function (s) {
+    STATUS = s;
+    leftToday();
+    renderChatList();
+  });
+}
+
+function renderPicker(people) {
+  var box = $("people");
+  box.textContent = "";
+  box.hidden = people.length < 2;
+  people.forEach(function (person) {
+    var b = el("button", "btn", (NAMES[person] || person) + (person === ME.person ? " (me)" : ""));
+    b.type = "button";
+    b.setAttribute("aria-pressed", person === PERSON);
+    b.addEventListener("click", function () {
+      if (BUSY || person === PERSON) return;
+      PERSON = person;
+      renderPicker(people);
+      loadStatus().then(function () { openChat(null); });
+    });
+    box.appendChild(b);
+  });
+}
+
+$("ask").addEventListener("submit", function (e) {
+  e.preventDefault();
+  sendMessage();
+});
+$("text").addEventListener("input", grow);
+$("text").addEventListener("keydown", function (e) {
+  // Enter sends on a computer; Shift+Enter makes a new line. On phones Enter is a new line.
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing && matchMedia("(pointer:fine)").matches) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+$("newChat").addEventListener("click", function () { if (!BUSY) openChat(null); });
+$("tabChat").addEventListener("click", function () { showTab("chat"); });
+$("tabReq").addEventListener("click", function () { showTab("requests"); });
+document.addEventListener("click", function (e) {
+  var chats = $("chats");
+  if (chats.open && !chats.contains(e.target)) chats.removeAttribute("open");
+});
+
+// Start: who is logged in, then (for admins) everyone's names, then the assistant's status.
+fetch("/auth/me", { cache: "no-store" }).then(function (response) {
+  return response.ok ? response.json() : null;
+}).then(function (me) {
+  if (!me) {
+    location.href = "/login?next=" + encodeURIComponent("/assistant.html");
+    return;
+  }
+  ME = me;
+  var params = new URLSearchParams(location.search);
+  PERSON = (me.admin && params.get("person")) || me.person;
+  NAMES[me.person] = me.name || me.person;
+  var people = me.admin ? api("GET", "/api/people") : Promise.resolve(null);
+  return people.then(function (got) {
+    if (got) {
+      got.people.forEach(function (p) { NAMES[p.person] = p.name; });
+      renderPicker(got.people.map(function (p) { return p.person; }));
+    }
+    return loadStatus();
+  }).then(function () {
+    $("sub").textContent = STATUS.enabled ? "Help with meals, shopping, exercise and progress" : "Not set up yet";
+    $("app").hidden = false;
+    if (!STATUS.enabled) $("pmsg").appendChild(el("div", "info", STATUS.reason));
+    loadRequests();
+    if (params.get("tab") === "requests") showTab("requests");
+    else showTab("chat");
+    return openChat(Number(params.get("chat")) || null);
+  });
+}).catch(function (e) {
+  $("sub").textContent = "";
+  $("pmsg").appendChild(el("div", "err", "Could not load: " + e.message));
+});
+</script>
+</body>
+</html>
