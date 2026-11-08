@@ -168,17 +168,55 @@ Where the numbers come from:
 
 Weeks start on Monday and use the browser's time zone.
 
-### Health sync (Apple Health every day, from an iPhone Shortcut)
+### Connecting Apple Health (every day, from an iPhone Shortcut)
 
-Apple Health has no web connection, so the iPhone sends the numbers itself. **Progress → Set up Health sync** walks through it:
+Apple Health has no web connection, so the iPhone sends the numbers itself with a Shortcut. It sends the day's **steps**, **Move** (active energy) and **weight**, and, if Lose It (or another food app) writes to Apple Health, **food energy, protein, carbs and fat**. The same steps are in the app under **Progress → Set up Health sync**, with copy buttons for your address and key.
 
-1. **Make my sync key:** a personal key for the shortcut (shown once; only a hash is stored). It can only add that person's numbers: it can't read anything or log in. Making a new key or **Turn sync off** stops the old one.
-2. **Make the shortcut** (about 10 minutes, once): Find Health Samples for today's steps, Move (active energy) and weight, plus optionally food energy, protein, carbs and fat; then Get Contents of URL posts them as JSON to `/auth/health-sync` with the header `Authorization: Bearer <key>`.
-3. **Automation:** Shortcuts → Automation → Charger → Is Connected → Run Immediately. The iPhone keeps Health data locked while the phone is locked, so plugging in at night works better than a fixed time. Each run replaces that day's numbers, so extra runs are fine.
+The phone has to be able to reach the site when the shortcut runs: on home Wi-Fi, or anywhere if the site is reachable from outside (see [HTTPS and access away from home](#https-and-access-away-from-home)). Menu names can differ a little between iOS versions.
 
-The phone has to be able to reach the site when the shortcut runs (on home Wi-Fi, or anywhere if the site is reachable from outside; see HTTPS below). Synced numbers are used after a full Apple Health export for the same day. Wrong keys count towards the same lock-out as wrong passwords, and each key can sync up to 30 times an hour.
+**1. Make your sync key**
 
-**Lose It** has no public connection for other apps, so its food log can't be read directly. If Lose It is set to write food and nutrients into Apple Health, the shortcut's optional food steps bring them across. Otherwise upload Lose It's export on My files.
+On the Health sync page, tap **Make my sync key**. Copy the key and the sync address (`https://<your site>/auth/health-sync`). The key is shown once; only a hash of it is stored. It can only add numbers for you: it can't read anything or log in. Making a new key, or **Turn sync off**, stops the old one.
+
+**2. Make the shortcut** (about 10 minutes, once)
+
+Open the **Shortcuts** app, tap **+**, and name the shortcut **Health sync**. Add these actions (search for each one in the bar at the bottom):
+
+1. **Steps:** *Find Health Samples*, type **Steps**, filter **Start Date is today**. Then *Calculate Statistics*: **Sum** of Health Samples. Then *Set Variable* named `Steps`, set to Statistics.
+2. **Move:** the same three actions with type **Active Energy**, variable `Move`.
+3. **Weight:** *Find Health Samples*, type **Weight**, Start Date is today, sort by Start Date, **Latest First**, limit **1**. Then *Set Variable* named `Weight`.
+4. **Food (optional, if Lose It writes to Apple Health):** repeat step 1 four times with types **Dietary Energy**, **Protein**, **Carbohydrates** and **Total Fat**, and variables `Food`, `Protein`, `Carbs` and `Fat`.
+5. **The date:** *Date* (Current Date), then *Format Date* → Custom → `yyyy-MM-dd`, then *Set Variable* named `Day`.
+6. **Send it:** *Get Contents of URL* with your sync address. Tap the arrow to show more:
+   - Method: **POST**
+   - Headers: `Authorization` = `Bearer <your sync key>` (the word Bearer, a space, then the key)
+   - Request Body: **JSON**, with these fields:
+
+     | Key | Kind | Value |
+     |---|---|---|
+     | `date` | Text | `Day` |
+     | `steps` | Number | `Steps` |
+     | `active_energy` | Number | `Move` |
+     | `weight` | Text | `Weight` |
+     | `energy_unit` | Text | type `kJ` (or `kcal` if your Health app shows Calories) |
+     | `food_energy` | Number | `Food` (optional) |
+     | `protein` | Number | `Protein` (optional) |
+     | `carbs` | Number | `Carbs` (optional) |
+     | `fat` | Number | `Fat` (optional) |
+
+7. **(Optional)** *Get Dictionary Value* for key `message` from Contents of URL, then *Show Notification*, so you see "Synced steps, Move, weight…".
+
+Tap **Done**, then tap the shortcut once to run it. Allow it to read Health data and to connect to your site. The **Last sync** line on the Health sync page shows what arrived.
+
+**3. Make it run by itself**
+
+In Shortcuts, tap **Automation** → **+** → **Charger** → **Is Connected** → **Run Immediately**, and choose the Health sync shortcut. The iPhone keeps Health data locked while the phone is locked, so running it when you plug in at night works better than a fixed time. You can add a Time of Day automation as a backup: each run replaces that day's numbers, so extra runs are fine.
+
+**How it's protected:** wrong keys count towards the same 15-minute lock-out as wrong passwords, each key can sync up to 30 times an hour, and silly numbers (like 500,000 steps) are ignored. Synced numbers are used after a full Apple Health export for the same day. To test the key without saving anything, send `{"test": true}` as the body.
+
+**Lose It** has no public connection for other apps, so its food log can't be read directly. Either turn on writing food and nutrients to Apple Health in Lose It's settings (then the optional food steps bring them across), or upload Lose It's export on **My files**.
+
+**Older data:** for history from before the shortcut, export everything from the Health app (your picture → **Export All Health Data**) and upload the zip on **My files**. The Progress page reads it.
 
 ## Healthy-eating guidelines
 
