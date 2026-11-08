@@ -40,6 +40,8 @@ It runs on your own server (two small Docker containers, for example in a Proxmo
 
 Built with [Claude Code](https://claude.com/claude-code).
 
+**Licence:** [MIT](LICENSE). Use, change and share it freely. The meal library's nutrition data is from USDA FoodData Central, which is public domain (CC0).
+
 ## How it is built
 
 Two small Docker containers. The only npm package is Anthropic's SDK for the optional Claude features (installed when the container starts):
