@@ -18,10 +18,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--low:#b3261e;--mid:#8a5a00;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--done:#8e9d97;
+:root{--m-p:#2a78d6;--m-c:#eb6834;--m-f:#1baf7a;--low:#b3261e;--mid:#8a5a00;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--done:#8e9d97;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}}
-:root[data-theme="dark"]{--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}}
+:root[data-theme="dark"]{--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;background:var(--bg)}
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1.0625rem;line-height:1.4;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior-y:none}
@@ -252,6 +252,35 @@ li.done .acts .find{color:var(--done)}
 .about summary{cursor:pointer;padding:.6rem 0;color:var(--accent);font-weight:700}
 .about p{margin:.4rem 0}
 .about .note{margin-top:.6rem}
+/* ---- macros ---- */
+.mac{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem;margin:0 0 .9rem}
+.mac-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 .6rem}
+.mac-head h3{margin:0;font-size:1rem}
+.mac-head .seg{display:flex;gap:.3rem;margin:0}
+.mac-head .btn{min-height:2.2rem;padding:.2rem .7rem;font-size:.82rem;border-radius:1.1rem;border-width:1px}
+.mac-kcal{margin:0;display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap}
+.mac-kcal b{font-size:1.9rem;line-height:1.1}
+.mac-kcal span{color:var(--mute);font-size:.9rem}
+/* Thin segmented bar: 8px band, 2px surface gaps, rounded ends; each block is a 20px-tall hover/focus target. */
+.mac-bar{display:flex;gap:2px;margin:.5rem 0 .7rem}
+.mac-bar span{position:relative;height:1.25rem;min-width:0;cursor:default;outline-offset:2px}
+.mac-bar span::before{content:"";position:absolute;left:0;right:0;top:calc(50% - 4px);height:8px;background:var(--c)}
+.mac-bar span:first-child::before{border-radius:4px 0 0 4px}
+.mac-bar span:last-child::before{border-radius:0 4px 4px 0}
+.mac-bar span:only-child::before{border-radius:4px}
+.mac-bar span:hover::before,.mac-bar span:focus-visible::before{top:calc(50% - 5px);height:10px}
+.mac-leg li.hi{background:color-mix(in srgb,var(--line) 45%,transparent);border-radius:.3rem}
+.mac-leg{list-style:none;margin:0;padding:0;background:none;border:0;border-radius:0;display:grid;gap:.35rem}
+.mac-leg li{display:grid;grid-template-columns:auto 1fr auto;gap:.55rem;align-items:baseline;border:0;font-size:.95rem;padding:.1rem .3rem}
+.mac-leg li+li{border-top:0}
+.mac-sw{width:.8rem;height:.8rem;border-radius:.2rem;align-self:center}
+.mac-leg b{font-variant-numeric:tabular-nums}
+.mac-leg small{color:var(--mute);font-variant-numeric:tabular-nums;font-size:.8rem;min-width:2.6rem;text-align:right}
+.mac-note{color:var(--mute);font-size:.82rem;margin:.6rem 0 0}
+.mm{display:block;color:var(--mute);font-size:.78rem;font-variant-numeric:tabular-nums;margin-top:.1rem}
+.dk{float:right;font-weight:400;color:var(--mute);font-size:.8rem;font-variant-numeric:tabular-nums}
+.ov{display:block;color:var(--mute);font-size:.82rem;margin-top:.1rem}
+.ov b{color:var(--ink);font-weight:700}
 </style>
 </head>
 <body>
@@ -262,7 +291,7 @@ li.done .acts .find{color:var(--done)}
       <span id="sync" class="sync" role="status"></span>
       <details class="acctmenu" id="acct">
         <summary aria-label="Account and log out"><span class="avatar" id="avatar" aria-hidden="true"></span></summary>
-        <div class="menu"><p id="me"></p><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
+        <div class="menu"><p id="me"></p><a class="btn" id="adminLink" href="admin.html" hidden style="text-decoration:none">Edit plan</a><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
       </details>
     </div>
     <div class="tabs" role="tablist" aria-label="Weeks" id="tabs"></div>
@@ -588,6 +617,88 @@ function calBlock(pk){
   });
   return wrap;
 }
+// The meals one person eats on a day: the shared meal, then their own breakfast or packed
+// school lunch, then anything an admin set just for them (day.people[key]).
+function mealRows(d,WP,pk){
+  var rows=[["Breakfast",d.breakfast],["Lunch",d.lunch],["Dinner",d.dinner]],extra=[];
+  if(WP&&WP.weekday&&WP.weekday[d.day]){
+    var wd=WP.weekday[d.day];
+    if(wd.lunch)rows[1]=["Lunch",wd.lunch+(wd.lunch.indexOf("School")===0?"":" (packed)")];
+    if(wd.snack)extra.push(["School snack",wd.snack]);
+  }
+  if(WP&&WP.breakfast)rows[0]=["Breakfast",WP.breakfast];
+  var o=pk&&d.people&&d.people[pk];
+  if(o)rows.forEach(function(r){var v=o[r[0].toLowerCase()];if(v)r[1]=v;});
+  return rows.concat(extra).filter(function(r){return r[1];});
+}
+// Macros come from the plan's "macros" block: {"Dish name": {"p": protein g, "c": carbs g, "f": fat g}}
+// for one average serve. A person's numbers are scaled by their portion.
+function macroKey(s){return String(s||"").replace(/\s*\(packed\)\s*$/i,"").trim().toLowerCase();}
+function macrosOf(dish){
+  var m=PLAN.macros||{};
+  if(!PLAN._mk){PLAN._mk={};Object.keys(m).forEach(function(k){PLAN._mk[macroKey(k)]=m[k];});}
+  var v=PLAN._mk[macroKey(dish)];if(!v||typeof v!=="object")return null;
+  var p=+v.p||0,c=+v.c||0,f=+v.f||0;if(!p&&!c&&!f&&!v.kcal)return null;
+  return {p:p,c:c,f:f,kcal:+v.kcal||(4*p+4*c+9*f)};
+}
+function scaleM(m,k){return {p:m.p*k,c:m.c*k,f:m.f*k,kcal:m.kcal*k};}
+function addM(t,m){t.p+=m.p;t.c+=m.c;t.f+=m.f;t.kcal+=m.kcal;}
+function macroLine(m){return Math.round(m.kcal)+" kcal · P "+Math.round(m.p)+" g · C "+Math.round(m.c)+" g · F "+Math.round(m.f)+" g";}
+var macroMode="";
+// Thin segmented bar of where the calories come from. The list below it carries the numbers;
+// hovering or focusing a block highlights its row and says its share.
+var MACROS=[["Protein","p",4,"var(--m-p)"],["Carbs","c",4,"var(--m-c)"],["Fat","f",9,"var(--m-f)"]];
+function macroBar(m,leg){
+  var sum=MACROS.reduce(function(a,x){return a+m[x[1]]*x[2];},0),bar=el("div","mac-bar");
+  bar.setAttribute("role","img");
+  bar.setAttribute("aria-label","Calories by macro: "+MACROS.map(function(x){return x[0]+" "+(sum?Math.round(m[x[1]]*x[2]/sum*100):0)+"%";}).join(", "));
+  MACROS.forEach(function(x,i){
+    var k=m[x[1]]*x[2];if(!sum||!k)return;
+    var s=el("span"),txt=x[0]+": "+Math.round(m[x[1]])+" g, "+Math.round(k/sum*100)+"% of calories";
+    s.style.flexGrow=k;s.style.flexBasis="0";s.style.setProperty("--c",x[3]);s.title=txt;s.tabIndex=0;s.setAttribute("aria-label",txt);
+    var row=leg.children[i];
+    s.onmouseenter=s.onfocus=function(){row.classList.add("hi");};
+    s.onmouseleave=s.onblur=function(){row.classList.remove("hi");};
+    bar.appendChild(s);
+  });
+  return bar;
+}
+function macroCard(days,WP){
+  var withData=days.filter(function(x){return x.known;});
+  var miss=days.reduce(function(a,x){return a+x.miss;},0);
+  var box=el("section","mac");
+  var head=el("div","mac-head"),h=el("h3");head.appendChild(h);box.appendChild(head);
+  if(!withData.length){
+    h.textContent="Macros";
+    box.appendChild(el("p","mac-note","No macros are set for this week's meals yet."+(ADMINV()?" Add them on the Edit plan page (account menu).":"")));
+    return ADMINV()?box:null;
+  }
+  var today=withData.filter(function(x){return String(x.d.day||"").slice(0,3)===TODAY;})[0];
+  var mode=macroMode||(today?"today":"avg");if(mode==="today"&&!today)mode="avg";
+  if(today){
+    var sg=el("div","seg");
+    [["today","Today"],["avg","Daily average"]].forEach(function(o){var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",mode===o[0]);b.onclick=function(){macroMode=o[0];var y=window.scrollY;renderMeals();window.scrollTo(0,y);};sg.appendChild(b);});
+    head.appendChild(sg);
+  }
+  var m={p:0,c:0,f:0,kcal:0},src=mode==="today"?[today]:withData;
+  src.forEach(function(x){addM(m,x.tot);});
+  if(mode!=="today")m=scaleM(m,1/withData.length);
+  h.textContent=(mode==="today"?"Today’s macros":"Daily macros (average)")+(WP?" · "+WP.name:"");
+  var cal=MACROS.reduce(function(a,x){return a+m[x[1]]*x[2];},0);
+  var kc=el("p","mac-kcal");kc.appendChild(el("b",null,Math.round(m.kcal).toLocaleString("en-AU")));kc.appendChild(el("span",null,"kcal · "+Math.round(m.kcal*4.184).toLocaleString("en-AU")+" kJ"));box.appendChild(kc);
+  var leg=el("ul","mac-leg");
+  MACROS.forEach(function(x){
+    var li=el("li"),sw=el("span","mac-sw");sw.style.background=x[3];li.appendChild(sw);
+    var t=el("span");t.appendChild(document.createTextNode(x[0]+" "));t.appendChild(el("b",null,Math.round(m[x[1]])+" g"));li.appendChild(t);
+    li.appendChild(el("small",null,(cal?Math.round(m[x[1]]*x[2]/cal*100):0)+"%"));leg.appendChild(li);
+  });
+  box.appendChild(macroBar(m,leg));box.appendChild(leg);
+  var note=(WP?"Scaled to "+WP.name+"’s portion ("+WP.portion+"×). ":"For one average serve. Pick a person above to see their portion. ")+"The bar and percentages show the share of calories from each. Snacks are not included.";
+  if(mode!=="today"&&withData.length<days.length)note+=" Averaged over "+withData.length+" of "+days.length+" days.";
+  if(miss)note+=" "+miss+(miss===1?" meal has":" meals have")+" no macros yet, so the totals are low.";
+  box.appendChild(el("p","mac-note",note));
+  return box;
+}
 function renderMeals(){
   var m=$("meals");m.textContent="";
   var w=PLAN.weeks[week],ppl=PLAN.people||null;
@@ -613,33 +724,35 @@ function renderMeals(){
       m.appendChild(box);
     }
   }
+  var WP=who!=="all"&&ppl?ppl[who]:null,fac=WP&&+WP.portion>0?+WP.portion:1;
+  var days=w.meals.map(function(d){
+    var r=mealRows(d,WP,WP?who:""),tot={p:0,c:0,f:0,kcal:0},known=0,miss=0;
+    r.forEach(function(x){var mc=macrosOf(x[1]);x.push(mc?scaleM(mc,fac):null);if(mc){known++;addM(tot,x[2]);}else miss++;});
+    return {d:d,rows:r,tot:tot,known:known,miss:miss};
+  });
+  var mcard=macroCard(days,WP);if(mcard)m.appendChild(mcard);
   var ec=el("p","count");ec.id="eatCount";m.appendChild(ec);
   function updateEaten(){var n=(eaten[week]||[]).length,t=0;w.meals.forEach(function(d){["breakfast","lunch","dinner"].forEach(function(k){if(d[k])t++;});});ec.textContent="";ec.appendChild(el("b",null,n+" of "+t+" meals eaten"));ec.appendChild(el("span",null,"Tick once eaten"));}
   updateEaten();
   var ul=el("ul","days");
-  w.meals.forEach(function(d){
-    var li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
-    var rows=[["Breakfast",d.breakfast],["Lunch",d.lunch],["Dinner",d.dinner]];
-    var extra=[];
-    var WP=who!=="all"&&ppl?ppl[who]:null;
-    if(WP&&WP.weekday&&WP.weekday[d.day]){
-      var wd=WP.weekday[d.day];
-      rows[1]=["Lunch",wd.lunch+(wd.lunch.indexOf("School")===0?"":" (packed)")];
-      extra.push(["School snack",wd.snack]);
-    }
-    if(WP&&WP.breakfast)rows[0]=["Breakfast",WP.breakfast];
+  days.forEach(function(dd){
+    var d=dd.d,li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
+    if(dd.known)h3.appendChild(el("span","dk",Math.round(dd.tot.kcal)+" kcal"+(dd.miss?"+":"")));
     function mrow(r){
       var p=el("p","meal"),id=(d.day||"")+"|"+r[0],a=eaten[week]||[];
       var cb=el("input","eat");cb.type="checkbox";cb.checked=a.indexOf(id)>-1;cb.setAttribute("aria-label","Eaten: "+(d.day||"")+" "+r[0]+" ("+USER+")");
       p.className="meal"+(cb.checked?" eaten":"");
       cb.onchange=function(){var a2=eaten[week]||[],i=a2.indexOf(id);if(cb.checked&&i<0)a2.push(id);if(!cb.checked&&i>-1)a2.splice(i,1);eaten[week]=a2;save();p.className="meal"+(cb.checked?" eaten":"");updateEaten();};
-      var mt=el("span","mt");mt.appendChild(el("span","mk",r[0]));mt.appendChild(el("span","mv",r[1]));p.appendChild(cb);p.appendChild(mt);
+      var mt=el("span","mt");mt.appendChild(el("span","mk",r[0]));mt.appendChild(el("span","mv",r[1]));
+      if(r[2])mt.appendChild(el("span","mm",macroLine(r[2])));
+      // In the Everyone view, show anyone who has a different meal in this slot.
+      if(!WP&&ppl&&d.people)Object.keys(d.people).forEach(function(pk){var o=d.people[pk],v=o&&o[r[0].toLowerCase()];if(v&&ppl[pk]&&ppl[pk].name){var s2=el("span","ov");s2.appendChild(el("b",null,ppl[pk].name+": "));s2.appendChild(document.createTextNode(v));mt.appendChild(s2);}});
+      p.appendChild(cb);p.appendChild(mt);
       var rb=el("button","rate-btn");rb.type="button";p.appendChild(rb);li.appendChild(p);
       var sum=el("p","rate-sum"),box=el("div","rate-box");li.appendChild(sum);li.appendChild(box);
       rateUI(id,(d.day||"")+" "+r[0].toLowerCase(),rb,sum,box,r[1]);
     }
-    rows.forEach(function(r){if(r[1])mrow(r);});
-    extra.forEach(function(r){mrow(r);});
+    dd.rows.forEach(mrow);
     ul.appendChild(li);
   });
   m.appendChild(ul);
@@ -827,7 +940,7 @@ window.addEventListener("hashchange",function(){if(PLAN)show();});
 </script>
 <script>
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}
-function setMe(d){document.getElementById("me").textContent="Logged in as "+d.user+(d.admin?" (admin)":"");document.getElementById("avatar").textContent=d.user.charAt(0);}
+function setMe(d){document.getElementById("me").textContent="Logged in as "+d.user+(d.admin?" (admin)":"");document.getElementById("adminLink").hidden=!d.admin;document.getElementById("avatar").textContent=d.user.charAt(0);}
 if(ME&&ME.user)setMe(ME);
 document.addEventListener("click",function(e){document.querySelectorAll("details.acctmenu[open],details.more[open]").forEach(function(dt){if(!dt.contains(e.target))dt.removeAttribute("open");});});
 fetch("/auth/me",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(d){

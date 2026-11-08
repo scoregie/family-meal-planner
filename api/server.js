@@ -20,7 +20,7 @@ let state={users:{},shared:null,have:null,updated:{},epoch:0};
 try{state=Object.assign(state,JSON.parse(fs.readFileSync(FILE,'utf8')));}catch(e){}
 function persist(){fs.mkdirSync(DIR,{recursive:true});const t=FILE+'.tmp';fs.writeFileSync(t,JSON.stringify(state));fs.renameSync(t,FILE);}
 function send(res,code,obj){res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(obj));}
-function body(req){return new Promise((ok,no)=>{let b='';req.on('data',c=>{b+=c;if(b.length>MAX){no(new Error('big'));req.destroy();}});req.on('end',()=>{try{ok(JSON.parse(b||'{}'));}catch(e){no(e);}});});}
+function body(req,max=MAX){return new Promise((ok,no)=>{let b='';req.on('data',c=>{b+=c;if(b.length>max){no(new Error('big'));req.destroy();}});req.on('end',()=>{try{ok(JSON.parse(b||'{}'));}catch(e){no(e);}});});}
 const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
 function cleanRatings(r){
   const out={};if(!isObj(r))return out;
@@ -31,6 +31,79 @@ function cleanRatings(r){
     if(Object.keys(o).length)out[w]=o;}
   return out;
 }
+// ---- Admin plan editing ----
+// The admin page sends the whole plan back. The old file is kept in data/plan-backups (last 30).
+const BACKUPS=path.join(DIR,'plan-backups');
+function planPath(){return fs.existsSync(PLAN_FILE)?PLAN_FILE:PLAN_EXAMPLE;}
+function planVersion(){try{return String(Math.floor(fs.statSync(PLAN_FILE).mtimeMs));}catch(e){return '0';}}
+function checkPlan(p){
+  if(!isObj(p)||!Array.isArray(p.weeks)||!p.weeks.length)return 'The plan needs a non-empty "weeks" list.';
+  for(let i=0;i<p.weeks.length;i++){
+    const w=p.weeks[i],n='Week '+(i+1)+': ';
+    if(!isObj(w)||!isObj(w.shopping))return n+'"shopping" must be an object of sections.';
+    for(const [k,items] of Object.entries(w.shopping)){
+      if(!Array.isArray(items))return n+'section "'+k+'" must be a list.';
+      for(const it of items)if(!Array.isArray(it)||typeof it[0]!=='string'||typeof it[1]!=='number'||!isFinite(it[1]))return n+'each item in "'+k+'" needs a name and a price.';
+    }
+    if(w.meals!==undefined&&!Array.isArray(w.meals))return n+'"meals" must be a list.';
+    if(w.exercise!==undefined){
+      if(!isObj(w.exercise))return n+'"exercise" must be an object.';
+      const blocks=Array.isArray(w.exercise.days)?[w.exercise]:Object.values(w.exercise);
+      for(const b of blocks)if(!isObj(b)||!Array.isArray(b.days))return n+'each exercise plan needs a "days" list.';
+    }
+  }
+  if(p.macros!==undefined&&!isObj(p.macros))return '"macros" must be an object.';
+  return '';
+}
+// Shopping ticks are stored by position ("<section>-<item>"), so after an edit move each tick to
+// the item with the same name in that week. Ticks on items that were removed are dropped.
+function remapTicks(oldPlan,newPlan){
+  if(!state.shared||!isObj(state.shared.ticks))return;
+  const names=w=>{const m={},sh=(w&&w.shopping)||{};Object.values(sh).forEach((items,si)=>items.forEach((it,ii)=>{m[si+'-'+ii]=it[0];}));return m;};
+  const ticks={},by={},oldBy=state.shared.by||{};
+  for(const [w,ids] of Object.entries(state.shared.ticks)){
+    const o=names(oldPlan.weeks[w]),nw=names(newPlan.weeks[w]),byName={};
+    Object.entries(nw).forEach(([id,nm])=>{if(!(nm in byName))byName[nm]=id;});
+    const out=[];
+    for(const id of Array.isArray(ids)?ids:[]){const nid=byName[o[id]];if(nid&&!out.includes(nid)){out.push(nid);if(oldBy[w+'|'+id])by[w+'|'+nid]=oldBy[w+'|'+id];}}
+    if(out.length)ticks[w]=out;
+  }
+  state.shared={ticks,by};state.updated.shared=Date.now();
+}
+function savePlan(p){
+  let old=null;
+  try{old=JSON.parse(fs.readFileSync(planPath(),'utf8'));}catch(e){}
+  fs.mkdirSync(BACKUPS,{recursive:true});
+  if(fs.existsSync(PLAN_FILE)){
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    fs.copyFileSync(PLAN_FILE,path.join(BACKUPS,'plan-'+stamp+'.json'));
+    fs.readdirSync(BACKUPS).filter(f=>/^plan-.*\.json$/.test(f)).sort().reverse().slice(30).forEach(f=>fs.unlinkSync(path.join(BACKUPS,f)));
+  }
+  const t=PLAN_FILE+'.tmp';fs.writeFileSync(t,JSON.stringify(p,null,1));fs.renameSync(t,PLAN_FILE);
+  if(old&&Array.isArray(old.weeks)&&old.id===p.id){remapTicks(old,p);persist();}
+}
+function backups(){try{return fs.readdirSync(BACKUPS).filter(f=>/^plan-[0-9TZ-]+\.json$/.test(f)).sort().reverse();}catch(e){return [];}}
+async function handlePlan(req,res,p,me){
+  if(!p.startsWith('/api/plan'))return false;
+  if(!me.admin){send(res,403,{error:'only an admin can edit the plan'});return true;}
+  if(p==='/api/plan'&&req.method==='GET'){
+    let plan;try{plan=JSON.parse(fs.readFileSync(planPath(),'utf8'));}catch(e){send(res,500,{error:'plan.json could not be read: '+e.message});return true;}
+    send(res,200,{plan,version:planVersion(),example:!fs.existsSync(PLAN_FILE)});return true;
+  }
+  if(p==='/api/plan'&&req.method==='PUT'){
+    const b=await body(req,8e6);
+    if(b.version!==undefined&&String(b.version)!==planVersion()){send(res,409,{error:'The plan was changed somewhere else since you opened it. Reload to get the latest copy.'});return true;}
+    const err=checkPlan(b.plan);if(err){send(res,400,{error:err});return true;}
+    savePlan(b.plan);send(res,200,{ok:true,version:planVersion()});return true;
+  }
+  if(p==='/api/plan/backups'&&req.method==='GET'){send(res,200,{backups:backups()});return true;}
+  if(p==='/api/plan/restore'&&req.method==='POST'){
+    const b=await body(req);if(!backups().includes(b.name)){send(res,404,{error:'no such backup'});return true;}
+    let plan;try{plan=JSON.parse(fs.readFileSync(path.join(BACKUPS,b.name),'utf8'));}catch(e){send(res,400,{error:'that backup could not be read'});return true;}
+    savePlan(plan);send(res,200,{ok:true,version:planVersion()});return true;
+  }
+  send(res,404,{error:'not found'});return true;
+}
 const MIME={'.html':'text/html','.json':'application/json','.png':'image/png','.js':'text/javascript','.webmanifest':'application/manifest+json'};
 http.createServer(async(req,res)=>{
   const u=new URL(req.url,'http://x'),p=u.pathname;
@@ -39,6 +112,7 @@ http.createServer(async(req,res)=>{
     let me=null;
     if(p.startsWith('/api/')){me=auth.session(req);if(!me)return send(res,401,{error:'login needed'});auth.refresh(req,res,me);}
     if(calendar.handle(req,res,p,u))return;
+    if(await handlePlan(req,res,p,me))return;
     if(p==='/api/state'&&req.method==='GET'){
       if(me.admin)return send(res,200,state);
       // Everyone sees the shared shopping list; meal and exercise ticks only for their own person.

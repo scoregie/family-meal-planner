@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Edit plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--low:#b3261e;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--field:#fbfcfc;--warn-bg:#fdf3dc;--warn:#6b4a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--field:#111a17;--warn-bg:#3a2e10;--warn:#f2c14e;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--field:#111a17;--warn-bg:#3a2e10;--warn:#f2c14e;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.4;padding-bottom:5.5rem}
+main{max-width:48rem;margin:0 auto;padding:1.25rem 1rem 2rem}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+h2{font-size:1.1rem;margin:1.2rem 0 .5rem}
+h3{font-size:1rem;margin:0 0 .5rem}
+a{color:var(--accent)}
+.sub{color:var(--mute);margin:0 0 1rem;font-size:.95rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.5rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.primary:disabled{opacity:.45;cursor:default}
+.btn.small{min-height:2rem;padding:.15rem .55rem;font-size:.82rem}
+.btn.danger{color:var(--low)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.tabs{display:flex;gap:.35rem;flex-wrap:wrap;margin:0 0 1rem;border-bottom:1px solid var(--line);padding-bottom:.6rem}
+.tabs button{font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.5rem;padding:.4rem .8rem;cursor:pointer;min-height:2.5rem}
+.tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem}
+.row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:0 0 .8rem}
+label.f{display:grid;gap:.15rem;font-size:.8rem;color:var(--mute);font-weight:700}
+input,select,textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:.4rem;padding:.4rem .5rem;min-height:2.3rem;width:100%;min-width:0}
+input[type=number]{font-variant-numeric:tabular-nums}
+input[type=checkbox]{width:auto;min-height:0}
+select{width:auto}
+textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem;line-height:1.35;min-height:60vh;white-space:pre;tab-size:1}
+.meal-grid{display:grid;grid-template-columns:1fr;gap:.5rem}
+@media(min-width:40rem){.meal-grid{grid-template-columns:repeat(3,1fr)}}
+details.who{margin-top:.6rem}
+details.who summary{cursor:pointer;color:var(--accent);font-size:.88rem;font-weight:700}
+.who-p{margin:.6rem 0 0;padding:.6rem 0 0;border-top:1px solid var(--line)}
+.who-p h4{margin:0 0 .4rem;font-size:.88rem}
+.hint{color:var(--mute);font-size:.85rem;margin:.3rem 0 0}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th{text-align:left;font-size:.78rem;color:var(--mute);font-weight:700;padding:.3rem .3rem;border-bottom:1px solid var(--line)}
+td{padding:.3rem .3rem;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.dish{overflow-wrap:anywhere}
+td.dish small{display:block;color:var(--mute);font-size:.78rem}
+td.n{width:4.6rem}
+td.k,th.k{width:4.5rem;text-align:right;font-variant-numeric:tabular-nums;color:var(--mute)}
+tr.missing td.dish::before{content:"";display:inline-block;width:.45rem;height:.45rem;border-radius:50%;background:var(--warn);margin-right:.4rem;vertical-align:middle}
+@media(max-width:34rem){
+  .mtab thead{display:none}
+  .mtab tr{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:.3rem .4rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+  .mtab td{border:0;padding:0}
+  .mtab td.dish{grid-column:1/-1}
+  .mtab td.n{width:auto}
+  .mtab td.n::before{content:attr(data-l);display:block;font-size:.72rem;color:var(--mute);font-weight:700}
+  .mtab td.k{align-self:end;padding-bottom:.5rem}
+}
+.sec{margin:0 0 1rem}
+.sec-head{display:flex;gap:.4rem;align-items:center;margin:0 0 .4rem}
+.sec-head input{font-weight:700}
+.item{display:grid;grid-template-columns:1fr 4.3rem auto;gap:.35rem;align-items:center;margin:0 0 .35rem}
+.total{font-weight:700;font-variant-numeric:tabular-nums}
+.msg{border-radius:.6rem;padding:.7rem .9rem;margin:0 0 1rem}
+.msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
+.msg.warn{background:var(--warn-bg);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
+.msg.ok{background:color-mix(in srgb,var(--accent) 14%,var(--card));border:1px solid var(--accent)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom,0px));z-index:5}
+.bar-in{max-width:48rem;margin:0 auto;display:flex;gap:.6rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.bar-status{color:var(--mute);font-size:.9rem}
+.bar-status.dirty{color:var(--warn);font-weight:700}
+.bk{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--line)}
+.bk:last-child{border-bottom:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Edit plan</h1><p class="sub" id="sub">Loading…</p></div>
+    <a class="btn" href="./">← Back to the app</a>
+  </div>
+  <div id="msg"></div>
+  <div id="app" hidden>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <section id="pMeals" role="tabpanel"></section>
+    <section id="pMacros" role="tabpanel" hidden></section>
+    <section id="pShop" role="tabpanel" hidden></section>
+    <section id="pJson" role="tabpanel" hidden></section>
+    <section id="pBackups" role="tabpanel" hidden></section>
+  </div>
+</main>
+<div class="bar" id="bar" hidden>
+  <div class="bar-in">
+    <span class="bar-status" id="status" role="status">No changes</span>
+    <span><button class="btn" id="undo" type="button" disabled>Discard changes</button> <button class="btn primary" id="save" type="button" disabled>Save plan</button></span>
+  </div>
+</div>
+<script>
+"use strict";
+var PLAN=null,ORIG="",VERSION=null,DIRTY=false,TAB="meals",WEEK=null,SHOPWEEK=0,MFILTER="missing",MSEARCH="";
+var MEALS=["breakfast","lunch","dinner"];
+function $(id){return document.getElementById(id);}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+function msg(kind,text,extra){var m=$("msg");m.textContent="";if(!text)return;var d=el("div","msg "+kind,text);if(extra)d.appendChild(extra);m.appendChild(d);}
+function api(method,url,body){
+  return fetch(url,{method:method,cache:"no-store",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined})
+    .then(function(r){return r.json().catch(function(){return {};}).then(function(d){if(!r.ok){var e=new Error(d.error||("Request failed ("+r.status+")"));e.status=r.status;throw e;}return d;});});
+}
+// Same rule the app uses to match a dish to its macros.
+function macroKey(s){return String(s||"").replace(/\s*\(packed\)\s*$/i,"").trim().toLowerCase();}
+function people(){var o={},pp=PLAN.people||{};Object.keys(pp).forEach(function(k){if(pp[k]&&typeof pp[k]==="object"&&pp[k].name)o[k]=pp[k];});return o;}
+function mealWeeks(){var a=[];PLAN.weeks.forEach(function(w,i){if(Array.isArray(w.meals)&&w.meals.length)a.push(i);});return a;}
+
+function markDirty(){
+  DIRTY=JSON.stringify(PLAN)!==ORIG;
+  var s=$("status");s.textContent=DIRTY?"Unsaved changes":"No changes";s.className="bar-status"+(DIRTY?" dirty":"");
+  $("save").disabled=!DIRTY;$("undo").disabled=!DIRTY;
+}
+window.addEventListener("beforeunload",function(e){if(DIRTY){e.preventDefault();e.returnValue="";}});
+
+// ---------- tabs ----------
+var TABS=[["meals","Meals","pMeals"],["macros","Macros","pMacros"],["shop","Shopping","pShop"],["json","JSON","pJson"],["backups","Backups","pBackups"]];
+function renderTabs(){
+  var t=$("tabs");t.textContent="";
+  TABS.forEach(function(x){
+    var b=el("button",null,x[1]);b.type="button";b.setAttribute("role","tab");b.setAttribute("aria-selected",TAB===x[0]);
+    b.onclick=function(){if(TAB==="json"&&!leaveJson())return;TAB=x[0];render();};t.appendChild(b);
+  });
+}
+function render(){
+  renderTabs();
+  TABS.forEach(function(x){$(x[2]).hidden=TAB!==x[0];});
+  ({meals:renderMeals,macros:renderMacros,shop:renderShop,json:renderJson,backups:renderBackups})[TAB]();
+}
+function weekPicker(list,cur,onPick){
+  var s=el("select");s.setAttribute("aria-label","Week");
+  list.forEach(function(i){var o=el("option",null,PLAN.weeks[i].name||("Week "+(i+1)));o.value=i;if(i===cur)o.selected=true;s.appendChild(o);});
+  s.onchange=function(){onPick(+s.value);};return s;
+}
+function field(labelText,value,onInput,opts){
+  var l=el("label","f",labelText),i=el("input");
+  if(opts&&opts.type)i.type=opts.type;if(opts&&opts.step)i.step=opts.step;if(opts&&opts.min!=null)i.min=opts.min;
+  if(opts&&opts.placeholder)i.placeholder=opts.placeholder;
+  i.value=value==null?"":value;i.oninput=function(){onInput(i.value,i);markDirty();};l.appendChild(i);return l;
+}
+
+// ---------- meals ----------
+function renderMeals(){
+  var p=$("pMeals");p.textContent="";
+  var weeks=mealWeeks();
+  if(!weeks.length){p.appendChild(el("p","hint","This plan has no weeks with meals."));return;}
+  if(WEEK==null||weeks.indexOf(WEEK)<0)WEEK=weeks[0];
+  var r=el("div","row");r.appendChild(weekPicker(weeks,WEEK,function(i){WEEK=i;renderMeals();}));
+  r.appendChild(el("span","hint","Change the shared meals for each day. Use “Different for…” when one person eats something else."));
+  p.appendChild(r);
+  var ppl=people();
+  PLAN.weeks[WEEK].meals.forEach(function(d){
+    var c=el("div","card");c.appendChild(el("h3",null,d.day||"Day"));
+    var g=el("div","meal-grid");
+    MEALS.forEach(function(k){g.appendChild(field(k.charAt(0).toUpperCase()+k.slice(1),d[k],function(v){if(v.trim())d[k]=v;else delete d[k];}));});
+    c.appendChild(g);
+    var keys=Object.keys(ppl);
+    if(keys.length){
+      var dt=el("details","who"),n=d.people?Object.keys(d.people).length:0;
+      dt.appendChild(el("summary",null,"Different for… "+(n?"("+n+" set)":"")));
+      if(n)dt.open=true;
+      keys.forEach(function(pk){
+        var box=el("div","who-p");box.appendChild(el("h4",null,ppl[pk].name));
+        var g2=el("div","meal-grid");
+        MEALS.forEach(function(k){
+          var cur=d.people&&d.people[pk]&&d.people[pk][k];
+          g2.appendChild(field(k.charAt(0).toUpperCase()+k.slice(1),cur,function(v){
+            v=v.trim();
+            if(v){d.people=d.people||{};d.people[pk]=d.people[pk]||{};d.people[pk][k]=v;}
+            else if(d.people&&d.people[pk]){delete d.people[pk][k];if(!Object.keys(d.people[pk]).length)delete d.people[pk];if(!Object.keys(d.people).length)delete d.people;}
+          },{placeholder:"Same as everyone"}));
+        });
+        box.appendChild(g2);dt.appendChild(box);
+      });
+      c.appendChild(dt);
+    }
+    p.appendChild(c);
+  });
+}
+
+// ---------- macros ----------
+// Every dish anyone eats: shared meals, per-day overrides, each person's breakfast and packed lunches/snacks.
+function allDishes(){
+  var map={},order=[];
+  function add(name,where){
+    if(!name||typeof name!=="string")return;var k=macroKey(name);if(!k)return;
+    if(!map[k]){map[k]={name:name.replace(/\s*\(packed\)\s*$/i,"").trim(),key:k,uses:0,where:{}};order.push(k);}
+    map[k].uses++;map[k].where[where]=1;
+  }
+  PLAN.weeks.forEach(function(w){(w.meals||[]).forEach(function(d){
+    MEALS.forEach(function(m){add(d[m],m);});
+    if(d.people)Object.values(d.people).forEach(function(o){if(o)MEALS.forEach(function(m){add(o[m],m);});});
+  });});
+  var ppl=people();
+  Object.keys(ppl).forEach(function(pk){var P=ppl[pk];add(P.breakfast,"breakfast");
+    if(P.weekday)Object.values(P.weekday).forEach(function(wd){if(wd){add(wd.lunch,"lunch");add(wd.snack,"snack");}});});
+  return order.map(function(k){return map[k];});
+}
+function findMacro(key){var m=PLAN.macros||{};for(var n in m)if(macroKey(n)===key)return {name:n,v:m[n]};return null;}
+function kcalOf(v){if(!v)return 0;return +v.kcal||(4*(+v.p||0)+4*(+v.c||0)+9*(+v.f||0));}
+function renderMacros(){
+  var p=$("pMacros");p.textContent="";
+  var dishes=allDishes(),missing=dishes.filter(function(d){return !findMacro(d.key);}).length;
+  p.appendChild(el("p","hint","Grams of protein, carbs and fat for one average serve. The app scales them to each person’s portion. Calories are worked out as 4 × protein + 4 × carbs + 9 × fat."));
+  var r=el("div","row");
+  var sel=el("select");sel.setAttribute("aria-label","Show");
+  [["missing","Missing only ("+missing+")"],["all","All dishes ("+dishes.length+")"]].forEach(function(o){var op=el("option",null,o[1]);op.value=o[0];if(MFILTER===o[0])op.selected=true;sel.appendChild(op);});
+  sel.onchange=function(){MFILTER=sel.value;renderMacros();};r.appendChild(sel);
+  var q=el("input");q.type="search";q.placeholder="Search dishes";q.value=MSEARCH;q.style.maxWidth="16rem";
+  q.oninput=function(){MSEARCH=q.value;var pos=q.selectionStart;renderMacros();var nq=$("pMacros").querySelector("input[type=search]");nq.focus();nq.setSelectionRange(pos,pos);};
+  r.appendChild(q);p.appendChild(r);
+  var list=dishes.filter(function(d){
+    if(MFILTER==="missing"&&findMacro(d.key)&&!d._editing)return false;
+    return !MSEARCH||d.key.indexOf(MSEARCH.toLowerCase())>-1;
+  });
+  if(!list.length){p.appendChild(el("div","card",MFILTER==="missing"&&!MSEARCH?"Every dish has macros. Choose “All dishes” to change them.":"No dishes match."));renderOrphans(p,dishes);return;}
+  var card=el("div","card"),t=el("table","mtab"),th=el("thead"),hr=el("tr");
+  [["Dish"],["Protein g"],["Carbs g"],["Fat g"],["kcal","k"]].forEach(function(h){hr.appendChild(el("th",h[1]||null,h[0]));});
+  th.appendChild(hr);t.appendChild(th);var tb=el("tbody");
+  list.forEach(function(d){
+    var tr=el("tr"),hit=findMacro(d.key),v=hit?hit.v:null;
+    if(!hit)tr.className="missing";
+    var td=el("td","dish",d.name);td.appendChild(el("small",null,Object.keys(d.where).join(", ")+" · "+d.uses+"×"));tr.appendChild(td);
+    var kc=el("td","k",v?Math.round(kcalOf(v)):"–");
+    [["p","Protein g"],["c","Carbs g"],["f","Fat g"]].forEach(function(f){
+      var c=el("td","n");c.setAttribute("data-l",f[1]);var i=el("input");i.type="number";i.min="0";i.step="0.5";i.inputMode="decimal";
+      i.setAttribute("aria-label",d.name+" "+f[1]);i.value=v&&v[f[0]]!=null?v[f[0]]:"";
+      i.oninput=function(){
+        PLAN.macros=PLAN.macros||{};var h=findMacro(d.key),name=h?h.name:d.name,o=h?h.v:{};
+        if(i.value==="")delete o[f[0]];else o[f[0]]=Math.max(0,+i.value);
+        delete o.kcal; // recalculated from the grams
+        if(!Object.keys(o).length)delete PLAN.macros[name];else PLAN.macros[name]=o;
+        if(!Object.keys(PLAN.macros).length)delete PLAN.macros;
+        d._editing=true; // keep the row visible in "missing only" while typing
+        var now=findMacro(d.key);kc.textContent=now?Math.round(kcalOf(now.v)):"–";tr.className=now?"":"missing";markDirty();
+      };
+      c.appendChild(i);tr.appendChild(c);
+    });
+    tr.appendChild(kc);tb.appendChild(tr);
+  });
+  t.appendChild(tb);card.appendChild(t);p.appendChild(card);
+  renderOrphans(p,dishes);
+}
+// Macros for dishes no longer in the plan.
+function renderOrphans(p,dishes){
+  var used={};dishes.forEach(function(d){used[d.key]=1;});
+  var orphans=Object.keys(PLAN.macros||{}).filter(function(n){return !used[macroKey(n)];});
+  if(!orphans.length)return;
+  var c=el("div","card");c.appendChild(el("h3",null,"Not used in the plan ("+orphans.length+")"));
+  c.appendChild(el("p","hint","These have macros but no meal uses them, maybe because the meal was renamed. They do no harm."));
+  var b=el("button","btn small danger","Remove them");b.type="button";
+  b.onclick=function(){orphans.forEach(function(n){delete PLAN.macros[n];});if(!Object.keys(PLAN.macros).length)delete PLAN.macros;markDirty();renderMacros();};
+  var ul=el("p","hint",orphans.join(" · "));c.appendChild(ul);c.appendChild(b);p.appendChild(c);
+}
+
+// ---------- shopping ----------
+function weekTotal(w){var t=0;Object.values(w.shopping||{}).forEach(function(items){items.forEach(function(it){t+=+it[1]||0;});});return Math.round(t*100)/100;}
+function money(n){return "$"+(+n).toFixed(2);}
+function renderShop(){
+  var p=$("pShop");p.textContent="";
+  if(SHOPWEEK>=PLAN.weeks.length)SHOPWEEK=0;
+  var w=PLAN.weeks[SHOPWEEK];w.shopping=w.shopping||{};
+  var r=el("div","row");r.appendChild(weekPicker(PLAN.weeks.map(function(_,i){return i;}),SHOPWEEK,function(i){SHOPWEEK=i;renderShop();}));
+  var tot=el("span","total","Total "+money(weekTotal(w)));r.appendChild(tot);p.appendChild(r);
+  function retotal(){tot.textContent="Total "+money(weekTotal(w));}
+  p.appendChild(el("p","hint","Ticks people have made stay with an item as long as its name is the same. Renaming an item clears its tick."));
+  var names=Object.keys(w.shopping);
+  names.forEach(function(sec){
+    var items=w.shopping[sec],box=el("div","card sec"),hd=el("div","sec-head");
+    var si=el("input");si.value=sec;si.setAttribute("aria-label","Section name");
+    si.onchange=function(){
+      var nn=si.value.trim();if(!nn||nn===sec){si.value=sec;return;}
+      if(w.shopping[nn]){alert("There is already a section called “"+nn+"”.");si.value=sec;return;}
+      var o={};Object.keys(w.shopping).forEach(function(k){o[k===sec?nn:k]=w.shopping[k];});w.shopping=o;markDirty();renderShop();
+    };
+    hd.appendChild(si);
+    var del=el("button","btn small danger","Delete section");del.type="button";
+    del.onclick=function(){if(items.length&&!confirm("Delete “"+sec+"” and its "+items.length+" items?"))return;delete w.shopping[sec];markDirty();renderShop();};
+    hd.appendChild(del);box.appendChild(hd);
+    items.forEach(function(it,ii){
+      var row=el("div","item"),n=el("input"),pr=el("input"),x=el("button","btn small danger","✕");
+      n.value=it[0];n.setAttribute("aria-label","Item name");n.oninput=function(){it[0]=n.value;markDirty();};
+      pr.type="number";pr.step="0.01";pr.min="0";pr.inputMode="decimal";pr.value=it[1];pr.setAttribute("aria-label","Price for "+it[0]);
+      pr.oninput=function(){it[1]=pr.value===""?0:Math.round(+pr.value*100)/100;retotal();markDirty();};
+      x.type="button";x.setAttribute("aria-label","Remove "+it[0]);x.onclick=function(){items.splice(ii,1);markDirty();renderShop();};
+      row.appendChild(n);row.appendChild(pr);row.appendChild(x);box.appendChild(row);
+    });
+    var add=el("button","btn small","+ Add item");add.type="button";
+    add.onclick=function(){items.push(["",0]);markDirty();renderShop();var ins=$("pShop").querySelectorAll(".sec")[names.indexOf(sec)].querySelectorAll(".item input:not([type])");if(ins.length)ins[ins.length-1].focus();};
+    box.appendChild(add);p.appendChild(box);
+  });
+  var as=el("button","btn","+ Add section");as.type="button";
+  as.onclick=function(){var n=prompt("Name of the new section (for example “Fruit and veg”)");if(!n||!n.trim())return;n=n.trim();if(w.shopping[n]){alert("That section already exists.");return;}w.shopping[n]=[];markDirty();renderShop();};
+  p.appendChild(as);
+}
+
+// ---------- raw JSON ----------
+var JSON_TEXT=null;
+function renderJson(){
+  var p=$("pJson");p.textContent="";
+  p.appendChild(el("p","hint","The whole plan, for anything the other tabs don’t cover (recipes, exercise, people). Press “Use this” to check it and bring it into the other tabs, then save."));
+  var ta=el("textarea");ta.spellcheck=false;ta.setAttribute("aria-label","Plan JSON");ta.value=JSON_TEXT!=null?JSON_TEXT:JSON.stringify(PLAN,null,2);
+  ta.oninput=function(){JSON_TEXT=ta.value;$("status").textContent="JSON edited. Press “Use this” to apply";$("status").className="bar-status dirty";};
+  var r=el("div","row");r.style.marginTop=".6rem";
+  var use=el("button","btn primary","Use this");use.type="button";use.onclick=function(){applyJson(ta.value);};
+  var reset=el("button","btn","Reset text");reset.type="button";reset.onclick=function(){JSON_TEXT=null;renderJson();markDirty();};
+  r.appendChild(use);r.appendChild(reset);
+  p.appendChild(ta);p.appendChild(r);
+}
+function applyJson(text){
+  var np;try{np=JSON.parse(text);}catch(e){msg("err","That isn’t valid JSON: "+e.message);return false;}
+  var err=checkPlan(np);if(err){msg("err",err);return false;}
+  PLAN=np;JSON_TEXT=null;msg("ok","JSON applied. Remember to save.");markDirty();return true;
+}
+function leaveJson(){
+  if(JSON_TEXT==null||JSON_TEXT===JSON.stringify(PLAN,null,2)){JSON_TEXT=null;return true;}
+  if(confirm("Use the JSON you edited? Press Cancel to throw that edit away."))return applyJson(JSON_TEXT);
+  JSON_TEXT=null;markDirty();return true;
+}
+// Mirrors the server's check so mistakes show up before saving.
+function checkPlan(p){
+  var isObj=function(v){return v&&typeof v==="object"&&!Array.isArray(v);};
+  if(!isObj(p)||!Array.isArray(p.weeks)||!p.weeks.length)return "The plan needs a non-empty \"weeks\" list.";
+  for(var i=0;i<p.weeks.length;i++){
+    var w=p.weeks[i],n="Week "+(i+1)+": ";
+    if(!isObj(w)||!isObj(w.shopping))return n+"\"shopping\" must be an object of sections.";
+    for(var k in w.shopping){var items=w.shopping[k];if(!Array.isArray(items))return n+"section \""+k+"\" must be a list.";
+      for(var j=0;j<items.length;j++){var it=items[j];if(!Array.isArray(it)||typeof it[0]!=="string"||typeof it[1]!=="number"||!isFinite(it[1]))return n+"each item in \""+k+"\" needs a name and a price.";}}
+    if(w.meals!==undefined&&!Array.isArray(w.meals))return n+"\"meals\" must be a list.";
+  }
+  if(p.macros!==undefined&&!isObj(p.macros))return "\"macros\" must be an object.";
+  return "";
+}
+
+// ---------- backups ----------
+function prettyBackup(name){
+  var m=name.match(/^plan-(\d{4})-(\d\d)-(\d\d)T(\d\d)-(\d\d)-(\d\d)/);if(!m)return name;
+  return new Date(Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5],+m[6])).toLocaleString("en-AU",{weekday:"short",day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"});
+}
+function renderBackups(){
+  var p=$("pBackups");p.textContent="";
+  p.appendChild(el("p","hint","Each save keeps the previous plan here (the last 30). Restoring one replaces the current plan straight away. The current plan is backed up first, so you can undo a restore."));
+  var c=el("div","card","Loading…");p.appendChild(c);
+  api("GET","/api/plan/backups").then(function(d){
+    c.textContent="";
+    if(!d.backups.length){c.textContent="No backups yet. One is made each time you save.";return;}
+    d.backups.forEach(function(b){
+      var row=el("div","bk");row.appendChild(el("span",null,prettyBackup(b)));
+      var btn=el("button","btn small","Restore");btn.type="button";
+      btn.onclick=function(){
+        if(DIRTY&&!confirm("You have unsaved changes. Restoring throws them away. Carry on?"))return;
+        if(!confirm("Replace the current plan with the one from "+prettyBackup(b)+"?"))return;
+        btn.disabled=true;
+        api("POST","/api/plan/restore",{name:b}).then(function(){return load();}).then(function(){msg("ok","Restored the plan from "+prettyBackup(b)+".");TAB="backups";render();})
+          .catch(function(e){btn.disabled=false;msg("err","Could not restore: "+e.message);});
+      };
+      row.appendChild(btn);c.appendChild(row);
+    });
+  }).catch(function(e){c.textContent="Could not load backups: "+e.message;});
+}
+
+// ---------- load / save ----------
+function load(){
+  return api("GET","/api/plan").then(function(d){
+    PLAN=d.plan;ORIG=JSON.stringify(PLAN);VERSION=d.version;JSON_TEXT=null;
+    $("sub").textContent=(PLAN.title||"Plan")+" · "+PLAN.weeks.length+" weeks";
+    if(d.example)msg("warn","There is no plan.json yet, so this is the example plan. Saving creates plan.json.");
+    markDirty();
+  });
+}
+function save(){
+  if(TAB==="json"&&JSON_TEXT!=null&&!leaveJson())return;
+  // Keep each week's total in step with its items.
+  PLAN.weeks.forEach(function(w){if(w.shopping)w.cost=weekTotal(w);});
+  PLAN.weeks.forEach(function(w){Object.keys(w.shopping||{}).forEach(function(k){w.shopping[k]=w.shopping[k].filter(function(it){return String(it[0]).trim();});});});
+  var err=checkPlan(PLAN);if(err){msg("err",err);return;}
+  var b=$("save");b.disabled=true;b.textContent="Saving…";
+  api("PUT","/api/plan",{plan:PLAN,version:VERSION}).then(function(d){
+    VERSION=d.version;ORIG=JSON.stringify(PLAN);markDirty();msg("ok","Saved. Everyone sees the new plan next time their app refreshes.");render();
+  }).catch(function(e){
+    if(e.status===409){var rl=el("button","btn small","Reload the latest plan");rl.type="button";rl.style.marginLeft=".5rem";
+      rl.onclick=function(){DIRTY=false;location.reload();};msg("err",e.message,rl);}
+    else msg("err","Could not save: "+e.message);
+    markDirty();
+  }).then(function(){b.textContent="Save plan";});
+}
+$("save").onclick=save;
+$("undo").onclick=function(){if(!confirm("Throw away your unsaved changes?"))return;PLAN=JSON.parse(ORIG);JSON_TEXT=null;markDirty();msg("");render();};
+
+fetch("/auth/me",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(me){
+  if(!me){location.href="/login?next=%2Fadmin.html";return;}
+  if(!me.admin){$("sub").textContent="";msg("err","Only an admin can edit the plan. You are logged in as "+me.user+".");return;}
+  return load().then(function(){$("app").hidden=false;$("bar").hidden=false;render();});
+}).catch(function(e){$("sub").textContent="";msg("err","Could not load the plan: "+e.message);});
+</script>
+</body>
+</html>
