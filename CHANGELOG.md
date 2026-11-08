@@ -3,6 +3,10 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.0.1 (2026-11-08)
+
+- The project is now open source under the MIT licence (see LICENSE).
+
 ## v1.0.0 (2026-11-08)
 
 The first tagged release: everything built so far.
