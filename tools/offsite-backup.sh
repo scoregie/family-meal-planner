@@ -26,9 +26,17 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"; rm -f "$APP_DIR/data/.backup-app.db"' EXIT
 
 # A consistent copy of the database while the app keeps running (VACUUM INTO writes a clean copy).
+rm -f "$APP_DIR/data/.backup-app.db"   # left over from a run that was stopped part-way
 if docker ps --format '{{.Names}}' | grep -qx shopping-list-api; then
   docker exec shopping-list-api node --disable-warning=ExperimentalWarning -e \
     "const {DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('/data/app.db');d.exec(\"VACUUM INTO '/data/.backup-app.db'\")"
+elif [ -f "$APP_DIR/data/app.db" ]; then
+  # The app isn't running, so nothing is writing to the database: a plain copy is safe.
+  cp "$APP_DIR/data/app.db" "$APP_DIR/data/.backup-app.db"
+fi
+if [ -f "$APP_DIR/data/app.db" ] && [ ! -s "$APP_DIR/data/.backup-app.db" ]; then
+  echo "Couldn't copy the database, so no backup was made." >&2
+  exit 1
 fi
 
 # Everything in the app folder. The live database files are swapped for the clean copy above.

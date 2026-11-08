@@ -286,4 +286,12 @@ async function handle(req, res, urlPath, url, me, people) {
   return true;
 }
 
-module.exports = { handle, CATEGORIES, ROOT };
+// Deletes everything a person uploaded (when they delete their account and history).
+function forget(person) {
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(String(person || ''))) return;
+  const dir = path.join(ROOT, person);
+  if (path.dirname(dir) !== ROOT) return;
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
+module.exports = { handle, CATEGORIES, ROOT, forget };

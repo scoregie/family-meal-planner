@@ -280,6 +280,11 @@ function savePlan(plan) {
   if (oldPlan && Array.isArray(oldPlan.weeks) && oldPlan.id === plan.id) {
     remapTicks(oldPlan, plan);
     persist();
+  } else if (oldPlan && oldPlan.id !== plan.id) {
+    // A brand new plan: ticks point at the old plan's items and meals, so everyone starts fresh,
+    // the same as "Reset all". "At home" marks are kept: they go by ingredient name.
+    state = { users: {}, shared: null, have: state.have || [], updated: {}, epoch: Date.now() };
+    persist();
   }
   safely('remember dishes', () => db.rememberDishes(plan));
 }

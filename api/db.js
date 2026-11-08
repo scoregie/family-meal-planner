@@ -723,11 +723,11 @@ function saveProfile(person, answers) {
 
 // ---------- sign-ups waiting for approval ----------
 
-// Saves a sign-up (replacing an earlier one with the same email).
+// Saves a sign-up. If one with the same email is already waiting it is left as it is, so nobody
+// else can swap in their own password before an admin approves it. Returns true if it was new.
 function addSignup(s) {
-  open().prepare(`INSERT INTO signups (name, email, hash, created_at) VALUES (?, ?, ?, ?)
-    ON CONFLICT (email) DO UPDATE SET name = excluded.name, hash = excluded.hash, created_at = excluded.created_at`)
-    .run(s.name, s.email, s.hash, Date.now());
+  return open().prepare('INSERT INTO signups (name, email, hash, created_at) VALUES (?, ?, ?, ?) ON CONFLICT (email) DO NOTHING')
+    .run(s.name, s.email, s.hash, Date.now()).changes > 0;
 }
 
 // Waiting sign-ups, oldest first, without their password hashes.

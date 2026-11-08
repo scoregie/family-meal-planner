@@ -514,7 +514,7 @@ async function chatTurn(req, res, me, ctx) {
     }
   } catch (err) {
     let message = 'Something went wrong talking to Claude. Try again in a moment.';
-    if (err instanceof Anthropic.AuthenticationError) message = 'The ANTHROPIC_API_KEY in .env was not accepted. An admin needs to check it.';
+    if (err instanceof Anthropic.AuthenticationError) message = ready.own ? 'Your Claude key was not accepted. Check it in Settings → Your Claude key.' : 'The family’s Claude key (ANTHROPIC_API_KEY in .env) was not accepted. An admin needs to check it.';
     else if (err instanceof Anthropic.RateLimitError) message = 'Claude is busy right now (rate limit). Try again in a minute.';
     else if (err instanceof Anthropic.APIError && err.status >= 500) message = 'Claude’s servers had a problem. Try again in a moment.';
     else if (err instanceof Anthropic.APIError) message = 'Claude could not answer: ' + String(err.message || '').slice(0, 300);

@@ -37,13 +37,38 @@ function list(zipPath) {
       const nameLength = dir.readUInt16LE(at + 28);
       const extraLength = dir.readUInt16LE(at + 30);
       const commentLength = dir.readUInt16LE(at + 32);
-      entries.push({
+      const entry = {
         name: dir.toString('utf8', at + 46, at + 46 + nameLength),
         method: dir.readUInt16LE(at + 10),          // 0 = stored, 8 = deflated
         compressedSize: dir.readUInt32LE(at + 20),
         size: dir.readUInt32LE(at + 24),
         offset: dir.readUInt32LE(at + 42),           // where its "local header" starts
-      });
+      };
+      // Files over 4 GB (zip64): the real numbers are in the "extra" field (id 1), as 8-byte values,
+      // only for the ones marked 0xFFFFFFFF, in the order size, compressed size, offset.
+      const BIG = 0xffffffff;
+      if (entry.size === BIG || entry.compressedSize === BIG || entry.offset === BIG) {
+        let x = at + 46 + nameLength;
+        const end = x + extraLength;
+        let found = false;
+        while (x + 4 <= end) {
+          const id = dir.readUInt16LE(x), len = dir.readUInt16LE(x + 2);
+          if (id === 1) {
+            let p = x + 4;
+            for (const k of ['size', 'compressedSize', 'offset']) {
+              if (entry[k] === BIG && p + 8 <= x + 4 + len) {
+                entry[k] = Number(dir.readBigUInt64LE(p));
+                p += 8;
+              }
+            }
+            found = true;
+            break;
+          }
+          x += 4 + len;
+        }
+        if (!found) throw new Error('This zip uses a format that can’t be read (zip64 without sizes).');
+      }
+      entries.push(entry);
       at += 46 + nameLength + extraLength + commentLength;
     }
     return entries;

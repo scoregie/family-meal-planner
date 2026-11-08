@@ -40,6 +40,7 @@ const auth = require('./auth');
 const db = require('./db');
 const mailer = require('./mailer');
 const secrets = require('./secrets');
+const uploads = require('./uploads');
 
 const DAY = 864e5;
 const INVITE_DAYS = 7;
@@ -184,7 +185,8 @@ async function signup(req, res, ctx) {
   if (bad) return send(res, 400, { error: bad });
   if (db.accountByEmail(email)) return send(res, 409, { error: 'There’s already an account with that email. Log in instead.' });
   if (db.countSignups() >= 20) return send(res, 429, { error: 'There are too many sign-ups waiting. Ask someone in your family for an invite link.' });
-  db.addSignup({ name, email, hash: auth.hash(b.password) });
+  // Already waiting: answer the same way (so this can't be used to see who signed up), change nothing.
+  if (!db.addSignup({ name, email, hash: auth.hash(b.password) })) return send(res, 200, { ok: true, pending: true });
   if (mailer.configured()) {
     const admins = db.listAccounts().filter(a => a.role !== 'member');
     for (const a of admins) {
@@ -355,8 +357,22 @@ async function deleteMine(req, res, me) {
   if (account.role === 'owner' && db.listAccounts().length > 1) {
     return send(res, 409, { error: 'You’re the family’s owner. Hand ownership to someone else on the Family page first.' });
   }
+  // With no accounts left the server would ask the next visitor to set it up, and they would get
+  // the family's data. Starting over is done on the server instead (see the README).
+  if (db.listAccounts().length <= 1) {
+    return send(res, 409, { error: 'You’re the only login, so your account can’t be deleted here: the next person to open the site would take over the family’s data. To start over, delete the data folder on the server.' });
+  }
   db.deleteAccount(account.id);
-  if (b.history) db.forgetPerson(account.person, me.user);
+  // The Health sync key stops working with the account.
+  const syncHash = db.getSetting('healthsync-person:' + account.person);
+  if (syncHash) db.deleteSetting('healthsync:' + syncHash);
+  db.deleteSetting('healthsync-person:' + account.person);
+  db.deleteSetting('healthsync-made:' + account.person);
+  if (b.history) {
+    db.forgetPerson(account.person, me.user);
+    db.deleteSetting('healthsync-last:' + account.person);
+    uploads.forget(account.person);
+  }
   return send(res, 200, { ok: true }, auth.logoutCookie(req));
 }
 

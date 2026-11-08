@@ -31,7 +31,10 @@ function readBody(req, limit) {
     let text = '';
     req.on('data', chunk => {
       text += chunk;
-      if (text.length > limit) reject(new Error('too big'));
+      if (text.length > limit) {
+        reject(new Error('too big'));
+        req.destroy();
+      }
     });
     req.on('end', () => {
       try { resolve(text ? JSON.parse(text) : {}); } catch (e) { reject(e); }

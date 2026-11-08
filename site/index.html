@@ -679,6 +679,7 @@ function savePins(name, remove) {
       }).then(function (r) {
         return r.json().catch(function () { return {}; }).then(function (j) {
           if (!r.ok) throw new Error(j.error || "That didn’t save. Try again.");
+          if (j.pins) Appearance.setPins(j.pins);   // so a later failure still shows what did save
           return j;
         });
       });
@@ -692,6 +693,7 @@ function savePins(name, remove) {
     if (SHOP) shopDraw();
   }).catch(function (e) {
     $("pinMsg").textContent = e.message;
+    if (PLAN) show();
   });
 }
 
@@ -2806,7 +2808,7 @@ function shopDraw() {
   if (!SHOP) return;
   var q = SHOP.queue;
   var it = q[SHOP.at];
-  var done = q.filter(function (x) { return isTicked(x); }).length;
+  var done = q.filter(function (x) { return isTicked(x) || isHome(x.name); }).length;
   $("smBar").style.width = (q.length ? done / q.length * 100 : 0) + "%";
   $("smBack").disabled = SHOP.at === 0;
   var links = $("smLinks");

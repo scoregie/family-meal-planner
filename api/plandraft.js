@@ -46,7 +46,10 @@ function readBody(req) {
     let data = '';
     req.on('data', chunk => {
       data += chunk;
-      if (data.length > 20000) reject(new Error('too big'));
+      if (data.length > 20000) {
+        reject(new Error('too big'));
+        req.destroy();
+      }
     });
     req.on('end', () => {
       try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(e); }
@@ -218,9 +221,11 @@ async function runDraft(me, client, ctx, note) {
       messages: [{ role: 'user', content: userText(ctx, people, note) }],
     });
     stream.on('text', delta => {
+      // Only the new text (plus a little before it, for a name split across two pieces) is searched.
+      const recent = text.slice(-40) + delta;
       text += delta;
       job.chars = text.length;
-      const weeks = text.match(/"name":\s*"((?:Stock-up|Week) \d)"/g);
+      const weeks = recent.match(/"name":\s*"((?:Stock-up|Week) \d)"/g);
       if (weeks) job.stage = 'Writing ' + weeks[weeks.length - 1].replace(/"name":\s*"/, '').replace(/"$/, '');
     });
     const message = await stream.finalMessage();
@@ -239,7 +244,11 @@ async function runDraft(me, client, ctx, note) {
     fixCosts(plan);
     // Only people already in the household, so logins and About me answers stay matched up.
     for (const key of Object.keys(plan.people || {})) if (!known.has(key)) delete plan.people[key];
-    for (const p of people) if (!plan.people || !plan.people[p.key]) throw new Error('The plan left out ' + p.name + '. Try again.');
+    for (const p of people) {
+      if (!plan.people || !plan.people[p.key]) throw new Error('The plan left out ' + p.name + '. Try again.');
+      // Logins, answers and history are matched by name, so each person keeps the name they have now.
+      plan.people[p.key].name = p.name;
+    }
     const problem = ctx.checkPlan(plan);
     if (problem) throw new Error('The plan didn’t pass the app’s checks: ' + problem + ' Try again.');
 
