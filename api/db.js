@@ -12,6 +12,9 @@
 //   exercise_log  every exercise session ticked as done, kept like meal_log
 //   chats         conversations with the Claude assistant
 //   ai_usage      how many assistant messages each person sent each day (for the daily limit)
+//   accounts      logins by email address (owner, admins and members of the family)
+//   invites       invite links for new family members (only a hash of each link is kept)
+//   password_resets  links for setting a new password (also only hashes)
 //
 // To look inside it yourself:  sqlite3 data/app.db ".tables"   (or any SQLite viewer)
 const path = require('path');
@@ -140,6 +143,40 @@ const MIGRATIONS = [
   );
   ALTER TABLE requests ADD COLUMN chat_id INTEGER;
   ALTER TABLE requests ADD COLUMN user TEXT;
+  `,
+  // 5: accounts that log in with an email address, invite links and password-reset links
+  `
+  CREATE TABLE accounts (
+    id            INTEGER PRIMARY KEY,
+    email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    hash          TEXT NOT NULL,     -- the password, scrambled with scrypt
+    person        TEXT NOT NULL,     -- the person key they tick as
+    role          TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'member')),
+    legacy_user   TEXT UNIQUE,       -- the old username this account replaced, if any (keeps its history)
+    token_version INTEGER NOT NULL DEFAULT 0,  -- goes up to log this account out everywhere
+    ai_key        TEXT,              -- their own Claude API key, encrypted (never stored as plain text)
+    created_at    INTEGER NOT NULL,
+    created_by    TEXT
+  );
+  CREATE TABLE invites (
+    id         INTEGER PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE, -- a hash of the link's secret part (the link itself is not stored)
+    email      TEXT,                 -- who it is for, if the admin gave an email
+    name       TEXT NOT NULL,
+    person     TEXT NOT NULL,
+    role       TEXT NOT NULL CHECK (role IN ('admin', 'member')),
+    created_by TEXT,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used_at    INTEGER
+  );
+  CREATE TABLE password_resets (
+    token_hash TEXT PRIMARY KEY,
+    account_id INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used_at    INTEGER
+  );
   `,
 ];
 
@@ -534,6 +571,124 @@ function setPassword(username, hash) {
   return open().prepare('UPDATE logins SET hash = ? WHERE username = ?').run(hash, username).changes > 0;
 }
 
+// ---------- accounts (email logins) ----------
+
+const ACCOUNT_COLUMNS = 'id, email, hash, person, role, legacy_user, token_version, created_at, created_by, ai_key IS NOT NULL AS has_ai_key';
+
+function getAccount(id) {
+  return open().prepare('SELECT ' + ACCOUNT_COLUMNS + ' FROM accounts WHERE id = ?').get(id);
+}
+
+function accountByEmail(email) {
+  return open().prepare('SELECT ' + ACCOUNT_COLUMNS + ' FROM accounts WHERE email = ?').get(String(email || '').trim());
+}
+
+function accountByLegacy(user) {
+  return open().prepare('SELECT ' + ACCOUNT_COLUMNS + ' FROM accounts WHERE legacy_user = ?').get(user);
+}
+
+// Every account, without password hashes.
+function listAccounts() {
+  return open().prepare("SELECT id, email, person, role, legacy_user, created_at, created_by FROM accounts ORDER BY role = 'owner' DESC, role = 'admin' DESC, email").all();
+}
+
+function countAccounts() {
+  return open().prepare('SELECT COUNT(*) AS n FROM accounts').get().n;
+}
+
+// Adds an account. Returns its id.
+function addAccount(a) {
+  return Number(open().prepare('INSERT INTO accounts (email, hash, person, role, legacy_user, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(String(a.email).trim(), a.hash, a.person, a.role, a.legacyUser || null, Date.now(), a.createdBy || null).lastInsertRowid);
+}
+
+// Changes some of an account's fields: {email, hash, role, person}. Changing the password also
+// logs the account out everywhere (token_version goes up).
+function updateAccount(id, fields) {
+  const sets = [];
+  const values = [];
+  for (const key of ['email', 'hash', 'role', 'person']) {
+    if (fields[key] !== undefined) {
+      sets.push(key + ' = ?');
+      values.push(fields[key]);
+    }
+  }
+  if (fields.hash !== undefined || fields.logOutEverywhere) sets.push('token_version = token_version + 1');
+  if (!sets.length) return;
+  open().prepare('UPDATE accounts SET ' + sets.join(', ') + ' WHERE id = ?').run(...values, id);
+}
+
+function deleteAccount(id) {
+  transaction(d => {
+    d.prepare('DELETE FROM password_resets WHERE account_id = ?').run(id);
+    d.prepare('DELETE FROM accounts WHERE id = ?').run(id);
+  });
+}
+
+// Their own Claude API key, encrypted by the caller. `null` removes it.
+function setAiKey(id, encrypted) {
+  open().prepare('UPDATE accounts SET ai_key = ? WHERE id = ?').run(encrypted, id);
+}
+
+function getAiKey(id) {
+  const row = open().prepare('SELECT ai_key FROM accounts WHERE id = ?').get(id);
+  return row ? row.ai_key : null;
+}
+
+// Removes everything kept about one person: About me answers, weigh-ins, meal and exercise history,
+// chats and requests. Used when someone deletes their account and asks for their history to go too.
+function forgetPerson(person, user) {
+  transaction(d => {
+    for (const table of ['profiles', 'measurements', 'meal_log', 'exercise_log', 'chats', 'requests']) {
+      d.prepare('DELETE FROM ' + table + ' WHERE person = ?').run(person);
+    }
+    if (user) d.prepare('DELETE FROM ai_usage WHERE user = ?').run(user);
+  });
+}
+
+// ---------- invite and password-reset links ----------
+// Only a hash of each link's secret is stored, so someone who reads the database can't use the links.
+
+function addInvite(i) {
+  return Number(open().prepare('INSERT INTO invites (token_hash, email, name, person, role, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(i.tokenHash, i.email || null, i.name, i.person, i.role, i.createdBy || null, Date.now(), i.expiresAt).lastInsertRowid);
+}
+
+function inviteByToken(tokenHash) {
+  return open().prepare('SELECT * FROM invites WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?').get(tokenHash, Date.now());
+}
+
+function listInvites() {
+  return open().prepare('SELECT id, email, name, person, role, created_by, created_at, expires_at FROM invites WHERE used_at IS NULL AND expires_at > ? ORDER BY created_at DESC').all(Date.now());
+}
+
+function useInvite(id) {
+  return open().prepare('UPDATE invites SET used_at = ? WHERE id = ? AND used_at IS NULL').run(Date.now(), id).changes > 0;
+}
+
+function deleteInvite(id) {
+  open().prepare('DELETE FROM invites WHERE id = ?').run(id);
+}
+
+// Cancels the other invites for someone who has just joined.
+function deleteInvitesFor(person) {
+  open().prepare('DELETE FROM invites WHERE person = ? AND used_at IS NULL').run(person);
+}
+
+function addReset(tokenHash, accountId, expiresAt) {
+  // A new link replaces any older unused ones for the same account.
+  open().prepare('DELETE FROM password_resets WHERE account_id = ? AND used_at IS NULL').run(accountId);
+  open().prepare('INSERT INTO password_resets (token_hash, account_id, created_at, expires_at) VALUES (?, ?, ?, ?)').run(tokenHash, accountId, Date.now(), expiresAt);
+}
+
+function resetByToken(tokenHash) {
+  return open().prepare('SELECT * FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?').get(tokenHash, Date.now());
+}
+
+function useReset(tokenHash) {
+  return open().prepare('UPDATE password_resets SET used_at = ? WHERE token_hash = ? AND used_at IS NULL').run(Date.now(), tokenHash).changes > 0;
+}
+
 // ---------- profiles (the getting-started answers) ----------
 
 // A person's answers ({question id: answer}) and when they were saved, or null.
@@ -553,5 +708,7 @@ module.exports = {
   open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, dishKey, DB_FILE,
   saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, sessionsSince, getSetting, setSetting, planKeyFor,
   getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
+  getAccount, accountByEmail, accountByLegacy, listAccounts, countAccounts, addAccount, updateAccount, deleteAccount, setAiKey, getAiKey, forgetPerson,
+  addInvite, inviteByToken, listInvites, useInvite, deleteInvite, deleteInvitesFor, addReset, resetByToken, useReset,
   getChat, listChats, saveChat, deleteChat, addRequest, getRequest, listRequests, setRequestChat, setRequestStatus, countUsage, usage,
 };

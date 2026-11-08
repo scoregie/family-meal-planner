@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Family</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="page.css">
+<style>
+.member{display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;flex-wrap:wrap;padding:.7rem 0;border-top:1px solid var(--line)}
+.member:first-of-type{border-top:0}
+.member h3{font-size:1rem;margin:0 0 .1rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.member small{display:block;color:var(--mute);font-size:.82rem}
+.member .acts{display:flex;gap:.35rem;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:0 .8rem}
+</style>
+<script src="appearance.js"></script>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Family</h1><p class="sub">Who can log in, and inviting new people</p></div>
+    <a class="btn" href="./">← Back to the app</a>
+  </div>
+  <div id="msg"></div>
+  <div id="app" hidden>
+    <section class="card">
+      <h2>Logins</h2>
+      <div id="members"></div>
+    </section>
+
+    <section class="card">
+      <h2>Invite someone</h2>
+      <p class="note" id="inviteNote">You’ll get a link to send them by text or any messaging app. They open it, choose a password, and they’re in. The link works for 7 days.</p>
+      <form id="inviteForm">
+        <div class="grid">
+          <div><label class="f" for="iName">Name (as shown in the app)</label><input type="text" id="iName" maxlength="40" required placeholder="e.g. Sam"></div>
+          <div><label class="f" for="iEmail">Their email (optional)</label><input type="email" id="iEmail" maxlength="200" autocapitalize="none" placeholder="They can type it themselves"></div>
+          <div><label class="f" for="iPortion">Portion (1.0 is an average serve)</label><input type="number" id="iPortion" value="1.0" step="0.1" min="0.3" max="2.5"></div>
+          <div id="roleBox"><label class="f" for="iRole">Role</label>
+            <select id="iRole"><option value="member">Member</option><option value="admin">Admin (can edit the plan and manage members)</option></select></div>
+        </div>
+        <div class="row"><button class="btn primary" type="submit">Make invite link</button></div>
+      </form>
+      <div id="newLink"></div>
+    </section>
+
+    <section class="card" id="invitesCard" hidden>
+      <h2>Invites waiting to be used</h2>
+      <div id="invites"></div>
+    </section>
+
+    <section class="card">
+      <h2>About roles</h2>
+      <p class="note"><b>Owner:</b> one person, who can do everything, including making and removing admins. They can hand ownership to someone else.<br>
+      <b>Admins:</b> edit the plan, approve changes from Ask Claude, see everyone’s ticks and answers, invite members and make password-reset links.<br>
+      <b>Members:</b> see the plan, tick things off, and manage their own answers, progress and chats.</p>
+    </section>
+  </div>
+</main>
+<div class="status" id="status" role="status" hidden></div>
+<script>
+// The Family page (admins): everyone's logins, invites, roles and password-reset links.
+"use strict";
+var DATA = null;
+var ROLE_NAMES = { owner: "Owner", admin: "Admin", member: "Member" };
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+function api(method, url, body) {
+  return fetch(url, {
+    method: method,
+    cache: "no-store",
+    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      if (!r.ok) throw new Error(d.error || "The server said " + r.status);
+      return d;
+    });
+  });
+}
+
+function status(text, isError) {
+  var s = $("status");
+  s.textContent = text;
+  s.className = "status" + (isError ? " err" : "");
+  s.hidden = false;
+  clearTimeout(status.timer);
+  status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 3000);
+}
+
+function when(ms) {
+  return new Date(ms).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// A link to share: shown in a box with Copy and (on phones) Share buttons.
+function linkBox(path, label) {
+  var url = location.origin + path;
+  var box = el("div", "msg ok");
+  box.appendChild(el("div", null, label));
+  var row = el("div", "link");
+  var input = el("input");
+  input.type = "text";
+  input.readOnly = true;
+  input.value = url;
+  input.addEventListener("focus", function () { input.select(); });
+  row.appendChild(input);
+  var copy = el("button", "btn small primary", "Copy");
+  copy.type = "button";
+  copy.addEventListener("click", function () {
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () {
+      status("Copied. Paste it into a text or message.");
+    }, function () {
+      input.select();
+      document.execCommand("copy");
+      status("Copied.");
+    });
+  });
+  row.appendChild(copy);
+  if (navigator.share) {
+    var share = el("button", "btn small", "Share…");
+    share.type = "button";
+    share.addEventListener("click", function () {
+      navigator.share({ title: "Family Health Planner", text: label, url: url }).catch(function () {});
+    });
+    row.appendChild(share);
+  }
+  box.appendChild(row);
+  box.appendChild(el("small", null, "Anyone with this link can use it, so only send it to them."));
+  return box;
+}
+
+function memberRow(a) {
+  var row = el("div", "member");
+  var text = el("div");
+  var h = el("h3", null, a.name || a.person);
+  h.appendChild(el("span", "chip" + (a.role === "owner" ? " owner" : ""), ROLE_NAMES[a.role]));
+  text.appendChild(h);
+  text.appendChild(el("small", null, a.email + (a.legacy_user ? " · was username “" + a.legacy_user + "”" : "")));
+  row.appendChild(text);
+  var acts = el("div", "acts");
+  var meOwner = DATA.me.role === "owner";
+  var isMe = a.id === DATA.me.accountId;
+  function button(label, cls, run) {
+    var b = el("button", "btn small" + (cls ? " " + cls : ""), label);
+    b.type = "button";
+    b.addEventListener("click", run);
+    acts.appendChild(b);
+  }
+  if (!isMe && (a.role === "member" || meOwner)) {
+    button("Reset link", "", function () {
+      api("POST", "/api/family/member/" + a.id + "/reset").then(function (d) {
+        row.after(linkBox(d.path, "A link for " + (a.name || a.email) + " to choose a new password (works for " + d.hours + " hours):"));
+      }).catch(function (e) { status(e.message, true); });
+    });
+  }
+  if (meOwner && !isMe && a.role !== "owner") {
+    button(a.role === "admin" ? "Make member" : "Make admin", "", function () {
+      api("POST", "/api/family/member/" + a.id, { role: a.role === "admin" ? "member" : "admin" }).then(load).catch(function (e) { status(e.message, true); });
+    });
+    button("Make owner", "", function () {
+      if (!confirm("Hand ownership to " + (a.name || a.email) + "? You’ll become an admin.")) return;
+      api("POST", "/api/family/member/" + a.id, { role: "owner" }).then(load).catch(function (e) { status(e.message, true); });
+    });
+  }
+  if (!isMe && a.role !== "owner" && (a.role === "member" || meOwner)) {
+    button("Remove", "danger", function () {
+      if (!confirm("Remove " + (a.name || a.email) + "’s login? Their history stays, and you can invite them again.")) return;
+      api("DELETE", "/api/family/member/" + a.id).then(load).catch(function (e) { status(e.message, true); });
+    });
+  }
+  if (isMe) acts.appendChild(el("a", "btn small", "Your account")).href = "account.html";
+  row.appendChild(acts);
+  return row;
+}
+
+function render() {
+  var box = $("members");
+  box.textContent = "";
+  DATA.accounts.forEach(function (a) { box.appendChild(memberRow(a)); });
+  DATA.older.forEach(function (o) {
+    var row = el("div", "member");
+    var text = el("div");
+    var h = el("h3", null, o.name || o.person);
+    h.appendChild(el("span", "chip older", "Username only"));
+    text.appendChild(h);
+    text.appendChild(el("small", null, "Logs in as “" + o.username + "”" + (o.source === ".env" ? " (set in .env on the server)" : "") + ". When they log in, the app asks them to add their email."));
+    row.appendChild(text);
+    box.appendChild(row);
+  });
+  if (!DATA.accounts.length && !DATA.older.length) box.appendChild(el("p", "note", "No logins yet."));
+
+  $("roleBox").hidden = DATA.me.role !== "owner";
+  if (DATA.mail) $("inviteNote").textContent = "If you add their email, the invite is emailed to them. You also get a link to send yourself. It works for 7 days.";
+
+  var inv = $("invites");
+  inv.textContent = "";
+  $("invitesCard").hidden = !DATA.invites.length;
+  DATA.invites.forEach(function (i) {
+    var row = el("div", "member");
+    var text = el("div");
+    text.appendChild(el("h3", null, i.name));
+    text.appendChild(el("small", null, ROLE_NAMES[i.role] + (i.email ? " · " + i.email : "") + " · until " + when(i.expires_at)));
+    row.appendChild(text);
+    var cancel = el("button", "btn small", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", function () {
+      api("DELETE", "/api/family/invite?id=" + i.id).then(load).catch(function (e) { status(e.message, true); });
+    });
+    row.appendChild(cancel);
+    inv.appendChild(row);
+  });
+}
+
+function load() {
+  return api("GET", "/api/family").then(function (d) {
+    DATA = d;
+    $("app").hidden = false;
+    render();
+  });
+}
+
+$("inviteForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var name = $("iName").value.trim();
+  api("POST", "/api/family/invite", { name: name, email: $("iEmail").value.trim(), role: $("iRole").value, portion: $("iPortion").value }).then(function (d) {
+    $("newLink").textContent = "";
+    $("newLink").appendChild(linkBox(d.path, (d.emailed ? "Emailed to them. " : "") + "Send this link to " + name + " so they can join:"));
+    $("iName").value = "";
+    $("iEmail").value = "";
+    return load();
+  }).catch(function (err) { status(err.message, true); });
+});
+
+load().catch(function (e) {
+  $("msg").appendChild(el("div", "msg err", e.message));
+});
+</script>
+</body>
+</html>

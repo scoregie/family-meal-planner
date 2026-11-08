@@ -1,0 +1,38 @@
+/* Shared look for the simpler pages (Account, Family). Colours match the other pages; dark mode
+   has its own colours. appearance.js changes the accent, font and text size on top of this. */
+:root{--low:#b3261e;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--chip:#e3f1ec;--warn:#8a5a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;--warn:#f3c26b;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;--warn:#f3c26b;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.45}
+main{max-width:46rem;margin:0 auto;padding:1.25rem 1rem calc(3rem + env(safe-area-inset-bottom,0px))}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+h2{font-size:1.15rem;margin:0 0 .3rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:0 0 .8rem}
+.sub{color:var(--mute);margin:0;font-size:.95rem}
+.note{color:var(--mute);font-size:.88rem;margin:.1rem 0 .6rem}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.5rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{border-color:var(--mute)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.danger{color:var(--low);border-color:var(--low)}
+.btn.small{min-height:2rem;padding:.2rem .6rem;font-size:.85rem;border-width:1px}
+.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .9rem}
+label.f{display:block;font-weight:700;font-size:.9rem;margin:.6rem 0 .25rem}
+input[type=text],input[type=email],input[type=password],input[type=number],select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .65rem;min-height:2.6rem;width:100%;max-width:24rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.8rem}
+.check{display:flex;gap:.5rem;align-items:flex-start;margin:.6rem 0;font-size:.92rem}
+.check input{margin-top:.25rem;width:1.1rem;height:1.1rem}
+.chip{font-size:.75rem;font-weight:700;border-radius:1rem;padding:.1rem .55rem;white-space:nowrap;background:var(--chip);color:var(--ink)}
+.chip.owner{background:var(--accent);color:var(--on-accent)}
+.chip.older{background:color-mix(in srgb,var(--warn) 20%,var(--card));color:var(--warn)}
+.msg{border-radius:.6rem;padding:.6rem .8rem;margin:.6rem 0;font-size:.9rem}
+.msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
+.msg.ok{background:color-mix(in srgb,var(--accent) 12%,var(--card));border:1px solid var(--accent)}
+.status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2);max-width:90vw;z-index:9}
+.status.err{background:var(--low);color:#fff}
+.link{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin:.5rem 0}
+.link input{flex:1;min-width:12rem;font-size:.85rem}
+[hidden]{display:none!important}

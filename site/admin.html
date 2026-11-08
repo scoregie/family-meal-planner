@@ -951,10 +951,12 @@ function shortDate(ms) {
 function renderPeople() {
   var panel = $("pPeople");
   panel.textContent = "";
-  panel.appendChild(el("p", "hint", "Everyone in the plan, and the logins that tick as them. Adding a person here gives them a login straight away and adds them to the plan with a normal serve. They can answer the About me questions from the account menu."));
+  panel.appendChild(el("p", "hint", "Everyone in the plan, and the logins that tick as them. To add someone, invite them from the Family page: they get a link, choose a password, and are added to the plan with the portion you pick."));
   var card = el("div", "card", "Loading…");
   panel.appendChild(card);
-  panel.appendChild(addPersonForm());
+  var invite = el("a", "btn primary", "Invite someone (Family page)");
+  invite.href = "family.html";
+  panel.appendChild(invite);
 
   peopleApi("GET", "/api/people").then(function (data) {
     card.textContent = "";
@@ -976,7 +978,7 @@ function personRow(p) {
   var text = el("div");
   text.appendChild(el("h3", null, p.name));
   var logins = p.logins.length
-    ? "Login: " + p.logins.map(function (l) { return l.username + (l.admin ? " (admin)" : ""); }).join(", ")
+    ? "Login: " + p.logins.map(function (l) { return (l.email || l.username) + (l.admin ? " (admin)" : ""); }).join(", ")
     : "No login yet";
   text.appendChild(el("small", null, "Portion " + (p.portion != null ? p.portion : 1) + "× · " + logins));
   text.appendChild(el("small", null, p.answered ? "Answered the questions (updated " + shortDate(p.answered) + ")" : "Hasn’t answered the questions yet"));
@@ -985,65 +987,6 @@ function personRow(p) {
   view.href = "profile.html?person=" + encodeURIComponent(p.person);
   row.appendChild(view);
   return row;
-}
-
-// The "Add a person" form.
-function addPersonForm() {
-  var card = el("div", "card");
-  card.appendChild(el("h3", null, "Add a person"));
-  var form = el("form");
-  var grid = el("div", "add-grid");
-  var values = { name: "", username: "", password: "", portion: "1.0" };
-  grid.appendChild(field("Name (as shown in the app)", "", function (v) { values.name = v; }, { placeholder: "e.g. Sam" }));
-  grid.appendChild(field("Username (for logging in)", "", function (v) { values.username = v; }, { placeholder: "e.g. sam" }));
-  grid.appendChild(field("Starting password (at least 8 characters)", "", function (v) { values.password = v; }, { type: "password" }));
-  grid.appendChild(field("Portion (1.0 is an average serve)", "1.0", function (v) { values.portion = v; }, { type: "number", step: "0.1", min: 0.3 }));
-  form.appendChild(grid);
-
-  var adminLabel = el("label", "check");
-  var adminBox = el("input");
-  adminBox.type = "checkbox";
-  adminLabel.appendChild(adminBox);
-  adminLabel.appendChild(document.createTextNode("Admin (can edit the plan and see everyone’s ticks, ratings and answers)"));
-  form.appendChild(adminLabel);
-
-  var row = el("div", "row");
-  row.style.marginTop = ".7rem";
-  var add = el("button", "btn primary", "Add person");
-  add.type = "submit";
-  row.appendChild(add);
-  form.appendChild(row);
-  var note = el("div");
-  form.appendChild(note);
-
-  form.onsubmit = function (e) {
-    e.preventDefault();
-    note.textContent = "";
-    add.disabled = true;
-    var body = { name: values.name, username: values.username, password: values.password, portion: values.portion, admin: adminBox.checked };
-    peopleApi("POST", "/api/people", body).then(function (answer) {
-      var text = "Added. They can log in as “" + answer.username + "” with the password you chose, and change it on their About me page.";
-      // Adding someone changes plan.json on the server, so this page needs the new copy before saving.
-      if (!answer.addedToPlan) {
-        msg("ok", text);
-        renderPeople();
-      } else if (DIRTY) {
-        msg("warn", text + " The plan changed on the server, so save or discard your other changes, then reload this page.");
-        renderPeople();
-      } else {
-        load().then(function () {
-          msg("ok", text);
-          renderPeople();
-        });
-      }
-    }).catch(function (err) {
-      note.appendChild(el("div", "msg err", err.message));
-    }).then(function () {
-      add.disabled = false;
-    });
-  };
-  card.appendChild(form);
-  return card;
 }
 
 // ---------- loading and saving ----------

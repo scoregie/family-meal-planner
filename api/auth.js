@@ -1,8 +1,13 @@
 // Logins, using a cookie. No npm packages.
 //
-// Logins come from environment variables named LOGIN_<USERNAME>=<hash> (make a hash with
-// hash-password.js). Usernames are not case-sensitive. Changing someone's password logs them
-// out everywhere, because the password hash is part of what signs their login cookie.
+// There are two kinds of login:
+//   - Accounts: an email address and password, kept in the database (data/app.db). The family's
+//     owner registers first and invites everyone else (see accounts.js). This is the normal way.
+//   - Older usernames: LOGIN_<USERNAME>=<hash> lines in .env, and usernames added from Edit plan
+//     before accounts existed. They keep working until the person adds an email address, which
+//     turns their username into an account (keeping all their history).
+// Usernames and emails are not case-sensitive. Changing a password logs that login out everywhere,
+// because the password hash is part of what signs the login cookie.
 //
 // How a login cookie works:
 //   1. The person types their username and password on /login.
@@ -52,7 +57,52 @@ function loginFromDb(user) {
   }
 }
 
-// The stored password hash for a username, from .env or the database, or undefined.
+// The database, loaded only when needed.
+function database() {
+  return require('./db');
+}
+
+// An account by its id, or undefined (also if the database can't be read).
+function accountById(id) {
+  try {
+    return database().getAccount(id);
+  } catch (e) {
+    return undefined;
+  }
+}
+
+// The account that replaced an old username, if it has been replaced.
+function linkedAccount(user) {
+  try {
+    return database().accountByLegacy(user);
+  } catch (e) {
+    return undefined;
+  }
+}
+
+// Cookies name who they are for: "acct-12" for account 12, or an old username like "alex".
+// Usernames can't contain "-", so the two never clash.
+function accountIdOf(subject) {
+  const m = /^acct-(\d+)$/.exec(String(subject || ''));
+  return m ? Number(m[1]) : null;
+}
+
+// Describes an account the way the rest of the server expects: {user, person, admin, ...}.
+// `user` is the old username for a replaced login, so its chats and usage carry on.
+function describeAccount(a) {
+  return {
+    user: a.legacy_user || 'acct-' + a.id,
+    subject: 'acct-' + a.id,
+    accountId: a.id,
+    email: a.email,
+    person: a.person,
+    role: a.role,
+    admin: a.role === 'owner' || a.role === 'admin',
+    needsEmail: false,
+  };
+}
+
+// The stored password hash for an old username, from .env or the database, or undefined.
 function hashFor(user) {
   if (USERS[user]) return USERS[user];
   const row = loginFromDb(user);
@@ -62,9 +112,17 @@ function hashFor(user) {
 // Describes a login: {user, admin, person}. Each login ticks as a person in the app, set with
 // PERSON_<USERNAME>=alex in .env (by default, the username itself), or chosen when it was added.
 function who(user) {
+  const id = accountIdOf(user);
+  if (id) {
+    const a = accountById(id);
+    return a ? describeAccount(a) : null;
+  }
+  const linked = linkedAccount(user);
+  if (linked) return describeAccount(linked);
   const row = loginFromDb(user);
   const person = String(process.env['PERSON_' + user.toUpperCase()] || (row && row.person) || user).trim().toLowerCase();
-  return { user, admin: ADMINS.includes(user) || !!(row && row.admin), person };
+  const admin = ADMINS.includes(user) || !!(row && row.admin);
+  return { user, subject: user, person, admin, role: admin ? 'admin' : 'member', needsEmail: true };
 }
 
 // The secret key that signs login cookies. It is made once at random and kept in
@@ -109,35 +167,66 @@ function verify(password, stored) {
 // username takes just as long as a wrong password, and does not reveal which usernames exist.
 const DUMMY = hash(crypto.randomBytes(12).toString('hex'));
 
-// Returns the username if the username and password are right, otherwise null.
-function checkLogin(user, password) {
-  user = String(user || '').trim().toLowerCase();
-  const stored = hashFor(user);
+// Checks an email (or old username) and password. Returns who to log in as ("acct-12" or the
+// username) if they are right, otherwise null.
+function checkLogin(login, password) {
+  login = String(login || '').trim().toLowerCase();
+  let stored;
+  let subject;
+  if (login.includes('@')) {
+    let a;
+    try {
+      a = database().accountByEmail(login);
+    } catch (e) {
+      a = undefined;
+    }
+    if (a) [stored, subject] = [a.hash, 'acct-' + a.id];
+  } else {
+    // An old username that has become an account uses the account's password from then on.
+    const linked = linkedAccount(login);
+    if (linked) [stored, subject] = [linked.hash, 'acct-' + linked.id];
+    else if (hashFor(login)) [stored, subject] = [hashFor(login), login];
+  }
   const passwordOk = verify(password, stored || DUMMY);
-  return passwordOk && stored ? user : null;
+  return passwordOk && stored ? subject : null;
 }
 
-// The signature for a cookie: an HMAC of the text, keyed with SECRET and the person's password hash.
-function sign(text, user) {
-  return crypto.createHmac('sha256', SECRET).update(text + '|' + hashFor(user)).digest('base64url');
+// What goes into a cookie's signature besides the text: the password hash (and, for accounts, a
+// counter that goes up to log out everywhere). Null if the login no longer exists, or is an old
+// username that has been replaced by an account (so its old cookies stop working).
+function signingKeyFor(subject) {
+  const id = accountIdOf(subject);
+  if (id) {
+    const a = accountById(id);
+    return a ? a.hash + '|' + a.token_version : null;
+  }
+  if (linkedAccount(subject)) return null;
+  return hashFor(subject) || null;
 }
 
-// Makes the cookie value for a login: "<user>.<expiry time>.<signature>".
-function makeToken(user) {
-  const unsigned = user + '.' + (Date.now() + MAX_AGE);
-  return unsigned + '.' + sign(unsigned, user);
+// The signature for a cookie: an HMAC of the text, keyed with SECRET and the login's signing key.
+function sign(text, subject) {
+  return crypto.createHmac('sha256', SECRET).update(text + '|' + signingKeyFor(subject)).digest('base64url');
 }
 
-// Checks a cookie value. Returns {user, admin, person, exp} if it is genuine and not expired, or null.
+// Makes the cookie value for a login: "<who>.<expiry time>.<signature>".
+function makeToken(subject) {
+  const unsigned = subject + '.' + (Date.now() + MAX_AGE);
+  return unsigned + '.' + sign(unsigned, subject);
+}
+
+// Checks a cookie value. Returns {user, subject, admin, person, role, exp, ...} if it is genuine and
+// not expired, or null.
 function readToken(token) {
   const parts = String(token || '').split('.');
-  if (parts.length !== 3 || !hashFor(parts[0])) return null;
+  if (parts.length !== 3 || !signingKeyFor(parts[0])) return null;
   const [user, expires, signature] = parts;
   const want = Buffer.from(sign(user + '.' + expires, user));
   const got = Buffer.from(signature);
   if (want.length !== got.length || !crypto.timingSafeEqual(want, got)) return null;
   const exp = +expires;
-  return exp > Date.now() ? Object.assign(who(user), { exp }) : null;
+  const described = exp > Date.now() ? who(user) : null;
+  return described ? Object.assign(described, { exp }) : null;
 }
 
 // Reads the request's cookies into an object: {sl_session: "...", ...}.
@@ -160,18 +249,18 @@ function isHttps(req) {
   return String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
 }
 
-// The Set-Cookie text that logs `user` in, or (with no user) logs out by clearing the cookie.
+// The Set-Cookie text that logs `subject` ("acct-12" or an old username) in, or (with no user) logs out by clearing the cookie.
 // HttpOnly: page scripts cannot read it. SameSite=Lax: other websites cannot use it to make changes.
 // Secure (on HTTPS only): it is never sent unencrypted.
-function cookieFor(req, user) {
-  const value = user ? makeToken(user) : '';
-  const maxAgeSeconds = user ? MAX_AGE / 1000 : 0;
+function cookieFor(req, subject) {
+  const value = subject ? makeToken(subject) : '';
+  const maxAgeSeconds = subject ? MAX_AGE / 1000 : 0;
   return COOKIE + '=' + value + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=' + maxAgeSeconds + (isHttps(req) ? '; Secure' : '');
 }
 
 // Renews the cookie once a day while the app is used, so active people never get logged out.
 function refresh(req, res, s) {
-  if (s && s.exp - Date.now() < MAX_AGE - RENEW_AFTER) res.setHeader('Set-Cookie', cookieFor(req, s.user));
+  if (s && s.exp - Date.now() < MAX_AGE - RENEW_AFTER) res.setHeader('Set-Cookie', cookieFor(req, s.subject));
 }
 
 // Slows down password guessing: 10 wrong tries per address per 15 minutes.
@@ -249,7 +338,7 @@ function authCheck(req, res) {
   }
 }
 
-// POST /auth/login: checks the username and password from the login form.
+// POST /auth/login: checks the email (or old username) and password from the login form.
 async function login(req, res) {
   const form = await readForm(req);
   const next = safeNext(form.get('next'));
@@ -269,7 +358,7 @@ async function login(req, res) {
 function me(req, res) {
   const s = session(req);
   refresh(req, res, s);
-  if (s) json(res, 200, { user: s.user, person: s.person, admin: s.admin });
+  if (s) json(res, 200, { user: s.user, person: s.person, admin: s.admin, role: s.role, email: s.email || null, needsEmail: !!s.needsEmail });
   else json(res, 401, { error: 'login needed' });
 }
 
@@ -308,9 +397,16 @@ function isEnvLogin(user) {
   return !!USERS[user];
 }
 
+// True if an old username has been replaced by an account.
+function isLinked(user) {
+  return !!linkedAccount(user);
+}
+
 module.exports = {
-  handle, session, refresh, hash, verify, exists, isEnvLogin,
-  describe: who,                                   // {user, admin, person} for a username
-  loginCookie: (req, user) => cookieFor(req, user), // a fresh login cookie, e.g. after a password change
-  users: () => Object.keys(USERS),                 // the .env usernames
+  handle, session, refresh, hash, verify, exists, isEnvLogin, isLinked, checkLogin, hashFor,
+  clientIp, recent, fails, LIMIT,
+  describe: who,                                         // {user, admin, person, ...} for a username or "acct-12"
+  loginCookie: (req, subject) => cookieFor(req, subject), // a fresh login cookie, e.g. after a password change
+  logoutCookie: req => cookieFor(req, null),
+  users: () => Object.keys(USERS),                       // the .env usernames
 };

@@ -30,16 +30,11 @@ You need a Linux machine (or a Proxmox container, see below) with Docker.
     cp .env.example .env
     cp site/plan.example.json site/plan.json
 
-Make a password hash for each person and add it to `.env`:
-
-    docker compose run --rm api node /app/hash-password.js 'their password'
-    nano .env      # one line per person: LOGIN_<USERNAME>=<hash>
-
 Then start it:
 
     docker compose up -d
 
-Open `http://<server-ip>/` and log in. Logs: `docker compose logs -f`.
+Open `http://<server-ip>/` and create the family's first account (you'll be the owner), then invite everyone else from **Family** in the account menu. Logs: `docker compose logs -f`.
 
 ### Running it in a Proxmox container
 
@@ -51,26 +46,44 @@ Open `http://<server-ip>/` and log in. Logs: `docker compose logs -f`.
 
 ## People, logins and admins
 
-People in the app (whose ticks and ratings are whose) come from the `"people"` block in `plan.json`. Logins are set in `.env`:
+Everyone logs in with their **email address and a password**. One family uses each server.
 
-    LOGIN_ALEX=scrypt....          # one line per login, made with hash-password.js
-    LOGIN_SAM=scrypt....
-    ADMIN_USERS=alex               # admins see everyone's ticks, ratings and notes, and can reset everything
-    PERSON_ALEX=alex               # which person a login ticks as (default: the username)
+1. **The first account:** open the site on a new server and you're asked to create the first account. That person is the family's **owner**. After that, nobody else can register.
+2. **Inviting people:** the owner and admins open **Family** (account menu) and make an invite: a name, an optional email, a portion size and (for the owner) whether they're an admin. They get a link to send by text or any messaging app. The person opens it, chooses a password and is logged in. Links work for 7 days and only once. New people are added to the plan's `"people"` block automatically (with a backup of the plan first).
+3. **Forgotten passwords:** an admin taps **Reset link** next to the person on the Family page and sends them the link (it works for 24 hours). If email is set up (below), **Forgot your password?** on the login page emails a link instead.
+4. **Your own account:** **Account** (account menu) changes your email or password, logs you out on your other devices, or deletes your account (and, if you choose, your history: About me answers, weigh-ins, ratings, exercise and chats).
+
+**Roles:**
+
+- **Owner:** one person. Can do everything, including making and removing admins. They can hand ownership to someone else.
+- **Admins:** edit the plan, approve changes suggested by Ask Claude, see everyone's ticks, ratings and answers, invite members and make reset links.
+- **Members:** see the plan, tick things off, and manage their own answers, progress and chats.
+
+**What everyone sees:**
 
 - **Shopping lists** are shared by everyone. Each ticked item shows who ticked it and when.
 - **Meal and exercise ticks, ratings and notes** are private. Each person only sees their own. Admins get a "Ticks for" picker to see anyone's, plus a **Ratings** tab.
-- Usernames are not case-sensitive. After changing `.env`, run `docker compose up -d`.
-- **Changing a password:** make a new hash, replace that person's line, then `docker compose up -d`. This logs that person out on every device.
-- People stay logged in on each device until they press **Log out**. A login lasts 400 days and renews each day the app is opened.
-- 10 wrong passwords from one address locks logins from that address for 15 minutes.
+
+**Staying logged in and security:**
+
+- People stay logged in on each device until they log out. A login lasts 400 days and renews each day the app is opened. Changing a password logs that person out everywhere else.
+- 10 wrong tries from one address (logging in, invites or reset links) locks that address for 15 minutes.
+- Passwords are stored scrambled with scrypt, never as plain text. Invite and reset links are stored only as hashes, so someone who reads the database can't use them.
 - The login cookie is signed with a random key in `data/session-secret`. Deleting it logs everyone out.
 
-## Adding people and the About me questions
+**Older username logins:** servers set up before email accounts used `LOGIN_<NAME>=<hash>` lines in `.env` (made with `hash-password.js`) and usernames added from Edit plan. These keep working. When someone logs in with one, the app asks them to add their email on the Account page. That turns the username into an account and keeps all their history (the username keeps working as another way to log in, with the account's password). The first admin to add their email becomes the owner. `ADMIN_USERS` and `PERSON_<NAME>` in `.env` still apply to usernames that haven't been turned into accounts yet.
 
-Admins can add someone from **Edit plan → People**: their name, a username, a starting password, their portion and whether they are an admin. They can log in straight away, and they are added to the plan with a backup kept first. Logins added this way are stored in `data/app.db`. Logins in `.env` keep working as before.
+**Emails (optional):** without email, invites and resets are links you share yourself. To have the server send them, add to `.env` and run `docker compose up -d`:
 
-Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to. People with a login added from the app can change their password on the same page.
+    SMTP_URL=smtps://you%40gmail.com:your-app-password@smtp.gmail.com:465
+    MAIL_FROM=Family Health Planner <you@gmail.com>
+    APP_URL=https://planner.example.com      # the address people use; links in emails point here
+
+Any email provider's SMTP settings work (for Gmail, make an "app password" in your Google account's security settings). In `SMTP_URL`, write `@` in the username as `%40`.
+
+## About me questions
+
+Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to.
 
 ## Uploading files
 

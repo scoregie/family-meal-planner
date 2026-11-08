@@ -1,10 +1,11 @@
 // People, logins and the "About me" questions.
 //
 //   GET  /api/people              admins: everyone in the plan, their logins and whether they've answered the questions
-//   POST /api/people              admins: add a person (to the plan) with a login
 //   GET  /api/profile?person=...  your own answers (admins: anyone's)
 //   PUT  /api/profile?person=...  save answers
-//   POST /api/password            change your own password (logins added from the app only)
+//   POST /api/password            change your own password (email accounts and usernames added from the app)
+//
+// New people are invited from the Family page (see accounts.js).
 //
 // Answers include health details, so only the person and admins can see them.
 const fs = require('fs');
@@ -91,11 +92,17 @@ function listPeople(ctx) {
   const plan = ctx.readPlan() || {};
   const block = plan.people || {};
   const logins = [];
+  // Email accounts, then older usernames that haven't been turned into accounts yet.
+  for (const a of db.listAccounts()) {
+    logins.push({ username: a.legacy_user || a.email, email: a.email, person: a.person, admin: a.role !== 'member', role: a.role, source: 'account', created_at: a.created_at });
+  }
   for (const username of auth.users()) {
+    if (auth.isLinked(username)) continue;
     const w = auth.describe(username);
     logins.push({ username, person: w.person, admin: w.admin, source: '.env' });
   }
   for (const row of db.listLogins()) {
+    if (auth.isLinked(row.username)) continue;
     logins.push({ username: row.username, person: row.person, admin: !!row.admin, source: 'app', created_at: row.created_at });
   }
   const people = Object.keys(block)
@@ -114,37 +121,6 @@ function listPeople(ctx) {
     });
   const known = new Set(people.map(p => p.person));
   return { people, otherLogins: logins.filter(l => !known.has(l.person)) };
-}
-
-// Adds a person: to the plan's "people" block (if they aren't there yet) and as a login.
-function addPerson(b, me, ctx) {
-  const name = String(b.name || '').trim();
-  const username = String(b.username || '').trim().toLowerCase();
-  const password = String(b.password || '');
-  const portion = b.portion === undefined || b.portion === '' ? 1 : Number(b.portion);
-
-  if (!name || name.length > 40) return [400, 'Enter a name (up to 40 characters).'];
-  if (!/^[a-z0-9_]{2,30}$/.test(username)) return [400, 'The username needs 2 to 30 letters, numbers or _ (no spaces).'];
-  if (auth.exists(username)) return [409, 'That username is already taken.'];
-  if (password.length < 8 || password.length > 200) return [400, 'The password needs at least 8 characters.'];
-  if (!Number.isFinite(portion) || portion < 0.3 || portion > 2.5) return [400, 'The portion should be between 0.3 and 2.5 (1.0 is an average serve).'];
-
-  const plan = ctx.readPlan();
-  if (!plan) return [500, 'plan.json could not be read.'];
-  const person = ctx.toKey(name);
-  if (!person) return [400, 'Enter a name with at least one letter or number.'];
-  plan.people = plan.people && typeof plan.people === 'object' ? plan.people : {};
-  const already = Object.keys(plan.people).find(k => plan.people[k] && plan.people[k].name && ctx.toKey(plan.people[k].name) === person);
-  if (!already) {
-    // A new key for the plan, not clashing with an existing one: "sam", then "sam-2".
-    let key = person;
-    let n = 2;
-    while (plan.people[key]) key = person + '-' + n++;
-    plan.people[key] = { name, portion };
-    ctx.savePlan(plan);
-  }
-  db.addLogin(username, auth.hash(password), person, !!b.admin, me.user);
-  return [200, { ok: true, person, username, addedToPlan: !already }];
 }
 
 // Answers the /api/people, /api/profile and /api/password requests. Returns true if it handled one.
@@ -167,11 +143,6 @@ async function handle(req, res, urlPath, url, me, ctx) {
       send(res, 200, listPeople(ctx));
       return true;
     }
-    if (req.method === 'POST') {
-      const [code, answer] = addPerson(await body(req), me, ctx);
-      send(res, code, typeof answer === 'string' ? { error: answer } : answer);
-      return true;
-    }
   }
 
   if (urlPath === '/api/profile') {
@@ -182,7 +153,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     }
     if (req.method === 'GET') {
       const profile = db.getProfile(who.person);
-      const ownAppLogin = who.person === me.person && !auth.isEnvLogin(me.user);
+      const ownAppLogin = who.person === me.person && (!!me.accountId || !auth.isEnvLogin(me.user));
       send(res, 200, {
         person: who.person,
         answers: profile ? profile.answers : null,
@@ -202,6 +173,23 @@ async function handle(req, res, urlPath, url, me, ctx) {
 
   if (urlPath === '/api/password' && req.method === 'POST') {
     const b = await body(req);
+    const password = String(b.password || '');
+    if (me.accountId) {
+      // An email account.
+      const account = db.getAccount(me.accountId);
+      if (!account || !auth.verify(String(b.current || ''), account.hash)) {
+        send(res, 400, { error: 'Your current password is not right.' });
+        return true;
+      }
+      if (password.length < 8 || password.length > 200) {
+        send(res, 400, { error: 'The new password needs at least 8 characters.' });
+        return true;
+      }
+      db.updateAccount(me.accountId, { hash: auth.hash(password) });
+      res.setHeader('Set-Cookie', auth.loginCookie(req, me.subject));
+      send(res, 200, { ok: true });
+      return true;
+    }
     if (auth.isEnvLogin(me.user)) {
       send(res, 400, { error: 'This login is set in .env on the server, so its password can only be changed there.' });
       return true;
@@ -211,14 +199,13 @@ async function handle(req, res, urlPath, url, me, ctx) {
       send(res, 400, { error: 'Your current password is not right.' });
       return true;
     }
-    const password = String(b.password || '');
     if (password.length < 8 || password.length > 200) {
       send(res, 400, { error: 'The new password needs at least 8 characters.' });
       return true;
     }
     db.setPassword(me.user, auth.hash(password));
     // Changing the password signs every device out. Log this one back in with a new cookie.
-    res.setHeader('Set-Cookie', auth.loginCookie(req, me.user));
+    res.setHeader('Set-Cookie', auth.loginCookie(req, me.subject));
     send(res, 200, { ok: true });
     return true;
   }

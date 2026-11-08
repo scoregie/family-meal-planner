@@ -17,6 +17,7 @@ const peopleRoutes = require('./people'); // adding people, the About me questio
 const progress = require('./progress');   // the progress dashboard, weigh-ins and imports
 const assistant = require('./assistant'); // the Claude assistant and requests for plan changes
 const appearance = require('./appearance'); // the household's colours, font, text size and icon
+const accounts = require('./accounts');     // email accounts: registering, invites, password resets, the family
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -516,7 +517,9 @@ async function handleRequest(req, res) {
   const url = new URL(req.url, 'http://x');   // the host does not matter; we only want the path and ?query
   const urlPath = url.pathname;
   try {
-    // Login, logout and Caddy's "is this person logged in?" check.
+    // Registering, invites and password resets (no login needed), then login, logout and
+    // Caddy's "is this person logged in?" check.
+    if (await accounts.handlePublic(req, res, urlPath, url, { readPlan, savePlan, toKey, people })) return;
     if (await auth.handle(req, res, urlPath)) return;
 
     // Everything under /api/ needs a login. `me` is {user, person, admin}.
@@ -533,6 +536,7 @@ async function handleRequest(req, res) {
     if (await peopleRoutes.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await progress.handle(req, res, urlPath, url, me, { readPlan, toKey, people })) return;
     if (await appearance.handle(req, res, urlPath, url, me)) return;
+    if (await accounts.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
 
     if (urlPath === '/api/state' && req.method === 'GET') return getState(res, me);
@@ -561,5 +565,8 @@ http.createServer(handleRequest)
   // Long enough for a big Apple Health export over slow Wi-Fi (Node's default is 5 minutes).
   .on('listening', function () { this.requestTimeout = 60 * 60 * 1000; })
   .listen(PORT, () => {
-    console.log('tick API on', PORT, 'logins:', auth.users().join(', ') || 'NONE - add LOGIN_<NAME> lines to .env');
+    let count = 0;
+    try { count = db.countAccounts(); } catch (e) { /* the database problem is logged elsewhere */ }
+    const older = auth.users().length ? ', older .env usernames: ' + auth.users().length : '';
+    console.log('API on', PORT, '- accounts:', count + older + (accounts.needsSetup() ? ' (open the site to create the family’s first account)' : ''));
   });

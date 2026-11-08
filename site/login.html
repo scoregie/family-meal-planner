@@ -44,6 +44,10 @@ button[type=submit]:disabled{opacity:.6}
 .msg{border-radius:.5rem;padding:.65rem .75rem;margin:0 0 1rem;font-size:.95rem}
 .msg.bad{color:var(--bad);background:var(--bad-bg)}
 .msg.ok{color:var(--ink);background:var(--bg);border:1px solid var(--line)}
+.links{text-align:center;margin:1rem 0 0;font-size:.92rem}
+.links a,.linkbtn{color:var(--accent);font-weight:700;background:none;border:0;font:inherit;font-weight:700;cursor:pointer;padding:.3rem;text-decoration:underline}
+.hint{color:var(--mute);font-size:.85rem;margin:-.6rem 0 1rem}
+[hidden]{display:none!important}
 </style>
 <script src="appearance.js"></script>
 </head>
@@ -51,33 +55,173 @@ button[type=submit]:disabled{opacity:.6}
 <main>
   <img class="logo" src="/logo.svg" alt="">
   <h1>Family Health Planner</h1>
-  <p class="sub">Meals, shopping, exercise and progress for the whole family.</p>
-  <form method="post" action="/auth/login" id="f">
-    <p class="msg" id="msg" role="alert" hidden></p>
+  <p class="sub" id="sub">Meals, shopping, exercise and progress for the whole family.</p>
+  <p class="msg" id="msg" role="alert" hidden></p>
+
+  <!-- Log in (a normal form, so password managers recognise it) -->
+  <form method="post" action="/auth/login" id="f" hidden>
     <input type="hidden" name="next" id="next" value="/">
-    <label for="u">Username</label>
-    <input id="u" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+    <label for="u">Email</label>
+    <input id="u" name="username" type="text" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+    <p class="hint">Haven’t added your email yet? Use your username.</p>
     <label for="p">Password</label>
     <div class="pw">
       <input id="p" name="password" type="password" autocomplete="current-password" required>
-      <button type="button" class="show" id="show" aria-pressed="false">Show</button>
+      <button type="button" class="show" aria-pressed="false" data-for="p">Show</button>
     </div>
     <button type="submit" id="go">Log in</button>
+    <p class="links"><button type="button" class="linkbtn" id="forgotLink">Forgot your password?</button></p>
+  </form>
+
+  <!-- Create the family's first account, invite, reset and "forgot password" forms (sent with fetch) -->
+  <form id="f2" hidden novalidate>
+    <div id="nameRow" hidden>
+      <label for="n">Your name</label>
+      <input id="n" autocomplete="name" maxlength="40">
+    </div>
+    <div id="emailRow" hidden>
+      <label for="e">Email</label>
+      <input id="e" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="200">
+    </div>
+    <div id="pwRow" hidden>
+      <label for="p2" id="p2Label">Choose a password</label>
+      <div class="pw">
+        <input id="p2" type="password" autocomplete="new-password" minlength="8" maxlength="200">
+        <button type="button" class="show" aria-pressed="false" data-for="p2">Show</button>
+      </div>
+      <p class="hint">At least 8 characters. A few words together is easy to remember and hard to guess.</p>
+    </div>
+    <button type="submit" id="go2">Continue</button>
+    <p class="links" id="backRow" hidden><a href="/login">Back to log in</a></p>
   </form>
 </main>
 <script>
-(function(){
-  var q=new URLSearchParams(location.search),m=document.getElementById("msg");
-  document.getElementById("next").value=q.get("next")||"/";
-  function say(t,cls){m.textContent=t;m.className="msg "+cls;m.hidden=false;}
-  if(q.get("e")==="locked")say("Too many wrong tries. Wait 15 minutes, then try again.","bad");
-  else if(q.get("e"))say("That username or password is wrong.","bad");
-  else if(q.has("out"))say("You have logged out.","ok");
-  document.getElementById(q.get("e")==="1"?"p":"u").focus();
-  var s=document.getElementById("show"),p=document.getElementById("p");
-  s.addEventListener("click",function(){var on=p.type==="password";p.type=on?"text":"password";s.textContent=on?"Hide":"Show";s.setAttribute("aria-pressed",on);});
-  document.getElementById("f").addEventListener("submit",function(){var b=document.getElementById("go");b.disabled=true;b.textContent="Logging in…";});
-  window.addEventListener("pageshow",function(){var b=document.getElementById("go");b.disabled=false;b.textContent="Log in";});
+// The login page has five jobs, chosen by the address:
+//   /login               log in (or, on a brand-new server, create the family's first account)
+//   /login?join=<link>   accept an invite: choose a password
+//   /login?reset=<link>  choose a new password
+//   /login?forgot        ask for a reset email (only works if email is set up on the server)
+(function () {
+  "use strict";
+  var q = new URLSearchParams(location.search);
+  var MODE = null;
+  function $(id) { return document.getElementById(id); }
+  function say(text, cls) {
+    var m = $("msg");
+    m.textContent = text;
+    m.className = "msg " + (cls || "bad");
+    m.hidden = !text;
+  }
+  function api(method, url, body) {
+    return fetch(url, {
+      method: method,
+      cache: "no-store",
+      headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) throw new Error(d.error || "Something went wrong (" + r.status + ").");
+        return d;
+      });
+    });
+  }
+  document.querySelectorAll(".show").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var p = $(b.getAttribute("data-for"));
+      var on = p.type === "password";
+      p.type = on ? "text" : "password";
+      b.textContent = on ? "Hide" : "Show";
+      b.setAttribute("aria-pressed", on);
+    });
+  });
+
+  function showLogin() {
+    MODE = "login";
+    $("f").hidden = false;
+    $("f2").hidden = true;
+    $("next").value = q.get("next") || "/";
+    if (q.get("e") === "locked") say("Too many wrong tries. Wait 15 minutes, then try again.");
+    else if (q.get("e")) say("That email or password is wrong.");
+    else if (q.has("out")) say("You have logged out.", "ok");
+    $(q.get("e") === "1" ? "p" : "u").focus();
+  }
+
+  // Shows the second form with the given rows.
+  function showForm(mode, sub, rows, button) {
+    MODE = mode;
+    $("f").hidden = true;
+    $("f2").hidden = false;
+    $("sub").textContent = sub;
+    ["nameRow", "emailRow", "pwRow"].forEach(function (r) { $(r).hidden = rows.indexOf(r) < 0; });
+    $("go2").textContent = button;
+    $("backRow").hidden = mode === "register";
+    var first = rows[0] && $(rows[0]).querySelector("input");
+    if (first) first.focus();
+  }
+
+  function goHome() {
+    location.href = "/";
+  }
+
+  $("f").addEventListener("submit", function () {
+    var b = $("go");
+    b.disabled = true;
+    b.textContent = "Logging in…";
+  });
+  window.addEventListener("pageshow", function () {
+    $("go").disabled = false;
+    $("go").textContent = "Log in";
+  });
+  $("forgotLink").addEventListener("click", function () {
+    say("");
+    showForm("forgot", "Enter your email. If email is set up on this server, we’ll send you a link to choose a new password.", ["emailRow"], "Send the link");
+    $("e").value = $("u").value.indexOf("@") > 0 ? $("u").value : "";
+  });
+
+  $("f2").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    say("");
+    var b = $("go2");
+    var label = b.textContent;
+    var password = $("p2").value;
+    if (!$("pwRow").hidden && password.length < 8) return say("The password needs at least 8 characters.");
+    b.disabled = true;
+    b.textContent = "Please wait…";
+    var done;
+    if (MODE === "register") done = api("POST", "/auth/register", { name: $("n").value, email: $("e").value, password: password }).then(goHome);
+    else if (MODE === "join") done = api("POST", "/auth/join", { t: q.get("join"), email: $("e").value, password: password }).then(goHome);
+    else if (MODE === "reset") done = api("POST", "/auth/reset", { t: q.get("reset"), password: password }).then(goHome);
+    else done = api("POST", "/auth/forgot", { email: $("e").value }).then(function (d) {
+      say(d.mail
+        ? "If that email has an account, a link is on its way. It works for 1 hour. Check your junk folder too."
+        : "Email isn’t set up on this server. Ask an admin in your family for a reset link (Family page → your name → Reset link).", "ok");
+    });
+    done.catch(function (e) { say(e.message); }).then(function () {
+      b.disabled = false;
+      b.textContent = label;
+    });
+  });
+
+  // Choose the mode.
+  if (q.get("join")) {
+    api("GET", "/auth/invite?t=" + encodeURIComponent(q.get("join"))).then(function (inv) {
+      showForm("join", "Welcome, " + inv.name + "! Choose a password to join your family’s planner" + (inv.role === "admin" ? " as an admin." : "."), inv.email ? ["pwRow"] : ["emailRow", "pwRow"], "Join");
+      if (inv.email) say("You’ll log in with " + inv.email + ".", "ok");
+    }).catch(function (e) { showLogin(); say(e.message); });
+  } else if (q.get("reset")) {
+    api("GET", "/auth/reset?t=" + encodeURIComponent(q.get("reset"))).then(function (r) {
+      showForm("reset", "Choose a new password" + (r.email ? " for " + r.email : "") + ". This logs you out on your other devices.", ["pwRow"], "Save and log in");
+      $("p2Label").textContent = "New password";
+    }).catch(function (e) { showLogin(); say(e.message); });
+  } else {
+    api("GET", "/auth/status").then(function (st) {
+      if (st.setup) {
+        showForm("register", "Welcome! Create the first account. You’ll be the family’s owner, and you can invite everyone else afterwards.", ["nameRow", "emailRow", "pwRow"], "Create account");
+      } else {
+        showLogin();
+      }
+    }).catch(showLogin);
+  }
 })();
 </script>
 </body>
