@@ -6,7 +6,7 @@
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>Ask Claude</title>
+<title>Ask AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
@@ -95,7 +95,7 @@ section.card{background:var(--card);border:1px solid var(--line);border-radius:.
 <body>
 <main>
   <div class="top">
-    <div><h1>Ask Claude</h1><p class="sub" id="sub">Loading…</p></div>
+    <div><h1>Ask AI</h1><p class="sub" id="sub">Loading…</p></div>
     <a class="btn" href="./">← Back to the app</a>
   </div>
   <div id="pmsg"></div>
@@ -128,13 +128,13 @@ section.card{background:var(--card);border:1px solid var(--line);border-radius:.
 <form class="ask" id="ask" hidden>
   <div class="in">
     <label class="sr" for="text">Your message</label>
-    <textarea id="text" rows="1" maxlength="4000" placeholder="Ask Claude…"></textarea>
+    <textarea id="text" rows="1" maxlength="4000" placeholder="Ask a question…"></textarea>
     <button class="btn primary" id="sendBtn" type="submit">Send</button>
   </div>
-  <p class="note">Claude can make mistakes. Changes are only suggestions until an admin applies them. Your doctor’s advice comes first.</p>
+  <p class="note">AI can make mistakes. Changes are only suggestions until an admin applies them. Your doctor’s advice comes first.</p>
 </form>
 <script>
-// The Claude assistant page. Messages go to POST /api/assistant/chat and the answer streams back
+// The AI assistant page. Messages go to POST /api/assistant/chat and the answer streams back
 // as "server-sent events": bits of text, steps ("Looking at Week 2…"), and suggested changes.
 // Suggested changes appear as cards: people send them to the admins, and admins apply them.
 "use strict";
@@ -185,8 +185,8 @@ function when(ms) {
   return d.toLocaleDateString("en-AU", { day: "numeric", month: "short" });
 }
 
-// ---------- Claude's text, as safe HTML ----------
-// Claude writes in Markdown. This handles the parts it uses (paragraphs, lists, **bold**, headings)
+// ---------- The AI's text, as safe HTML ----------
+// The AI writes in Markdown. This handles the parts it uses (paragraphs, lists, **bold**, headings)
 // by building elements, never by inserting HTML, so nothing in a message can run as code.
 function inline(parent, text) {
   var parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/);
@@ -300,7 +300,7 @@ function hello() {
   log.textContent = "";
   var box = el("div", "hello");
   var who = PERSON === ME.person ? "your" : (NAMES[PERSON] || PERSON) + "’s";
-  box.appendChild(el("p", null, "Ask about " + who + " meals, shopping, exercise or progress. Claude looks at the plan and can suggest changes, which " + (ME.admin ? "you can apply." : "you can send to the admins to approve.")));
+  box.appendChild(el("p", null, "Ask about " + who + " meals, shopping, exercise or progress. The AI looks at the plan and can suggest changes, which " + (ME.admin ? "you can apply." : "you can send to the admins to approve.")));
   var ideas = el("div", "ideas");
   IDEAS.forEach(function (idea) {
     var b = el("button", "btn", idea);
@@ -309,7 +309,7 @@ function hello() {
     ideas.appendChild(b);
   });
   box.appendChild(ideas);
-  box.appendChild(el("p", "small", "Supermarkets don’t let other apps add to your cart, so use Copy list and the store links on the shopping list. What you type, and " + who + " About me answers, meal history and progress when needed, are sent to Anthropic (the makers of Claude) to answer."));
+  box.appendChild(el("p", "small", "Supermarkets don’t let other apps add to your cart, so use Copy list and the store links on the shopping list. What you type, and " + who + " About me answers, meal history and progress when needed, are sent to " + ({ anthropic: "Anthropic (Claude)", openai: "OpenAI", gemini: "Google (Gemini)", ollama: "your own Ollama server" }[STATUS.provider] || "the AI company") + " to answer."));
   log.appendChild(box);
 }
 
@@ -474,9 +474,9 @@ function loadRequests() {
     var box = $("requests");
     box.textContent = "";
     $("reqNote").textContent = ME.admin
-      ? "Changes people have asked for. Applying one saves the plan (and keeps a backup of the old plan). If the plan has changed since, it may no longer fit; ask Claude to suggest it again."
+      ? "Changes people have asked for. Applying one saves the plan (and keeps a backup of the old plan). If the plan has changed since, it may no longer fit; ask the AI to suggest it again."
       : "Your suggested changes. Drafts are only seen by you until you send them to the admins.";
-    if (!REQUESTS.length) box.appendChild(el("p", "small", "Nothing here yet. Ask Claude for a change on the Chat tab."));
+    if (!REQUESTS.length) box.appendChild(el("p", "small", "Nothing here yet. Ask the AI for a change on the Chat tab."));
     REQUESTS.forEach(function (r) { box.appendChild(proposalCard(r)); });
   }).catch(function () { /* shown on the next try */ });
 }
@@ -577,7 +577,7 @@ fetch("/auth/me", { cache: "no-store" }).then(function (response) {
     }
     return loadStatus();
   }).then(function () {
-    $("sub").textContent = STATUS.enabled ? "Help with meals, shopping, exercise and progress" : "Not set up yet";
+    $("sub").textContent = STATUS.enabled ? "Help with meals, shopping, exercise and progress, using " + (STATUS.name || "AI") + (STATUS.model ? " (" + STATUS.model + ")" : "") : "Not set up";
     $("app").hidden = false;
     if (!STATUS.enabled) $("pmsg").appendChild(el("div", "info", STATUS.reason));
     loadRequests();

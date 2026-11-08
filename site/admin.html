@@ -1092,7 +1092,7 @@ fetch("/auth/me", { cache: "no-store" }).then(function (response) {
 });
 </script>
 <script>
-// Shows how many people are waiting for an admin to look at a suggested change (from Ask Claude).
+// Shows how many people are waiting for an admin to look at a suggested change (from Ask AI).
 fetch("/api/requests", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (got) {
   if (!got || !got.admin) return;
   var open = got.requests.filter(function (r) { return r.status === "open"; }).length;

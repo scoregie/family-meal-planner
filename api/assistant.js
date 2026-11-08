@@ -46,35 +46,26 @@ try {
 } catch (e) {
   sdkProblem = 'The Anthropic SDK is not installed. Restart the app with docker compose up -d (it installs on start, and needs the internet once).';
 }
-let householdClient = null;
-const ownClients = new Map();   // account id -> {key, client}, for people who added their own API key
+const ai = require('./ai');
+const claudeClients = new Map();   // API key -> Anthropic client
 
-// The person's own API key (decrypted), if they saved one in Settings.
-function ownKey(me) {
-  if (!me || !me.accountId) return null;
-  const sealed = db.getAiKey(me.accountId);
-  return sealed ? secrets.decrypt(sealed) : null;
-}
-
-// Whether the assistant can be used by this person, and with whose key. Their own key (from
-// Settings) is used first; otherwise the household's ANTHROPIC_API_KEY from .env.
-// Returns {enabled, own, client} or {enabled: false, reason}.
+// Whether the assistant can be used by this person, and which AI: their own key (from Settings)
+// first, otherwise the family's choice (Plan setup). See ai.js.
+// Returns {enabled, own, provider, name, model, client (Claude only), key, base} or {enabled: false, reason}.
 function setup(me) {
-  if (!Anthropic) return { enabled: false, reason: sdkProblem };
-  const key = ownKey(me);
-  if (key) {
-    let cached = ownClients.get(me.accountId);
-    if (!cached || cached.key !== key) {
-      cached = { key, client: new Anthropic({ apiKey: key }) };
-      ownClients.set(me.accountId, cached);
+  const ready = ai.resolve(me);
+  if (!ready.enabled) return ready;
+  if (ready.provider === 'anthropic') {
+    if (!Anthropic) return { enabled: false, provider: 'anthropic', name: 'Claude', reason: sdkProblem };
+    const key = ready.own ? ready.key : '';
+    let client = claudeClients.get(key);
+    if (!client) {
+      client = key ? new Anthropic({ apiKey: key }) : new Anthropic();
+      claudeClients.set(key, client);
     }
-    return { enabled: true, own: true, client: cached.client };
+    ready.client = client;
   }
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
-    return { enabled: false, reason: 'Add your own Claude API key in Settings, or ask an admin to add one for the whole family (ANTHROPIC_API_KEY in .env on the server; see the README).' };
-  }
-  if (!householdClient) householdClient = new Anthropic();
-  return { enabled: true, own: false, client: householdClient };
+  return ready;
 }
 
 // Checks a pasted API key really works (a free request that just looks up the model).
@@ -444,8 +435,55 @@ async function chatTurn(req, res, me, ctx) {
   const made = [];   // drafts made in this turn
   res.on('close', () => { aborted = true; });
 
+  // Runs the tools the AI asked for; returns the results to send back.
+  function runCalls(calls) {
+    const results = [];
+    for (const call of calls) {
+      event('step', { label: stepLabel(call.name, call.input, ctx.readPlan() || {}) });
+      let out;
+      try {
+        out = runTool(call.name, call.input, chat, ctx);
+      } catch (e) {
+        out = { content: 'Error: ' + String(e.message || e), isError: true };
+      }
+      if (out.proposal) {
+        made.push(out.proposal.id);
+        event('proposal', publicRequest(out.proposal));
+      }
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: out.content, is_error: !!out.isError });
+    }
+    return results;
+  }
+
+  const controller = new AbortController();
+  res.on('close', () => controller.abort());
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS && !aborted; round++) {
+      if (ready.provider !== 'anthropic') {
+        // OpenAI, Gemini or Ollama (ai.js turns the reply into the same shape as Claude's).
+        const message = await ai.chat(ready, { system: system(), messages, tools: TOOLS, maxTokens: 8000, onText: delta => event('text', delta), signal: controller.signal });
+        inputTokens += message.usage.input_tokens || 0;
+        outputTokens += message.usage.output_tokens || 0;
+        messages.push({ role: 'assistant', content: message.content.length ? message.content : [{ type: 'text', text: '' }] });
+        if (message.stop_reason === 'refusal') {
+          event('error', { message: ready.name + ' couldn’t help with that one. Try asking a different way.' });
+          messages.pop();
+          break;
+        }
+        const calls = message.content.filter(block => block.type === 'tool_use');
+        if (message.stop_reason === 'max_tokens') {
+          if (calls.length) messages.pop();
+          event('error', { message: 'The answer was too long and got cut off. Try asking for less at once.' });
+          finished = !calls.length;
+          break;
+        }
+        if (!calls.length) {
+          finished = true;
+          break;
+        }
+        messages.push({ role: 'user', content: runCalls(calls) });
+        continue;
+      }
       const stream = client.beta.messages.stream({
         model: MODEL,
         max_tokens: 16000,
@@ -492,34 +530,20 @@ async function chatTurn(req, res, me, ctx) {
         break;
       }
       // Run every tool Claude asked for, and send all the results back together.
-      const results = [];
-      for (const call of calls) {
-        event('step', { label: stepLabel(call.name, call.input, ctx.readPlan() || {}) });
-        let out;
-        try {
-          out = runTool(call.name, call.input, chat, ctx);
-        } catch (e) {
-          out = { content: 'Error: ' + String(e.message || e), isError: true };
-        }
-        if (out.proposal) {
-          made.push(out.proposal.id);
-          event('proposal', publicRequest(out.proposal));
-        }
-        results.push({ type: 'tool_result', tool_use_id: call.id, content: out.content, is_error: !!out.isError });
-      }
-      messages.push({ role: 'user', content: results });
+      messages.push({ role: 'user', content: runCalls(calls) });
     }
     if (!finished && !aborted && messages[messages.length - 1].role === 'user' && messages.length > chat.messages.length + 1) {
       event('error', { message: 'That took too many steps. Try a smaller question.' });
     }
   } catch (err) {
     let message = 'Something went wrong talking to Claude. Try again in a moment.';
-    if (err instanceof Anthropic.AuthenticationError) message = ready.own ? 'Your Claude key was not accepted. Check it in Settings → Your Claude key.' : 'The family’s Claude key (ANTHROPIC_API_KEY in .env) was not accepted. An admin needs to check it.';
+    if (ready.provider !== 'anthropic') message = err && err.name === 'AbortError' ? '' : ai.explain(err, ready);
+    else if (err instanceof Anthropic.AuthenticationError) message = ready.own ? 'Your Claude key was not accepted. Check it in Settings → Your Claude key.' : 'The family’s Claude key (ANTHROPIC_API_KEY in .env) was not accepted. An admin needs to check it.';
     else if (err instanceof Anthropic.RateLimitError) message = 'Claude is busy right now (rate limit). Try again in a minute.';
     else if (err instanceof Anthropic.APIError && err.status >= 500) message = 'Claude’s servers had a problem. Try again in a moment.';
     else if (err instanceof Anthropic.APIError) message = 'Claude could not answer: ' + String(err.message || '').slice(0, 300);
     console.error('assistant:', err && err.message ? err.message : err);
-    event('error', { message });
+    if (message) event('error', { message });
   }
 
   db.countUsage(me.user, today(), inputTokens, outputTokens, 1);
@@ -626,7 +650,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     const person = String(url.searchParams.get('person') || me.person || '').toLowerCase();
     const canSee = person === me.person || me.admin;
     send(res, 200, {
-      enabled: ready.enabled, reason: ready.reason || null, model: MODEL, ownKey: !!ready.own,
+      enabled: ready.enabled, reason: ready.reason || null, model: ready.model || MODEL, provider: ready.provider, name: ready.name, ownKey: !!ready.own,
       limit: DAILY_LIMIT, used: db.usage(me.user, today()).messages,
       chats: canSee && ctx.people().includes(person) ? db.listChats(person, 30).filter(c => me.admin || c.user === me.user) : [],
     });

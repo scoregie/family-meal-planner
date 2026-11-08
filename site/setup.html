@@ -28,13 +28,25 @@ textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var
 .wk ul{margin:.3rem 0 .2rem 1.1rem;padding:0;font-size:.9rem}
 .step{display:inline-grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:.85rem;margin-right:.35rem}
 .details{white-space:pre-wrap}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:.5rem;border:0;margin:.4rem 0;padding:0}
+.choice{position:relative}
+.choice input{position:absolute;opacity:0;width:1px;height:1px}
+.choice span{display:block;border:2px solid var(--line);border-radius:.6rem;padding:.55rem .75rem;cursor:pointer;height:100%;box-sizing:border-box}
+.choice span b{display:block}
+.choice span small{display:block;color:var(--mute);font-size:.82rem;margin-top:.15rem}
+.choice input:checked+span{border-color:var(--accent);background:var(--chip,rgba(0,0,0,.03))}
+.choice input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+.choice input:disabled+span{opacity:.6;cursor:default}
+select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;max-width:100%}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.warn{border-left:4px solid var(--mid,#8a5a00);padding:.5rem .8rem;background:var(--bg);border-radius:.3rem;font-size:.92rem;margin:.6rem 0}
 </style>
 <script src="appearance.js"></script>
 </head>
 <body>
 <main>
   <div class="top">
-    <div><h1>Plan setup</h1><p class="sub">Get everyone’s answers in, then have Claude draft your family’s 4-week plan</p></div>
+    <div><h1>Plan setup</h1><p class="sub">Get everyone’s answers in, choose how the plan is made, then approve your family’s 4-week plan</p></div>
     <a class="btn" href="./">← Back to the app</a>
   </div>
   <div id="msg"></div>
@@ -62,13 +74,19 @@ textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var
       <p class="note" style="margin-top:.8rem"><a href="family.html">Invite someone with their own login →</a></p>
     </section>
 
+    <section class="card" id="aiCard">
+      <h2><span class="step">2</span>Choose your AI</h2>
+      <p class="note">The plan can be written by an AI, which fits it closely to everyone’s answers, or made by the app’s own plan builder, which needs no AI and costs nothing. The choice here is also what Ask AI uses for the family. Anyone can use their own AI key instead, in Settings.</p>
+      <div id="aiBody"></div>
+    </section>
+
     <section class="card" id="draftCard">
-      <h2><span class="step">2</span><span id="draftTitle">Draft the plan</span></h2>
+      <h2><span class="step">3</span><span id="draftTitle">Draft the plan</span></h2>
       <div id="draftBody"></div>
     </section>
 
     <section class="card" id="reviewCard" hidden>
-      <h2><span class="step">3</span>Review and approve</h2>
+      <h2><span class="step">4</span>Review and approve</h2>
       <div id="review"></div>
     </section>
   </div>
@@ -142,7 +160,94 @@ function renderPeople() {
   if (!DATA.people.length) box.appendChild(el("p", "note", "Nobody is in the plan yet. Add people below, or invite them."));
 }
 
-// Step 2: the button to draft (or rebuild) the plan, or its progress while Claude writes it.
+// Step 2: which AI the family uses (or none), and its model.
+var AI_ABOUT = {
+  none: ["No AI", "The app’s built-in plan builder. Free and private: nothing leaves your server. Plans are simpler than an AI’s."],
+  anthropic: ["Claude", "Anthropic. Needs ANTHROPIC_API_KEY on the server. Writes the most detailed plans."],
+  openai: ["OpenAI", "ChatGPT’s maker. Needs OPENAI_API_KEY on the server."],
+  gemini: ["Gemini", "Google. Needs GEMINI_API_KEY on the server."],
+  ollama: ["Ollama (local)", "A free AI running on your own computer. Needs OLLAMA_URL on the server and a powerful machine."],
+};
+var aiModels = {};   // provider -> [models], once loaded
+
+function renderAI() {
+  var box = $("aiBody");
+  box.textContent = "";
+  var fam = DATA.ai.family, keys = DATA.ai.keys;
+  var set = el("fieldset", "choices");
+  var legend = el("legend", "sr", "Which AI");
+  set.appendChild(legend);
+  ["none", "anthropic", "openai", "gemini", "ollama"].forEach(function (p) {
+    var label = el("label", "choice");
+    var input = el("input");
+    input.type = "radio";
+    input.name = "aiChoice";
+    input.value = p;
+    input.checked = fam.provider === p;
+    input.disabled = p !== "none" && !keys[p];
+    input.onchange = function () { pickAI(p); };
+    label.appendChild(input);
+    var span = el("span");
+    span.appendChild(el("b", null, AI_ABOUT[p][0] + (p !== "none" && !keys[p] ? " (not set up)" : "")));
+    span.appendChild(el("small", null, AI_ABOUT[p][1]));
+    label.appendChild(span);
+    set.appendChild(label);
+  });
+  box.appendChild(set);
+  var modelRow = el("div", "row");
+  modelRow.id = "modelRow";
+  box.appendChild(modelRow);
+  if (fam.provider !== "none") showModels(fam.provider, fam.model);
+  if (DATA.claude.own) box.appendChild(el("p", "note", "You have your own " + DATA.claude.name + " key in Settings, so plans you draft use that (" + (DATA.claude.model || "") + ")."));
+  box.appendChild(el("p", "note", "To set up an AI, add its key to .env on the server and restart (see the README). Chat subscriptions like ChatGPT Plus or Claude Pro can’t be used by other apps; each company sells API access separately, paid per use."));
+}
+
+function pickAI(p) {
+  if (p === "none" || p === "anthropic") {
+    saveAI(p, p === "anthropic" ? (DATA.ai.family.provider === "anthropic" && DATA.ai.family.model) || "" : "");
+    $("modelRow").textContent = "";
+    if (p === "anthropic") showModels(p, DATA.ai.family.model);
+    return;
+  }
+  showModels(p, null, true);
+}
+
+// The model list for a provider, loaded from its API with the server's key.
+function showModels(p, current, saveFirst) {
+  var row = $("modelRow");
+  row.textContent = "";
+  row.appendChild(el("span", "note", "Loading models…"));
+  var got = aiModels[p] ? Promise.resolve(aiModels[p]) : api("GET", "/api/plan/ai/models?provider=" + p).then(function (d) { aiModels[p] = d.models; return d.models; });
+  got.then(function (models) {
+    row.textContent = "";
+    var label = el("label", "note", "Model ");
+    var sel = el("select");
+    models.forEach(function (m) {
+      var o = el("option", null, m);
+      o.value = m;
+      o.selected = m === current;
+      sel.appendChild(o);
+    });
+    if (!current && models[0]) sel.value = models[0];
+    sel.onchange = function () { saveAI(p, sel.value); };
+    label.appendChild(sel);
+    row.appendChild(label);
+    if (saveFirst) saveAI(p, sel.value);
+  }).catch(function (e) {
+    row.textContent = "";
+    row.appendChild(el("div", "msg err", e.message));
+  });
+}
+
+function saveAI(p, model) {
+  api("PUT", "/api/plan/ai", { provider: p, model: model }).then(function (got) {
+    DATA.ai.family = got.family;
+    status(p === "none" ? "Saved: no AI. Plans use the built-in plan builder." : "Saved: the family uses " + AI_ABOUT[p][0] + (model ? " (" + model + ")" : "") + ".");
+    return api("GET", "/api/plan/setup").then(function (d) { DATA = d; renderDraft(); });
+  }).catch(function (e) { status(e.message, true); });
+}
+
+// Step 3: the button to draft (or rebuild) the plan, or its progress while the AI writes it.
 function renderDraft() {
   var box = $("draftBody");
   box.textContent = "";
@@ -152,7 +257,7 @@ function renderDraft() {
   $("draftTitle").textContent = DATA.isExample ? "Draft the plan" : "Draft a new plan";
 
   if (job && job.state === "running") {
-    box.appendChild(el("p", null, "Claude is writing your plan: " + (job.stage || "starting") + "…"));
+    box.appendChild(el("p", null, (DATA.claude.name || "The AI") + " is writing your plan: " + (job.stage || "starting") + "…"));
     var bar = el("div", "bar");
     var fill = el("i");
     fill.style.width = Math.round((job.progress || 0.02) * 100) + "%";
@@ -165,41 +270,53 @@ function renderDraft() {
   }
   if (job && job.state === "failed") box.appendChild(el("div", "msg err", "The last draft didn’t work: " + job.error));
 
-  if (!DATA.claude.enabled) {
-    box.appendChild(el("p", "note", DATA.claude.reason || "Claude isn’t set up."));
-    var link = el("a", "btn", "Add your Claude key in Settings");
-    link.href = "settings.html";
-    box.appendChild(link);
-    return;
+  var useAI = DATA.claude.enabled;
+  var name = DATA.claude.name || "the AI";
+  if (useAI) {
+    box.appendChild(el("p", "note", name + " writes 4 weeks of meals, snacks, recipes, shopping lists and exercise for everyone, from their About me answers and the stores you shop at. It takes 5 to 10 minutes and uses " +
+      (DATA.claude.own ? "your own " + name + " key" : "the family’s " + name + " key") + " (one long request, so it costs more than a chat). Nothing changes until you approve it." +
+      (DATA.isExample ? "" : " Approving a new plan replaces the current one (it’s backed up first) and everyone’s ticks start fresh.")));
+  } else {
+    box.appendChild(el("p", "note", "The app’s plan builder picks meals from its recipe library to fit everyone’s answers (allergies, diets, foods they won’t eat, cooking time, budget and portions), adds up the shopping lists, and builds a gentle exercise plan. It takes a moment and costs nothing. Nothing changes until you approve it." +
+      (DATA.isExample ? "" : " Approving a new plan replaces the current one (it’s backed up first) and everyone’s ticks start fresh.")));
   }
-
-  box.appendChild(el("p", "note", "Claude writes 4 weeks of meals, snacks, recipes, shopping lists and exercise for everyone, from their About me answers and the stores you shop at. It takes 5 to 10 minutes and uses " +
-    (DATA.claude.own ? "your own Claude key" : "the family’s Claude key") + " (one long request, so it costs more than a chat). Nothing changes until you approve it." +
-    (DATA.isExample ? "" : " Approving a new plan replaces the current one (it’s backed up first) and everyone’s ticks start fresh.")));
+  var warn = el("p", "warn", "Please check the meal and exercise plan with your GP, dietitian or physio before starting, especially for anyone with a health condition, taking medicines, pregnant, or a child. The plan is general information, not medical advice.");
+  box.appendChild(warn);
   box.appendChild(el("p", null, finished + " of " + all + " finished."));
-  var label = el("label", "f", "Anything Claude should know for the whole family? (optional)");
+  var label = el("label", "f", "Anything " + name + " should know for the whole family? (optional)");
+  label.hidden = !useAI;
   label.htmlFor = "note";
   box.appendChild(label);
   var note = el("textarea");
   note.id = "note";
+  note.hidden = !useAI;
   note.maxLength = 2000;
   note.placeholder = "e.g. Keep it under $250 a week. Thursday is footy night, so something quick.";
   box.appendChild(note);
   var row = el("div", "row");
   var ready = all > 0 && finished === all;
-  var button = el("button", "btn primary", (DATA.isExample ? "Draft our plan" : "Rebuild our plan") + (ready ? "" : " anyway"));
-  button.type = "button";
-  button.disabled = !all;
-  button.onclick = function () {
-    if (!ready && !confirm("Not everyone has finished their answers. Draft the plan anyway?")) return;
+  function start(how, button) {
+    if (!ready && !confirm("Not everyone has finished their answers. Make the plan anyway?")) return;
     if (DATA.draft && !confirm("There’s already a draft waiting for approval. Replace it with a new one?")) return;
     button.disabled = true;
-    api("POST", "/api/plan/draft", { note: note.value }).then(load).catch(function (e) {
+    api("POST", "/api/plan/draft", { how: how, note: note.value }).then(load).catch(function (e) {
       button.disabled = false;
       status(e.message, true);
     });
-  };
-  row.appendChild(button);
+  }
+  var verb = DATA.isExample ? "Draft our plan" : "Rebuild our plan";
+  if (useAI) {
+    var button = el("button", "btn primary", verb + " with " + name + (ready ? "" : " anyway"));
+    button.type = "button";
+    button.disabled = !all;
+    button.onclick = function () { start("ai", button); };
+    row.appendChild(button);
+  }
+  var builtin = el("button", useAI ? "btn" : "btn primary", useAI ? "Build it without AI" : verb + (ready ? "" : " anyway"));
+  builtin.type = "button";
+  builtin.disabled = !all;
+  builtin.onclick = function () { start("builtin", builtin); };
+  row.appendChild(builtin);
   if (!ready && all) row.appendChild(el("span", "note", "Best once everyone has finished."));
   box.appendChild(row);
 }
@@ -263,7 +380,8 @@ function renderReview() {
   row.appendChild(ok);
   row.appendChild(no);
   box.appendChild(row);
-  box.appendChild(el("p", "note", "Want changes? Approve it and ask Claude for tweaks afterwards, or discard it and draft again with a note."));
+  box.appendChild(el("p", "warn", "Before you start: please check this meal and exercise plan with your GP, dietitian or physio, especially for anyone with a health condition, taking medicines, pregnant, or a child."));
+  box.appendChild(el("p", "note", "Want changes? Approve it and use Ask AI or Edit plan for tweaks afterwards, or discard it and make another."));
 }
 
 function load() {
@@ -271,6 +389,7 @@ function load() {
     DATA = d;
     $("app").hidden = false;
     renderPeople();
+    renderAI();
     renderDraft();
     renderReview();
   }).catch(function (e) {

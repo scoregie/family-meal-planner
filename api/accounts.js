@@ -376,28 +376,47 @@ async function deleteMine(req, res, me) {
   return send(res, 200, { ok: true }, auth.logoutCookie(req));
 }
 
-// The last 4 characters of someone's saved API key ("…4f2a"), so they can tell which key it is.
-// The whole key is never sent back to the browser.
-function aiKeyHint(me) {
-  if (!me.accountId) return null;
-  const key = secrets.decrypt(db.getAiKey(me.accountId));
-  return key ? '…' + key.slice(-4) : null;
+// The person's own AI key, for showing in Settings: {provider, name, model, hint} (the last 4
+// characters, so they can tell which key it is). The whole key is never sent back to the browser.
+function aiKeyInfo(me) {
+  const own = require('./ai').ownChoice(me);
+  if (!own) return null;
+  const ai = require('./ai');
+  return { provider: own.provider, name: ai.PROVIDERS[own.provider].name, model: own.model || null, hint: '…' + String(own.key).slice(-4) };
 }
 
+// PUT {provider, key, model?}: check and save a key (the model defaults to the best one it can use).
+// PUT {provider, model} with no key: change the model for the key already saved. DELETE: remove it.
 async function aiKey(req, res, me) {
+  const ai = require('./ai');
   if (!me.accountId) return send(res, 400, { error: 'Add your email on the Account page first.' });
   if (req.method === 'DELETE') {
-    db.setAiKey(me.accountId, null);
+    ai.saveOwn(me, null);
     return send(res, 200, { ok: true });
   }
   if (req.method !== 'PUT') return send(res, 404, { error: 'not found' });
   const b = await body(req);
-  const key = String(b.key || '').trim();
-  if (!/^sk-ant-[A-Za-z0-9_-]{20,300}$/.test(key)) return send(res, 400, { error: 'That doesn’t look like a Claude API key. They start with “sk-ant-”.' });
-  const problem = await require('./assistant').checkKey(key);
-  if (problem) return send(res, 400, { error: problem });
-  db.setAiKey(me.accountId, secrets.encrypt(key));
-  return send(res, 200, { ok: true, hint: '…' + key.slice(-4) });
+  const provider = String(b.provider || 'anthropic');
+  const p = ai.PROVIDERS[provider];
+  if (!p || p.familyOnly) return send(res, 400, { error: 'Choose Claude, OpenAI or Gemini.' });
+  const model = String(b.model || '').slice(0, 100);
+  let key = String(b.key || '').trim();
+  if (!key) {
+    const own = ai.ownChoice(me);
+    if (!own || own.provider !== provider) return send(res, 400, { error: 'Paste your ' + p.name + ' API key first.' });
+    key = own.key;
+  } else if (!p.keyPattern.test(key)) {
+    return send(res, 400, { error: 'That doesn’t look like ' + (provider === 'openai' ? 'an ' : 'a ') + p.name + ' API key. They start with “' + p.keyStart + '”.' });
+  }
+  let models;
+  try {
+    models = (await ai.checkKey(provider, key)).models;
+  } catch (e) {
+    return send(res, 400, { error: String(e.message || e) });
+  }
+  const chosen = model && models.includes(model) ? model : models[0];
+  ai.saveOwn(me, { provider, key, model: chosen });
+  return send(res, 200, { ok: true, info: aiKeyInfo(me), models });
 }
 
 // ---------------------------------------------------------------------------
@@ -516,7 +535,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     send(res, 200, {
       email: account ? account.email : null, role: me.role, person: me.person, name: nameOf(me.person, ctx),
       needsEmail: !!me.needsEmail, username: me.needsEmail ? me.user : account && account.legacy_user,
-      hasAiKey: !!(account && account.has_ai_key), aiKeyHint: aiKeyHint(me), mail: mailer.configured(),
+      hasAiKey: !!(account && account.has_ai_key), aiKey: aiKeyInfo(me), aiKeyHint: (aiKeyInfo(me) || {}).hint || null, mail: mailer.configured(),
     });
     return true;
   }

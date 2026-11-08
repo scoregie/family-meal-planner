@@ -301,7 +301,7 @@ function backups() {
 // Answers /api/plan... requests. Returns true if it handled the request.
 async function handlePlan(req, res, urlPath, me) {
   if (!urlPath.startsWith('/api/plan')) return false;
-  if (urlPath === '/api/plan/setup' || urlPath === '/api/plan/draft') return false;   // plandraft.js
+  if (['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models'].includes(urlPath)) return false;   // plandraft.js
   if (!me.admin) {
     send(res, 403, { error: 'only an admin can edit the plan' });
     return true;

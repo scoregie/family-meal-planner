@@ -1,12 +1,15 @@
-// Getting the family's plan ready: who has finished their About me questions, and asking Claude
-// to draft a whole new 4-week plan from everyone's answers.
+// Getting the family's plan ready: who has finished their About me questions, which AI the family
+// uses (or none), and drafting a whole new 4-week plan from everyone's answers, either with AI or
+// with the built-in plan builder (planbuilder.js).
 //
-//   GET  /api/plan/setup     admins: everyone in the plan, how far through About me they are, and
-//                            the draft (running, failed, or waiting to be approved)
-//   POST /api/plan/draft     admins: start a draft ({note}: anything Claude should know). It runs
-//                            in the background and takes several minutes.
+//   GET  /api/plan/setup     admins: everyone in the plan, how far through About me they are, the
+//                            AI choice, and the draft (running, failed, or waiting to be approved)
+//   PUT  /api/plan/ai        admins: the family's AI {provider, model} ("none" for no AI)
+//   GET  /api/plan/ai/models?provider=   admins: the models the family's key for it can use
+//   POST /api/plan/draft     admins: start a draft {how: "ai" | "builtin", note}. With AI it runs
+//                            in the background and takes several minutes; built-in takes a moment.
 //
-// A finished draft is saved as a request (like Ask Claude's suggestions) that replaces the plan's
+// A finished draft is saved as a request (like Ask AI's suggestions) that replaces the plan's
 // weeks, people, exercise, macros and food groups. Nothing changes until an admin approves it,
 // and approving it backs up the old plan first (see savePlan in server.js). The new plan has a
 // new id, so everyone's ticks start fresh.
@@ -16,6 +19,8 @@ const auth = require('./auth');
 const assistant = require('./assistant');
 const planchange = require('./planchange');
 const appearance = require('./appearance');
+const ai = require('./ai');
+const planbuilder = require('./planbuilder');
 
 const QUESTIONS_FILE = process.env.QUESTIONS_FILE || '/site/questions.json';
 const EXAMPLE_FILE = process.env.PLAN_EXAMPLE || '/site/plan.example.json';
@@ -206,12 +211,30 @@ function fixCosts(plan) {
 // Running a draft
 // ---------------------------------------------------------------------------
 
-async function runDraft(me, client, ctx, note) {
+async function runDraft(me, ready, ctx, note) {
   const people = household(ctx);
   const known = new Set(people.map(p => p.key));
   let text = '';
   try {
     job.stage = 'Writing the plan';
+    if (ready.provider !== 'anthropic') {
+      // OpenAI, Gemini or Ollama.
+      const message = await ai.chat(ready, {
+        system: systemText(), messages: [{ role: 'user', content: userText(ctx, people, note) }],
+        maxTokens: ai.maxOutput(ready.provider), json: true,
+        onText: delta => {
+          const recent = text.slice(-40) + delta;
+          text += delta;
+          job.chars = text.length;
+          const weeks = recent.match(/"name":\s*"((?:Stock-up|Week) \d)"/g);
+          if (weeks) job.stage = 'Writing ' + weeks[weeks.length - 1].replace(/"name":\s*"/, '').replace(/"$/, '');
+        },
+      });
+      if (message.stop_reason === 'max_tokens') throw new Error('The plan was too long and got cut off. Try again, perhaps with a note asking for simpler recipes' + (ready.provider === 'ollama' ? ', or use a model with a bigger context' : '') + '.');
+      if (message.stop_reason === 'refusal') throw new Error(ready.name + ' couldn’t write this plan. Check the About me answers and try again.');
+      return await finishDraft(me, ctx, people, known, text, ready.name);
+    }
+    const client = ready.client;
     const stream = client.beta.messages.stream({
       model: MODEL,
       max_tokens: 100000,
@@ -231,13 +254,25 @@ async function runDraft(me, client, ctx, note) {
     const message = await stream.finalMessage();
     if (message.stop_reason === 'max_tokens') throw new Error('The plan was too long and got cut off. Try again, perhaps with a note asking for simpler recipes.');
     if (message.stop_reason === 'refusal') throw new Error('Claude couldn’t write this plan. Check the About me answers and try again.');
+    await finishDraft(me, ctx, people, known, text, 'Claude');
+  } catch (err) {
+    let message = String(err && err.message || err);
+    if (ready.provider !== 'anthropic' && (err instanceof ai.AIError || /fetch|ECONN|ENOTFOUND/.test(message))) message = ai.explain(err, ready);
+    else if (Anthropic && err instanceof Anthropic.AuthenticationError) message = 'The Claude key wasn’t accepted. Check it in Settings.';
+    else if (Anthropic && err instanceof Anthropic.RateLimitError) message = 'Claude is busy right now (rate limit). Try again in a few minutes.';
+    else if (Anthropic && err instanceof Anthropic.APIError) message = 'Claude couldn’t finish the plan: ' + String(err.message || '').slice(0, 300);
+    job = { state: 'failed', by: job && job.by, started: job && job.started, error: message };
+  }
+}
 
+// Reads, checks and saves an AI-written plan as a draft for an admin to approve.
+async function finishDraft(me, ctx, people, known, text, who) {
     job.stage = 'Checking the plan';
     let plan;
     try {
       plan = parsePlan(text);
     } catch (e) {
-      throw new Error('The plan Claude sent couldn’t be read (' + String(e.message).slice(0, 120) + '). Try again.');
+      throw new Error('The plan ' + who + ' sent couldn’t be read (' + String(e.message).slice(0, 120) + '). Try again.');
     }
     const forAdmin = typeof plan.notesForAdmin === 'string' ? plan.notesForAdmin.slice(0, 2000) : '';
     delete plan.notesForAdmin;
@@ -249,6 +284,13 @@ async function runDraft(me, client, ctx, note) {
       // Logins, answers and history are matched by name, so each person keeps the name they have now.
       plan.people[p.key].name = p.name;
     }
+    saveDraft(me, ctx, people, plan, forAdmin, 'New 4-week plan for the family (' + who + ')');
+    job = null;
+}
+
+// Saves a whole new plan as one request that sets each top-level part of the plan, replacing any
+// older draft that was never decided.
+function saveDraft(me, ctx, people, plan, forAdmin, title) {
     const problem = ctx.checkPlan(plan);
     if (problem) throw new Error('The plan didn’t pass the app’s checks: ' + problem + ' Try again.');
 
@@ -268,18 +310,10 @@ async function runDraft(me, client, ctx, note) {
       db.setRequestStatus(old.id, 'withdrawn', me.user, 'Replaced by a newer draft.');
     }
     db.addRequest({
-      person: me.person, user: me.user, title: 'New 4-week plan for the family', details: forAdmin || null,
+      person: me.person, user: me.user, title, details: forAdmin || null,
       change: { kind: 'full-plan', steps, summary, preview: { weeks: plan.weeks, people: plan.people } },
       status: 'open',
     });
-    job = null;
-  } catch (err) {
-    let message = String(err && err.message || err);
-    if (Anthropic && err instanceof Anthropic.AuthenticationError) message = 'The Claude key wasn’t accepted. Check it in Settings.';
-    else if (Anthropic && err instanceof Anthropic.RateLimitError) message = 'Claude is busy right now (rate limit). Try again in a few minutes.';
-    else if (Anthropic && err instanceof Anthropic.APIError) message = 'Claude couldn’t finish the plan: ' + String(err.message || '').slice(0, 300);
-    job = { state: 'failed', by: job && job.by, started: job && job.started, error: message };
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -287,7 +321,7 @@ async function runDraft(me, client, ctx, note) {
 // ---------------------------------------------------------------------------
 
 async function handle(req, res, urlPath, url, me, ctx) {
-  if (urlPath !== '/api/plan/setup' && urlPath !== '/api/plan/draft') return false;
+  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models'].includes(urlPath)) return false;
   if (!me.admin) {
     send(res, 403, { error: 'Only an admin can set up the family’s plan.' });
     return true;
@@ -297,13 +331,39 @@ async function handle(req, res, urlPath, url, me, ctx) {
     return true;
   }
 
+  if (urlPath === '/api/plan/ai/models' && req.method === 'GET') {
+    const provider = String(url.searchParams.get('provider') || '');
+    if (!ai.PROVIDERS[provider]) { send(res, 400, { error: 'unknown AI' }); return true; }
+    if (!ai.familyKeys()[provider]) { send(res, 400, { error: 'The server has no key for ' + ai.PROVIDERS[provider].name + '.' }); return true; }
+    try {
+      const key = provider === 'anthropic' ? '' : provider === 'ollama' ? 'ollama' : process.env[provider.toUpperCase() + '_API_KEY'];
+      send(res, 200, { models: (await ai.checkKey(provider, key)).models });
+    } catch (e) {
+      send(res, 400, { error: String(e.message || e) });
+    }
+    return true;
+  }
+
+  if (urlPath === '/api/plan/ai' && req.method === 'PUT') {
+    let b;
+    try { b = await readBody(req); } catch (e) { send(res, 400, { error: 'bad request' }); return true; }
+    const provider = String(b.provider || '');
+    if (provider !== 'none' && !ai.PROVIDERS[provider]) { send(res, 400, { error: 'unknown AI' }); return true; }
+    const model = String(b.model || '').slice(0, 100);
+    if (provider !== 'none' && provider !== 'anthropic' && !/^[A-Za-z0-9._:\/-]{1,100}$/.test(model)) { send(res, 400, { error: 'Choose a model.' }); return true; }
+    ai.setFamilyChoice(provider === 'none' ? { provider } : { provider, model: model || (provider === 'anthropic' ? ai.DEFAULT_CLAUDE : '') });
+    send(res, 200, { ok: true, family: ai.familyChoice() });
+    return true;
+  }
+
   if (req.method === 'GET') {
     const ready = assistant.setup(me);
     const pending = pendingDraft();
     send(res, 200, {
       people: household(ctx).map(p => Object.assign({}, p, { answers: undefined })),
       questions: questionCount(),
-      claude: { enabled: ready.enabled, own: !!ready.own, reason: ready.reason || null },
+      claude: { enabled: ready.enabled, own: !!ready.own, reason: ready.reason || null, name: ready.name, provider: ready.provider, model: ready.model || null },
+      ai: { family: ai.familyChoice(), keys: ai.familyKeys(), providers: Object.fromEntries(Object.entries(ai.PROVIDERS).map(([k, p]) => [k, { name: p.name, company: p.company, keys: p.keys || null }])) },
       job: job ? { state: job.state, by: job.by, started: job.started, stage: job.stage || '', error: job.error || null,
         progress: job.state === 'running' ? Math.min(0.97, (job.chars || 0) / EXPECTED_CHARS) : null } : null,
       draft: pending ? draftPreview(pending) : null,
@@ -319,6 +379,19 @@ async function handle(req, res, urlPath, url, me, ctx) {
       send(res, 409, { error: 'A plan is already being drafted. It takes a few minutes.' });
       return true;
     }
+    if (body.how === 'builtin') {
+      const people = household(ctx);
+      if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
+      try {
+        const built = planbuilder.build(people, { seed: Date.now() });
+        saveDraft(me, ctx, people, built.plan, built.notesForAdmin, 'New 4-week plan for the family (built-in, no AI)');
+        job = null;
+        send(res, 200, { ok: true, done: true });
+      } catch (e) {
+        send(res, 500, { error: 'The plan builder couldn’t make a plan: ' + String(e.message || e).slice(0, 200) });
+      }
+      return true;
+    }
     const ready = assistant.setup(me);
     if (!ready.enabled) {
       send(res, 400, { error: ready.reason || 'Claude isn’t set up.' });
@@ -329,7 +402,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       return true;
     }
     job = { state: 'running', by: me.user, started: Date.now(), chars: 0, stage: 'Starting' };
-    runDraft(me, ready.client, ctx, String(body.note || '').slice(0, 2000));
+    runDraft(me, ready, ctx, String(body.note || '').slice(0, 2000));
     send(res, 202, { ok: true });
     return true;
   }

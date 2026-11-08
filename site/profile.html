@@ -336,7 +336,7 @@ function updateReminders() {
       reminderEl.appendChild(a);
       reminderEl.appendChild(el("p", "help", "On iPhone, tap Add All. For Google Calendar, use the Meals tab (pick yourself, then the Google links under your eating times)."));
     } else if (wantsEating) {
-      reminderEl.appendChild(el("p", null, "Your plan doesn’t have eating times yet. Once an admin adds them (or Claude suggests some), you can add reminders here."));
+      reminderEl.appendChild(el("p", null, "Your plan doesn’t have eating times yet. Once an admin adds them (or the AI suggests some), you can add reminders here."));
     }
     if (wantsExercise) reminderEl.appendChild(el("p", "help", "Exercise reminders are coming with the new Exercise tab."));
   }).catch(function () { reminderEl.hidden = true; });
@@ -370,7 +370,7 @@ function showFinish() {
     $("finishBtn").className = "btn";
   } else {
     $("finishTitle").textContent = "Finished?";
-    $("finishText").textContent = "When " + (mine ? "you’ve" : name + " has") + " answered what you can, tap below. Once everyone in the family is finished, an admin can have Claude draft a 4-week plan from everyone’s answers. Skipped questions are fine.";
+    $("finishText").textContent = "When " + (mine ? "you’ve" : name + " has") + " answered what you can, tap below. Once everyone in the family is finished, an admin can make a 4-week plan from everyone’s answers. Skipped questions are fine.";
     $("finishBtn").textContent = "I’m finished";
     if (!mine) $("finishBtn").textContent = "Mark " + name + " as finished";
     $("finishBtn").className = "btn primary";

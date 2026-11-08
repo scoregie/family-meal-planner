@@ -88,7 +88,7 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
 
   <section class="card" id="storesCard">
     <h2>Where you shop</h2>
-    <p class="note">Pick one or more. The shopping list shows a search link for each, and Ask Claude knows where you shop. Plan prices are Coles estimates, so other stores will differ a little.</p>
+    <p class="note">Pick one or more. The shopping list shows a search link for each, and Ask AI knows where you shop. Plan prices are Coles estimates, so other stores will differ a little.</p>
     <fieldset class="choices" id="myStores"><legend>Your stores</legend></fieldset>
     <p class="note" id="storesHint"></p>
     <div id="houseStoresBox" hidden>
@@ -98,7 +98,7 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
 
   <section class="card" id="energyCard">
     <h2>Kilojoules or Calories</h2>
-    <p class="note">How energy is shown on the Macros tab and the Progress page, and in Ask Claude’s answers. Australian food labels use kilojoules; 1 Calorie (kcal) is about 4.2 kJ.</p>
+    <p class="note">How energy is shown on the Macros tab and the Progress page, and in Ask AI’s answers. Australian food labels use kilojoules; 1 Calorie (kcal) is about 4.2 kJ.</p>
     <fieldset class="choices" id="myEnergy"><legend>For you</legend></fieldset>
     <div id="houseEnergyBox" hidden>
       <fieldset class="choices" id="houseEnergy" style="margin-top:.8rem"><legend>The household’s (admins): used by anyone who hasn’t picked their own</legend></fieldset>
@@ -106,18 +106,28 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
   </section>
 
   <section class="card" id="claudeCard" hidden>
-    <h2>Your Claude key</h2>
-    <p class="note">Ask Claude normally uses the family’s key (if an admin has set one up). You can use your own instead: then you pay Anthropic for your own messages and the daily limit doesn’t apply. Make a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">console.anthropic.com</a> (Claude.ai subscriptions can’t be used by other apps, so it needs an API key).</p>
+    <h2>Your AI key</h2>
+    <p class="note">Ask AI normally uses the family’s AI (an admin chooses it on Plan setup). You can use your own instead, from Claude, OpenAI or Google Gemini: then you pay for your own messages and the daily limit doesn’t apply. Chat subscriptions (Claude Pro, ChatGPT Plus, Gemini Advanced) can’t be used by other apps, so it needs an API key.</p>
     <p id="keyState" class="note"></p>
     <form id="keyForm">
-      <label class="sr" for="aiKey">Your Claude API key</label>
+      <fieldset class="choices" id="keyProvider"><legend>Which AI</legend>
+        <label class="choice"><input type="radio" name="keyProvider" value="anthropic" checked><span>Claude <small>Anthropic</small></span></label>
+        <label class="choice"><input type="radio" name="keyProvider" value="openai"><span>OpenAI <small>ChatGPT’s maker</small></span></label>
+        <label class="choice"><input type="radio" name="keyProvider" value="gemini"><span>Gemini <small>Google</small></span></label>
+      </fieldset>
+      <p class="note" id="keyWhere"></p>
+      <label class="sr" for="aiKey">Your API key</label>
       <input type="password" id="aiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" style="width:100%;max-width:26rem">
+      <div id="modelRow" hidden>
+        <label for="aiModel" class="note">Model</label>
+        <select id="aiModel" style="max-width:26rem;width:100%"></select>
+      </div>
       <div class="row">
         <button class="btn primary" type="submit" id="keySave">Save key</button>
         <button class="btn" type="button" id="keyRemove" hidden>Remove my key</button>
       </div>
     </form>
-    <p class="note">The key is checked with Anthropic, then stored encrypted on your family’s server. It’s never shown again in full, and only used for your own chats.</p>
+    <p class="note">The key is checked with the company, then stored encrypted on your family’s server. It’s never shown again in full, and only used for your own chats and any plan you draft.</p>
   </section>
 
   <section class="card" id="houseCard" hidden>
@@ -460,7 +470,47 @@ function renderEnergy() {
   }
 }
 
-// ---------- Your own Claude key ----------
+// ---------- Your own AI key ----------
+var KEY_INFO = {
+  anthropic: { name: "Claude", start: "sk-ant-…", url: "https://console.anthropic.com/settings/keys", site: "console.anthropic.com" },
+  openai: { name: "OpenAI", start: "sk-…", url: "https://platform.openai.com/api-keys", site: "platform.openai.com" },
+  gemini: { name: "Gemini", start: "AIza…", url: "https://aistudio.google.com/apikey", site: "aistudio.google.com" },
+};
+var ACCOUNT_KEY = null;   // {provider, name, model, hint} or null
+
+function keyProvider() {
+  var on = document.querySelector('input[name="keyProvider"]:checked');
+  return on ? on.value : "anthropic";
+}
+
+function showWhere() {
+  var k = KEY_INFO[keyProvider()];
+  var where = $("keyWhere");
+  where.textContent = "Make a " + k.name + " key at ";
+  var a = document.createElement("a");
+  a.href = k.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = k.site;
+  where.appendChild(a);
+  where.appendChild(document.createTextNode("."));
+  $("aiKey").placeholder = k.start;
+  var same = ACCOUNT_KEY && ACCOUNT_KEY.provider === keyProvider();
+  $("modelRow").hidden = !same || !$("aiModel").options.length;
+}
+
+function fillModels(models, chosen) {
+  var sel = $("aiModel");
+  sel.textContent = "";
+  (models || []).forEach(function (m) {
+    var o = document.createElement("option");
+    o.value = m; o.textContent = m; o.selected = m === chosen;
+    sel.appendChild(o);
+  });
+  if (chosen && !(models || []).includes(chosen)) {
+    var o = document.createElement("option");
+    o.value = chosen; o.textContent = chosen; o.selected = true;
+    sel.insertBefore(o, sel.firstChild);
+  }
+}
+
 function renderKey(account) {
   $("claudeCard").hidden = false;
   if (account.needsEmail) {
@@ -469,33 +519,54 @@ function renderKey(account) {
     return;
   }
   $("keyForm").hidden = false;
-  $("keyState").textContent = account.hasAiKey ? "Using your own key (" + (account.aiKeyHint || "saved") + "). Paste a new one to replace it." : "You’re not using your own key.";
-  $("keyRemove").hidden = !account.hasAiKey;
+  ACCOUNT_KEY = account.aiKey || null;
+  if (ACCOUNT_KEY) {
+    $("keyState").textContent = "Using your own " + ACCOUNT_KEY.name + " key (" + ACCOUNT_KEY.hint + ")" + (ACCOUNT_KEY.model ? ", model " + ACCOUNT_KEY.model : "") + ". Paste a new key to replace it.";
+    var radio = document.querySelector('input[name="keyProvider"][value="' + ACCOUNT_KEY.provider + '"]');
+    if (radio) radio.checked = true;
+    if (!$("aiModel").options.length && ACCOUNT_KEY.model) fillModels([ACCOUNT_KEY.model], ACCOUNT_KEY.model);
+  } else {
+    $("keyState").textContent = "You’re not using your own key.";
+  }
+  $("keyRemove").hidden = !ACCOUNT_KEY;
+  showWhere();
 }
 
 function loadAccount() {
   return api("GET", "/api/account").then(renderKey).catch(function () { /* card stays hidden */ });
 }
 
+document.querySelectorAll('input[name="keyProvider"]').forEach(function (r) { r.addEventListener("change", showWhere); });
+
 $("keyForm").addEventListener("submit", function (e) {
   e.preventDefault();
   var key = $("aiKey").value.trim();
-  if (!key) return;
+  var provider = keyProvider();
+  var sameProvider = ACCOUNT_KEY && ACCOUNT_KEY.provider === provider;
+  if (!key && !sameProvider) return;
   $("keySave").disabled = true;
-  $("keySave").textContent = "Checking with Anthropic…";
-  api("PUT", "/api/account/ai-key", { key: key }).then(function () {
+  $("keySave").textContent = "Checking with " + KEY_INFO[provider].name + "…";
+  var body = { provider: provider };
+  if (key) body.key = key;
+  if (sameProvider && !$("modelRow").hidden) body.model = $("aiModel").value;
+  api("PUT", "/api/account/ai-key", body).then(function (got) {
     $("aiKey").value = "";
-    status("Key saved. Ask Claude will use it for your chats.");
+    fillModels(got.models, got.info && got.info.model);
+    status("Saved. Ask AI will use " + KEY_INFO[provider].name + (got.info && got.info.model ? " (" + got.info.model + ")" : "") + " for your chats.");
     return loadAccount();
   }).catch(function (err) { status(err.message, true); }).then(function () {
     $("keySave").disabled = false;
     $("keySave").textContent = "Save key";
   });
 });
+$("aiModel").addEventListener("change", function () {
+  $("keySave").textContent = "Save model";
+});
 $("keyRemove").addEventListener("click", function () {
-  if (!confirm("Remove your key? Ask Claude will go back to the family’s key, if there is one.")) return;
+  if (!confirm("Remove your key? Ask AI will go back to the family’s AI, if there is one.")) return;
   api("DELETE", "/api/account/ai-key").then(function () {
     status("Removed.");
+    $("aiModel").textContent = "";
     return loadAccount();
   }).catch(function (err) { status(err.message, true); });
 });

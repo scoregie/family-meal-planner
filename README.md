@@ -1,15 +1,15 @@
 # Family Health Planner
 
-A self-hosted web app that plans a household's food, shopping and exercise together, for everyone in the family at once. Each person answers some questions about themselves, Claude (Anthropic's AI) drafts a 4-week plan that fits all of them, an adult approves it, and then the whole family uses it day to day from their phones.
+A self-hosted web app that plans a household's food, shopping and exercise together, for everyone in the family at once. Each person answers some questions about themselves, the app drafts a 4-week plan that fits all of them (with the AI you choose, or with its built-in plan builder and no AI at all), an adult approves it, and then the whole family uses it day to day from their phones.
 
-It runs on your own server (two small Docker containers; a Proxmox container with 512 MB of RAM is enough), so the family's health details stay with you. It installs on a phone's home screen like an app and works offline.
+It runs on your own server (two small Docker containers, for example in a Proxmox container), so the family's health details stay with you. It installs on a phone's home screen like an app and works offline.
 
 ## What it does
 
 **Getting started**
 
 - **About me:** each person answers questions about their goals, health, food likes and dislikes, budget, week, exercise and any support needs (for example ADHD or autism-friendly routines). Adults can answer for kids.
-- **Plan setup:** when everyone is finished, an admin taps **Draft our plan**. Claude writes 4 weeks of meals, snacks, recipes, priced shopping lists and an exercise plan for each person, all in the background. The admin reviews it, then approves or discards it, and can rebuild it any time answers change.
+- **Plan setup:** an admin chooses the family's AI (Claude, OpenAI, Google Gemini, a local Ollama model, or no AI). When everyone is finished, they tap **Draft our plan**: the AI (or the built-in plan builder) writes 4 weeks of meals, snacks, recipes, priced shopping lists and an exercise plan for each person. The admin reviews it, then approves or discards it, and can rebuild it any time answers change.
 
 **Every day**
 
@@ -17,7 +17,7 @@ It runs on your own server (two small Docker containers; a Proxmox container wit
 - **Meals:** one day at a time, starting today, swipe or tap between days. Each person sees their own meals and snacks (snacks can follow their exercise, like a bigger snack on strength days), recipes scaled to their portion, and that day's considerations. Tick what you ate and rate meals out of 10, so admins can see which dishes to change.
 - **Exercise:** each person's own plan, one day at a time, with the workouts for that day, tips, and the medical considerations they told the app about (written as reported, for example "you said your physio is happy for you to…").
 - **Macros and guidelines:** each person's week compared with official healthy-eating guidelines (Australia, New Zealand, UK, Japan or Korea).
-- **Ask Claude:** a chat that can see the plan. Ask it to swap a dinner, make a week cheaper or ease off an exercise day. Claude can only **suggest** changes; an admin approves them first.
+- **Ask AI:** a chat that can see the plan, using the family's AI or your own key. Ask it to swap a dinner, make a week cheaper or ease off an exercise day. It can only **suggest** changes; an admin approves them first.
 
 **Tracking progress**
 
@@ -29,14 +29,14 @@ It runs on your own server (two small Docker containers; a Proxmox container wit
 **The family's accounts**
 
 - Logins by email, or a username for kids. Sign-ups wait for an admin to approve them. Roles: owner, admins and members. Meal ticks, ratings, answers and progress are private to each person and the admins.
-- **Settings:** light or dark, colours, fonts, text size, kJ or Calories, the stores you shop at, the app icon, and an optional personal Claude API key.
+- **Settings:** light or dark, colours, fonts, text size, kJ or Calories, the stores you shop at, the app icon, and an optional personal AI key (Claude, OpenAI or Gemini).
 - **Backups:** every plan change is backed up, and a script can send encrypted offsite backups to a private GitHub repository.
 
 **Things to know**
 
 - It's a planning tool, not medical advice. Health notes are written as what people reported, and a GP, dietitian or physio comes first.
 - Prices are estimates. Coles and Woolworths don't let other apps add to a cart, so the app links to each item instead.
-- Claude features need an Anthropic API key (you pay Anthropic for what you use). Everything else works without one.
+- AI features need an API key from the AI company you choose (you pay them for what you use), or a local Ollama server. Everything else, including drafting a plan with the built-in builder, works without one.
 
 Built with [Claude Code](https://claude.com/claude-code).
 
@@ -85,7 +85,7 @@ Everyone logs in with their **email address (or, for kids, a username) and a pas
 **Roles:**
 
 - **Owner:** one person. Can do everything, including making and removing admins. They can hand ownership to someone else.
-- **Admins:** edit the plan, approve changes suggested by Ask Claude, see everyone's ticks, ratings and answers, invite members and make reset links.
+- **Admins:** edit the plan, approve changes suggested by Ask AI, see everyone's ticks, ratings and answers, invite members and make reset links.
 - **Members:** see the plan, tick things off, and manage their own answers, progress and chats.
 
 **What everyone sees:**
@@ -114,15 +114,30 @@ Any email provider's SMTP settings work (for Gmail, make an "app password" in yo
 
 Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to. At the bottom, **I'm finished** tells the admins their answers are ready for the family's plan (they can still change them afterwards).
 
-## Plan setup: Claude drafts the family's plan
+## Plan setup: drafting the family's plan
 
 Admins have **Plan setup** in the account menu (and a banner on the main page while the example plan is in use):
 
 1. **Everyone's About me answers:** who is in the plan and who has finished. Admins can answer for people without a login, and add children.
-2. **Draft the plan:** once everyone is finished (or earlier, if you choose), **Draft our plan** asks Claude to write a whole 4-week plan from everyone's answers and the stores you shop at: meals, snacks tied to exercise days, recipes, shopping lists with prices, exercise for each person, and medical considerations from what people said. Add a note for anything that applies to everyone. It runs in the background and takes about 5 to 10 minutes. It uses the admin's own Claude key if they've saved one in Settings, otherwise the family's key, and as one long request it costs noticeably more than a chat.
-3. **Review and approve:** the draft shows each week's cost and dinners, and everyone's snacks and exercise focus. **Approve** replaces the plan (the old one is backed up first in `data/plan-backups/`) and everyone's ticks start fresh. **Discard** throws it away. After approving, Ask Claude can make smaller tweaks.
+2. **Choose your AI:** Claude, OpenAI, Google Gemini or a local Ollama model (any the server has a key or address for, see [Choosing an AI](#choosing-an-ai)), and which model. Or **No AI**, which uses the built-in plan builder and turns off Ask AI for people without their own key.
+3. **Draft the plan:** once everyone is finished (or earlier, if you choose), **Draft our plan** asks the AI to write a whole 4-week plan from everyone's answers and the stores you shop at: meals, snacks tied to exercise days, recipes, shopping lists with prices, exercise for each person, and medical considerations from what people said. Add a note for anything that applies to everyone. It runs in the background and takes about 5 to 10 minutes. It uses the admin's own key if they've saved one in Settings, otherwise the family's, and as one long request it costs noticeably more than a chat. **Build it without AI** uses the built-in plan builder instead (see below); it takes a second and costs nothing.
+4. **Review and approve:** the draft shows each week's cost and dinners, and everyone's snacks and exercise focus. **Approve** replaces the plan (the old one is backed up first in `data/plan-backups/`) and everyone's ticks start fresh. **Discard** throws it away. After approving, Ask AI can make smaller tweaks.
 
 **Rebuild our plan** on the same page does it again whenever answers change, for example after a new person joins.
+
+Everyone should check their meals and exercise with their GP, dietitian or physio before starting, especially if they have a health condition, are pregnant, or take medicines. Plan setup, About me and the plan itself all say so.
+
+### The built-in plan builder (no AI)
+
+The builder follows rules instead of an AI. From everyone's About me answers it:
+
+- leaves out allergens, and anything that doesn't fit a person's diet (vegetarian, vegan, gluten free, halal and so on) or that they said they won't eat, and gives someone their own dinner on nights the family dinner doesn't suit them;
+- prefers dishes that match their liked cuisines, cooking time, kitchen equipment, spice level, textures and budget, with leftovers for lunches where they can;
+- sizes each person's portions from their age, height, weight, activity and goal (Mifflin-St Jeor), adds snacks tied to their exercise days, and builds shopping lists in whole packs that carry over what's left;
+- writes a simple exercise plan that builds over 4 weeks for the equipment they have, gentler where they asked, with play-based activity for kids;
+- notes what people said about their health, injuries and medicines as considerations to check with their GP or pharmacist. It doesn't give medical advice.
+
+Its meals come from `api/library.json`: 59 meals and 16 snacks, with recipes written for this project. Nutrition for each ingredient comes from **USDA FoodData Central** (U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov. SR Legacy data, public domain under CC0 1.0), with the food's id noted for each one; a few Australian products that aren't in it use typical label values, marked "label". Prices are rough Coles estimates. To change the library, edit `tools/build_library.py`, download SR Legacy (CSV) from [fdc.nal.usda.gov](https://fdc.nal.usda.gov/download-datasets) and run `python3 tools/build_library.py <the unzipped folder>`.
 
 ## Shopping
 
@@ -231,38 +246,51 @@ Anything that falls short gets a suggestion, and each country's key messages, se
 
 The numbers come from `site/guidelines.json` (with links to each official source, and notes on any figure still to be confirmed) and from the food groups worked out for each dish by `tools/estimate_groups.py`. They are estimates from the recipes, not exact values, and a doctor's or dietitian's advice comes first.
 
-## Ask Claude (the assistant)
+## Ask AI (the assistant)
 
-**Ask Claude** (in the account menu) is a chat with Claude, Anthropic's AI, that can see the plan. Anyone can use it to work out adjustments: swap a dinner they don't like, make a week cheaper, add vegetables, plan packed lunches, ease off an exercise day, or ask how they're tracking against the healthy-eating guidelines.
+**Ask AI** (in the account menu) is a chat with the family's chosen AI (or the person's own, see Settings) that can see the plan. Anyone can use it to work out adjustments: swap a dinner they don't like, make a week cheaper, add vegetables, plan packed lunches, ease off an exercise day, or ask how they're tracking against the healthy-eating guidelines.
 
-Claude can **suggest** a change to the plan, but it can't make one:
+The AI can **suggest** a change to the plan, but it can't make one:
 
 1. A suggestion shows up in the chat as a card listing exactly what would change.
 2. People send it to the admins (or discard it). Admins see it under **Requests** (there's a link at the top of **Edit plan**).
-3. An admin taps **Apply to the plan** (or **Decline**, with an optional reply). The plan is checked and saved, with a backup of the old one in `data/plan-backups/`, the same as saving from Edit plan. If the plan has changed since, the change is refused and Claude can suggest it again.
+3. An admin taps **Apply to the plan** (or **Decline**, with an optional reply). The plan is checked and saved, with a backup of the old one in `data/plan-backups/`, the same as saving from Edit plan. If the plan has changed since, the change is refused and the AI can suggest it again.
 
 Admins can also chat about anyone's plan and apply their own suggestions straight away.
 
-Coles and Woolworths have no way for other apps to add to a cart or list, so Claude points people to **Copy list**, **Shop mode** and the store links on the shopping list instead.
+Coles and Woolworths have no way for other apps to add to a cart or list, so it points people to **Copy list**, **Shop mode** and the store links on the shopping list instead.
 
-**Setting it up:** either each person adds their own key in **Settings → Your Claude key**, or an admin sets one key for the whole family: get an API key from [console.anthropic.com](https://console.anthropic.com), add it to `.env` and restart:
+### Choosing an AI
 
-    ANTHROPIC_API_KEY=sk-ant-...
-    docker compose up -d
+The app works with four AIs. Consumer subscriptions (ChatGPT Plus, Gemini, Claude.ai) can't be used by other apps, so each needs an **API key**, paid per use, from that company. Add the ones you want to `.env`, run `docker compose up -d`, then pick one on **Plan setup**:
 
-The app installs Anthropic's SDK the first time it starts (it needs the internet once; after that it's kept in a Docker volume). Without a key, everything else works and the page says the assistant isn't set up.
+| AI | `.env` | Get a key |
+|---|---|---|
+| Claude (Anthropic) | `ANTHROPIC_API_KEY=sk-ant-...` | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| OpenAI | `OPENAI_API_KEY=sk-...` | [platform.openai.com](https://platform.openai.com/api-keys) |
+| Google Gemini | `GEMINI_API_KEY=AIza...` | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| Ollama (runs on your own computer, free) | `OLLAMA_URL=http://192.168.1.20:11434` | [ollama.com](https://ollama.com) |
+
+People with an email login can also add their own Claude, OpenAI or Gemini key in **Settings → Your AI key**, so their chats use it (they pay for their own messages and the daily limit doesn't apply). The key is checked with the company first, then stored encrypted with a random key in `data/encryption-key`, and never sent back to the browser in full. Ollama is family-only, because the address is set on the server.
+
+Notes:
+
+- The app installs Anthropic's SDK the first time it starts (it needs the internet once; after that it's kept in a Docker volume). OpenAI, Gemini and Ollama need nothing extra.
+- **Ollama:** pull a model first (for example `ollama pull qwen3:14b`) and make it listen on your network (`OLLAMA_HOST=0.0.0.0`). Plans and the assistant send long requests, so give it a big context window (`OLLAMA_CONTEXT_LENGTH=32768` or more) and pick a model that supports tool calls. Small local models write weaker plans than the big hosted ones; the built-in builder may do better on a small machine.
+- `OPENAI_BASE_URL` and `GEMINI_BASE_URL` point those at another OpenAI-compatible address, if you need to.
+- Without any key, everything else works and the page says the assistant isn't set up.
 
 Optional settings in `.env`:
 
-- `ASSISTANT_MODEL` (default `claude-opus-5-5`)
-- `ASSISTANT_EFFORT`: `low`, `medium` (default) or `high`. Lower is faster and cheaper, higher thinks harder.
+- `ASSISTANT_MODEL`: the Claude model (default `claude-opus-5-5`). For the others, choose the model on Plan setup.
+- `ASSISTANT_EFFORT` (Claude only): `low`, `medium` (default) or `high`. Lower is faster and cheaper, higher thinks harder.
 - `ASSISTANT_DAILY_LIMIT`: messages per login per day (default 40).
 
-If Anthropic's safety checks decline a request, it is automatically retried on another suitable Claude model ("fallbacks").
+With Claude, if Anthropic's safety checks decline a request, it is automatically retried on another suitable Claude model ("fallbacks").
 
-**Cost:** you pay Anthropic for what you use. A typical message, where Claude looks at a week of the plan and answers, is roughly 5 to 15 US cents with the default model and effort (an estimate; check usage at console.anthropic.com). The daily limit stops runaway costs. Token counts per login per day are kept in `data/app.db` (`ai_usage`).
+**Cost:** you pay the AI company for what you use. With Claude's default model and effort, a typical message, where it looks at a week of the plan and answers, is roughly 5 to 15 US cents (an estimate; check usage on the company's console). Other companies' prices differ by model. The daily limit stops runaway costs. Token counts per login per day are kept in `data/app.db` (`ai_usage`).
 
-**Privacy:** to answer, Claude is sent the plan details it asks for and, for the person the chat is about, their About me answers, meal history and progress. Nothing is sent until someone types a message. Chats are kept in `data/app.db` so people can come back to them; people can delete their own chats. Anthropic's API doesn't use this data for training. Claude can make mistakes, and a doctor's advice always comes first.
+**Privacy:** to answer, the chosen AI company is sent the plan details it asks for and, for the person the chat is about, their About me answers, meal history and progress. Nothing is sent until someone types a message. Chats are kept in `data/app.db` so people can come back to them; people can delete their own chats. Check your chosen company's API terms on how they use data (Anthropic's, OpenAI's and Google's paid APIs don't train on it by default; with Ollama nothing leaves your network). AI can make mistakes, and a doctor's advice always comes first.
 
 ## Settings: colours, fonts, text size and the app icon
 
@@ -274,7 +302,7 @@ If Anthropic's safety checks decline a request, it is automatically retried on a
 
 - **Where you shop:** everyone picks their supermarkets (Coles, Woolworths, Aldi, IGA, Foodland, Spudshed, Drakes, or a mix), and admins pick the household's default. The shopping list shows a search link for each. Coles and Woolworths open their own search; IGA, Foodland, Spudshed and Drakes run their online shops store by store, so their links search the store's website; Aldi has no online shop. Plan prices are Coles estimates.
 - **Kilojoules or Calories:** each person chooses how food and exercise energy is shown; admins set the household default.
-- **Your Claude key:** anyone with an email login can paste their own Claude API key, so Ask Claude uses it for their chats (they pay for their own messages and the daily limit doesn't apply). The key is checked with Anthropic, then stored encrypted with a random key in `data/encryption-key`, and never sent back to the browser in full. Claude.ai subscriptions can't be used by other apps, so it has to be an API key.
+- **Your AI key:** anyone with an email login can add their own Claude, OpenAI or Gemini API key and choose its model, so Ask AI and their plan drafts use it (see [Choosing an AI](#choosing-an-ai)).
 
 The eight colours are checked for contrast in both light and dark mode, and text sizes scale with the phone's own text-size setting.
 
