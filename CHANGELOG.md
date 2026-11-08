@@ -3,6 +3,13 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.0.3 (2026-11-08)
+
+- Health sync: a quick way to make the iPhone shortcut on iOS 27 and later. Copy the ready-made
+  description (with your sync address and key filled in) and paste it into the Shortcuts app's
+  "what do you want your shortcut to do?" box. The step-by-step instructions are still there,
+  folded away, with a note about the new + screen.
+
 ## v1.0.2 (2026-11-08)
 
 - Exercise: each of today's workouts now starts with **Today:** and that day's amount from the plan
