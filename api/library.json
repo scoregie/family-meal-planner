@@ -1,0 +1,6551 @@
+{
+ "about": "Meal and exercise library for the built-in plan builder. Recipes written for this project. Nutrition from USDA FoodData Central (SR Legacy, public domain CC0 1.0: U.S. Department of Agriculture, Agricultural Research Service, FoodData Central, 2019, fdc.nal.usda.gov), except items marked \"label\". Prices are rough Coles estimates in AUD. Rebuild with tools/build_library.py.",
+ "ingredients": {
+  "chicken breast": {
+   "name": "Chicken breast fillets 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 13.0,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "poultry"
+   ],
+   "kind": "poultry",
+   "per100": {
+    "p": 22.5,
+    "c": 0.0,
+    "f": 2.62,
+    "kj": 502,
+    "ca": 5.0
+   },
+   "source": "FDC 171077: Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw"
+  },
+  "chicken thigh": {
+   "name": "Chicken thigh fillets 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 14.0,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "poultry"
+   ],
+   "kind": "poultry",
+   "per100": {
+    "p": 19.66,
+    "c": 0.0,
+    "f": 4.12,
+    "kj": 506,
+    "ca": 7.0
+   },
+   "source": "FDC 173627: Chicken, broilers or fryers, dark meat, thigh, meat only, raw"
+  },
+  "chicken drumsticks": {
+   "name": "Chicken drumsticks 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 6.5,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "poultry"
+   ],
+   "kind": "poultry",
+   "per100": {
+    "p": 18.08,
+    "c": 0.11,
+    "f": 9.2,
+    "kj": 674,
+    "ca": 8.0
+   },
+   "source": "FDC 172373: Chicken, broilers or fryers, drumstick, meat and skin, raw"
+  },
+  "beef mince": {
+   "name": "Lean beef mince 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 9.5,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "red",
+    "beef"
+   ],
+   "kind": "red",
+   "per100": {
+    "p": 20.0,
+    "c": 0.0,
+    "f": 10.0,
+    "kj": 736,
+    "ca": 12.0
+   },
+   "source": "FDC 174030: Beef, ground, 90% lean meat / 10% fat, raw"
+  },
+  "beef steak": {
+   "name": "Beef rump steak 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 14.0,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "red",
+    "beef"
+   ],
+   "kind": "red",
+   "per100": {
+    "p": 22.09,
+    "c": 0.0,
+    "f": 4.08,
+    "kj": 548,
+    "ca": 25.0
+   },
+   "source": "FDC 174055: Beef, top sirloin, steak, separable lean only, trimmed to 1/8\" fat, all grades, raw"
+  },
+  "beef strips": {
+   "name": "Beef stir-fry strips 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 12.0,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "red",
+    "beef"
+   ],
+   "kind": "red",
+   "per100": {
+    "p": 22.09,
+    "c": 0.0,
+    "f": 4.08,
+    "kj": 548,
+    "ca": 25.0
+   },
+   "source": "FDC 174055: Beef, top sirloin, steak, separable lean only, trimmed to 1/8\" fat, all grades, raw"
+  },
+  "lamb mince": {
+   "name": "Lamb mince 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 11.0,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "red",
+    "lamb"
+   ],
+   "kind": "red",
+   "per100": {
+    "p": 17.14,
+    "c": 0.0,
+    "f": 20.71,
+    "kj": 1067,
+    "ca": 9.0
+   },
+   "source": "FDC 172608: Lamb, Australian, ground,  85% lean / 15% fat, raw"
+  },
+  "pork mince": {
+   "name": "Pork mince 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 7.5,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "red",
+    "pork"
+   ],
+   "kind": "red",
+   "per100": {
+    "p": 16.88,
+    "c": 0.0,
+    "f": 21.19,
+    "kj": 1100,
+    "ca": 14.0
+   },
+   "source": "FDC 167902: Pork, fresh, ground, raw"
+  },
+  "turkey mince": {
+   "name": "Turkey mince 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 8.0,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "poultry"
+   ],
+   "kind": "poultry",
+   "per100": {
+    "p": 19.66,
+    "c": 0.0,
+    "f": 7.66,
+    "kj": 619,
+    "ca": 19.0
+   },
+   "source": "FDC 171505: Turkey, Ground, raw"
+  },
+  "beef sausages": {
+   "name": "Beef sausages 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 6.0,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "red",
+    "beef",
+    "gluten"
+   ],
+   "kind": "processed",
+   "per100": {
+    "p": 18.21,
+    "c": 0.35,
+    "f": 27.98,
+    "kj": 1389,
+    "ca": 11.0
+   },
+   "source": "FDC 174618: Sausage, beef, fresh, cooked"
+  },
+  "ham": {
+   "name": "Shaved ham 250 g",
+   "pack": 250,
+   "unit": "g",
+   "each": 0,
+   "price": 5.0,
+   "aisle": "meat",
+   "tags": [
+    "meat",
+    "red",
+    "pork"
+   ],
+   "kind": "processed",
+   "per100": {
+    "p": 16.6,
+    "c": 3.63,
+    "f": 8.8,
+    "kj": 686,
+    "ca": 24.0
+   },
+   "source": "FDC 173864: Ham, sliced, regular (approximately 11% fat)"
+  },
+  "salmon": {
+   "name": "Salmon fillets 2-pack 250 g",
+   "pack": 250,
+   "unit": "g",
+   "each": 0,
+   "price": 11.0,
+   "aisle": "meat",
+   "tags": [
+    "fish",
+    "animal"
+   ],
+   "kind": "oily",
+   "per100": {
+    "p": 20.42,
+    "c": 0.0,
+    "f": 13.42,
+    "kj": 870,
+    "ca": 9.0
+   },
+   "source": "FDC 175167: Fish, salmon, Atlantic, farmed, raw"
+  },
+  "white fish": {
+   "name": "Frozen white fish fillets 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 13.0,
+   "aisle": "frozen",
+   "tags": [
+    "fish",
+    "animal"
+   ],
+   "kind": "fish",
+   "per100": {
+    "p": 20.08,
+    "c": 0.0,
+    "f": 1.7,
+    "kj": 402,
+    "ca": 10.0
+   },
+   "source": "FDC 175176: Fish, tilapia, raw"
+  },
+  "crumbed fish": {
+   "name": "Frozen crumbed fish fillets 425 g",
+   "pack": 425,
+   "unit": "g",
+   "each": 0,
+   "price": 6.5,
+   "aisle": "frozen",
+   "tags": [
+    "fish",
+    "animal",
+    "gluten"
+   ],
+   "kind": "fish",
+   "per100": {
+    "p": 11.01,
+    "c": 21.66,
+    "f": 16.23,
+    "kj": 1159,
+    "ca": 16.0
+   },
+   "source": "FDC 174195: Fish, fish sticks, frozen, prepared"
+  },
+  "tuna": {
+   "name": "Tuna in springwater 95 g can",
+   "pack": 95,
+   "unit": "g",
+   "each": 0,
+   "price": 1.6,
+   "aisle": "pantry",
+   "tags": [
+    "fish",
+    "animal"
+   ],
+   "kind": "fish",
+   "per100": {
+    "p": 25.51,
+    "c": 0.0,
+    "f": 0.82,
+    "kj": 485,
+    "ca": 11.0
+   },
+   "source": "FDC 171986: Fish, tuna, light, canned in water, without salt, drained solids"
+  },
+  "tuna big": {
+   "name": "Tuna in springwater 425 g can",
+   "pack": 425,
+   "unit": "g",
+   "each": 0,
+   "price": 5.0,
+   "aisle": "pantry",
+   "tags": [
+    "fish",
+    "animal"
+   ],
+   "kind": "fish",
+   "per100": {
+    "p": 25.51,
+    "c": 0.0,
+    "f": 0.82,
+    "kj": 485,
+    "ca": 11.0
+   },
+   "source": "FDC 171986: Fish, tuna, light, canned in water, without salt, drained solids"
+  },
+  "egg": {
+   "name": "Eggs 12-pack",
+   "pack": 12,
+   "unit": "each",
+   "each": 55,
+   "price": 6.5,
+   "aisle": "dairy",
+   "tags": [
+    "egg",
+    "animal"
+   ],
+   "kind": "egg",
+   "per100": {
+    "p": 12.56,
+    "c": 0.72,
+    "f": 9.51,
+    "kj": 598,
+    "ca": 56.0
+   },
+   "source": "FDC 171287: Egg, whole, raw, fresh"
+  },
+  "milk": {
+   "name": "Full cream milk 2 L",
+   "pack": 2000,
+   "unit": "ml",
+   "each": 0,
+   "price": 3.2,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "lactose",
+    "animal"
+   ],
+   "kind": "dairy",
+   "per100": {
+    "p": 3.15,
+    "c": 4.8,
+    "f": 3.25,
+    "kj": 255,
+    "ca": 113.0
+   },
+   "source": "FDC 171265: Milk, whole, 3.25% milkfat, with added vitamin D"
+  },
+  "greek yoghurt": {
+   "name": "Greek yoghurt 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 6.0,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "lactose",
+    "animal"
+   ],
+   "kind": "dairy",
+   "per100": {
+    "p": 9.0,
+    "c": 3.98,
+    "f": 5.0,
+    "kj": 406,
+    "ca": 100.0
+   },
+   "source": "FDC 171304: Yogurt, Greek, plain, whole milk"
+  },
+  "cheddar": {
+   "name": "Tasty cheese block 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 8.5,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "animal"
+   ],
+   "kind": "dairy",
+   "per100": {
+    "p": 24.25,
+    "c": 2.13,
+    "f": 33.82,
+    "kj": 1715,
+    "ca": 711.0
+   },
+   "source": "FDC 170899: Cheese, cheddar, sharp, sliced"
+  },
+  "mozzarella": {
+   "name": "Grated mozzarella 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 8.0,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "animal"
+   ],
+   "kind": "dairy",
+   "per100": {
+    "p": 23.63,
+    "c": 8.06,
+    "f": 19.72,
+    "kj": 1272,
+    "ca": 716.0
+   },
+   "source": "FDC 170900: Cheese, mozzarella, low moisture, part-skim, shredded"
+  },
+  "ricotta": {
+   "name": "Ricotta 375 g",
+   "pack": 375,
+   "unit": "g",
+   "each": 0,
+   "price": 4.5,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "lactose",
+    "animal"
+   ],
+   "kind": "dairy",
+   "per100": {
+    "p": 7.54,
+    "c": 7.27,
+    "f": 10.18,
+    "kj": 628,
+    "ca": 206.0
+   },
+   "source": "FDC 170851: Cheese, ricotta, whole milk"
+  },
+  "feta": {
+   "name": "Feta 200 g",
+   "pack": 200,
+   "unit": "g",
+   "each": 0,
+   "price": 5.0,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "animal"
+   ],
+   "kind": "dairy",
+   "per100": {
+    "p": 14.21,
+    "c": 3.88,
+    "f": 21.49,
+    "kj": 1109,
+    "ca": 493.0
+   },
+   "source": "FDC 173420: Cheese, feta"
+  },
+  "halloumi": {
+   "name": "Halloumi 180 g",
+   "pack": 180,
+   "unit": "g",
+   "each": 0,
+   "price": 6.0,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "animal"
+   ],
+   "kind": "dairy",
+   "per100": {
+    "p": 21,
+    "c": 2,
+    "f": 25,
+    "kj": 1339,
+    "ca": 700
+   },
+   "source": "label (typical values)"
+  },
+  "cottage cheese": {
+   "name": "Cottage cheese 250 g",
+   "pack": 250,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "lactose",
+    "animal"
+   ],
+   "kind": "dairy",
+   "per100": {
+    "p": 11.12,
+    "c": 3.38,
+    "f": 4.3,
+    "kj": 410,
+    "ca": 83.0
+   },
+   "source": "FDC 172179: Cheese, cottage, creamed, large or small curd"
+  },
+  "sour cream": {
+   "name": "Light sour cream 300 g",
+   "pack": 300,
+   "unit": "g",
+   "each": 0,
+   "price": 3.0,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "lactose",
+    "animal"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 3.5,
+    "c": 7.1,
+    "f": 10.6,
+    "kj": 569,
+    "ca": 141.0
+   },
+   "source": "FDC 173443: Sour cream, light"
+  },
+  "cream": {
+   "name": "Thickened cream 300 ml",
+   "pack": 300,
+   "unit": "ml",
+   "each": 0,
+   "price": 3.0,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "lactose",
+    "animal"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 2.84,
+    "c": 2.84,
+    "f": 36.08,
+    "kj": 1423,
+    "ca": 66.0
+   },
+   "source": "FDC 170859: Cream, fluid, heavy whipping"
+  },
+  "butter": {
+   "name": "Butter 250 g",
+   "pack": 250,
+   "unit": "g",
+   "each": 0,
+   "price": 5.5,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "animal"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 0.85,
+    "c": 0.06,
+    "f": 81.11,
+    "kj": 3000,
+    "ca": 24.0
+   },
+   "source": "FDC 173410: Butter, salted"
+  },
+  "tzatziki": {
+   "name": "Tzatziki 200 g",
+   "pack": 200,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "lactose",
+    "animal"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 4,
+    "c": 4,
+    "f": 8,
+    "kj": 439,
+    "ca": 120
+   },
+   "source": "label (typical values)"
+  },
+  "hummus": {
+   "name": "Hummus 200 g",
+   "pack": 200,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "dairy",
+   "tags": [
+    "sesame"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 7.78,
+    "c": 15.0,
+    "f": 17.82,
+    "kj": 992,
+    "ca": 47.0
+   },
+   "source": "FDC 174289: Hummus, commercial"
+  },
+  "tofu": {
+   "name": "Firm tofu 450 g",
+   "pack": 450,
+   "unit": "g",
+   "each": 0,
+   "price": 4.0,
+   "aisle": "dairy",
+   "tags": [
+    "soy"
+   ],
+   "kind": "tofu",
+   "per100": {
+    "p": 9.08,
+    "c": 1.52,
+    "f": 4.2,
+    "kj": 335,
+    "ca": 180.0
+   },
+   "source": "FDC 175236: Vitasoy USA Azumaya, Firm Tofu"
+  },
+  "pesto": {
+   "name": "Basil pesto 190 g",
+   "pack": 190,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "dairy",
+   "tags": [
+    "milk",
+    "treenut",
+    "animal"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 5.0,
+    "c": 6.14,
+    "f": 42.42,
+    "kj": 1782,
+    "ca": 173.0
+   },
+   "source": "FDC 171580: Sauce, pesto, ready-to-serve, shelf stable"
+  },
+  "broccoli": {
+   "name": "Broccoli",
+   "pack": 1,
+   "unit": "each",
+   "each": 350,
+   "price": 2.9,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 2.82,
+    "c": 6.64,
+    "f": 0.37,
+    "kj": 142,
+    "ca": 47.0
+   },
+   "source": "FDC 170379: Broccoli, raw"
+  },
+  "carrot": {
+   "name": "Carrots 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 2.2,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 0.93,
+    "c": 9.58,
+    "f": 0.24,
+    "kj": 172,
+    "ca": 33.0
+   },
+   "source": "FDC 170393: Carrots, raw"
+  },
+  "onion": {
+   "name": "Brown onions 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 3.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.1,
+    "c": 9.34,
+    "f": 0.1,
+    "kj": 167,
+    "ca": 23.0
+   },
+   "source": "FDC 170000: Onions, raw"
+  },
+  "tomato": {
+   "name": "Tomatoes",
+   "pack": 1,
+   "unit": "each",
+   "each": 150,
+   "price": 0.9,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 0.88,
+    "c": 3.89,
+    "f": 0.2,
+    "kj": 75,
+    "ca": 10.0
+   },
+   "source": "FDC 170457: Tomatoes, red, ripe, raw, year round average"
+  },
+  "spinach": {
+   "name": "Baby spinach 120 g",
+   "pack": 120,
+   "unit": "g",
+   "each": 0,
+   "price": 3.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 2.86,
+    "c": 3.63,
+    "f": 0.39,
+    "kj": 96,
+    "ca": 99.0
+   },
+   "source": "FDC 168462: Spinach, raw"
+  },
+  "lettuce": {
+   "name": "Cos lettuce",
+   "pack": 1,
+   "unit": "each",
+   "each": 400,
+   "price": 2.2,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.23,
+    "c": 3.29,
+    "f": 0.3,
+    "kj": 71,
+    "ca": 33.0
+   },
+   "source": "FDC 169247: Lettuce, cos or romaine, raw"
+  },
+  "salad leaves": {
+   "name": "Mixed salad leaves 120 g",
+   "pack": 120,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.36,
+    "c": 2.87,
+    "f": 0.15,
+    "kj": 63,
+    "ca": 36.0
+   },
+   "source": "FDC 169249: Lettuce, green leaf, raw"
+  },
+  "cucumber": {
+   "name": "Lebanese cucumbers",
+   "pack": 1,
+   "unit": "each",
+   "each": 180,
+   "price": 1.2,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 0.59,
+    "c": 2.16,
+    "f": 0.16,
+    "kj": 42,
+    "ca": 14.0
+   },
+   "source": "FDC 169225: Cucumber, peeled, raw"
+  },
+  "capsicum": {
+   "name": "Red capsicum",
+   "pack": 1,
+   "unit": "each",
+   "each": 180,
+   "price": 1.8,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 0.99,
+    "c": 6.03,
+    "f": 0.3,
+    "kj": 109,
+    "ca": 7.0
+   },
+   "source": "FDC 170108: Peppers, sweet, red, raw"
+  },
+  "zucchini": {
+   "name": "Zucchini",
+   "pack": 1,
+   "unit": "each",
+   "each": 200,
+   "price": 1.4,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.21,
+    "c": 3.11,
+    "f": 0.32,
+    "kj": 71,
+    "ca": 16.0
+   },
+   "source": "FDC 169291: Squash, summer, zucchini, includes skin, raw"
+  },
+  "pumpkin": {
+   "name": "Butternut pumpkin piece 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.0,
+    "c": 6.5,
+    "f": 0.1,
+    "kj": 109,
+    "ca": 21.0
+   },
+   "source": "FDC 168448: Pumpkin, raw"
+  },
+  "mushrooms": {
+   "name": "Mushrooms 200 g",
+   "pack": 200,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 3.09,
+    "c": 3.26,
+    "f": 0.34,
+    "kj": 92,
+    "ca": 3.0
+   },
+   "source": "FDC 169251: Mushrooms, white, raw"
+  },
+  "green beans": {
+   "name": "Green beans 300 g",
+   "pack": 300,
+   "unit": "g",
+   "each": 0,
+   "price": 3.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.83,
+    "c": 6.97,
+    "f": 0.22,
+    "kj": 130,
+    "ca": 37.0
+   },
+   "source": "FDC 169961: Beans, snap, green, raw"
+  },
+  "coleslaw mix": {
+   "name": "Coleslaw mix 400 g",
+   "pack": 400,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.28,
+    "c": 5.8,
+    "f": 0.1,
+    "kj": 105,
+    "ca": 40.0
+   },
+   "source": "FDC 169975: Cabbage, raw"
+  },
+  "cauliflower": {
+   "name": "Cauliflower",
+   "pack": 1,
+   "unit": "each",
+   "each": 800,
+   "price": 4.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.92,
+    "c": 4.97,
+    "f": 0.28,
+    "kj": 105,
+    "ca": 22.0
+   },
+   "source": "FDC 169986: Cauliflower, raw"
+  },
+  "celery": {
+   "name": "Celery half bunch",
+   "pack": 1,
+   "unit": "each",
+   "each": 400,
+   "price": 2.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 0.69,
+    "c": 2.97,
+    "f": 0.17,
+    "kj": 59,
+    "ca": 40.0
+   },
+   "source": "FDC 169988: Celery, raw"
+  },
+  "avocado": {
+   "name": "Avocados",
+   "pack": 1,
+   "unit": "each",
+   "each": 170,
+   "price": 2.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 2.0,
+    "c": 8.53,
+    "f": 14.66,
+    "kj": 669,
+    "ca": 12.0
+   },
+   "source": "FDC 171705: Avocados, raw, all commercial varieties"
+  },
+  "garlic": {
+   "name": "Garlic",
+   "pack": 1,
+   "unit": "each",
+   "each": 45,
+   "price": 1.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 6.36,
+    "c": 33.06,
+    "f": 0.5,
+    "kj": 623,
+    "ca": 181.0
+   },
+   "source": "FDC 169230: Garlic, raw"
+  },
+  "ginger": {
+   "name": "Minced ginger jar 190 g",
+   "pack": 190,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 1.82,
+    "c": 17.77,
+    "f": 0.75,
+    "kj": 335,
+    "ca": 16.0
+   },
+   "source": "FDC 169231: Ginger root, raw"
+  },
+  "spring onion": {
+   "name": "Spring onions bunch",
+   "pack": 1,
+   "unit": "each",
+   "each": 100,
+   "price": 2.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.83,
+    "c": 7.34,
+    "f": 0.19,
+    "kj": 134,
+    "ca": 72.0
+   },
+   "source": "FDC 170005: Onions, spring or scallions (includes tops and bulb), raw"
+  },
+  "lemon": {
+   "name": "Lemons",
+   "pack": 1,
+   "unit": "each",
+   "each": 100,
+   "price": 1.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 1.1,
+    "c": 9.32,
+    "f": 0.3,
+    "kj": 121,
+    "ca": 26.0
+   },
+   "source": "FDC 167746: Lemons, raw, without peel"
+  },
+  "potato": {
+   "name": "Potatoes 2 kg",
+   "pack": 2000,
+   "unit": "g",
+   "each": 0,
+   "price": 5.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "potato",
+   "per100": {
+    "p": 2.05,
+    "c": 17.49,
+    "f": 0.09,
+    "kj": 322,
+    "ca": 12.0
+   },
+   "source": "FDC 170026: Potatoes, flesh and skin, raw"
+  },
+  "sweet potato": {
+   "name": "Sweet potato 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 4.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.57,
+    "c": 20.12,
+    "f": 0.05,
+    "kj": 360,
+    "ca": 30.0
+   },
+   "source": "FDC 168482: Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)"
+  },
+  "apple": {
+   "name": "Apples 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 5.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "fruit",
+   "per100": {
+    "p": 0.26,
+    "c": 13.81,
+    "f": 0.17,
+    "kj": 218,
+    "ca": 6.0
+   },
+   "source": "FDC 171688: Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)"
+  },
+  "banana": {
+   "name": "Bananas 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 4.0,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "fruit",
+   "per100": {
+    "p": 1.09,
+    "c": 22.84,
+    "f": 0.33,
+    "kj": 372,
+    "ca": 5.0
+   },
+   "source": "FDC 173944: Bananas, raw"
+  },
+  "mandarin": {
+   "name": "Mandarins 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 4.5,
+   "aisle": "fresh",
+   "tags": [],
+   "kind": "fruit",
+   "per100": {
+    "p": 0.81,
+    "c": 13.34,
+    "f": 0.31,
+    "kj": 222,
+    "ca": 37.0
+   },
+   "source": "FDC 169105: Tangerines, (mandarin oranges), raw"
+  },
+  "bread": {
+   "name": "Wholemeal bread 700 g",
+   "pack": 700,
+   "unit": "g",
+   "each": 0,
+   "price": 3.2,
+   "aisle": "bread",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 12.45,
+    "c": 42.71,
+    "f": 3.5,
+    "kj": 1054,
+    "ca": 161.0
+   },
+   "source": "FDC 172688: Bread, whole-wheat, commercially prepared"
+  },
+  "wraps": {
+   "name": "Wholemeal wraps 8-pack",
+   "pack": 8,
+   "unit": "each",
+   "each": 45,
+   "price": 3.5,
+   "aisle": "bread",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 8.01,
+    "c": 49.27,
+    "f": 7.58,
+    "kj": 1243,
+    "ca": 163.0
+   },
+   "source": "FDC 167535: Tortillas, ready-to-bake or -fry, flour, shelf stable"
+  },
+  "rolls": {
+   "name": "Bread rolls 6-pack",
+   "pack": 6,
+   "unit": "each",
+   "each": 65,
+   "price": 3.5,
+   "aisle": "bread",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 9.77,
+    "c": 50.12,
+    "f": 3.91,
+    "kj": 1167,
+    "ca": 144.0
+   },
+   "source": "FDC 172796: Rolls, hamburger or hotdog, plain"
+  },
+  "pita": {
+   "name": "Lebanese bread 5-pack",
+   "pack": 5,
+   "unit": "each",
+   "each": 80,
+   "price": 2.8,
+   "aisle": "bread",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 9.1,
+    "c": 55.7,
+    "f": 1.2,
+    "kj": 1151,
+    "ca": 86.0
+   },
+   "source": "FDC 174915: Bread, pita, white, enriched"
+  },
+  "fruit bread": {
+   "name": "Fruit bread 520 g",
+   "pack": 520,
+   "unit": "g",
+   "each": 0,
+   "price": 4.0,
+   "aisle": "bread",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 8,
+    "c": 50,
+    "f": 3,
+    "kj": 1088,
+    "ca": 60
+   },
+   "source": "label (typical values)"
+  },
+  "frozen peas": {
+   "name": "Frozen peas 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 3.2,
+   "aisle": "frozen",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 5.22,
+    "c": 13.62,
+    "f": 0.4,
+    "kj": 322,
+    "ca": 22.0
+   },
+   "source": "FDC 170016: Peas, green, frozen, unprepared (Includes foods for USDA's Food Distribution Program)"
+  },
+  "frozen veg": {
+   "name": "Frozen mixed vegetables 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "frozen",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 3.33,
+    "c": 13.47,
+    "f": 0.52,
+    "kj": 301,
+    "ca": 25.0
+   },
+   "source": "FDC 170471: Vegetables, mixed, frozen, unprepared"
+  },
+  "stir-fry veg": {
+   "name": "Frozen stir-fry vegetables 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 4.0,
+   "aisle": "frozen",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 3.33,
+    "c": 13.47,
+    "f": 0.52,
+    "kj": 301,
+    "ca": 25.0
+   },
+   "source": "FDC 170471: Vegetables, mixed, frozen, unprepared"
+  },
+  "frozen berries": {
+   "name": "Frozen mixed berries 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 9.0,
+   "aisle": "frozen",
+   "tags": [],
+   "kind": "fruit",
+   "per100": {
+    "p": 0.42,
+    "c": 12.17,
+    "f": 0.64,
+    "kj": 213,
+    "ca": 8.0
+   },
+   "source": "FDC 173950: Blueberries, frozen, unsweetened (Includes foods for USDA's Food Distribution Program)"
+  },
+  "edamame": {
+   "name": "Frozen edamame 400 g",
+   "pack": 400,
+   "unit": "g",
+   "each": 0,
+   "price": 4.0,
+   "aisle": "frozen",
+   "tags": [
+    "soy"
+   ],
+   "kind": "legume",
+   "per100": {
+    "p": 11.22,
+    "c": 7.61,
+    "f": 4.73,
+    "kj": 456,
+    "ca": 60.0
+   },
+   "source": "FDC 168410: Edamame, frozen, unprepared"
+  },
+  "rice": {
+   "name": "Jasmine rice 1 kg",
+   "pack": 1000,
+   "unit": "g",
+   "each": 0,
+   "price": 3.2,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "grain",
+   "per100": {
+    "p": 7.13,
+    "c": 79.95,
+    "f": 0.66,
+    "kj": 1527,
+    "ca": 28.0
+   },
+   "source": "FDC 168877: Rice, white, long-grain, regular, raw, enriched"
+  },
+  "pasta": {
+   "name": "Pasta 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 1.8,
+   "aisle": "pantry",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 13.04,
+    "c": 74.67,
+    "f": 1.51,
+    "kj": 1552,
+    "ca": 21.0
+   },
+   "source": "FDC 169736: Pasta, dry, enriched"
+  },
+  "egg noodles": {
+   "name": "Dried egg noodles 375 g",
+   "pack": 375,
+   "unit": "g",
+   "each": 0,
+   "price": 2.7,
+   "aisle": "pantry",
+   "tags": [
+    "gluten",
+    "egg",
+    "animal"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 14.16,
+    "c": 71.27,
+    "f": 4.44,
+    "kj": 1607,
+    "ca": 35.0
+   },
+   "source": "FDC 169731: Noodles, egg, dry, enriched"
+  },
+  "rice noodles": {
+   "name": "Rice vermicelli 250 g",
+   "pack": 250,
+   "unit": "g",
+   "each": 0,
+   "price": 2.5,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "grain",
+   "per100": {
+    "p": 5.95,
+    "c": 80.18,
+    "f": 0.56,
+    "kj": 1523,
+    "ca": 18.0
+   },
+   "source": "FDC 169742: Rice noodles, dry"
+  },
+  "couscous": {
+   "name": "Couscous 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 2.5,
+   "aisle": "pantry",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 12.76,
+    "c": 77.43,
+    "f": 0.64,
+    "kj": 1573,
+    "ca": 24.0
+   },
+   "source": "FDC 169699: Couscous, dry"
+  },
+  "oats": {
+   "name": "Rolled oats 750 g",
+   "pack": 750,
+   "unit": "g",
+   "each": 0,
+   "price": 2.5,
+   "aisle": "pantry",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 13.15,
+    "c": 67.7,
+    "f": 6.52,
+    "kj": 1586,
+    "ca": 52.0
+   },
+   "source": "FDC 173904: Cereals, oats, regular and quick, not fortified, dry"
+  },
+  "weet-bix": {
+   "name": "Weet-Bix 575 g",
+   "pack": 575,
+   "unit": "g",
+   "each": 0,
+   "price": 4.5,
+   "aisle": "pantry",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 11.43,
+    "c": 81.5,
+    "f": 2.86,
+    "kj": 1552,
+    "ca": 57.0
+   },
+   "source": "FDC 169040: Cereals ready-to-eat, WEETABIX whole grain cereal"
+  },
+  "muesli": {
+   "name": "Natural muesli 750 g",
+   "pack": 750,
+   "unit": "g",
+   "each": 0,
+   "price": 5.0,
+   "aisle": "pantry",
+   "tags": [
+    "gluten",
+    "treenut"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 10,
+    "c": 60,
+    "f": 8,
+    "kj": 1548,
+    "ca": 50
+   },
+   "source": "label (typical values)"
+  },
+  "canned tomatoes": {
+   "name": "Diced tomatoes 400 g can",
+   "pack": 400,
+   "unit": "g",
+   "each": 0,
+   "price": 1.1,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 0.79,
+    "c": 3.47,
+    "f": 0.25,
+    "kj": 67,
+    "ca": 33.0
+   },
+   "source": "FDC 170051: Tomatoes, red, ripe, canned, packed in tomato juice"
+  },
+  "passata": {
+   "name": "Passata 700 g",
+   "pack": 700,
+   "unit": "g",
+   "each": 0,
+   "price": 2.5,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 1.65,
+    "c": 8.98,
+    "f": 0.21,
+    "kj": 159,
+    "ca": 18.0
+   },
+   "source": "FDC 170460: Tomato products, canned, puree, without salt added"
+  },
+  "tomato paste": {
+   "name": "Tomato paste 140 g",
+   "pack": 140,
+   "unit": "g",
+   "each": 0,
+   "price": 1.2,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 4.32,
+    "c": 18.91,
+    "f": 0.47,
+    "kj": 343,
+    "ca": 36.0
+   },
+   "source": "FDC 170459: Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)"
+  },
+  "chickpeas": {
+   "name": "Chickpeas 400 g can",
+   "pack": 240,
+   "unit": "g",
+   "each": 0,
+   "price": 1.2,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "legume",
+   "per100": {
+    "p": 7.05,
+    "c": 22.53,
+    "f": 2.77,
+    "kj": 582,
+    "ca": 45.0
+   },
+   "source": "FDC 173800: Chickpeas (garbanzo beans, bengal gram), mature seeds, canned, drained solids"
+  },
+  "black beans": {
+   "name": "Black beans 400 g can",
+   "pack": 240,
+   "unit": "g",
+   "each": 0,
+   "price": 1.3,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "legume",
+   "per100": {
+    "p": 6.03,
+    "c": 16.55,
+    "f": 0.29,
+    "kj": 381,
+    "ca": 35.0
+   },
+   "source": "FDC 175188: Beans, black turtle, mature seeds, canned"
+  },
+  "kidney beans": {
+   "name": "Red kidney beans 400 g can",
+   "pack": 240,
+   "unit": "g",
+   "each": 0,
+   "price": 1.2,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "legume",
+   "per100": {
+    "p": 7.98,
+    "c": 21.49,
+    "f": 1.05,
+    "kj": 519,
+    "ca": 57.0
+   },
+   "source": "FDC 174285: Beans, kidney, red, mature seeds, canned, drained solids"
+  },
+  "red lentils": {
+   "name": "Red lentils 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 3.0,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "legume",
+   "per100": {
+    "p": 23.91,
+    "c": 63.1,
+    "f": 2.17,
+    "kj": 1498,
+    "ca": 48.0
+   },
+   "source": "FDC 174284: Lentils, pink or red, raw"
+  },
+  "baked beans": {
+   "name": "Baked beans 420 g can",
+   "pack": 420,
+   "unit": "g",
+   "each": 0,
+   "price": 1.5,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "legume",
+   "per100": {
+    "p": 4.75,
+    "c": 21.14,
+    "f": 0.37,
+    "kj": 393,
+    "ca": 34.0
+   },
+   "source": "FDC 175182: Beans, baked, canned, plain or vegetarian"
+  },
+  "corn": {
+   "name": "Corn kernels 420 g can",
+   "pack": 300,
+   "unit": "g",
+   "each": 0,
+   "price": 1.5,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "veg",
+   "per100": {
+    "p": 2.29,
+    "c": 14.34,
+    "f": 1.22,
+    "kj": 280,
+    "ca": 3.0
+   },
+   "source": "FDC 169214: Corn, sweet, yellow, canned, whole kernel, drained solids"
+  },
+  "coconut milk": {
+   "name": "Light coconut milk 400 ml can",
+   "pack": 400,
+   "unit": "ml",
+   "each": 0,
+   "price": 1.5,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 2.02,
+    "c": 2.81,
+    "f": 21.33,
+    "kj": 824,
+    "ca": 18.0
+   },
+   "source": "FDC 170173: Nuts, coconut milk, canned (liquid expressed from grated meat and water)"
+  },
+  "stock": {
+   "name": "Salt-reduced chicken stock 1 L",
+   "pack": 1000,
+   "unit": "ml",
+   "each": 0,
+   "price": 2.5,
+   "aisle": "pantry",
+   "tags": [
+    "meat",
+    "poultry"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 0.5,
+    "c": 0.5,
+    "f": 0.2,
+    "kj": 25,
+    "ca": 5
+   },
+   "source": "label (typical values)"
+  },
+  "veg stock": {
+   "name": "Salt-reduced vegetable stock 1 L",
+   "pack": 1000,
+   "unit": "ml",
+   "each": 0,
+   "price": 2.5,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 0.3,
+    "c": 1.0,
+    "f": 0.1,
+    "kj": 25,
+    "ca": 5
+   },
+   "source": "label (typical values)"
+  },
+  "soy sauce": {
+   "name": "Salt-reduced soy sauce 250 ml",
+   "pack": 250,
+   "unit": "ml",
+   "each": 0,
+   "price": 2.5,
+   "aisle": "pantry",
+   "tags": [
+    "soy",
+    "gluten"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 9.05,
+    "c": 5.59,
+    "f": 0.3,
+    "kj": 238,
+    "ca": 30.0
+   },
+   "source": "FDC 172473: Soy sauce made from soy and wheat (shoyu), low sodium"
+  },
+  "teriyaki": {
+   "name": "Teriyaki sauce 250 ml",
+   "pack": 250,
+   "unit": "ml",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "pantry",
+   "tags": [
+    "soy",
+    "gluten"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 5.93,
+    "c": 15.56,
+    "f": 0.02,
+    "kj": 372,
+    "ca": 25.0
+   },
+   "source": "FDC 171167: Sauce, teriyaki, ready-to-serve"
+  },
+  "fish sauce": {
+   "name": "Fish sauce 200 ml",
+   "pack": 200,
+   "unit": "ml",
+   "each": 0,
+   "price": 2.5,
+   "aisle": "pantry",
+   "tags": [
+    "fish",
+    "animal"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 5,
+    "c": 4,
+    "f": 0,
+    "kj": 146,
+    "ca": 40
+   },
+   "source": "label (typical values)"
+  },
+  "sesame oil": {
+   "name": "Sesame oil 150 ml",
+   "pack": 150,
+   "unit": "ml",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "pantry",
+   "tags": [
+    "sesame"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 0.0,
+    "c": 0.0,
+    "f": 100.0,
+    "kj": 3699,
+    "ca": 0.0
+   },
+   "source": "FDC 171016: Oil, sesame, salad or cooking"
+  },
+  "curry paste": {
+   "name": "Thai green curry paste 195 g",
+   "pack": 195,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "pantry",
+   "tags": [
+    "spicy",
+    "shellfish"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 2,
+    "c": 10,
+    "f": 8,
+    "kj": 502,
+    "ca": 40
+   },
+   "source": "label (typical values)"
+  },
+  "butter chicken sauce": {
+   "name": "Butter chicken simmer sauce 485 g",
+   "pack": 485,
+   "unit": "g",
+   "each": 0,
+   "price": 4.0,
+   "aisle": "pantry",
+   "tags": [
+    "milk",
+    "animal",
+    "treenut"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 2,
+    "c": 9,
+    "f": 7,
+    "kj": 439,
+    "ca": 30
+   },
+   "source": "label (typical values)"
+  },
+  "taco seasoning": {
+   "name": "Taco seasoning 30 g",
+   "pack": 30,
+   "unit": "g",
+   "each": 0,
+   "price": 1.2,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 5,
+    "c": 55,
+    "f": 3,
+    "kj": 1172,
+    "ca": 100
+   },
+   "source": "label (typical values)"
+  },
+  "bbq sauce": {
+   "name": "Barbecue sauce 500 ml",
+   "pack": 500,
+   "unit": "ml",
+   "each": 0,
+   "price": 3.0,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 0.82,
+    "c": 40.77,
+    "f": 0.63,
+    "kj": 720,
+    "ca": 33.0
+   },
+   "source": "FDC 174523: Sauce, barbecue"
+  },
+  "mayonnaise": {
+   "name": "Mayonnaise 440 g",
+   "pack": 440,
+   "unit": "g",
+   "each": 0,
+   "price": 4.0,
+   "aisle": "pantry",
+   "tags": [
+    "egg",
+    "animal"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 0.96,
+    "c": 0.57,
+    "f": 74.85,
+    "kj": 2845,
+    "ca": 8.0
+   },
+   "source": "FDC 171009: Salad dressing, mayonnaise, regular"
+  },
+  "peanut butter": {
+   "name": "Smooth peanut butter 375 g",
+   "pack": 375,
+   "unit": "g",
+   "each": 0,
+   "price": 3.5,
+   "aisle": "pantry",
+   "tags": [
+    "peanut"
+   ],
+   "kind": "nut",
+   "per100": {
+    "p": 21.93,
+    "c": 23.98,
+    "f": 49.54,
+    "kj": 2460,
+    "ca": 54.0
+   },
+   "source": "FDC 174294: Peanut Butter, smooth (Includes foods for USDA's Food Distribution Program)"
+  },
+  "almonds": {
+   "name": "Almonds 250 g",
+   "pack": 250,
+   "unit": "g",
+   "each": 0,
+   "price": 5.0,
+   "aisle": "pantry",
+   "tags": [
+    "treenut"
+   ],
+   "kind": "nut",
+   "per100": {
+    "p": 21.15,
+    "c": 21.55,
+    "f": 49.93,
+    "kj": 2423,
+    "ca": 269.0
+   },
+   "source": "FDC 170567: Nuts, almonds"
+  },
+  "rice crackers": {
+   "name": "Rice crackers 100 g",
+   "pack": 100,
+   "unit": "g",
+   "each": 0,
+   "price": 2.0,
+   "aisle": "pantry",
+   "tags": [],
+   "kind": "grain",
+   "per100": {
+    "p": 10.0,
+    "c": 82.64,
+    "f": 5.0,
+    "kj": 1741,
+    "ca": 0.0
+   },
+   "source": "FDC 173161: Rice crackers"
+  },
+  "crackers": {
+   "name": "Water crackers 125 g",
+   "pack": 125,
+   "unit": "g",
+   "each": 0,
+   "price": 2.0,
+   "aisle": "pantry",
+   "tags": [
+    "gluten"
+   ],
+   "kind": "grain",
+   "per100": {
+    "p": 9.46,
+    "c": 74.05,
+    "f": 8.64,
+    "kj": 1749,
+    "ca": 19.0
+   },
+   "source": "FDC 172746: Crackers, saltines (includes oyster, soda, soup)"
+  },
+  "honey": {
+   "name": "Honey 500 g",
+   "pack": 500,
+   "unit": "g",
+   "each": 0,
+   "price": 6.0,
+   "aisle": "pantry",
+   "tags": [
+    "honey",
+    "animal"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 0.3,
+    "c": 82.4,
+    "f": 0.0,
+    "kj": 1272,
+    "ca": 6.0
+   },
+   "source": "FDC 169640: Honey"
+  },
+  "vegemite": {
+   "name": "Vegemite 220 g",
+   "pack": 220,
+   "unit": "g",
+   "each": 0,
+   "price": 5.0,
+   "aisle": "pantry",
+   "tags": [
+    "gluten"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 25,
+    "c": 9,
+    "f": 1,
+    "kj": 753,
+    "ca": 20
+   },
+   "source": "label (typical values)"
+  },
+  "oil": {
+   "name": "Olive oil",
+   "pack": 0,
+   "unit": "ml",
+   "each": 0,
+   "price": 0,
+   "aisle": "assumed",
+   "tags": [],
+   "kind": null,
+   "per100": {
+    "p": 0.0,
+    "c": 0.0,
+    "f": 100.0,
+    "kj": 3699,
+    "ca": 1.0
+   },
+   "source": "FDC 171413: Oil, olive, salad or cooking"
+  },
+  "curry powder": {
+   "name": "Curry powder",
+   "pack": 0,
+   "unit": "g",
+   "each": 0,
+   "price": 0,
+   "aisle": "assumed",
+   "tags": [
+    "spicy"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 14.29,
+    "c": 55.83,
+    "f": 14.01,
+    "kj": 1360,
+    "ca": 525.0
+   },
+   "source": "FDC 170924: Spices, curry powder"
+  },
+  "chilli powder": {
+   "name": "Chilli powder",
+   "pack": 0,
+   "unit": "g",
+   "each": 0,
+   "price": 0,
+   "aisle": "assumed",
+   "tags": [
+    "spicy"
+   ],
+   "kind": null,
+   "per100": {
+    "p": 13.46,
+    "c": 49.7,
+    "f": 14.28,
+    "kj": 1180,
+    "ca": 330.0
+   },
+   "source": "FDC 171319: Spices, chili powder"
+  }
+ },
+ "dishes": [
+  {
+   "name": "Chicken and vegetable stir-fry with rice",
+   "meal": "dinner",
+   "cuisine": "Chinese",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     150
+    ],
+    [
+     "rice",
+     75
+    ],
+    [
+     "stir-fry veg",
+     200
+    ],
+    [
+     "soy sauce",
+     15
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "ginger",
+     4
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Slice the chicken thinly. Stir-fry it in a hot pan with the oil until cooked through, then set aside.",
+    "Stir-fry the vegetables with the garlic and ginger for 4 minutes.",
+    "Add the chicken and soy sauce, toss, and serve on the rice."
+   ],
+   "leftovers": true,
+   "separate": true,
+   "kid": "Serve the chicken, rice and vegetables in separate piles.",
+   "macros": {
+    "p": 47,
+    "c": 90,
+    "f": 11,
+    "kj": 2760
+   },
+   "groups": {
+    "veg": 2.7,
+    "grain": 2.5,
+    "protein": 1.5,
+    "fv": 200,
+    "side": 200,
+    "gc": 60,
+    "mp": 34
+   },
+   "tags": [
+    "gluten",
+    "meat",
+    "poultry",
+    "soy"
+   ],
+   "cost": 3.31
+  },
+  {
+   "name": "Beef and broccoli stir-fry with rice",
+   "meal": "dinner",
+   "cuisine": "Chinese",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "beef strips",
+     140
+    ],
+    [
+     "rice",
+     75
+    ],
+    [
+     "broccoli",
+     0.4
+    ],
+    [
+     "capsicum",
+     0.5
+    ],
+    [
+     "soy sauce",
+     15
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Stir-fry the beef in a very hot pan with the oil in two batches, 2 minutes each. Set aside.",
+    "Stir-fry the broccoli and capsicum with the garlic and a splash of water for 4 minutes.",
+    "Return the beef, add the soy sauce, toss and serve on the rice."
+   ],
+   "leftovers": true,
+   "separate": true,
+   "macros": {
+    "p": 43,
+    "c": 77,
+    "f": 12,
+    "kj": 2460
+   },
+   "groups": {
+    "veg": 3.1,
+    "grain": 2.5,
+    "protein": 1.6,
+    "fv": 230,
+    "red": 98,
+    "side": 230,
+    "gc": 60,
+    "mp": 31
+   },
+   "tags": [
+    "beef",
+    "gluten",
+    "meat",
+    "red",
+    "soy"
+   ],
+   "cost": 5.91
+  },
+  {
+   "name": "Spaghetti bolognese",
+   "meal": "dinner",
+   "cuisine": "Italian",
+   "minutes": 40,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "beef mince",
+     130
+    ],
+    [
+     "pasta",
+     85
+    ],
+    [
+     "passata",
+     150
+    ],
+    [
+     "onion",
+     60
+    ],
+    [
+     "carrot",
+     50
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "cheddar",
+     10
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Fry the chopped onion, grated carrot and garlic in the oil for 5 minutes.",
+    "Add the mince and brown it, breaking it up.",
+    "Add the passata and simmer for 20 minutes.",
+    "Cook the pasta, then serve with the sauce and a little grated cheese."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed"
+   ],
+   "batch": true,
+   "kid": "Plain pasta with a little sauce on the side.",
+   "macros": {
+    "p": 43,
+    "c": 89,
+    "f": 23,
+    "kj": 3090
+   },
+   "groups": {
+    "veg": 3.5,
+    "grain": 2.8,
+    "protein": 1.4,
+    "dairy": 0.2,
+    "fv": 260,
+    "red": 91,
+    "side": 260,
+    "gc": 63,
+    "mp": 26,
+    "ca": 71
+   },
+   "tags": [
+    "animal",
+    "beef",
+    "gluten",
+    "meat",
+    "milk",
+    "red"
+   ],
+   "cost": 3.87
+  },
+  {
+   "name": "Turkey chilli with rice",
+   "meal": "dinner",
+   "cuisine": "Mexican",
+   "minutes": 35,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "turkey mince",
+     130
+    ],
+    [
+     "kidney beans",
+     60
+    ],
+    [
+     "canned tomatoes",
+     130
+    ],
+    [
+     "onion",
+     50
+    ],
+    [
+     "capsicum",
+     0.3
+    ],
+    [
+     "rice",
+     70
+    ],
+    [
+     "taco seasoning",
+     6
+    ],
+    [
+     "sour cream",
+     20
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Fry the onion and capsicum in the oil for 5 minutes, then brown the mince.",
+    "Add the taco seasoning, tomatoes and drained beans. Simmer for 15 minutes.",
+    "Serve on the rice with a spoon of sour cream."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed"
+   ],
+   "batch": true,
+   "kid": "Take a portion out before adding the seasoning, if needed.",
+   "macros": {
+    "p": 38,
+    "c": 86,
+    "f": 19,
+    "kj": 2780
+   },
+   "groups": {
+    "veg": 3.1,
+    "grain": 2.3,
+    "protein": 1.7,
+    "fv": 234,
+    "leg": 60,
+    "side": 234,
+    "gc": 56,
+    "mp": 30
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "meat",
+    "milk",
+    "poultry",
+    "spicy"
+   ],
+   "cost": 4.09
+  },
+  {
+   "name": "Chicken fajita wraps",
+   "meal": "dinner",
+   "cuisine": "Mexican",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     130
+    ],
+    [
+     "wraps",
+     2
+    ],
+    [
+     "capsicum",
+     0.5
+    ],
+    [
+     "onion",
+     40
+    ],
+    [
+     "taco seasoning",
+     5
+    ],
+    [
+     "lettuce",
+     0.1
+    ],
+    [
+     "sour cream",
+     20
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Slice the chicken, capsicum and onion into strips. Toss the chicken with the seasoning.",
+    "Fry the chicken in the oil for 6 minutes, add the vegetables and cook 4 minutes more.",
+    "Warm the wraps. Everyone fills their own with the chicken, lettuce and sour cream."
+   ],
+   "separate": true,
+   "kid": "Plain chicken strips and cheese in a wrap.",
+   "macros": {
+    "p": 39,
+    "c": 59,
+    "f": 18,
+    "kj": 2320
+   },
+   "groups": {
+    "veg": 2.3,
+    "grain": 2.2,
+    "protein": 1.3,
+    "fv": 170,
+    "side": 170,
+    "gc": 44,
+    "mp": 29
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "lactose",
+    "meat",
+    "milk",
+    "poultry",
+    "spicy"
+   ],
+   "cost": 4.21
+  },
+  {
+   "name": "Beef tacos with salad",
+   "meal": "dinner",
+   "cuisine": "Mexican",
+   "minutes": 20,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "beef mince",
+     120
+    ],
+    [
+     "wraps",
+     2
+    ],
+    [
+     "taco seasoning",
+     6
+    ],
+    [
+     "lettuce",
+     0.1
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "cheddar",
+     20
+    ],
+    [
+     "oil",
+     3
+    ]
+   ],
+   "steps": [
+    "Brown the mince in the oil. Add the seasoning and a splash of water and simmer for 5 minutes.",
+    "Shred the lettuce, dice the tomato and grate the cheese.",
+    "Everyone fills their own wraps."
+   ],
+   "separate": true,
+   "kid": "Mince with cheese, no seasoning on theirs if needed.",
+   "macros": {
+    "p": 38,
+    "c": 52,
+    "f": 29,
+    "kj": 2610
+   },
+   "groups": {
+    "veg": 1.5,
+    "grain": 2.2,
+    "protein": 1.3,
+    "dairy": 0.5,
+    "fv": 115,
+    "red": 84,
+    "side": 115,
+    "gc": 44,
+    "mp": 24,
+    "ca": 142
+   },
+   "tags": [
+    "animal",
+    "beef",
+    "gluten",
+    "meat",
+    "milk",
+    "red",
+    "spicy"
+   ],
+   "cost": 4.41
+  },
+  {
+   "name": "Butter chicken with rice and peas",
+   "meal": "dinner",
+   "cuisine": "Indian",
+   "minutes": 30,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken thigh",
+     140
+    ],
+    [
+     "butter chicken sauce",
+     110
+    ],
+    [
+     "rice",
+     75
+    ],
+    [
+     "frozen peas",
+     70
+    ]
+   ],
+   "steps": [
+    "Cook the rice, adding the peas for the last 3 minutes.",
+    "Brown the diced chicken in a pan for 6 minutes.",
+    "Add the sauce and simmer for 10 minutes until the chicken is cooked through.",
+    "Serve with the rice and peas."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed"
+   ],
+   "macros": {
+    "p": 39,
+    "c": 79,
+    "f": 14,
+    "kj": 2560
+   },
+   "groups": {
+    "veg": 0.9,
+    "grain": 2.5,
+    "protein": 1.4,
+    "fv": 70,
+    "side": 70,
+    "gc": 60,
+    "mp": 28
+   },
+   "tags": [
+    "animal",
+    "meat",
+    "milk",
+    "poultry",
+    "treenut"
+   ],
+   "cost": 3.33
+  },
+  {
+   "name": "Chickpea and spinach curry with rice",
+   "meal": "dinner",
+   "cuisine": "Indian",
+   "minutes": 30,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chickpeas",
+     120
+    ],
+    [
+     "spinach",
+     40
+    ],
+    [
+     "canned tomatoes",
+     100
+    ],
+    [
+     "coconut milk",
+     60
+    ],
+    [
+     "onion",
+     50
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "curry powder",
+     4
+    ],
+    [
+     "rice",
+     75
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Fry the onion and garlic in the oil for 5 minutes. Stir in the curry powder for 1 minute.",
+    "Add the drained chickpeas, tomatoes and coconut milk. Simmer for 12 minutes.",
+    "Stir the spinach through until it wilts. Serve on the rice."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed"
+   ],
+   "batch": true,
+   "macros": {
+    "p": 18,
+    "c": 102,
+    "f": 23,
+    "kj": 2790
+   },
+   "groups": {
+    "veg": 2.5,
+    "grain": 2.5,
+    "protein": 0.8,
+    "fv": 190,
+    "leg": 120,
+    "side": 190,
+    "gc": 60,
+    "mp": 8
+   },
+   "tags": [
+    "spicy"
+   ],
+   "cost": 2.59
+  },
+  {
+   "name": "Red lentil dahl with rice",
+   "meal": "dinner",
+   "cuisine": "Indian",
+   "minutes": 35,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "red lentils",
+     70
+    ],
+    [
+     "canned tomatoes",
+     100
+    ],
+    [
+     "onion",
+     50
+    ],
+    [
+     "carrot",
+     50
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "ginger",
+     4
+    ],
+    [
+     "curry powder",
+     4
+    ],
+    [
+     "veg stock",
+     200
+    ],
+    [
+     "rice",
+     60
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Fry the onion, grated carrot, garlic and ginger in the oil for 5 minutes. Add the curry powder.",
+    "Add the rinsed lentils, tomatoes and stock. Simmer for 20 minutes, stirring now and then, until thick.",
+    "Serve on the rice."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed",
+    "soft"
+   ],
+   "batch": true,
+   "macros": {
+    "p": 24,
+    "c": 112,
+    "f": 8,
+    "kj": 2530
+   },
+   "groups": {
+    "veg": 2.7,
+    "grain": 2.0,
+    "protein": 0.5,
+    "fv": 200,
+    "leg": 70,
+    "side": 200,
+    "gc": 48,
+    "mp": 17
+   },
+   "tags": [
+    "spicy"
+   ],
+   "cost": 1.82
+  },
+  {
+   "name": "Baked salmon with potatoes and greens",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 35,
+   "kit": [
+    "oven"
+   ],
+   "per": [
+    [
+     "salmon",
+     125
+    ],
+    [
+     "potato",
+     200
+    ],
+    [
+     "green beans",
+     80
+    ],
+    [
+     "broccoli",
+     0.25
+    ],
+    [
+     "lemon",
+     0.25
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 200 °C. Cut the potatoes into chunks, toss with the oil and roast for 30 minutes.",
+    "Add the salmon to the tray for the last 12 minutes, with lemon slices on top.",
+    "Steam the beans and broccoli. Serve together."
+   ],
+   "onepan": true,
+   "separate": true,
+   "macros": {
+    "p": 34,
+    "c": 49,
+    "f": 23,
+    "kj": 2170
+   },
+   "groups": {
+    "veg": 4.9,
+    "protein": 1.1,
+    "fv": 168,
+    "fish": 125,
+    "oily": 125,
+    "side": 368,
+    "mp": 26
+   },
+   "tags": [
+    "animal",
+    "fish"
+   ],
+   "cost": 7.78
+  },
+  {
+   "name": "Lemon chicken tray bake",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 45,
+   "kit": [
+    "oven"
+   ],
+   "per": [
+    [
+     "chicken thigh",
+     150
+    ],
+    [
+     "potato",
+     150
+    ],
+    [
+     "pumpkin",
+     100
+    ],
+    [
+     "zucchini",
+     0.5
+    ],
+    [
+     "onion",
+     40
+    ],
+    [
+     "lemon",
+     0.25
+    ],
+    [
+     "oil",
+     7
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 200 °C. Cut the vegetables into chunks.",
+    "Toss the chicken and vegetables with the oil, lemon juice, salt and pepper on a big tray.",
+    "Roast for 35 to 40 minutes, turning once, until golden and cooked through."
+   ],
+   "onepan": true,
+   "separate": true,
+   "leftovers": true,
+   "macros": {
+    "p": 35,
+    "c": 42,
+    "f": 14,
+    "kj": 1780
+   },
+   "groups": {
+    "veg": 5.2,
+    "protein": 1.5,
+    "fv": 240,
+    "side": 390,
+    "mp": 29
+   },
+   "tags": [
+    "meat",
+    "poultry"
+   ],
+   "cost": 3.9
+  },
+  {
+   "name": "Honey soy chicken drumsticks with rice and corn",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 50,
+   "kit": [
+    "oven"
+   ],
+   "per": [
+    [
+     "chicken drumsticks",
+     220
+    ],
+    [
+     "honey",
+     10
+    ],
+    [
+     "soy sauce",
+     10
+    ],
+    [
+     "rice",
+     70
+    ],
+    [
+     "corn",
+     60
+    ],
+    [
+     "broccoli",
+     0.25
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 200 °C. Toss the drumsticks with the honey and soy sauce on a lined tray.",
+    "Bake for 40 to 45 minutes, turning once.",
+    "Cook the rice. Warm the corn and steam the broccoli."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 50,
+    "c": 79,
+    "f": 22,
+    "kj": 2990
+   },
+   "groups": {
+    "veg": 2.0,
+    "grain": 2.3,
+    "protein": 2.2,
+    "fv": 148,
+    "side": 148,
+    "gc": 56,
+    "mp": 40
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "honey",
+    "meat",
+    "poultry",
+    "soy"
+   ],
+   "cost": 2.9
+  },
+  {
+   "name": "Lamb koftas with couscous and salad",
+   "meal": "dinner",
+   "cuisine": "Middle Eastern",
+   "minutes": 30,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "lamb mince",
+     120
+    ],
+    [
+     "couscous",
+     70
+    ],
+    [
+     "tzatziki",
+     40
+    ],
+    [
+     "cucumber",
+     0.5
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "onion",
+     20
+    ],
+    [
+     "oil",
+     3
+    ]
+   ],
+   "steps": [
+    "Mix the mince with the finely chopped onion, salt and pepper. Shape into small sausages.",
+    "Fry the koftas in the oil for 8 to 10 minutes, turning, until cooked through.",
+    "Pour boiling water over the couscous (same amount as the couscous), cover for 5 minutes, then fluff.",
+    "Serve with chopped cucumber and tomato and the tzatziki."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 33,
+    "c": 63,
+    "f": 32,
+    "kj": 2800
+   },
+   "groups": {
+    "veg": 2.5,
+    "grain": 2.3,
+    "protein": 1.3,
+    "fv": 185,
+    "red": 84,
+    "side": 185,
+    "gc": 54,
+    "mp": 21
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "lactose",
+    "lamb",
+    "meat",
+    "milk",
+    "red"
+   ],
+   "cost": 4.8
+  },
+  {
+   "name": "Greek chicken souvlaki wraps",
+   "meal": "dinner",
+   "cuisine": "Greek",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     130
+    ],
+    [
+     "pita",
+     1
+    ],
+    [
+     "tzatziki",
+     40
+    ],
+    [
+     "lettuce",
+     0.1
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "cucumber",
+     0.3
+    ],
+    [
+     "lemon",
+     0.2
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Dice the chicken and toss with the oil, lemon juice, salt and dried oregano if you have it.",
+    "Fry for 8 minutes until cooked through.",
+    "Warm the bread and fill with chicken, salad and tzatziki."
+   ],
+   "separate": true,
+   "leftovers": false,
+   "macros": {
+    "p": 40,
+    "c": 53,
+    "f": 13,
+    "kj": 2070
+   },
+   "groups": {
+    "veg": 2.3,
+    "grain": 2.0,
+    "protein": 1.3,
+    "fv": 169,
+    "side": 169,
+    "gc": 45,
+    "mp": 29
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "lactose",
+    "meat",
+    "milk",
+    "poultry"
+   ],
+   "cost": 4.18
+  },
+  {
+   "name": "Vegetable frittata with salad",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 35,
+   "kit": [
+    "stovetop",
+    "oven"
+   ],
+   "per": [
+    [
+     "egg",
+     3
+    ],
+    [
+     "zucchini",
+     0.3
+    ],
+    [
+     "spinach",
+     30
+    ],
+    [
+     "capsicum",
+     0.3
+    ],
+    [
+     "feta",
+     25
+    ],
+    [
+     "salad leaves",
+     40
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Heat the oven grill. Fry the chopped zucchini and capsicum in the oil in an ovenproof pan for 5 minutes, then add the spinach.",
+    "Pour in the beaten eggs and crumble over the feta. Cook on low for 8 minutes.",
+    "Grill for 5 minutes until set and golden. Serve with salad."
+   ],
+   "leftovers": true,
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 27,
+    "c": 10,
+    "f": 27,
+    "kj": 1600
+   },
+   "groups": {
+    "veg": 2.5,
+    "protein": 1.6,
+    "dairy": 0.6,
+    "fv": 184,
+    "side": 184,
+    "mp": 21,
+    "ca": 123
+   },
+   "tags": [
+    "animal",
+    "egg",
+    "milk"
+   ],
+   "cost": 5.13
+  },
+  {
+   "name": "Tuna pasta bake",
+   "meal": "dinner",
+   "cuisine": "Italian",
+   "minutes": 40,
+   "kit": [
+    "stovetop",
+    "oven"
+   ],
+   "per": [
+    [
+     "tuna big",
+     90
+    ],
+    [
+     "pasta",
+     80
+    ],
+    [
+     "passata",
+     120
+    ],
+    [
+     "frozen peas",
+     50
+    ],
+    [
+     "corn",
+     40
+    ],
+    [
+     "mozzarella",
+     30
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 200 °C. Cook the pasta for 2 minutes less than the packet says. Add the peas for the last 2 minutes.",
+    "Drain and mix with the drained tuna, corn and passata in a baking dish.",
+    "Top with the cheese and bake for 15 minutes."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed"
+   ],
+   "batch": true,
+   "macros": {
+    "p": 46,
+    "c": 85,
+    "f": 9,
+    "kj": 2520
+   },
+   "groups": {
+    "veg": 2.8,
+    "grain": 2.7,
+    "protein": 0.8,
+    "dairy": 0.8,
+    "fv": 210,
+    "fish": 90,
+    "side": 210,
+    "gc": 60,
+    "mp": 23,
+    "ca": 215
+   },
+   "tags": [
+    "animal",
+    "fish",
+    "gluten",
+    "milk"
+   ],
+   "cost": 2.62
+  },
+  {
+   "name": "Pesto chicken pasta with greens",
+   "meal": "dinner",
+   "cuisine": "Italian",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     120
+    ],
+    [
+     "pasta",
+     85
+    ],
+    [
+     "pesto",
+     25
+    ],
+    [
+     "broccoli",
+     0.25
+    ],
+    [
+     "spinach",
+     30
+    ],
+    [
+     "oil",
+     3
+    ]
+   ],
+   "steps": [
+    "Cook the pasta, adding the broccoli for the last 3 minutes.",
+    "Fry the sliced chicken in the oil for 8 minutes until cooked.",
+    "Drain the pasta, then toss with the chicken, pesto and spinach."
+   ],
+   "leftovers": true,
+   "macros": {
+    "p": 43,
+    "c": 72,
+    "f": 18,
+    "kj": 2630
+   },
+   "groups": {
+    "veg": 1.6,
+    "grain": 2.8,
+    "protein": 1.2,
+    "fv": 118,
+    "side": 118,
+    "gc": 63,
+    "mp": 27
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "meat",
+    "milk",
+    "poultry",
+    "treenut"
+   ],
+   "cost": 3.8
+  },
+  {
+   "name": "Minestrone soup with bread",
+   "meal": "dinner",
+   "cuisine": "Italian",
+   "minutes": 40,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "kidney beans",
+     60
+    ],
+    [
+     "canned tomatoes",
+     120
+    ],
+    [
+     "carrot",
+     50
+    ],
+    [
+     "celery",
+     0.1
+    ],
+    [
+     "onion",
+     40
+    ],
+    [
+     "zucchini",
+     0.3
+    ],
+    [
+     "pasta",
+     30
+    ],
+    [
+     "veg stock",
+     300
+    ],
+    [
+     "bread",
+     60
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Fry the chopped onion, carrot and celery in the oil for 6 minutes.",
+    "Add the tomatoes, stock, beans and zucchini and simmer for 15 minutes.",
+    "Add the pasta and cook for 10 minutes more. Serve with bread."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed",
+    "soft"
+   ],
+   "batch": true,
+   "macros": {
+    "p": 20,
+    "c": 80,
+    "f": 9,
+    "kj": 1970
+   },
+   "groups": {
+    "veg": 4.1,
+    "grain": 2.5,
+    "protein": 0.4,
+    "fv": 310,
+    "leg": 60,
+    "side": 310,
+    "gc": 48,
+    "mp": 5
+   },
+   "tags": [
+    "gluten"
+   ],
+   "cost": 2.66
+  },
+  {
+   "name": "Slow-cooker beef and vegetable stew with mash",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 30,
+   "kit": [
+    "slow cooker",
+    "stovetop"
+   ],
+   "per": [
+    [
+     "beef steak",
+     140
+    ],
+    [
+     "carrot",
+     60
+    ],
+    [
+     "celery",
+     0.1
+    ],
+    [
+     "onion",
+     50
+    ],
+    [
+     "canned tomatoes",
+     100
+    ],
+    [
+     "stock",
+     100
+    ],
+    [
+     "potato",
+     200
+    ],
+    [
+     "milk",
+     20
+    ],
+    [
+     "butter",
+     5
+    ]
+   ],
+   "steps": [
+    "In the morning, put the diced beef, chopped vegetables, tomatoes and stock in the slow cooker. Cook on low for 8 hours.",
+    "Boil the peeled potatoes for 15 minutes, then mash with the milk and butter.",
+    "Serve the stew on the mash."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed",
+    "soft"
+   ],
+   "batch": true,
+   "macros": {
+    "p": 38,
+    "c": 52,
+    "f": 11,
+    "kj": 1910
+   },
+   "groups": {
+    "veg": 6.0,
+    "protein": 1.6,
+    "dairy": 0.1,
+    "fv": 250,
+    "red": 98,
+    "side": 450,
+    "mp": 31,
+    "ca": 23
+   },
+   "tags": [
+    "animal",
+    "beef",
+    "lactose",
+    "meat",
+    "milk",
+    "poultry",
+    "red"
+   ],
+   "cost": 5.62
+  },
+  {
+   "name": "Shepherd’s pie",
+   "meal": "dinner",
+   "cuisine": "British",
+   "minutes": 50,
+   "kit": [
+    "stovetop",
+    "oven"
+   ],
+   "per": [
+    [
+     "lamb mince",
+     120
+    ],
+    [
+     "frozen veg",
+     100
+    ],
+    [
+     "onion",
+     40
+    ],
+    [
+     "tomato paste",
+     15
+    ],
+    [
+     "stock",
+     80
+    ],
+    [
+     "potato",
+     220
+    ],
+    [
+     "milk",
+     20
+    ],
+    [
+     "butter",
+     5
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 200 °C. Boil the peeled potatoes for 15 minutes and mash with the milk and butter.",
+    "Brown the mince with the onion. Add the tomato paste, stock and frozen vegetables and simmer for 10 minutes.",
+    "Put the mince in a baking dish, top with the mash and bake for 20 minutes."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed",
+    "soft"
+   ],
+   "batch": true,
+   "macros": {
+    "p": 31,
+    "c": 60,
+    "f": 31,
+    "kj": 2630
+   },
+   "groups": {
+    "veg": 4.8,
+    "protein": 1.3,
+    "dairy": 0.1,
+    "fv": 140,
+    "red": 84,
+    "side": 360,
+    "mp": 21,
+    "ca": 23
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "lamb",
+    "meat",
+    "milk",
+    "poultry",
+    "red"
+   ],
+   "cost": 4.13
+  },
+  {
+   "name": "Sausages with mash and vegetables",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 30,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "beef sausages",
+     130
+    ],
+    [
+     "potato",
+     220
+    ],
+    [
+     "frozen peas",
+     60
+    ],
+    [
+     "carrot",
+     60
+    ],
+    [
+     "milk",
+     20
+    ],
+    [
+     "butter",
+     5
+    ]
+   ],
+   "steps": [
+    "Boil the peeled potatoes for 15 minutes, then mash with the milk and butter.",
+    "Cook the sausages in a pan for 12 to 15 minutes, turning.",
+    "Steam the carrots and peas. Serve together."
+   ],
+   "separate": true,
+   "kid": "Same, cut up.",
+   "macros": {
+    "p": 33,
+    "c": 54,
+    "f": 42,
+    "kj": 3010
+   },
+   "groups": {
+    "veg": 4.5,
+    "dairy": 0.1,
+    "fv": 120,
+    "red": 110,
+    "side": 340,
+    "mp": 24,
+    "ca": 23
+   },
+   "tags": [
+    "animal",
+    "beef",
+    "gluten",
+    "lactose",
+    "meat",
+    "milk",
+    "red"
+   ],
+   "cost": 2.58
+  },
+  {
+   "name": "Egg fried rice with vegetables",
+   "meal": "dinner",
+   "cuisine": "Chinese",
+   "minutes": 20,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "rice",
+     80
+    ],
+    [
+     "egg",
+     2
+    ],
+    [
+     "frozen veg",
+     120
+    ],
+    [
+     "spring onion",
+     0.1
+    ],
+    [
+     "soy sauce",
+     12
+    ],
+    [
+     "oil",
+     7
+    ]
+   ],
+   "steps": [
+    "Cook the rice (or use cold leftover rice).",
+    "Scramble the eggs in a hot pan with half the oil, then set aside.",
+    "Stir-fry the frozen vegetables in the rest of the oil for 4 minutes. Add the rice and fry for 3 minutes.",
+    "Stir in the eggs, soy sauce and sliced spring onion."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed"
+   ],
+   "macros": {
+    "p": 25,
+    "c": 82,
+    "f": 19,
+    "kj": 2540
+   },
+   "groups": {
+    "veg": 1.7,
+    "grain": 2.7,
+    "protein": 1.1,
+    "fv": 130,
+    "side": 130,
+    "gc": 64,
+    "mp": 14
+   },
+   "tags": [
+    "animal",
+    "egg",
+    "gluten",
+    "soy"
+   ],
+   "cost": 2.13
+  },
+  {
+   "name": "Teriyaki chicken rice bowls",
+   "meal": "dinner",
+   "cuisine": "Japanese",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken thigh",
+     140
+    ],
+    [
+     "teriyaki",
+     25
+    ],
+    [
+     "rice",
+     75
+    ],
+    [
+     "edamame",
+     50
+    ],
+    [
+     "carrot",
+     40
+    ],
+    [
+     "cucumber",
+     0.3
+    ]
+   ],
+   "steps": [
+    "Cook the rice. Boil the edamame for 3 minutes.",
+    "Fry the diced chicken for 8 minutes, then add the teriyaki sauce and cook 2 minutes until sticky.",
+    "Serve on the rice with grated carrot, sliced cucumber and the edamame in separate piles."
+   ],
+   "separate": true,
+   "leftovers": true,
+   "macros": {
+    "p": 41,
+    "c": 73,
+    "f": 9,
+    "kj": 2270
+   },
+   "groups": {
+    "veg": 1.3,
+    "grain": 2.5,
+    "protein": 1.7,
+    "fv": 94,
+    "leg": 50,
+    "side": 94,
+    "gc": 60,
+    "mp": 33
+   },
+   "tags": [
+    "gluten",
+    "meat",
+    "poultry",
+    "soy"
+   ],
+   "cost": 3.5
+  },
+  {
+   "name": "Teriyaki salmon with rice and greens",
+   "meal": "dinner",
+   "cuisine": "Japanese",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "salmon",
+     125
+    ],
+    [
+     "teriyaki",
+     20
+    ],
+    [
+     "rice",
+     70
+    ],
+    [
+     "broccoli",
+     0.3
+    ],
+    [
+     "green beans",
+     50
+    ]
+   ],
+   "steps": [
+    "Cook the rice. Steam the broccoli and beans.",
+    "Fry the salmon skin-side down for 4 minutes, turn and cook 3 minutes more.",
+    "Add the teriyaki sauce for the last minute. Serve with the rice and greens."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 36,
+    "c": 70,
+    "f": 18,
+    "kj": 2440
+   },
+   "groups": {
+    "veg": 2.1,
+    "grain": 2.3,
+    "protein": 1.1,
+    "fv": 155,
+    "fish": 125,
+    "oily": 125,
+    "side": 155,
+    "gc": 56,
+    "mp": 26
+   },
+   "tags": [
+    "animal",
+    "fish",
+    "gluten",
+    "soy"
+   ],
+   "cost": 7.37
+  },
+  {
+   "name": "Korean-style beef mince rice bowls",
+   "meal": "dinner",
+   "cuisine": "Korean",
+   "minutes": 20,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "beef mince",
+     120
+    ],
+    [
+     "soy sauce",
+     15
+    ],
+    [
+     "honey",
+     6
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "ginger",
+     3
+    ],
+    [
+     "sesame oil",
+     3
+    ],
+    [
+     "rice",
+     75
+    ],
+    [
+     "coleslaw mix",
+     60
+    ],
+    [
+     "cucumber",
+     0.3
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Brown the mince. Add the garlic, ginger, soy sauce, honey and sesame oil and cook for 3 minutes.",
+    "Serve on the rice with the coleslaw mix and sliced cucumber."
+   ],
+   "separate": true,
+   "leftovers": true,
+   "macros": {
+    "p": 32,
+    "c": 72,
+    "f": 16,
+    "kj": 2380
+   },
+   "groups": {
+    "veg": 1.5,
+    "grain": 2.5,
+    "protein": 1.3,
+    "fv": 114,
+    "red": 84,
+    "side": 114,
+    "gc": 60,
+    "mp": 24
+   },
+   "tags": [
+    "animal",
+    "beef",
+    "gluten",
+    "honey",
+    "meat",
+    "red",
+    "sesame",
+    "soy"
+   ],
+   "cost": 3.85
+  },
+  {
+   "name": "Thai green chicken curry with rice",
+   "meal": "dinner",
+   "cuisine": "Thai",
+   "minutes": 30,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken thigh",
+     130
+    ],
+    [
+     "curry paste",
+     15
+    ],
+    [
+     "coconut milk",
+     90
+    ],
+    [
+     "green beans",
+     60
+    ],
+    [
+     "capsicum",
+     0.3
+    ],
+    [
+     "rice",
+     75
+    ],
+    [
+     "fish sauce",
+     5
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Fry the curry paste in a pan for 1 minute, add the diced chicken and cook for 5 minutes.",
+    "Add the coconut milk, beans and capsicum. Simmer for 10 minutes. Add the fish sauce.",
+    "Serve on the rice."
+   ],
+   "leftovers": true,
+   "texture": [
+    "mixed"
+   ],
+   "macros": {
+    "p": 35,
+    "c": 72,
+    "f": 27,
+    "kj": 2760
+   },
+   "groups": {
+    "veg": 1.5,
+    "grain": 2.5,
+    "protein": 1.3,
+    "fv": 114,
+    "side": 114,
+    "gc": 60,
+    "mp": 26
+   },
+   "tags": [
+    "animal",
+    "fish",
+    "meat",
+    "poultry",
+    "shellfish",
+    "spicy"
+   ],
+   "cost": 3.87
+  },
+  {
+   "name": "Vietnamese chicken noodle salad",
+   "meal": "dinner",
+   "cuisine": "Vietnamese",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     120
+    ],
+    [
+     "rice noodles",
+     60
+    ],
+    [
+     "carrot",
+     50
+    ],
+    [
+     "cucumber",
+     0.4
+    ],
+    [
+     "lettuce",
+     0.1
+    ],
+    [
+     "fish sauce",
+     8
+    ],
+    [
+     "lemon",
+     0.2
+    ],
+    [
+     "honey",
+     4
+    ]
+   ],
+   "steps": [
+    "Soak the noodles in boiling water for 5 minutes, then rinse in cold water.",
+    "Cook the chicken in a pan for 10 minutes, then slice.",
+    "Mix the fish sauce, lemon juice and honey for a dressing.",
+    "Serve the noodles, chicken and vegetables with the dressing."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 33,
+    "c": 61,
+    "f": 4,
+    "kj": 1750
+   },
+   "groups": {
+    "veg": 2.2,
+    "grain": 2.0,
+    "protein": 1.2,
+    "fv": 162,
+    "side": 162,
+    "gc": 48,
+    "mp": 27
+   },
+   "tags": [
+    "animal",
+    "fish",
+    "honey",
+    "meat",
+    "poultry"
+   ],
+   "cost": 3.32
+  },
+  {
+   "name": "Pork san choy bow",
+   "meal": "dinner",
+   "cuisine": "Chinese",
+   "minutes": 20,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "pork mince",
+     120
+    ],
+    [
+     "lettuce",
+     0.2
+    ],
+    [
+     "carrot",
+     40
+    ],
+    [
+     "spring onion",
+     0.1
+    ],
+    [
+     "soy sauce",
+     12
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "ginger",
+     3
+    ],
+    [
+     "rice",
+     50
+    ],
+    [
+     "oil",
+     3
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Brown the mince in the oil with the garlic and ginger.",
+    "Add the grated carrot, sliced spring onion and soy sauce and cook 3 minutes.",
+    "Spoon into lettuce cups and serve with the rice."
+   ],
+   "texture": [
+    "crunchy"
+   ],
+   "macros": {
+    "p": 27,
+    "c": 50,
+    "f": 29,
+    "kj": 2400
+   },
+   "groups": {
+    "veg": 1.7,
+    "grain": 1.7,
+    "protein": 1.3,
+    "fv": 130,
+    "red": 84,
+    "side": 130,
+    "gc": 40,
+    "mp": 20
+   },
+   "tags": [
+    "gluten",
+    "meat",
+    "pork",
+    "red",
+    "soy"
+   ],
+   "cost": 3.01
+  },
+  {
+   "name": "Wrap pizzas with ham and vegetables",
+   "meal": "dinner",
+   "cuisine": "Italian",
+   "minutes": 20,
+   "kit": [
+    "oven"
+   ],
+   "per": [
+    [
+     "wraps",
+     2
+    ],
+    [
+     "passata",
+     40
+    ],
+    [
+     "ham",
+     40
+    ],
+    [
+     "mozzarella",
+     40
+    ],
+    [
+     "capsicum",
+     0.3
+    ],
+    [
+     "mushrooms",
+     30
+    ],
+    [
+     "salad leaves",
+     30
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 220 °C. Spread the wraps with passata.",
+    "Top with ham, sliced capsicum and mushrooms, and the cheese.",
+    "Bake on trays for 8 to 10 minutes until crisp. Serve with salad."
+   ],
+   "kid": "Cheese and ham only.",
+   "macros": {
+    "p": 26,
+    "c": 58,
+    "f": 19,
+    "kj": 2070
+   },
+   "groups": {
+    "veg": 2.1,
+    "grain": 2.2,
+    "dairy": 1.0,
+    "fv": 154,
+    "red": 34,
+    "side": 154,
+    "gc": 44,
+    "mp": 7,
+    "ca": 286
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "meat",
+    "milk",
+    "pork",
+    "red"
+   ],
+   "cost": 4.4
+  },
+  {
+   "name": "Black bean burrito bowls",
+   "meal": "dinner",
+   "cuisine": "Mexican",
+   "minutes": 20,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "black beans",
+     120
+    ],
+    [
+     "rice",
+     70
+    ],
+    [
+     "corn",
+     60
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "avocado",
+     0.3
+    ],
+    [
+     "lettuce",
+     0.1
+    ],
+    [
+     "taco seasoning",
+     4
+    ],
+    [
+     "lemon",
+     0.2
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Warm the drained beans with the seasoning and a splash of water for 5 minutes.",
+    "Serve the rice, beans, corn, diced tomato, avocado and lettuce in a bowl with a squeeze of lemon."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 16,
+    "c": 97,
+    "f": 9,
+    "kj": 2190
+   },
+   "groups": {
+    "veg": 3.0,
+    "grain": 2.3,
+    "protein": 0.8,
+    "fv": 226,
+    "leg": 120,
+    "side": 226,
+    "gc": 56,
+    "mp": 7
+   },
+   "tags": [
+    "spicy"
+   ],
+   "cost": 2.8
+  },
+  {
+   "name": "Chicken and vegetable soup",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 40,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     110
+    ],
+    [
+     "carrot",
+     60
+    ],
+    [
+     "celery",
+     0.1
+    ],
+    [
+     "onion",
+     40
+    ],
+    [
+     "potato",
+     100
+    ],
+    [
+     "stock",
+     350
+    ],
+    [
+     "pasta",
+     25
+    ],
+    [
+     "bread",
+     40
+    ]
+   ],
+   "steps": [
+    "Simmer the chicken in the stock for 15 minutes, then take it out and shred it.",
+    "Add the chopped vegetables and pasta to the stock and simmer for 15 minutes.",
+    "Return the chicken and serve with bread."
+   ],
+   "leftovers": true,
+   "texture": [
+    "soft"
+   ],
+   "batch": true,
+   "macros": {
+    "p": 38,
+    "c": 66,
+    "f": 6,
+    "kj": 1960
+   },
+   "groups": {
+    "veg": 3.2,
+    "grain": 1.8,
+    "protein": 1.1,
+    "fv": 140,
+    "side": 240,
+    "gc": 36,
+    "mp": 25
+   },
+   "tags": [
+    "gluten",
+    "meat",
+    "poultry"
+   ],
+   "cost": 3.33
+  },
+  {
+   "name": "Oven fish and chips with salad",
+   "meal": "dinner",
+   "cuisine": "British",
+   "minutes": 30,
+   "kit": [
+    "oven"
+   ],
+   "per": [
+    [
+     "crumbed fish",
+     140
+    ],
+    [
+     "potato",
+     220
+    ],
+    [
+     "salad leaves",
+     40
+    ],
+    [
+     "tomato",
+     0.4
+    ],
+    [
+     "lemon",
+     0.2
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 220 °C. Cut the potatoes into wedges, toss with the oil and bake for 30 minutes.",
+    "Bake the fish for the last 15 to 18 minutes (check the packet).",
+    "Serve with salad and lemon."
+   ],
+   "separate": true,
+   "texture": [
+    "crunchy"
+   ],
+   "macros": {
+    "p": 21,
+    "c": 74,
+    "f": 28,
+    "kj": 2610
+   },
+   "groups": {
+    "veg": 4.3,
+    "protein": 1.2,
+    "fv": 100,
+    "fish": 140,
+    "side": 320,
+    "mp": 15
+   },
+   "tags": [
+    "animal",
+    "fish",
+    "gluten"
+   ],
+   "cost": 4.42
+  },
+  {
+   "name": "Steak with jacket potato and salad",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 60,
+   "kit": [
+    "oven",
+    "stovetop"
+   ],
+   "per": [
+    [
+     "beef steak",
+     150
+    ],
+    [
+     "potato",
+     250
+    ],
+    [
+     "sour cream",
+     20
+    ],
+    [
+     "salad leaves",
+     40
+    ],
+    [
+     "tomato",
+     0.4
+    ],
+    [
+     "cucumber",
+     0.3
+    ],
+    [
+     "oil",
+     3
+    ]
+   ],
+   "steps": [
+    "Bake the potatoes at 200 °C for about 50 minutes (or microwave for 8 to 10 minutes).",
+    "Cook the steak in a hot pan, 3 to 4 minutes each side. Rest it for 5 minutes.",
+    "Serve with the potato, sour cream and salad."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 40,
+    "c": 50,
+    "f": 12,
+    "kj": 1940
+   },
+   "groups": {
+    "veg": 5.4,
+    "protein": 1.7,
+    "fv": 154,
+    "red": 105,
+    "side": 404,
+    "mp": 33
+   },
+   "tags": [
+    "animal",
+    "beef",
+    "lactose",
+    "meat",
+    "milk",
+    "red"
+   ],
+   "cost": 6.91
+  },
+  {
+   "name": "Tofu and vegetable noodle stir-fry",
+   "meal": "dinner",
+   "cuisine": "Chinese",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "tofu",
+     130
+    ],
+    [
+     "rice noodles",
+     70
+    ],
+    [
+     "stir-fry veg",
+     180
+    ],
+    [
+     "soy sauce",
+     15
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "ginger",
+     3
+    ],
+    [
+     "oil",
+     7
+    ]
+   ],
+   "steps": [
+    "Cook the noodles. Cut the tofu into cubes and pat dry.",
+    "Fry the tofu in the oil until golden, then set aside.",
+    "Stir-fry the vegetables with the garlic and ginger for 4 minutes.",
+    "Add the noodles, tofu and soy sauce and toss."
+   ],
+   "texture": [
+    "mixed"
+   ],
+   "macros": {
+    "p": 24,
+    "c": 85,
+    "f": 14,
+    "kj": 2380
+   },
+   "groups": {
+    "veg": 2.4,
+    "grain": 2.3,
+    "protein": 0.8,
+    "fv": 180,
+    "side": 180,
+    "gc": 56,
+    "mp": 12
+   },
+   "tags": [
+    "gluten",
+    "soy"
+   ],
+   "cost": 2.88
+  },
+  {
+   "name": "Halloumi and roast vegetable couscous",
+   "meal": "dinner",
+   "cuisine": "Middle Eastern",
+   "minutes": 40,
+   "kit": [
+    "oven",
+    "stovetop"
+   ],
+   "per": [
+    [
+     "halloumi",
+     60
+    ],
+    [
+     "pumpkin",
+     120
+    ],
+    [
+     "zucchini",
+     0.4
+    ],
+    [
+     "capsicum",
+     0.4
+    ],
+    [
+     "chickpeas",
+     60
+    ],
+    [
+     "couscous",
+     60
+    ],
+    [
+     "spinach",
+     20
+    ],
+    [
+     "oil",
+     7
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 200 °C. Roast the chopped pumpkin, zucchini, capsicum and drained chickpeas with the oil for 25 minutes.",
+    "Pour boiling water over the couscous, cover for 5 minutes, then fluff.",
+    "Fry the sliced halloumi for 2 minutes each side.",
+    "Mix the vegetables and spinach through the couscous and top with the halloumi."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 28,
+    "c": 77,
+    "f": 25,
+    "kj": 2640
+   },
+   "groups": {
+    "veg": 3.9,
+    "grain": 2.0,
+    "protein": 0.4,
+    "dairy": 1.5,
+    "fv": 292,
+    "leg": 60,
+    "side": 292,
+    "gc": 46,
+    "mp": 4,
+    "ca": 420
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "milk"
+   ],
+   "cost": 4.8
+  },
+  {
+   "name": "Homemade beef burgers with salad",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "beef mince",
+     130
+    ],
+    [
+     "rolls",
+     1
+    ],
+    [
+     "cheddar",
+     20
+    ],
+    [
+     "lettuce",
+     0.1
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "bbq sauce",
+     10
+    ],
+    [
+     "oil",
+     3
+    ]
+   ],
+   "steps": [
+    "Shape the mince into patties with salt and pepper.",
+    "Fry for 4 to 5 minutes each side until cooked through.",
+    "Fill the rolls with the patties, cheese, lettuce, tomato and sauce."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 38,
+    "c": 41,
+    "f": 26,
+    "kj": 2330
+   },
+   "groups": {
+    "veg": 1.5,
+    "grain": 1.6,
+    "protein": 1.4,
+    "dairy": 0.5,
+    "fv": 115,
+    "red": 91,
+    "side": 115,
+    "gc": 33,
+    "mp": 26,
+    "ca": 142
+   },
+   "tags": [
+    "animal",
+    "beef",
+    "gluten",
+    "meat",
+    "milk",
+    "red"
+   ],
+   "cost": 4.12
+  },
+  {
+   "name": "Baked potatoes with beans and cheese",
+   "meal": "dinner",
+   "cuisine": "British",
+   "minutes": 20,
+   "kit": [
+    "microwave"
+   ],
+   "per": [
+    [
+     "potato",
+     280
+    ],
+    [
+     "baked beans",
+     150
+    ],
+    [
+     "cheddar",
+     25
+    ],
+    [
+     "salad leaves",
+     30
+    ]
+   ],
+   "steps": [
+    "Prick the potatoes and microwave for 8 to 12 minutes until soft (or bake at 200 °C for 50 minutes).",
+    "Warm the beans. Split the potatoes, top with the beans and grated cheese.",
+    "Serve with salad."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 19,
+    "c": 82,
+    "f": 9,
+    "kj": 1940
+   },
+   "groups": {
+    "veg": 4.1,
+    "protein": 1.0,
+    "dairy": 0.6,
+    "fv": 30,
+    "leg": 150,
+    "side": 310,
+    "mp": 7,
+    "ca": 178
+   },
+   "tags": [
+    "animal",
+    "milk"
+   ],
+   "cost": 2.54
+  },
+  {
+   "name": "Chicken burrito bowls",
+   "meal": "dinner",
+   "cuisine": "Mexican",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     130
+    ],
+    [
+     "rice",
+     70
+    ],
+    [
+     "black beans",
+     60
+    ],
+    [
+     "corn",
+     50
+    ],
+    [
+     "tomato",
+     0.4
+    ],
+    [
+     "lettuce",
+     0.1
+    ],
+    [
+     "taco seasoning",
+     5
+    ],
+    [
+     "sour cream",
+     20
+    ]
+   ],
+   "steps": [
+    "Cook the rice.",
+    "Toss the sliced chicken with the seasoning and fry for 8 minutes.",
+    "Warm the beans.",
+    "Serve everything in bowls with the corn, tomato, lettuce and sour cream."
+   ],
+   "separate": true,
+   "leftovers": true,
+   "macros": {
+    "p": 41,
+    "c": 81,
+    "f": 7,
+    "kj": 2340
+   },
+   "groups": {
+    "veg": 2.0,
+    "grain": 2.3,
+    "protein": 1.7,
+    "fv": 150,
+    "leg": 60,
+    "side": 150,
+    "gc": 56,
+    "mp": 33
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "meat",
+    "milk",
+    "poultry",
+    "spicy"
+   ],
+   "cost": 3.47
+  },
+  {
+   "name": "Pumpkin and ricotta pasta",
+   "meal": "dinner",
+   "cuisine": "Italian",
+   "minutes": 30,
+   "kit": [
+    "stovetop",
+    "microwave"
+   ],
+   "per": [
+    [
+     "pumpkin",
+     150
+    ],
+    [
+     "ricotta",
+     50
+    ],
+    [
+     "pasta",
+     85
+    ],
+    [
+     "spinach",
+     30
+    ],
+    [
+     "cheddar",
+     10
+    ],
+    [
+     "garlic",
+     0.07
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Microwave the diced pumpkin with a splash of water for 8 minutes until soft.",
+    "Cook the pasta.",
+    "Fry the garlic in the oil, add the pumpkin and mash roughly. Stir in the ricotta and a little pasta water.",
+    "Toss with the pasta and spinach, and top with cheese."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "leftovers": true,
+   "macros": {
+    "p": 20,
+    "c": 79,
+    "f": 15,
+    "kj": 2200
+   },
+   "groups": {
+    "veg": 2.4,
+    "grain": 2.8,
+    "dairy": 0.7,
+    "fv": 180,
+    "side": 180,
+    "gc": 63,
+    "ca": 174
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "lactose",
+    "milk"
+   ],
+   "cost": 2.42
+  },
+  {
+   "name": "Overnight oats with berries",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 5,
+   "kit": [],
+   "per": [
+    [
+     "oats",
+     50
+    ],
+    [
+     "milk",
+     150
+    ],
+    [
+     "greek yoghurt",
+     50
+    ],
+    [
+     "frozen berries",
+     70
+    ]
+   ],
+   "steps": [
+    "The night before, mix the oats, milk and yoghurt in a jar or bowl.",
+    "Top with the berries and leave in the fridge overnight."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 16,
+    "c": 52,
+    "f": 11,
+    "kj": 1530
+   },
+   "groups": {
+    "fruit": 0.5,
+    "grain": 1.7,
+    "dairy": 0.8,
+    "fv": 70,
+    "gc": 34,
+    "ca": 220
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "lactose",
+    "milk"
+   ],
+   "cost": 1.34
+  },
+  {
+   "name": "Porridge with banana",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 8,
+   "kit": [
+    "microwave"
+   ],
+   "per": [
+    [
+     "oats",
+     50
+    ],
+    [
+     "milk",
+     200
+    ],
+    [
+     "banana",
+     60
+    ],
+    [
+     "honey",
+     5
+    ]
+   ],
+   "steps": [
+    "Microwave the oats and milk for 2 to 3 minutes, stirring halfway.",
+    "Top with sliced banana and a little honey."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 14,
+    "c": 61,
+    "f": 10,
+    "kj": 1590
+   },
+   "groups": {
+    "fruit": 0.4,
+    "grain": 1.7,
+    "dairy": 0.8,
+    "fv": 60,
+    "gc": 34,
+    "ca": 226
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "honey",
+    "lactose",
+    "milk"
+   ],
+   "cost": 0.79
+  },
+  {
+   "name": "Weet-Bix with milk and fruit",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 3,
+   "kit": [],
+   "per": [
+    [
+     "weet-bix",
+     34
+    ],
+    [
+     "milk",
+     200
+    ],
+    [
+     "banana",
+     60
+    ]
+   ],
+   "steps": [
+    "Two Weet-Bix in a bowl with milk and sliced banana."
+   ],
+   "macros": {
+    "p": 11,
+    "c": 51,
+    "f": 8,
+    "kj": 1260
+   },
+   "groups": {
+    "fruit": 0.4,
+    "grain": 1.1,
+    "dairy": 0.8,
+    "fv": 60,
+    "gc": 28,
+    "ca": 226
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "lactose",
+    "milk"
+   ],
+   "cost": 0.83
+  },
+  {
+   "name": "Eggs on toast",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 10,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "egg",
+     2
+    ],
+    [
+     "bread",
+     70
+    ],
+    [
+     "butter",
+     5
+    ],
+    [
+     "tomato",
+     0.5
+    ]
+   ],
+   "steps": [
+    "Scramble, poach or fry the eggs.",
+    "Serve on buttered toast with sliced tomato."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 23,
+    "c": 34,
+    "f": 17,
+    "kj": 1600
+   },
+   "groups": {
+    "veg": 1.0,
+    "grain": 1.8,
+    "protein": 1.1,
+    "fv": 75,
+    "side": 75,
+    "gc": 30,
+    "mp": 14
+   },
+   "tags": [
+    "animal",
+    "egg",
+    "gluten",
+    "milk"
+   ],
+   "cost": 1.96
+  },
+  {
+   "name": "Yoghurt with muesli and fruit",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 3,
+   "kit": [],
+   "per": [
+    [
+     "greek yoghurt",
+     150
+    ],
+    [
+     "muesli",
+     40
+    ],
+    [
+     "frozen berries",
+     60
+    ]
+   ],
+   "steps": [
+    "Spoon the yoghurt into a bowl and top with the muesli and berries."
+   ],
+   "macros": {
+    "p": 18,
+    "c": 37,
+    "f": 11,
+    "kj": 1360
+   },
+   "groups": {
+    "fruit": 0.4,
+    "grain": 1.3,
+    "dairy": 0.8,
+    "fv": 60,
+    "gc": 24,
+    "ca": 150
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "lactose",
+    "milk",
+    "treenut"
+   ],
+   "cost": 1.71
+  },
+  {
+   "name": "Avocado and tomato toast",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 5,
+   "kit": [],
+   "per": [
+    [
+     "bread",
+     70
+    ],
+    [
+     "avocado",
+     0.4
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "lemon",
+     0.1
+    ]
+   ],
+   "steps": [
+    "Toast the bread, mash the avocado on top with a squeeze of lemon, and add sliced tomato."
+   ],
+   "macros": {
+    "p": 11,
+    "c": 40,
+    "f": 13,
+    "kj": 1260
+   },
+   "groups": {
+    "veg": 1.9,
+    "grain": 1.8,
+    "fv": 143,
+    "side": 143,
+    "gc": 30
+   },
+   "tags": [
+    "gluten"
+   ],
+   "cost": 1.67
+  },
+  {
+   "name": "Baked beans on toast",
+   "meal": "breakfast",
+   "cuisine": "British",
+   "minutes": 5,
+   "kit": [
+    "microwave"
+   ],
+   "per": [
+    [
+     "baked beans",
+     150
+    ],
+    [
+     "bread",
+     70
+    ],
+    [
+     "butter",
+     5
+    ]
+   ],
+   "steps": [
+    "Warm the beans and serve on buttered toast."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 16,
+    "c": 62,
+    "f": 7,
+    "kj": 1480
+   },
+   "groups": {
+    "grain": 1.8,
+    "protein": 1.0,
+    "leg": 150,
+    "gc": 30,
+    "mp": 7
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "milk"
+   ],
+   "cost": 0.97
+  },
+  {
+   "name": "Vegemite toast and fruit",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 3,
+   "kit": [],
+   "per": [
+    [
+     "bread",
+     70
+    ],
+    [
+     "butter",
+     5
+    ],
+    [
+     "vegemite",
+     4
+    ],
+    [
+     "apple",
+     150
+    ]
+   ],
+   "steps": [
+    "Toast with butter and a thin scrape of Vegemite, with an apple."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 10,
+    "c": 51,
+    "f": 7,
+    "kj": 1240
+   },
+   "groups": {
+    "fruit": 1.0,
+    "grain": 1.8,
+    "fv": 150,
+    "gc": 30
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "milk"
+   ],
+   "cost": 1.27
+  },
+  {
+   "name": "Peanut butter toast",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 3,
+   "kit": [],
+   "per": [
+    [
+     "bread",
+     70
+    ],
+    [
+     "peanut butter",
+     20
+    ],
+    [
+     "apple",
+     150
+    ]
+   ],
+   "steps": [
+    "Toast spread with peanut butter, with an apple on the side."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 13,
+    "c": 55,
+    "f": 13,
+    "kj": 1560
+   },
+   "groups": {
+    "fruit": 1.0,
+    "grain": 1.8,
+    "protein": 0.7,
+    "fv": 150,
+    "gc": 30
+   },
+   "tags": [
+    "gluten",
+    "peanut"
+   ],
+   "cost": 1.26
+  },
+  {
+   "name": "Scrambled egg and cheese wrap",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 8,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "egg",
+     2
+    ],
+    [
+     "wraps",
+     1
+    ],
+    [
+     "cheddar",
+     15
+    ],
+    [
+     "spinach",
+     15
+    ]
+   ],
+   "steps": [
+    "Scramble the eggs, then roll them in a wrap with the cheese and spinach."
+   ],
+   "macros": {
+    "p": 21,
+    "c": 24,
+    "f": 19,
+    "kj": 1490
+   },
+   "groups": {
+    "veg": 0.2,
+    "grain": 1.1,
+    "protein": 1.1,
+    "dairy": 0.4,
+    "fv": 15,
+    "side": 15,
+    "gc": 22,
+    "mp": 14,
+    "ca": 107
+   },
+   "tags": [
+    "animal",
+    "egg",
+    "gluten",
+    "milk"
+   ],
+   "cost": 2.15
+  },
+  {
+   "name": "Chicken salad wrap",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 10,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     90
+    ],
+    [
+     "wraps",
+     1
+    ],
+    [
+     "lettuce",
+     0.1
+    ],
+    [
+     "tomato",
+     0.4
+    ],
+    [
+     "cheddar",
+     15
+    ],
+    [
+     "mayonnaise",
+     10
+    ]
+   ],
+   "steps": [
+    "Cook a chicken breast (or use leftover chicken) and slice it.",
+    "Fill a wrap with the chicken, lettuce, tomato, cheese and a little mayonnaise."
+   ],
+   "packable": true,
+   "macros": {
+    "p": 29,
+    "c": 26,
+    "f": 19,
+    "kj": 1630
+   },
+   "groups": {
+    "veg": 1.3,
+    "grain": 1.1,
+    "protein": 0.9,
+    "dairy": 0.4,
+    "fv": 100,
+    "side": 100,
+    "gc": 22,
+    "mp": 20,
+    "ca": 107
+   },
+   "tags": [
+    "animal",
+    "egg",
+    "gluten",
+    "meat",
+    "milk",
+    "poultry"
+   ],
+   "cost": 2.53
+  },
+  {
+   "name": "Tuna and salad sandwich",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 5,
+   "kit": [],
+   "per": [
+    [
+     "tuna",
+     95
+    ],
+    [
+     "bread",
+     70
+    ],
+    [
+     "lettuce",
+     0.08
+    ],
+    [
+     "tomato",
+     0.4
+    ],
+    [
+     "mayonnaise",
+     10
+    ]
+   ],
+   "steps": [
+    "Mix the tuna with the mayonnaise. Make a sandwich with the lettuce and tomato."
+   ],
+   "packable": true,
+   "macros": {
+    "p": 34,
+    "c": 33,
+    "f": 11,
+    "kj": 1550
+   },
+   "groups": {
+    "veg": 1.2,
+    "grain": 1.8,
+    "protein": 0.8,
+    "fv": 92,
+    "fish": 95,
+    "side": 92,
+    "gc": 30,
+    "mp": 24
+   },
+   "tags": [
+    "animal",
+    "egg",
+    "fish",
+    "gluten"
+   ],
+   "cost": 2.55
+  },
+  {
+   "name": "Ham, cheese and salad sandwich",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 5,
+   "kit": [],
+   "per": [
+    [
+     "ham",
+     50
+    ],
+    [
+     "bread",
+     70
+    ],
+    [
+     "cheddar",
+     20
+    ],
+    [
+     "lettuce",
+     0.08
+    ],
+    [
+     "tomato",
+     0.4
+    ]
+   ],
+   "steps": [
+    "Make a sandwich with ham, cheese, lettuce and tomato."
+   ],
+   "packable": true,
+   "macros": {
+    "p": 23,
+    "c": 36,
+    "f": 14,
+    "kj": 1490
+   },
+   "groups": {
+    "veg": 1.2,
+    "grain": 1.8,
+    "dairy": 0.5,
+    "fv": 92,
+    "red": 42,
+    "side": 92,
+    "gc": 30,
+    "mp": 8,
+    "ca": 142
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "meat",
+    "milk",
+    "pork",
+    "red"
+   ],
+   "cost": 2.2
+  },
+  {
+   "name": "Egg and lettuce sandwich",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 15,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "egg",
+     2
+    ],
+    [
+     "bread",
+     70
+    ],
+    [
+     "lettuce",
+     0.08
+    ],
+    [
+     "mayonnaise",
+     10
+    ]
+   ],
+   "steps": [
+    "Hard-boil the eggs for 9 minutes, cool, peel and mash with the mayonnaise.",
+    "Make a sandwich with the lettuce."
+   ],
+   "packable": true,
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 23,
+    "c": 32,
+    "f": 20,
+    "kj": 1700
+   },
+   "groups": {
+    "veg": 0.4,
+    "grain": 1.8,
+    "protein": 1.1,
+    "fv": 32,
+    "side": 32,
+    "gc": 30,
+    "mp": 14
+   },
+   "tags": [
+    "animal",
+    "egg",
+    "gluten"
+   ],
+   "cost": 1.67
+  },
+  {
+   "name": "Hummus and vegetable wrap",
+   "meal": "lunch",
+   "cuisine": "Middle Eastern",
+   "minutes": 5,
+   "kit": [],
+   "per": [
+    [
+     "hummus",
+     40
+    ],
+    [
+     "wraps",
+     1
+    ],
+    [
+     "carrot",
+     50
+    ],
+    [
+     "cucumber",
+     0.3
+    ],
+    [
+     "salad leaves",
+     20
+    ],
+    [
+     "chickpeas",
+     50
+    ]
+   ],
+   "steps": [
+    "Spread the wrap with hummus and fill with grated carrot, cucumber, leaves and chickpeas."
+   ],
+   "packable": true,
+   "macros": {
+    "p": 11,
+    "c": 46,
+    "f": 12,
+    "kj": 1370
+   },
+   "groups": {
+    "veg": 1.7,
+    "grain": 1.1,
+    "protein": 0.3,
+    "fv": 124,
+    "leg": 50,
+    "side": 124,
+    "gc": 22,
+    "mp": 4
+   },
+   "tags": [
+    "gluten",
+    "sesame"
+   ],
+   "cost": 2.44
+  },
+  {
+   "name": "Tuna pasta salad",
+   "meal": "lunch",
+   "cuisine": "Italian",
+   "minutes": 15,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "tuna",
+     95
+    ],
+    [
+     "pasta",
+     60
+    ],
+    [
+     "corn",
+     40
+    ],
+    [
+     "capsicum",
+     0.3
+    ],
+    [
+     "cucumber",
+     0.3
+    ],
+    [
+     "mayonnaise",
+     10
+    ]
+   ],
+   "steps": [
+    "Cook the pasta, rinse in cold water and mix with everything else. Keeps for 2 days in the fridge."
+   ],
+   "packable": true,
+   "batch": true,
+   "macros": {
+    "p": 34,
+    "c": 55,
+    "f": 10,
+    "kj": 1870
+   },
+   "groups": {
+    "veg": 2.0,
+    "grain": 2.0,
+    "protein": 0.8,
+    "fv": 148,
+    "fish": 95,
+    "side": 148,
+    "gc": 45,
+    "mp": 24
+   },
+   "tags": [
+    "animal",
+    "egg",
+    "fish",
+    "gluten"
+   ],
+   "cost": 3.01
+  },
+  {
+   "name": "Cheese, crackers and vegetable sticks",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 5,
+   "kit": [],
+   "per": [
+    [
+     "cheddar",
+     40
+    ],
+    [
+     "crackers",
+     35
+    ],
+    [
+     "carrot",
+     60
+    ],
+    [
+     "cucumber",
+     0.4
+    ],
+    [
+     "apple",
+     150
+    ]
+   ],
+   "steps": [
+    "Cut the cheese, carrot and cucumber into sticks. Pack with crackers and an apple."
+   ],
+   "packable": true,
+   "separate": true,
+   "texture": [
+    "crunchy"
+   ],
+   "macros": {
+    "p": 14,
+    "c": 55,
+    "f": 17,
+    "kj": 1760
+   },
+   "groups": {
+    "veg": 1.8,
+    "fruit": 1.0,
+    "grain": 1.0,
+    "dairy": 1.0,
+    "fv": 282,
+    "side": 132,
+    "gc": 26,
+    "ca": 284
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "milk"
+   ],
+   "cost": 2.6
+  },
+  {
+   "name": "Bean and cheese quesadilla",
+   "meal": "lunch",
+   "cuisine": "Mexican",
+   "minutes": 10,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "wraps",
+     2
+    ],
+    [
+     "black beans",
+     70
+    ],
+    [
+     "cheddar",
+     30
+    ],
+    [
+     "corn",
+     30
+    ],
+    [
+     "tomato",
+     0.4
+    ]
+   ],
+   "steps": [
+    "Fill a wrap with the beans, corn and cheese, top with another wrap and toast in a dry pan for 2 to 3 minutes each side.",
+    "Serve with diced tomato."
+   ],
+   "macros": {
+    "p": 20,
+    "c": 63,
+    "f": 18,
+    "kj": 2030
+   },
+   "groups": {
+    "veg": 1.2,
+    "grain": 2.2,
+    "protein": 0.5,
+    "dairy": 0.8,
+    "fv": 90,
+    "leg": 70,
+    "side": 90,
+    "gc": 44,
+    "mp": 4,
+    "ca": 213
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "milk"
+   ],
+   "cost": 2.27
+  },
+  {
+   "name": "Pumpkin soup with bread",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 35,
+   "kit": [
+    "stovetop",
+    "blender"
+   ],
+   "per": [
+    [
+     "pumpkin",
+     250
+    ],
+    [
+     "onion",
+     40
+    ],
+    [
+     "veg stock",
+     200
+    ],
+    [
+     "cream",
+     15
+    ],
+    [
+     "bread",
+     50
+    ]
+   ],
+   "steps": [
+    "Simmer the chopped pumpkin and onion in the stock for 20 minutes.",
+    "Blend until smooth and stir in the cream. Serve with bread."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "batch": true,
+   "macros": {
+    "p": 10,
+    "c": 44,
+    "f": 8,
+    "kj": 1130
+   },
+   "groups": {
+    "veg": 3.9,
+    "grain": 1.2,
+    "fv": 290,
+    "side": 290,
+    "gc": 21
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "lactose",
+    "milk"
+   ],
+   "cost": 1.87
+  },
+  {
+   "name": "Chicken, rice and vegetable lunch box",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 20,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     100
+    ],
+    [
+     "rice",
+     50
+    ],
+    [
+     "frozen veg",
+     100
+    ],
+    [
+     "soy sauce",
+     8
+    ]
+   ],
+   "steps": [
+    "Cook the rice and chicken (or use leftovers). Steam the vegetables.",
+    "Pack in a container with a dash of soy sauce."
+   ],
+   "packable": true,
+   "separate": true,
+   "macros": {
+    "p": 30,
+    "c": 54,
+    "f": 3,
+    "kj": 1590
+   },
+   "groups": {
+    "veg": 1.3,
+    "grain": 1.7,
+    "protein": 1.0,
+    "fv": 100,
+    "side": 100,
+    "gc": 40,
+    "mp": 22
+   },
+   "tags": [
+    "gluten",
+    "meat",
+    "poultry",
+    "soy"
+   ],
+   "cost": 1.89
+  }
+ ],
+ "snacks": [
+  {
+   "what": "170 g Greek yoghurt",
+   "per": [
+    [
+     "greek yoghurt",
+     170
+    ]
+   ],
+   "kind": "protein",
+   "kids": true,
+   "macros": {
+    "p": 15,
+    "c": 7,
+    "f": 8,
+    "kj": 690
+   },
+   "groups": {
+    "dairy": 0.8,
+    "ca": 170
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "milk"
+   ]
+  },
+  {
+   "what": "300 ml glass of milk",
+   "per": [
+    [
+     "milk",
+     300
+    ]
+   ],
+   "kind": "protein",
+   "kids": true,
+   "macros": {
+    "p": 9,
+    "c": 14,
+    "f": 10,
+    "kj": 760
+   },
+   "groups": {
+    "dairy": 1.2,
+    "ca": 339
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "milk"
+   ]
+  },
+  {
+   "what": "2 boiled eggs",
+   "per": [
+    [
+     "egg",
+     2
+    ]
+   ],
+   "kind": "protein",
+   "kids": true,
+   "macros": {
+    "p": 14,
+    "c": 1,
+    "f": 10,
+    "kj": 660
+   },
+   "groups": {
+    "protein": 1.1,
+    "mp": 14
+   },
+   "tags": [
+    "animal",
+    "egg"
+   ]
+  },
+  {
+   "what": "100 g cottage cheese with an apple",
+   "per": [
+    [
+     "cottage cheese",
+     100
+    ],
+    [
+     "apple",
+     150
+    ]
+   ],
+   "kind": "protein",
+   "kids": false,
+   "macros": {
+    "p": 12,
+    "c": 24,
+    "f": 5,
+    "kj": 740
+   },
+   "groups": {
+    "fruit": 1.0,
+    "dairy": 0.8,
+    "fv": 150,
+    "ca": 83
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "milk"
+   ]
+  },
+  {
+   "what": "Tuna and crackers",
+   "per": [
+    [
+     "tuna",
+     95
+    ],
+    [
+     "crackers",
+     20
+    ]
+   ],
+   "kind": "protein",
+   "kids": false,
+   "macros": {
+    "p": 26,
+    "c": 15,
+    "f": 3,
+    "kj": 810
+   },
+   "groups": {
+    "grain": 0.6,
+    "protein": 0.8,
+    "fish": 95,
+    "gc": 15,
+    "mp": 24
+   },
+   "tags": [
+    "animal",
+    "fish",
+    "gluten"
+   ]
+  },
+  {
+   "what": "100 g edamame",
+   "per": [
+    [
+     "edamame",
+     100
+    ]
+   ],
+   "kind": "protein",
+   "kids": true,
+   "macros": {
+    "p": 11,
+    "c": 8,
+    "f": 5,
+    "kj": 460
+   },
+   "groups": {
+    "protein": 0.7,
+    "leg": 100,
+    "mp": 11
+   },
+   "tags": [
+    "soy"
+   ]
+  },
+  {
+   "what": "An apple",
+   "per": [
+    [
+     "apple",
+     150
+    ]
+   ],
+   "kind": "fruit",
+   "kids": true,
+   "macros": {
+    "p": 0,
+    "c": 21,
+    "f": 0,
+    "kj": 330
+   },
+   "groups": {
+    "fruit": 1.0,
+    "fv": 150
+   },
+   "tags": []
+  },
+  {
+   "what": "A banana",
+   "per": [
+    [
+     "banana",
+     120
+    ]
+   ],
+   "kind": "fruit",
+   "kids": true,
+   "macros": {
+    "p": 1,
+    "c": 27,
+    "f": 0,
+    "kj": 450
+   },
+   "groups": {
+    "fruit": 0.8,
+    "fv": 120
+   },
+   "tags": []
+  },
+  {
+   "what": "2 mandarins",
+   "per": [
+    [
+     "mandarin",
+     150
+    ]
+   ],
+   "kind": "fruit",
+   "kids": true,
+   "macros": {
+    "p": 1,
+    "c": 20,
+    "f": 0,
+    "kj": 330
+   },
+   "groups": {
+    "fruit": 1.0,
+    "fv": 150
+   },
+   "tags": []
+  },
+  {
+   "what": "Carrot and cucumber sticks with hummus",
+   "per": [
+    [
+     "carrot",
+     60
+    ],
+    [
+     "cucumber",
+     0.4
+    ],
+    [
+     "hummus",
+     30
+    ]
+   ],
+   "kind": "veg",
+   "kids": true,
+   "macros": {
+    "p": 3,
+    "c": 12,
+    "f": 6,
+    "kj": 430
+   },
+   "groups": {
+    "veg": 1.8,
+    "fv": 132,
+    "side": 132
+   },
+   "tags": [
+    "sesame"
+   ]
+  },
+  {
+   "what": "Cheese and crackers",
+   "per": [
+    [
+     "cheddar",
+     25
+    ],
+    [
+     "crackers",
+     20
+    ]
+   ],
+   "kind": "other",
+   "kids": true,
+   "macros": {
+    "p": 8,
+    "c": 15,
+    "f": 10,
+    "kj": 780
+   },
+   "groups": {
+    "grain": 0.6,
+    "dairy": 0.6,
+    "gc": 15,
+    "ca": 178
+   },
+   "tags": [
+    "animal",
+    "gluten",
+    "milk"
+   ]
+  },
+  {
+   "what": "30 g almonds",
+   "per": [
+    [
+     "almonds",
+     30
+    ]
+   ],
+   "kind": "other",
+   "kids": false,
+   "macros": {
+    "p": 6,
+    "c": 6,
+    "f": 15,
+    "kj": 730
+   },
+   "groups": {
+    "protein": 1.0
+   },
+   "tags": [
+    "treenut"
+   ]
+  },
+  {
+   "what": "Rice crackers with peanut butter",
+   "per": [
+    [
+     "rice crackers",
+     20
+    ],
+    [
+     "peanut butter",
+     15
+    ]
+   ],
+   "kind": "other",
+   "kids": true,
+   "macros": {
+    "p": 5,
+    "c": 20,
+    "f": 8,
+    "kj": 720
+   },
+   "groups": {
+    "grain": 0.6,
+    "protein": 0.5,
+    "gc": 17
+   },
+   "tags": [
+    "peanut"
+   ]
+  },
+  {
+   "what": "A slice of fruit bread",
+   "per": [
+    [
+     "fruit bread",
+     40
+    ]
+   ],
+   "kind": "other",
+   "kids": true,
+   "macros": {
+    "p": 3,
+    "c": 20,
+    "f": 1,
+    "kj": 440
+   },
+   "groups": {
+    "grain": 1.0,
+    "gc": 20
+   },
+   "tags": [
+    "gluten"
+   ]
+  },
+  {
+   "what": "Yoghurt with berries",
+   "per": [
+    [
+     "greek yoghurt",
+     100
+    ],
+    [
+     "frozen berries",
+     60
+    ]
+   ],
+   "kind": "protein",
+   "kids": true,
+   "macros": {
+    "p": 9,
+    "c": 11,
+    "f": 5,
+    "kj": 530
+   },
+   "groups": {
+    "fruit": 0.4,
+    "dairy": 0.5,
+    "fv": 60,
+    "ca": 100
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "milk"
+   ]
+  },
+  {
+   "what": "A cheese stick and an apple",
+   "per": [
+    [
+     "cheddar",
+     20
+    ],
+    [
+     "apple",
+     150
+    ]
+   ],
+   "kind": "other",
+   "kids": true,
+   "macros": {
+    "p": 5,
+    "c": 21,
+    "f": 7,
+    "kj": 670
+   },
+   "groups": {
+    "fruit": 1.0,
+    "dairy": 0.5,
+    "fv": 150,
+    "ca": 142
+   },
+   "tags": [
+    "animal",
+    "milk"
+   ]
+  }
+ ],
+ "workouts": {
+  "none": [
+   {
+    "name": "Strength A",
+    "time": "About 25 minutes",
+    "items": [
+     "Warm-up (5 minutes): march on the spot and swing your arms",
+     "Sit to stand (3 × 10): stand up from a chair and sit back down slowly",
+     "Wall push-up (3 × 10): hands on the wall, lower your chest towards it",
+     "Glute bridge (3 × 12): lie on your back, knees bent, lift your hips",
+     "Bird dog (3 × 8 each side): on hands and knees, reach one arm and the opposite leg",
+     "Cool-down (3 minutes): gentle stretches"
+    ]
+   },
+   {
+    "name": "Strength B",
+    "time": "About 25 minutes",
+    "items": [
+     "Warm-up (5 minutes): march on the spot",
+     "Step-up (3 × 8 each leg): onto the bottom stair, holding the rail",
+     "Incline push-up (3 × 8): hands on a bench or kitchen bench",
+     "Calf raise (3 × 15): hold something steady",
+     "Dead bug (3 × 8 each side): lie on your back, slowly lower opposite arm and leg",
+     "Cool-down (3 minutes): gentle stretches"
+    ]
+   }
+  ],
+  "bands": [
+   {
+    "name": "Strength A",
+    "time": "About 30 minutes",
+    "items": [
+     "Warm-up (5 minutes): march on the spot and arm circles",
+     "Squat to a chair (3 × 10): sit back until you touch the chair, then stand",
+     "Band row (3 × 12): band around something sturdy, pull your elbows back",
+     "Band chest press (3 × 10): band behind your back, push forward",
+     "Glute bridge (3 × 12): band around your knees",
+     "Cool-down (3 minutes): gentle stretches"
+    ]
+   },
+   {
+    "name": "Strength B",
+    "time": "About 30 minutes",
+    "items": [
+     "Warm-up (5 minutes): march on the spot",
+     "Reverse lunge (3 × 8 each leg): hold a chair for balance if needed",
+     "Band pull-apart (3 × 12): arms straight, pull the band apart",
+     "Band overhead press (3 × 10): stand on the band, press up",
+     "Side plank on knees (3 × 20 seconds each side)",
+     "Cool-down (3 minutes): gentle stretches"
+    ]
+   }
+  ],
+  "dumbbells": [
+   {
+    "name": "Strength A",
+    "time": "About 35 minutes",
+    "items": [
+     "Warm-up (5 minutes): march on the spot and arm circles",
+     "Goblet squat (3 × 10): hold one dumbbell at your chest",
+     "One-arm dumbbell row (3 × 10 each side): hand on a bench",
+     "Dumbbell floor press (3 × 10): lying on your back",
+     "Romanian deadlift (3 × 10): soft knees, hinge at the hips",
+     "Plank (3 × 20 to 30 seconds)",
+     "Cool-down (3 minutes): gentle stretches"
+    ]
+   },
+   {
+    "name": "Strength B",
+    "time": "About 35 minutes",
+    "items": [
+     "Warm-up (5 minutes): march on the spot",
+     "Reverse lunge (3 × 8 each leg): dumbbells at your sides",
+     "Dumbbell shoulder press (3 × 10): seated or standing",
+     "Glute bridge (3 × 12): dumbbell on your hips",
+     "Dumbbell curl (2 × 12)",
+     "Dead bug (3 × 8 each side)",
+     "Cool-down (3 minutes): gentle stretches"
+    ]
+   }
+  ],
+  "gym": [
+   {
+    "name": "Strength A",
+    "time": "About 45 minutes",
+    "items": [
+     "Warm-up (5 minutes): bike or cross-trainer",
+     "Leg press (3 × 10): feet shoulder-width apart",
+     "Lat pulldown (3 × 10): pull the bar to your upper chest",
+     "Chest press machine (3 × 10)",
+     "Seated leg curl (3 × 12)",
+     "Plank (3 × 30 seconds)",
+     "Cool-down (5 minutes): easy bike and stretches"
+    ]
+   },
+   {
+    "name": "Strength B",
+    "time": "About 45 minutes",
+    "items": [
+     "Warm-up (5 minutes): bike or cross-trainer",
+     "Goblet squat (3 × 10): dumbbell at your chest",
+     "Seated cable row (3 × 10)",
+     "Shoulder press machine (3 × 10)",
+     "Romanian deadlift (3 × 10): dumbbells, soft knees",
+     "Cable woodchop (2 × 10 each side)",
+     "Cool-down (5 minutes): easy bike and stretches"
+    ]
+   }
+  ],
+  "seated": [
+   {
+    "name": "Strength A",
+    "time": "About 20 minutes",
+    "items": [
+     "Warm-up (5 minutes): seated arm circles and shoulder rolls",
+     "Seated band row (3 × 12): band around a sturdy post",
+     "Seated chest press (3 × 10): band behind your back, or a light weight",
+     "Seated overhead press (3 × 10): light weights or water bottles",
+     "Seated twist (2 × 8 each side): slow and controlled",
+     "Cool-down (3 minutes): gentle neck and shoulder stretches"
+    ]
+   },
+   {
+    "name": "Strength B",
+    "time": "About 20 minutes",
+    "items": [
+     "Warm-up (5 minutes): seated marching or arm swings",
+     "Seated bicep curl (3 × 12): light weights or a band",
+     "Seated lateral raise (3 × 10): light weights",
+     "Seated leg lift (3 × 10 each, if you can): straighten one knee",
+     "Breathing and posture (3 minutes): sit tall, slow breaths",
+     "Cool-down (3 minutes): gentle stretches"
+    ]
+   }
+  ]
+ }
+}

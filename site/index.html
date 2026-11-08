@@ -6,22 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Shopping">
+<meta name="apple-mobile-web-app-title" content="Family Health">
 <meta name="format-detection" content="telephone=no">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>4-week shopping lists</title>
+<title>Family Health Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--low:#b3261e;--mid:#8a5a00;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--done:#8e9d97;
+:root{--m-p:#2a78d6;--m-c:#eb6834;--m-f:#1baf7a;--low:#b3261e;--mid:#8a5a00;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--done:#8f8f94;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}}
-:root[data-theme="dark"]{--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--done:#6e6e73;color-scheme:dark}}
+:root[data-theme="dark"]{--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--done:#6e6e73;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;background:var(--bg)}
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1.0625rem;line-height:1.4;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior-y:none}
@@ -43,6 +43,7 @@ h1{font-size:1.6rem;line-height:1.15;margin:0 0 .25rem}
 .tools{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
 .btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.55rem .8rem;min-height:2.75rem;cursor:pointer}
 .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
 section{margin-bottom:1.25rem}
 h2{font-size:1.1rem;margin:0 0 .4rem;display:flex;justify-content:space-between;align-items:baseline}
 h2 small{font-weight:400;color:var(--mute);font-size:.85rem}
@@ -222,6 +223,42 @@ details.exfold{padding:0}
 #lists .price{padding-top:.05rem}
 .acts{display:flex;flex-wrap:wrap;align-items:center;gap:0 .9rem;padding:.05rem .9rem .45rem 3.4rem;font-size:.8rem}
 .acts .find{padding:.35rem 0;font-size:.8rem}
+.acts .find.pinned{text-decoration-style:solid;font-weight:800}
+.shopgo{width:100%;margin-top:.6rem}
+.pinbtn{font:inherit;font-size:.8rem;color:var(--mute);background:transparent;border:0;border-radius:1rem;padding:.3rem .6rem;min-height:2rem;cursor:pointer;margin-left:-.6rem}
+.pinbtn:focus-visible{outline:3px solid var(--accent)}
+.sm-open,.sm-open body{overflow:hidden}
+.shopmode{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;padding:max(1rem,env(safe-area-inset-top)) 1rem max(1rem,env(safe-area-inset-bottom));max-width:40rem;margin:0 auto}
+.shopmode[hidden]{display:none}
+.sm-top{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.sm-count{font-weight:700;color:var(--mute)}
+.sm-bar{height:.4rem;background:var(--line);border-radius:.2rem;margin:.7rem 0 0;overflow:hidden}
+.sm-bar i{display:block;height:100%;background:var(--accent);width:0}
+.sm-body{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:1rem 0;overflow:auto}
+.sm-aisle{margin:0;color:var(--mute);font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.sm-name{margin:.5rem 0;font-size:2rem;line-height:1.2;outline:none}
+.sm-price{margin:0;color:var(--mute);font-size:1.1rem}
+.sm-state{margin:.6rem 0 0;color:var(--accent);font-weight:700;min-height:1.4em}
+.sm-links{display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem 1.2rem;margin-top:1rem}
+.sm-links .find{align-self:center;padding:.5rem 0;font-size:1rem}
+.sm-links .pinbtn{margin:0;font-size:.95rem}
+.sm-acts{display:flex;flex-direction:column;gap:.6rem}
+.sm-got{font-size:1.25rem;min-height:4rem;width:100%}
+.sm-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+.sm-row .btn{min-height:3.2rem;font-size:1rem}
+.sm-row .btn[hidden]{display:block;visibility:hidden}
+.btn:disabled{opacity:.45;cursor:default}
+.pindlg{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:.8rem;padding:1rem 1.1rem;width:min(30rem,calc(100vw - 2rem));box-sizing:border-box}
+.pindlg::backdrop{background:rgba(0,0,0,.45)}
+.pindlg h2{font-size:1.1rem;margin:0 0 .4rem}
+.pinfor{margin:0 0 .3rem}
+.pinfield{display:block;margin:.8rem 0}
+.pinfield span{display:block;font-weight:700;font-size:.9rem;margin-bottom:.25rem}
+.pinfield input{font:inherit;width:100%;box-sizing:border-box;padding:.55rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--bg);color:var(--ink)}
+.pinfield .find{display:inline-block;font-size:.85rem;padding:.35rem 0}
+.pinmsg{min-height:1.2em;font-size:.9rem;margin:.3rem 0}
+.pinacts{display:flex;flex-wrap:wrap;gap:.5rem}
+.acts .findlab{color:var(--mute);font-size:.8rem;padding:.35rem 0}
 .homebtn{width:auto;border:0;border-radius:1rem;padding:.3rem .6rem;margin-left:-.6rem;font-size:.8rem;min-height:2rem;color:var(--mute)}
 .homebtn[aria-pressed="true"]{padding:.3rem .7rem;margin-left:0}
 .byline{display:inline;margin:0;font-size:.78rem}
@@ -252,24 +289,128 @@ li.done .acts .find{color:var(--done)}
 .about summary{cursor:pointer;padding:.6rem 0;color:var(--accent);font-weight:700}
 .about p{margin:.4rem 0}
 .about .note{margin-top:.6rem}
+/* ---- macros ---- */
+.mac{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem;margin:0 0 .9rem}
+.mac-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 .6rem}
+.mac-head h3{margin:0;font-size:1rem}
+.mac-head .seg{display:flex;gap:.3rem;margin:0}
+.mac-head .btn{min-height:2.2rem;padding:.2rem .7rem;font-size:.82rem;border-radius:1.1rem;border-width:1px}
+.mac-kj{margin:0;display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap}
+.mac-kj b{font-size:1.9rem;line-height:1.1}
+.mac-kj span{color:var(--mute);font-size:.9rem}
+/* Thin segmented bar: 8px band, 2px surface gaps, rounded ends; each block is a 20px-tall hover/focus target. */
+.mac-bar{display:flex;gap:2px;margin:.5rem 0 .7rem}
+.mac-bar span{position:relative;height:1.25rem;min-width:0;cursor:default;outline-offset:2px}
+.mac-bar span::before{content:"";position:absolute;left:0;right:0;top:calc(50% - 4px);height:8px;background:var(--c)}
+.mac-bar span:first-child::before{border-radius:4px 0 0 4px}
+.mac-bar span:last-child::before{border-radius:0 4px 4px 0}
+.mac-bar span:only-child::before{border-radius:4px}
+.mac-bar span:hover::before,.mac-bar span:focus-visible::before{top:calc(50% - 5px);height:10px}
+.mac-leg li.hi{background:color-mix(in srgb,var(--line) 45%,transparent);border-radius:.3rem}
+.mac-leg{list-style:none;margin:0;padding:0;background:none;border:0;border-radius:0;display:grid;gap:.35rem}
+.mac-leg li{display:grid;grid-template-columns:auto 1fr auto;gap:.55rem;align-items:baseline;border:0;font-size:.95rem;padding:.1rem .3rem}
+.mac-leg li+li{border-top:0}
+.mac-sw{width:.8rem;height:.8rem;border-radius:.2rem;align-self:center}
+.mac-leg b{font-variant-numeric:tabular-nums}
+.mac-leg small{color:var(--mute);font-variant-numeric:tabular-nums;font-size:.8rem;min-width:2.6rem;text-align:right}
+.mac-note{color:var(--mute);font-size:.82rem;margin:.6rem 0 0}
+.mac-h{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin:1.1rem 0 .4rem}
+.mac-h h2{margin:0}
+.mac-key{display:flex;gap:.8rem;font-size:.8rem;color:var(--mute)}
+.mac-key span{display:inline-flex;align-items:center;gap:.3rem}
+.mac-key .mac-sw{width:.65rem;height:.65rem}
+.days .mac-bar{margin:.15rem 0 .1rem}
+.mac-day{color:var(--mute);font-size:.82rem;font-variant-numeric:tabular-nums;margin:0 0 .35rem}
+.mrow{margin:.35rem 0 0;padding-top:.35rem;border-top:1px solid var(--line)}
+.mrow .mk{display:block;width:auto;font-size:.75rem;padding:0;letter-spacing:.02em}
+.mrow .mv{display:block}
+.mrow .mm.none{font-style:italic}
+.mrow.opt .mv{color:var(--mute)}
+.mm{display:block;color:var(--mute);font-size:.78rem;font-variant-numeric:tabular-nums;margin-top:.1rem}
+.dk{float:right;font-weight:400;color:var(--mute);font-size:.8rem;font-variant-numeric:tabular-nums}
+.ov{display:block;color:var(--mute);font-size:.82rem;margin-top:.1rem}
+.ov b{color:var(--ink);font-weight:700}
+/* ---- healthy-eating guidelines card (guidelines.js) ---- */
+.gl-seg{display:flex;flex-wrap:wrap;gap:.3rem;margin:0 0 .7rem}
+.gl-seg .btn{min-height:2.2rem;padding:.2rem .7rem;font-size:.82rem;border-radius:1.1rem;border-width:1px}
+.gl-seg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gl-intro{margin:0 0 .6rem;font-size:.9rem}
+.gl-rows{display:grid;gap:.7rem}
+.gl-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem}
+.gl-name{font-weight:700;flex:1 1 7rem}
+.gl-val{font-variant-numeric:tabular-nums;color:var(--mute);font-size:.9rem}
+.gl-val b{color:var(--ink);font-size:1rem}
+.gl-status{font-size:.82rem;flex:0 0 auto;min-width:6.5rem;text-align:right}
+.gl-icon{font-weight:700}
+.meets .gl-icon{color:var(--accent)}
+.below .gl-icon,.above .gl-icon{color:var(--mid)}
+/* The meter: an 8px track, the amount as a filled bar, the target as a tick (a shaded band for a range). */
+.gl-meter{position:relative;height:8px;margin-top:.3rem;background:var(--line);border-radius:4px}
+.gl-meter i{position:absolute;top:0;bottom:0}
+.gl-fill{left:0;background:var(--accent);border-radius:4px}
+.gl-band{background:color-mix(in srgb,var(--ink) 18%,transparent)}
+.gl-tick{width:2px;top:-4px!important;bottom:-4px!important;background:var(--ink);margin-left:-1px;border-radius:1px}
+.gl-checks{list-style:none;margin:.8rem 0 0;padding:0;display:grid;gap:.3rem;font-size:.9rem}
+.gl-ideas{margin:.8rem 0 0;padding:.6rem .8rem;border-radius:.6rem;background:color-mix(in srgb,var(--accent) 10%,var(--card));font-size:.9rem}
+.gl-ideas ul{margin:.3rem 0 0;padding-left:1.1rem}
+.gl-fold{margin:.5rem 0 0;font-size:.88rem}
+.gl-fold summary{cursor:pointer;color:var(--accent);font-weight:700;padding:.3rem 0}
+.gl-fold ul{margin:.2rem 0 .4rem;padding-left:1.1rem}
+.gl-fold li{margin:.15rem 0}
+.gl ul{list-style:disc;background:none;border:0;border-radius:0;overflow:visible}
+.gl li{display:list-item}
+.gl-checks li{list-style:none}
+details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 0 0}
+.gl-fold summary{min-height:2.4rem;display:flex;align-items:center}
+.gl-fold summary::before{content:"▸";margin-right:.45rem;transition:transform .15s}
+.gl-fold[open] summary::before{transform:rotate(90deg)}
+.ask{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;background:var(--card);border:1px solid var(--accent);border-radius:.8rem;padding:.7rem .9rem;margin:0 0 1rem;font-size:.92rem}
+.ask span{flex:1 1 14rem}
+.ask .btn{text-decoration:none}
+/* shopping: which part of the list, and the stock-up tag */
+.partseg{display:flex;gap:.35rem;overflow-x:auto;scrollbar-width:none;margin:0 0 .75rem}
+.partseg .btn{flex:none;min-height:2.3rem;padding:.25rem .8rem;font-size:.85rem;border-radius:1.2rem;border-width:1px}
+.stocktag{display:inline-block;margin-left:.4rem;font-size:.7rem;font-weight:700;color:var(--mute);border:1px solid var(--line);border-radius:1rem;padding:0 .45rem;vertical-align:.1rem}
+/* one day at a time */
+.daynav{margin:0 0 .75rem}
+.daynav-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.5rem}
+.daynav .arrow{width:3rem;min-height:3rem;font-size:1.6rem;line-height:1;padding:0;display:grid;place-items:center;background:var(--card)}
+.daynav-title{text-align:center}
+.daynav-title h2{margin:0;font-size:1.3rem}
+.daynav-title>span{display:block;font-size:.8rem;color:var(--mute)}
+.daychips{display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem;margin-top:.55rem}
+.daychips button{font:inherit;font-size:.82rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:.5rem;min-height:2.3rem;cursor:pointer;padding:0}
+.daychips button.is-today{border-color:var(--accent);font-weight:700}
+.daychips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.daycard{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.7rem 1rem;margin:0 0 .9rem;list-style:none}
+.restday{color:var(--mute);margin:.3rem 0}
+.advice{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem;margin:0 0 .9rem}
+.advice h3{margin:0 0 .3rem;font-size:1.02rem}
+.advice .bul{margin:.2rem 0}
+.exfold.medical{border-color:var(--mid);box-shadow:inset 4px 0 0 var(--mid)}
 </style>
+<script src="appearance.js"></script>
 </head>
 <body>
 <main>
   <header class="top">
     <div class="topbar">
-      <h1 id="title">Shopping lists</h1>
+      <h1 id="title">Family Health Planner</h1>
       <span id="sync" class="sync" role="status"></span>
       <details class="acctmenu" id="acct">
         <summary aria-label="Account and log out"><span class="avatar" id="avatar" aria-hidden="true"></span></summary>
-        <div class="menu"><p id="me"></p><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
+        <div class="menu"><p id="me"></p><a class="btn" href="profile.html" style="text-decoration:none">About me</a><a class="btn" href="progress.html" style="text-decoration:none">Progress</a><a class="btn" href="assistant.html" style="text-decoration:none">Ask AI</a><a class="btn" href="settings.html" style="text-decoration:none">Settings</a><a class="btn" href="account.html" style="text-decoration:none">Account</a><a class="btn" id="familyLink" href="family.html" hidden style="text-decoration:none">Family</a><a class="btn" id="setupLink" href="setup.html" hidden style="text-decoration:none">Plan setup</a><a class="btn" href="files.html" style="text-decoration:none">My files</a><a class="btn" id="adminLink" href="admin.html" hidden style="text-decoration:none">Edit plan</a><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
       </details>
     </div>
     <div class="tabs" role="tablist" aria-label="Weeks" id="tabs"></div>
   </header>
   <p class="err" id="err" hidden></p>
+  <div class="ask" id="emailNudge" hidden><span>You can log in with your email now. Add it to your account (your username keeps working).</span> <a class="btn primary" href="account.html">Add email</a></div>
+  <div class="ask" id="setupNudge" hidden><span>Set up your family’s plan: get everyone’s About me answers in, then make 4 weeks of meals, shopping and exercise (with AI, or with the app’s own plan builder).</span> <a class="btn primary" href="setup.html">Plan setup</a></div>
+  <div class="ask" id="ask" hidden><span>Help shape your meals and exercise: answer a few questions about you.</span> <a class="btn primary" href="profile.html">Start</a> <button class="btn" type="button" id="askLater">Later</button></div>
   <div class="who" id="whoRow" hidden><label for="user">Ticks for</label><select id="user"></select><span class="me-name" id="meName" hidden></span></div>
   <div id="shopView">
+  <div class="seg partseg" id="shopPart" role="group" aria-label="Which part of the list" hidden></div>
   <div class="sum">
     <div class="sum-top"><span class="left" id="left"></span><span class="meta" id="meta"></span></div>
     <div class="bar"><i id="bar"></i></div>
@@ -280,567 +421,2772 @@ li.done .acts .find{color:var(--done)}
         <div class="menu"><button class="btn" id="clear">Clear ticks</button><button class="btn" id="resetall" hidden>Reset all</button></div>
       </details>
     </div>
+    <button class="btn primary shopgo" type="button" id="shopModeBtn">Shop mode: one item at a time</button>
   </div>
   <div id="lists"></div>
   <p class="empty" id="allDone">Everything is ticked off. Nice work.</p>
   </div>
   <div id="meals" hidden></div>
+  <div id="macView" hidden></div>
   <div id="exView" hidden></div>
   <div id="ratesView" hidden></div>
-  <details class="about"><summary>About this plan</summary><p id="sub"></p><p class="note">Tap the box to tick an item off. Tap &ldquo;At home?&rdquo; on anything you already have. It is removed from your total and stays marked in every week. Oil, salt, pepper and dried spices are assumed on hand. The Coles links open a search for that item, so pick the size and brand that suits you.</p></details>
+  <details class="about"><summary>About this plan</summary><p id="sub"></p><p class="note">Tap the box to tick an item off. Tap &ldquo;At home?&rdquo; on anything you already have. It is removed from your total and stays marked in every week. Oil, salt, pepper and dried spices are assumed on hand. The store links open a search for that item, so pick the size and brand that suits you. Tap &ldquo;Pin product&rdquo; and paste a product page to make the link go straight to the one you buy. &ldquo;Shop mode&rdquo; shows one item at a time, in aisle order, while you walk the shop. Choose your stores in Settings.</p></details>
 </main>
+<div class="shopmode" id="shopMode" role="dialog" aria-modal="true" aria-labelledby="smName" hidden>
+  <div class="sm-top">
+    <span class="sm-count" id="smCount"></span>
+    <button class="btn" type="button" id="smClose">Done</button>
+  </div>
+  <div class="sm-bar"><i id="smBar"></i></div>
+  <div class="sm-body" id="smBody">
+    <p class="sm-aisle" id="smAisle"></p>
+    <h2 class="sm-name" id="smName" tabindex="-1"></h2>
+    <p class="sm-price" id="smPrice"></p>
+    <p class="sm-state" id="smState"></p>
+    <div class="sm-links" id="smLinks"></div>
+  </div>
+  <div class="sm-acts" id="smActs">
+    <button class="btn primary sm-got" type="button" id="smGot">Got it</button>
+    <div class="sm-row">
+      <button class="btn" type="button" id="smBack">Back</button>
+      <button class="btn" type="button" id="smSkip">Skip</button>
+      <button class="btn" type="button" id="smHome">At home</button>
+    </div>
+  </div>
+</div>
+<dialog class="pindlg" id="pinDlg" aria-labelledby="pinTitle">
+  <h2 id="pinTitle">Pin a product</h2>
+  <p class="pinfor">For <b id="pinName"></b></p>
+  <p class="note">Open the product you buy on the store’s website, copy its address, and paste it here. The item’s link then goes straight to that product. Pins are shared with your family.</p>
+  <div id="pinFields"></div>
+  <p class="pinmsg" id="pinMsg" role="status"></p>
+  <div class="pinacts">
+    <button class="btn primary" type="button" id="pinSave">Save</button>
+    <button class="btn" type="button" id="pinRemove">Remove pin</button>
+    <button class="btn" type="button" onclick="closePin()">Cancel</button>
+  </div>
+</dialog>
 <nav class="bottomnav" aria-label="Sections">
   <button type="button" id="vShop" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11h11L21 8H6.2"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg><span>Shopping</span></button>
   <button type="button" id="vMeals" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4.5-3.5 8h3.5"/></svg><span>Meals</span></button>
+  <button type="button" id="vMac" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h7M14 7h6M4 12h3M10 12h10M4 17h11M18 17h2"/></svg><span>Macros</span></button>
   <button type="button" id="vEx" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg><span>Exercise</span></button>
   <button type="button" id="vRates" aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Ratings</span></button>
 </nav>
-<script type="application/json" id="plan-data">{"id":"no-plan","title":"Shopping lists","subtitle":"No plan.json was found. Copy site/plan.example.json to site/plan.json, or upload your own plan.","weeks":[{"name":"Week 1","shopping":{"Getting started":[["Add a plan.json to the site folder",0]]}}]}</script>
+<script type="application/json" id="plan-data">{"id":"no-plan","title":"Family Health Planner","subtitle":"No plan.json was found. Copy site/plan.example.json to site/plan.json, or upload your own plan.","weeks":[{"name":"Week 1","shopping":{"Getting started":[["Add a plan.json to the site folder",0]]}}]}</script>
+<script src="guidelines.js"></script>
 <script>
-var PLAN_URL="plan.json";
-var HK="coles-plan-have-v1",PLAN=null,KEY="",EXK="",EAK="",eaten={},rates={},RK="",openRate="",ticks={},exTicks={},have=[],week=0,view="shop",hideDone=false,defaultPlan=null;
-function $(id){return document.getElementById(id);}
-function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
-function money(n){return "$"+n.toFixed(2);}
-function query(name){
-  return name.replace(/\(.*?\)/g," ").replace(/[×~]/g," ").replace(/\d+\s*-?\s*pack/gi," ").replace(/\d+(\.\d+)?\s*(kg|g|ml|l)\b/gi," ").replace(/\b\d+\b/g," ").replace(/\b(jar|sachet)\b/gi," ").replace(/\s+/g," ").trim();
+// The main app page. Everything it shows comes from plan.json (see docs/plan-format.md).
+//
+// How it works, in short:
+//   1. Load plan.json and draw the week tabs along the top.
+//   2. The address after "#" says which week and view to show, for example #week-2-meals.
+//      Changing it (by tapping a tab or a button along the bottom) redraws the page.
+//   3. Ticks, ratings and "At home" marks are saved on this device straight away (localStorage),
+//      then sent to the server (api/server.js) so every phone sees the same lists.
+//   4. Every 30 seconds, and whenever the app is reopened, it fetches the latest from the server.
+
+var PLAN_URL = "plan.json";
+
+// ---------- what the page remembers ----------
+var PLAN = null;          // the plan being shown
+var defaultPlan = null;   // a tiny built-in plan, used if plan.json is missing or broken
+var week = 0;             // which week is shown (0 is the first)
+var view = "shop";        // which view: "shop", "meals", "macros", "exercise" or "ratings"
+var hideDone = false;     // "Hide ticked" on the shopping list
+
+// What has been ticked. Each is saved on this device under its own key, and on the server.
+var ticks = {};     // shopping ticks, shared by everyone: {week: ["0-1", "2-3"]}, where "0-1" = section 0, item 1
+var exTicks = {};   // this person's exercise ticks: {week: ["Mon-cardio", ...]}
+var eaten = {};     // this person's eaten meals: {week: ["Mon|Breakfast", ...]}
+var rates = {};     // this person's meal ratings: {week: {"Mon|Dinner": {s: 7, n: "note", t: "dish"}}}
+var have = [];      // items marked "At home" (their simplified names), shared by everyone
+var openRate = "";  // which meal's rating box is open, as "week|Day|Meal"
+
+// The localStorage key for each of those. They include the plan id, so a new plan starts clean.
+var HAVE_KEY = "coles-plan-have-v1";
+var TICKS_KEY = "", EX_KEY = "", EATEN_KEY = "", RATES_KEY = "";
+var TICKS_BASE = "", EX_BASE = "", EATEN_BASE = "";   // the start of those keys, before the person's name
+
+// Who is using the app.
+var ME = null;        // the login: {user, person, admin}, from /auth/me (and remembered for offline use)
+var USER = "";        // the name of the person whose ticks are shown, such as "Alex"
+var USERS = [];       // everyone's names, in plan order
+var PMAP = {};        // name -> person key: {"Alex": "adult1"}
+var BY = {};          // who ticked each shopping item: {"week|item id": {who, at}}
+var ALL_RATINGS = {}; // admins only: everyone's ratings, {person: {week: {...}}}
+try { ME = JSON.parse(localStorage.getItem("coles-plan-me")); } catch (e) {}
+
+// ---------- small helpers ----------
+
+// Shortcut for document.getElementById.
+function $(id) {
+  return document.getElementById(id);
 }
-function colesUrl(name){return "https://www.coles.com.au/search/products?q="+encodeURIComponent(query(name));}
-function isHome(name){return have.indexOf(query(name).toLowerCase())>-1;}
-function sections(wi){var sh=PLAN.weeks[wi].shopping;return Object.keys(sh).map(function(k){return [k,sh[k]];});}
-function total(wi){var t=0;sections(wi).forEach(function(s){s[1].forEach(function(i){if(!isHome(i[0]))t+=i[1];});});return t;}
-function validate(p){
-  if(!p||!Array.isArray(p.weeks)||!p.weeks.length)return "It needs a non-empty \"weeks\" list.";
-  for(var i=0;i<p.weeks.length;i++){
-    var w=p.weeks[i],n="Week "+(i+1)+": ";
-    if(!w||typeof w.shopping!=="object"||w.shopping===null||Array.isArray(w.shopping))return n+"\"shopping\" must be an object of sections.";
-    var keys=Object.keys(w.shopping);
-    if(!keys.length)return n+"\"shopping\" has no sections.";
-    for(var k=0;k<keys.length;k++){
-      var items=w.shopping[keys[k]];
-      if(!Array.isArray(items))return n+"section \""+keys[k]+"\" must be a list.";
-      for(var j=0;j<items.length;j++){
-        var it=items[j];
-        if(!Array.isArray(it)||typeof it[0]!=="string"||typeof it[1]!=="number")return n+"each item in \""+keys[k]+"\" must look like [\"Name\", 1.5] (item "+(j+1)+").";
+
+// Makes a new element, with an optional class name and text: el("p", "note", "Hello").
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+// A price as "$12.50".
+function money(n) {
+  return "$" + n.toFixed(2);
+}
+
+// Capital first letter: "alex" becomes "Alex".
+function cap(s) {
+  s = String(s || "");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Reads from localStorage, or null if it can't (for example in a private window).
+function lsGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+// True if two values hold the same data.
+function same(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// True if the logged-in person is an admin.
+function isAdmin() {
+  return !!(ME && ME.admin);
+}
+
+// ---------- shopping items ----------
+
+// Strips sizes and counts from an item name to get something to search for:
+// "Turkey mince 500 g × 2" becomes "Turkey mince". The same name marks an item "At home".
+function query(name) {
+  return name
+    .replace(/\(.*?\)/g, " ")                    // anything in brackets
+    .replace(/[×~]/g, " ")                       // × and ~
+    .replace(/\d+\s*-?\s*pack/gi, " ")           // "12-pack"
+    .replace(/\d+(\.\d+)?\s*(kg|g|ml|l)\b/gi, " ") // "500 g", "2 L"
+    .replace(/\b\d+\b/g, " ")                    // other numbers
+    .replace(/\b(jar|sachet)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Links to search the person's chosen stores for an item (Coles unless they picked others in
+// Settings). Stores with no online shop (Aldi) get no link.
+// A pinned product goes straight to that product page instead of a search.
+function storeLinks(name) {
+  var A = window.Appearance;
+  var picked = pinStores();
+  var pinned = pinsFor(name);
+  var links = [];
+  picked.forEach(function (k) {
+    var store = A.STORES[k];
+    var pin = pinned[k];
+    var a = el("a", "find" + (pin ? " pinned" : ""), pin ? (picked.length === 1 ? "Open in " + store.name : store.short + " ★") : (picked.length === 1 ? "Search " + store.name : store.short));
+    a.href = pin || store.search(query(name));
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.setAttribute("aria-label", pin ? "Open your pinned " + store.name + " product for " + name : "Search " + store.name + " for " + name);
+    links.push(a);
+  });
+  return links;
+}
+
+// The person's stores that have a website (so links and pins work there).
+function pinStores() {
+  var A = window.Appearance;
+  return A ? A.stores().filter(function (k) { return A.STORES[k].search; }) : [];
+}
+
+// The pinned product pages for an item: {coles: url, ...}. Pins are kept by the simplified name,
+// so "Turkey mince 500 g" and "Turkey mince 1 kg" share one.
+function pinsFor(name) {
+  var all = window.Appearance && Appearance.pins ? Appearance.pins() : {};
+  var key = query(name).toLowerCase();
+  var mine = all && Object.prototype.hasOwnProperty.call(all, key) ? all[key] : null;
+  return mine && typeof mine === "object" ? mine : {};
+}
+
+// A "Pin product" button for an item, or null if the person's stores have no website.
+function pinButton(name) {
+  if (!pinStores().length) return null;
+  var has = Object.keys(pinsFor(name)).length > 0;
+  var b = el("button", "pinbtn", has ? "★ Pinned" : "Pin product");
+  b.type = "button";
+  b.setAttribute("aria-label", (has ? "Change the pinned product for " : "Pin a product for ") + name);
+  b.onclick = function () { openPin(name); };
+  return b;
+}
+
+// The "Pin a product" box: paste a product page for each store.
+function openPin(name) {
+  var A = window.Appearance;
+  var dlg = $("pinDlg");
+  var pinned = pinsFor(name);
+  var stores = pinStores();
+  $("pinName").textContent = query(name);
+  $("pinMsg").textContent = "";
+  var fields = $("pinFields");
+  fields.textContent = "";
+  stores.forEach(function (k) {
+    var lab = el("label", "pinfield");
+    lab.appendChild(el("span", "", A.STORES[k].name + " product page"));
+    var input = el("input");
+    input.type = "url";
+    input.inputMode = "url";
+    input.autocomplete = "off";
+    input.placeholder = "https://…";
+    input.value = pinned[k] || "";
+    input.dataset.store = k;
+    lab.appendChild(input);
+    var find = el("a", "find", "Find it on " + A.STORES[k].name);
+    find.href = A.STORES[k].search(query(name));
+    find.target = "_blank";
+    find.rel = "noopener noreferrer";
+    lab.appendChild(find);
+    fields.appendChild(lab);
+  });
+  $("pinSave").onclick = function () { savePins(name, false); };
+  $("pinRemove").hidden = !Object.keys(pinned).length;
+  $("pinRemove").onclick = function () { savePins(name, true); };
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+}
+
+// Saves (or, with `remove`, clears) the pins typed into the box, one store at a time.
+function savePins(name, remove) {
+  var pinned = pinsFor(name);
+  var changes = [];
+  $("pinFields").querySelectorAll("input").forEach(function (input) {
+    var v = remove ? "" : input.value.trim();
+    if (v !== (pinned[input.dataset.store] || "")) changes.push({ store: input.dataset.store, url: v });
+  });
+  var item = query(name).toLowerCase();
+  var chain = Promise.resolve(null);
+  changes.forEach(function (c) {
+    chain = chain.then(function () {
+      return fetch("/api/appearance/pins", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
+        body: JSON.stringify({ item: item, store: c.store, url: c.url }),
+        cache: "no-store",
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (!r.ok) throw new Error(j.error || "That didn’t save. Try again.");
+          if (j.pins) Appearance.setPins(j.pins);   // so a later failure still shows what did save
+          return j;
+        });
+      });
+    });
+  });
+  $("pinMsg").textContent = changes.length ? "Saving…" : "";
+  chain.then(function (last) {
+    if (last && last.pins) Appearance.setPins(last.pins);
+    closePin();
+    if (PLAN) show();
+    if (SHOP) shopDraw();
+  }).catch(function (e) {
+    $("pinMsg").textContent = e.message;
+    if (PLAN) show();
+  });
+}
+
+function closePin() {
+  var dlg = $("pinDlg");
+  if (dlg.close) dlg.close(); else dlg.removeAttribute("open");
+}
+
+// True if an item is marked "At home".
+function isHome(name) {
+  return have.indexOf(query(name).toLowerCase()) > -1;
+}
+
+// The stock-up week (pantry and freezer, bought every 2 weeks) that is shopped with a meal week:
+// the stock-up just before it. -1 if there isn't one.
+function stockFor(weekIndex) {
+  var before = PLAN.weeks[weekIndex - 1];
+  return before && before.kind === "stockup" && PLAN.weeks[weekIndex].kind !== "stockup" ? weekIndex - 1 : -1;
+}
+
+// Which part of the list is shown when a week includes a stock-up: "all", "week" or "stock".
+var shopPart = lsGet("coles-plan-shop-part") || "all";
+
+// The aisles the list is grouped by, in the order most people walk a supermarket.
+var CATS = [
+  ["fresh", "Fruit and veg"],
+  ["protein", "Meat, fish and eggs"],
+  ["dairy", "Dairy and fridge"],
+  ["bakery", "Bread and wraps"],
+  ["frozen", "Frozen"],
+  ["pantry", "Pantry"],
+  ["other", "Other"],
+];
+
+// The aisle for an item, from its name and the plan section it is in.
+function catOf(name, section) {
+  var n = name.toLowerCase();
+  var s = section.toLowerCase();
+  if (/freez|frozen/.test(s) || /^frozen\b/.test(n)) return "frozen";
+  if (/\beggs?\b/.test(n) && !/noodle/.test(n)) return "protein";
+  if (/meat|fish|seafood|poultry|protein/.test(s)) return "protein";
+  if (/fruit|veg|produce/.test(s)) return "fresh";
+  if (/\b(bread|wraps?|rolls?|pita|tortillas?|bagels?|crumpets?)\b/.test(n) && !/crumbs/.test(n)) return "bakery";
+  if (/dairy|fridge|chill/.test(s)) return "dairy";
+  if (/pantry|cupboard|top-up/.test(s)) return "pantry";
+  return "other";
+}
+
+// Every item on a week's list: {name, price, src (the plan week it comes from), id ("section-item",
+// how its tick is saved), cat, stock (true for stock-up items)}. `part` picks all, the week only,
+// or the stock-up only.
+function shopItems(weekIndex, part) {
+  var sources = [];
+  var stock = stockFor(weekIndex);
+  if (part !== "stock" || stock < 0) sources.push(weekIndex);
+  if (stock > -1 && part !== "week") sources.push(stock);
+  var out = [];
+  sources.forEach(function (src) {
+    var shopping = PLAN.weeks[src].shopping;
+    Object.keys(shopping).forEach(function (section, sectionIndex) {
+      shopping[section].forEach(function (item, itemIndex) {
+        out.push({
+          name: item[0],
+          price: item[1],
+          src: src,
+          id: sectionIndex + "-" + itemIndex,
+          cat: catOf(item[0], section),
+          stock: PLAN.weeks[src].kind === "stockup",
+        });
+      });
+    });
+  });
+  return out;
+}
+
+// The items shown now, grouped by aisle: [[aisle name, items], ...], leaving out empty aisles.
+function grouped(items) {
+  return CATS.map(function (cat) {
+    var inCat = items.filter(function (it) { return it.cat === cat[0]; });
+    inCat.sort(function (a, b) { return a.name.localeCompare(b.name); });
+    return [cat[1], inCat];
+  }).filter(function (g) { return g[1].length; });
+}
+
+function isTicked(it) {
+  return (ticks[it.src] || []).indexOf(it.id) > -1;
+}
+
+// A week's total (with its stock-up), leaving out anything marked "At home".
+function total(weekIndex) {
+  var sum = 0;
+  shopItems(weekIndex, "all").forEach(function (it) {
+    if (!isHome(it.name)) sum += it.price;
+  });
+  return sum;
+}
+
+// Checks plan.json has the shape the page needs. Returns "" if it is fine, or a message
+// saying what is wrong (shown in red at the top of the page).
+function validate(p) {
+  if (!p || !Array.isArray(p.weeks) || !p.weeks.length) return "It needs a non-empty \"weeks\" list.";
+  for (var i = 0; i < p.weeks.length; i++) {
+    var w = p.weeks[i];
+    var where = "Week " + (i + 1) + ": ";
+    if (!w || typeof w.shopping !== "object" || w.shopping === null || Array.isArray(w.shopping)) {
+      return where + "\"shopping\" must be an object of sections.";
+    }
+    var names = Object.keys(w.shopping);
+    if (!names.length) return where + "\"shopping\" has no sections.";
+    for (var k = 0; k < names.length; k++) {
+      var items = w.shopping[names[k]];
+      if (!Array.isArray(items)) return where + "section \"" + names[k] + "\" must be a list.";
+      for (var j = 0; j < items.length; j++) {
+        var item = items[j];
+        if (!Array.isArray(item) || typeof item[0] !== "string" || typeof item[1] !== "number") {
+          return where + "each item in \"" + names[k] + "\" must look like [\"Name\", 1.5] (item " + (j + 1) + ").";
+        }
       }
     }
-    if(w.meals&&!Array.isArray(w.meals))return n+"\"meals\" must be a list.";
-    if(w.recipes&&!Array.isArray(w.recipes))return n+"\"recipes\" must be a list.";
-    if(w.exercise){
-      if(typeof w.exercise!=="object")return n+"\"exercise\" must be an object.";
-      var blocks=Array.isArray(w.exercise.days)?[w.exercise]:Object.keys(w.exercise).map(function(k){return w.exercise[k];});
-      for(var b=0;b<blocks.length;b++)if(!blocks[b]||!Array.isArray(blocks[b].days))return n+"each \"exercise\" plan needs a \"days\" list.";
+    if (w.meals && !Array.isArray(w.meals)) return where + "\"meals\" must be a list.";
+    if (w.recipes && !Array.isArray(w.recipes)) return where + "\"recipes\" must be a list.";
+    if (w.exercise) {
+      if (typeof w.exercise !== "object") return where + "\"exercise\" must be an object.";
+      // One plan for everyone ({days}) or one per person ({you: {days}, ...}).
+      var plans = Array.isArray(w.exercise.days)
+        ? [w.exercise]
+        : Object.keys(w.exercise).map(function (key) { return w.exercise[key]; });
+      for (var b = 0; b < plans.length; b++) {
+        if (!plans[b] || !Array.isArray(plans[b].days)) return where + "each \"exercise\" plan needs a \"days\" list.";
+      }
     }
   }
   return "";
 }
-var ME=null,BY={},ALLR={};try{ME=JSON.parse(localStorage.getItem("coles-plan-me"));}catch(e){}
-var BASE="",BASEX="",BASEE="",USER="",USERS=[],PMAP={};
+
+// ---------- people ----------
 // People come from the plan's "people" block (each entry with a "name").
-function ukey(n){return String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"-");}
-function nameOf(k){for(var i=0;i<USERS.length;i++)if(ukey(USERS[i])===k)return USERS[i];return cap(k);}
-function initPeople(p){
-  var pp=(p&&p.people)||{};USERS=[];PMAP={};
-  Object.keys(pp).forEach(function(k){var v=pp[k];if(v&&typeof v==="object"&&v.name){USERS.push(String(v.name));PMAP[v.name]=k;}});
-  if(!USERS.length)USERS=["Me"];
-  var s=$("user");if(s){s.textContent="";USERS.forEach(function(n){s.appendChild(el("option",null,n));});}
-  if(USERS.indexOf(USER)<0)USER=USERS[0];
+
+// Turns a name into a simple key: "Alex" becomes "alex".
+function ukey(name) {
+  return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
-function kidName(){var pp=(PLAN&&PLAN.people)||{};for(var k in pp)if(pp[k]&&pp[k].weekday&&pp[k].name)return pp[k].name;return "Kids";}
-function cap(s){s=String(s||"");return s.charAt(0).toUpperCase()+s.slice(1);}
-function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
-function loadUser(){
-  var u=lsGet("coles-plan-user");if(USERS.indexOf(u)>-1)USER=u;
-  if(ME&&!ME.admin){var mine=nameOf(ME.person);if(USERS.indexOf(mine)>-1)USER=mine;}
-  var k=ukey(USER);KEY=BASE;EXK=BASEX+"-"+k;EAK=BASEE+"-"+k;RK="coles-plan-rates-v1-"+(PLAN&&PLAN.id||"default")+"-"+k;
-  try{ticks=JSON.parse(lsGet(KEY))||{};}catch(e){ticks={};}
-  try{exTicks=JSON.parse(lsGet(EXK))||{};}catch(e){exTicks={};}
-  try{eaten=JSON.parse(lsGet(EAK))||{};}catch(e){eaten={};}
-  try{rates=JSON.parse(lsGet(RK))||{};}catch(e){rates={};}openRate="";
-  var s=$("user"),locked=!!(ME&&!ME.admin);
-  if(s){s.value=USER;s.hidden=locked;}
-  var mn=$("meName");if(mn){mn.textContent=USER;mn.hidden=!locked;}
-  var lb=document.querySelector('label[for="user"]');if(lb)lb.textContent="Ticks for";
-  var r=$("resetall");if(r)r.hidden=!(ME&&ME.admin);
+
+// The display name for a key: "alex" gives "Alex".
+function nameOf(key) {
+  for (var i = 0; i < USERS.length; i++) {
+    if (ukey(USERS[i]) === key) return USERS[i];
+  }
+  return cap(key);
 }
-function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(ticks));localStorage.setItem(HK,JSON.stringify(have));localStorage.setItem(EXK,JSON.stringify(exTicks));localStorage.setItem(EAK,JSON.stringify(eaten));localStorage.setItem(RK,JSON.stringify(rates));}catch(e){}}
-var pushT=0,lastSrv="";
-function setSync(m){var s=$("sync");if(!s)return;var off=/^Offline/.test(m);s.textContent=off?"Offline":(/Reset/.test(m)?"Reset":"Synced");s.title=m;s.className="sync"+(off?" off":"");}
-function api(method,url,body){return fetch(url,{method:method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined,cache:"no-store"}).then(function(r){if(r.status===401)toLogin();if(!r.ok)throw 0;return r.json();});}
-function toLogin(){location.href="/login?next="+encodeURIComponent(location.pathname+location.search+location.hash);}
-var dirty=false;
-function pushNow(){
-  var u=ukey(USER);
-  api("PUT","api/shared",{ticks:ticks}).then(function(r){if(r&&r.by){var c=!same(r.by,BY);BY=r.by;if(c&&PLAN&&view==="shop")refreshBylines();}}).then(function(){return api("PUT","api/user/"+u,{ex:exTicks,eaten:eaten,ratings:rates});}).then(function(){return api("PUT","api/have",{have:have});}).then(function(){dirty=false;setSync("Saved to server");}).catch(function(){setSync("Offline: saved on this device only");});
-}
-function save(){saveLocal();dirty=true;clearTimeout(pushT);pushT=setTimeout(pushNow,400);}
-function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
-function pull(){
-  if(dirty){pushNow();return;}
-  api("GET","api/state").then(function(s){
-    var u=ukey(USER),need=false,changed=false;
-    var le=lsGet("coles-plan-epoch");
-    if(le!==null&&le!==String(s.epoch||0)){ticks={};exTicks={};eaten={};rates={};have=[];changed=true;}
-    try{localStorage.setItem("coles-plan-epoch",String(s.epoch||0));}catch(e){}
-    if(s.shared&&!same(s.shared.by||{},BY)){BY=s.shared.by||{};changed=true;}
-    if(s.shared&&s.shared.ticks){if(!same(s.shared.ticks,ticks)){ticks=s.shared.ticks;changed=true;}}
-    else if(Object.keys(ticks).length)need=true;
-    if(s.users&&s.users[u]){
-      var ne=s.users[u].ex||{},nd=s.users[u].eaten||{},nr=s.users[u].ratings;
-      if(!same(ne,exTicks)||!same(nd,eaten)){exTicks=ne;eaten=nd;changed=true;}
-      if(nr===undefined){if(Object.keys(rates).length)need=true;}else if(!same(nr,rates)){rates=nr;changed=true;}
-    }else if(Object.keys(exTicks).length||Object.keys(eaten).length||Object.keys(rates).length)need=true;
-    if(ME&&ME.admin){var ar={};Object.keys(s.users||{}).forEach(function(k){ar[k]=(s.users[k]&&s.users[k].ratings)||{};});if(!same(ar,ALLR)){ALLR=ar;if(view==="ratings")changed=true;}}
-    if(Array.isArray(s.have)){if(!same(s.have,have)){have=s.have;changed=true;}}
-    else if(have.length)need=true;
-    if(changed){saveLocal();var ae=document.activeElement;if(PLAN&&!(ae&&ae.tagName==="TEXTAREA"))show();}
-    if(need)pushNow();
-    setSync("Synced");
-  }).catch(function(){setSync("Offline: saved on this device only");});
-}
-setInterval(function(){if(!document.hidden&&PLAN)pull();},30000);
-document.addEventListener("visibilitychange",function(){if(!document.hidden&&PLAN)pull();});
-function showErr(msg){var e=$("err");e.textContent=msg;e.hidden=false;}
-function usePlan(p){
-  PLAN=p;initPeople(p);BASE="coles-plan-ticks-v2-"+(p.id||"default");BASEX="coles-plan-ex-v1-"+(p.id||"default");BASEE="coles-plan-eaten-v1-"+(p.id||"default");loadUser();
-  $("title").textContent=p.title||"Shopping lists";
-  $("sub").textContent=p.subtitle||"";
-  document.title=p.title||"Shopping lists";
-  show();pull();
-}
-function go(w,v){location.hash="week-"+(w+1)+(v==="shop"?"":"-"+v);}
-var ADMINV=function(){return !!(ME&&ME.admin);};
-function renderTabs(){
-  var t=$("tabs");t.textContent="";
-  PLAN.weeks.forEach(function(wk,w){
-    var b=el("button","tab");b.type="button";b.setAttribute("role","tab");b.setAttribute("aria-selected",w===week);
-    b.appendChild(el("b",null,wk.name||("Week "+(w+1))));b.appendChild(el("span",null,"~$"+Math.round(total(w))));
-    b.onclick=function(){go(w,view);};
-    t.appendChild(b);
+
+// Reads the plan's people into USERS and PMAP, and fills the "Ticks for" picker.
+function initPeople(p) {
+  var all = (p && p.people) || {};
+  USERS = [];
+  PMAP = {};
+  Object.keys(all).forEach(function (key) {
+    var person = all[key];
+    if (person && typeof person === "object" && person.name) {
+      USERS.push(String(person.name));
+      PMAP[person.name] = key;
+    }
   });
-  var sel=t.querySelector('[aria-selected="true"]');
-  if(sel){var l=sel.offsetLeft-t.offsetLeft,r=l+sel.offsetWidth;if(l<t.scrollLeft+16||r>t.scrollLeft+t.clientWidth-16)t.scrollLeft=l-(t.clientWidth-sel.offsetWidth)/2;}
+  if (!USERS.length) USERS = ["Me"];
+  var picker = $("user");
+  if (picker) {
+    picker.textContent = "";
+    USERS.forEach(function (name) { picker.appendChild(el("option", null, name)); });
+  }
+  if (USERS.indexOf(USER) < 0) USER = USERS[0];
 }
-function renderList(){
-  var box=$("lists");box.textContent="";
-  box.className=hideDone?"hide-done":"";
-  var done=ticks[week]||[];
-  sections(week).forEach(function(s,si){
-    var items=s[1],sec=el("section"),h=el("h2",null,s[0]),sub=0;
-    items.forEach(function(i){if(!isHome(i[0]))sub+=i[1];});
-    h.appendChild(el("small",null,money(sub)));sec.appendChild(h);
-    var ul=el("ul");
-    items.forEach(function(it,idx){
-      var id=si+"-"+idx,home=isHome(it[0]),on=done.indexOf(id)>-1;
-      var li=el("li",(on?"done ":"")+(home?"home":"")),lab=el("label","row"),inp=el("input");
-      inp.type="checkbox";inp.checked=on;
-      inp.onchange=function(){toggle(id,inp.checked,li);};
-      var bl=el("span","byline");bl.dataset.k=week+"|"+id;
-      var a=el("a","find","Search Coles");a.href=colesUrl(it[0]);a.target="_blank";a.rel="noopener noreferrer";
-      a.setAttribute("aria-label","Search Coles for "+it[0]);
-      lab.appendChild(inp);lab.appendChild(el("span","box"));lab.appendChild(el("span","name",it[0]));lab.appendChild(el("span","price",money(it[1])));
-      var hb=el("button","homebtn",home?"\u2713 At home":"At home?");hb.type="button";hb.setAttribute("aria-pressed",home);
-      hb.setAttribute("aria-label",(home?"Remove from at home: ":"Mark as at home: ")+it[0]);
-      hb.onclick=function(){toggleHome(it[0]);};
-      var acts=el("div","acts");acts.appendChild(a);acts.appendChild(hb);acts.appendChild(bl);
-      li.appendChild(lab);li.appendChild(acts);ul.appendChild(li);
+
+// The child's name (the person with school "weekday" lunches), for "Riley's version" in recipes.
+function kidName() {
+  var all = (PLAN && PLAN.people) || {};
+  for (var key in all) {
+    if (all[key] && all[key].weekday && all[key].name) return all[key].name;
+  }
+  return "Kids";
+}
+
+// Picks whose ticks to show, and loads them from this device. Non-admins always see their own.
+function loadUser() {
+  var remembered = lsGet("coles-plan-user");
+  if (USERS.indexOf(remembered) > -1) USER = remembered;
+  if (ME && !ME.admin) {
+    var mine = nameOf(ME.person);
+    if (USERS.indexOf(mine) > -1) USER = mine;
+  }
+
+  var key = ukey(USER);
+  TICKS_KEY = TICKS_BASE;   // shopping ticks are shared, so no name on the end
+  EX_KEY = EX_BASE + "-" + key;
+  EATEN_KEY = EATEN_BASE + "-" + key;
+  RATES_KEY = "coles-plan-rates-v1-" + (PLAN && PLAN.id || "default") + "-" + key;
+  try { ticks = JSON.parse(lsGet(TICKS_KEY)) || {}; } catch (e) { ticks = {}; }
+  try { exTicks = JSON.parse(lsGet(EX_KEY)) || {}; } catch (e) { exTicks = {}; }
+  try { eaten = JSON.parse(lsGet(EATEN_KEY)) || {}; } catch (e) { eaten = {}; }
+  try { rates = JSON.parse(lsGet(RATES_KEY)) || {}; } catch (e) { rates = {}; }
+  openRate = "";
+
+  // Admins get a picker; everyone else just sees their own name.
+  var picker = $("user");
+  var locked = !!(ME && !ME.admin);
+  if (picker) {
+    picker.value = USER;
+    picker.hidden = locked;
+  }
+  var myName = $("meName");
+  if (myName) {
+    myName.textContent = USER;
+    myName.hidden = !locked;
+  }
+  var label = document.querySelector('label[for="user"]');
+  if (label) label.textContent = "Ticks for";
+  var resetAll = $("resetall");
+  if (resetAll) resetAll.hidden = !(ME && ME.admin);
+}
+
+// ---------- saving and syncing ----------
+
+// Saves everything on this device.
+function saveLocal() {
+  try {
+    localStorage.setItem(TICKS_KEY, JSON.stringify(ticks));
+    localStorage.setItem(HAVE_KEY, JSON.stringify(have));
+    localStorage.setItem(EX_KEY, JSON.stringify(exTicks));
+    localStorage.setItem(EATEN_KEY, JSON.stringify(eaten));
+    localStorage.setItem(RATES_KEY, JSON.stringify(rates));
+  } catch (e) {}
+}
+
+var pushTimer = 0;   // waits a moment after a tick, so several quick ticks go to the server together
+var dirty = false;   // true when there are changes the server hasn't got yet
+
+// Updates the little "Synced" / "Offline" label. The full message shows when you hover over it.
+function setSync(message) {
+  var label = $("sync");
+  if (!label) return;
+  var offline = /^Offline/.test(message);
+  label.textContent = offline ? "Offline" : (/Reset/.test(message) ? "Reset" : "Synced");
+  label.title = message;
+  label.className = "sync" + (offline ? " off" : "");
+}
+
+// Calls the server and returns its JSON answer. A 401 means the login has run out, so go to the login page.
+function api(method, url, body) {
+  var options = {
+    method: method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: "no-store",
+  };
+  return fetch(url, options).then(function (response) {
+    if (response.status === 401) toLogin();
+    if (!response.ok) throw 0;
+    return response.json();
+  });
+}
+
+// Goes to the login page, coming back to this same place afterwards.
+function toLogin() {
+  location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search + location.hash);
+}
+
+// Sends everything to the server: shopping ticks, this person's ticks and ratings, then "At home".
+function pushNow() {
+  var key = ukey(USER);
+  api("PUT", "api/shared", { ticks: ticks })
+    .then(function (answer) {
+      // The server says who ticked each item. Update the "Ticked by" lines if that changed.
+      if (answer && answer.by) {
+        var changed = !same(answer.by, BY);
+        BY = answer.by;
+        if (changed && PLAN && view === "shop") refreshBylines();
+      }
+    })
+    .then(function () { return api("PUT", "api/user/" + key, { ex: exTicks, eaten: eaten, ratings: rates }); })
+    .then(function () { return api("PUT", "api/have", { have: have }); })
+    .then(function () {
+      dirty = false;
+      setSync("Saved to server");
+    })
+    .catch(function () {
+      setSync("Offline: saved on this device only");
     });
-    sec.appendChild(ul);box.appendChild(sec);
+}
+
+// Saves on this device now, and on the server in 0.4 seconds (unless something else changes first).
+function save() {
+  saveLocal();
+  dirty = true;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushNow, 400);
+}
+
+// Gets the latest from the server and redraws if anything changed. If this device has changes
+// the server hasn't got (for example after being offline), it sends those instead.
+function pull() {
+  if (dirty) {
+    pushNow();
+    return;
+  }
+  api("GET", "api/state").then(function (s) {
+    var key = ukey(USER);
+    var needPush = false;   // this device has something the server doesn't
+    var changed = false;    // the server had something new, so redraw
+
+    // An admin pressed "Reset all" since this device last synced: clear everything here too.
+    var localEpoch = lsGet("coles-plan-epoch");
+    if (localEpoch !== null && localEpoch !== String(s.epoch || 0)) {
+      ticks = {};
+      exTicks = {};
+      eaten = {};
+      rates = {};
+      have = [];
+      changed = true;
+    }
+    try { localStorage.setItem("coles-plan-epoch", String(s.epoch || 0)); } catch (e) {}
+
+    // Shopping ticks and who ticked them.
+    if (s.shared && !same(s.shared.by || {}, BY)) {
+      BY = s.shared.by || {};
+      changed = true;
+    }
+    if (s.shared && s.shared.ticks) {
+      if (!same(s.shared.ticks, ticks)) {
+        ticks = s.shared.ticks;
+        changed = true;
+      }
+    } else if (Object.keys(ticks).length) {
+      needPush = true;
+    }
+
+    // This person's meal and exercise ticks and ratings.
+    if (s.users && s.users[key]) {
+      var serverEx = s.users[key].ex || {};
+      var serverEaten = s.users[key].eaten || {};
+      var serverRates = s.users[key].ratings;
+      if (!same(serverEx, exTicks) || !same(serverEaten, eaten)) {
+        exTicks = serverEx;
+        eaten = serverEaten;
+        changed = true;
+      }
+      if (serverRates === undefined) {
+        if (Object.keys(rates).length) needPush = true;
+      } else if (!same(serverRates, rates)) {
+        rates = serverRates;
+        changed = true;
+      }
+    } else if (Object.keys(exTicks).length || Object.keys(eaten).length || Object.keys(rates).length) {
+      needPush = true;
+    }
+
+    // Admins: everyone's ratings, for the Ratings view.
+    if (ME && ME.admin) {
+      var everyone = {};
+      Object.keys(s.users || {}).forEach(function (person) {
+        everyone[person] = (s.users[person] && s.users[person].ratings) || {};
+      });
+      if (!same(everyone, ALL_RATINGS)) {
+        ALL_RATINGS = everyone;
+        if (view === "ratings") changed = true;
+      }
+    }
+
+    // "At home" marks.
+    if (Array.isArray(s.have)) {
+      if (!same(s.have, have)) {
+        have = s.have;
+        changed = true;
+      }
+    } else if (have.length) {
+      needPush = true;
+    }
+
+    if (changed) {
+      saveLocal();
+      // Don't redraw while someone is typing a rating note, or they would lose their place.
+      var focused = document.activeElement;
+      if (PLAN && !(focused && focused.tagName === "TEXTAREA")) show();
+    }
+    if (needPush) pushNow();
+    setSync("Synced");
+  }).catch(function () {
+    setSync("Offline: saved on this device only");
   });
-  refreshBylines();updateSummary();
 }
-function byText(k){
-  var b=BY[k];if(!b)return "";
-  var d=new Date(b.at),t=isNaN(d)?"":" \u00b7 "+d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"})+", "+d.toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});
-  return "Ticked by "+nameOf(b.who)+t;
+
+// Check the server every 30 seconds while the app is open, and as soon as it is reopened.
+setInterval(function () {
+  if (!document.hidden && PLAN) pull();
+}, 30000);
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden && PLAN) pull();
+});
+
+// Shows a red message at the top of the page.
+function showErr(message) {
+  var box = $("err");
+  box.textContent = message;
+  box.hidden = false;
 }
-function refreshBylines(){
-  var done=ticks[week]||[];
-  document.querySelectorAll("#lists .byline").forEach(function(s){var id=s.dataset.k.split("|")[1];s.textContent=done.indexOf(id)>-1?byText(s.dataset.k):"";});
+
+// Starts using a plan: reads its people, works out the storage keys, and draws the page.
+function usePlan(p) {
+  PLAN = p;
+  initPeople(p);
+  var id = p.id || "default";
+  TICKS_BASE = "coles-plan-ticks-v2-" + id;
+  EX_BASE = "coles-plan-ex-v1-" + id;
+  EATEN_BASE = "coles-plan-eaten-v1-" + id;
+  loadUser();
+  // The app's name stays at the top; the plan's own title shows in the browser tab after it.
+  $("sub").textContent = p.subtitle || "";
+  document.title = p.title ? p.title + " · Family Health Planner" : "Family Health Planner";
+  show();
+  pull();
+  if (ME && ME.user && typeof setMe === "function") setMe(ME);   // the Plan setup banner depends on the plan
 }
-function getRate(id){return (rates[week]||{})[id]||{};}
-function setRate(id,patch,dish){
-  var w=rates[week]||{},v=Object.assign({},w[id]||{},patch);
-  if(!v.s)delete v.s;if(!v.n||!v.n.trim())delete v.n;
-  if(v.s||v.n){if(dish)v.t=dish;w[id]=v;}else delete w[id];
-  if(Object.keys(w).length)rates[week]=w;else delete rates[week];
+
+// ---------- week tabs ----------
+
+// Goes to a week and view by changing the address (#week-2-meals). The "hashchange" listener redraws.
+function go(weekIndex, toView) {
+  location.hash = "week-" + (weekIndex + 1) + (toView === "shop" ? "" : "-" + toView);
+}
+
+// Draws the row of week tabs (stock-up weeks are folded into the week after them), each with
+// its rough cost including any stock-up, and scrolls the chosen one into view.
+function renderTabs() {
+  var row = $("tabs");
+  row.textContent = "";
+  PLAN.weeks.forEach(function (wk, i) {
+    if (wk.kind === "stockup") return;   // shopped with the week after it
+    var tab = el("button", "tab");
+    tab.type = "button";
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", i === week);
+    tab.appendChild(el("b", null, wk.name || ("Week " + (i + 1))));
+    tab.appendChild(el("span", null, "~$" + Math.round(total(i))));
+    tab.onclick = function () { go(i, view); };
+    row.appendChild(tab);
+  });
+
+  // If the chosen tab is off screen (on a phone), scroll the row so it sits in the middle.
+  var chosen = row.querySelector('[aria-selected="true"]');
+  if (chosen) {
+    var left = chosen.offsetLeft - row.offsetLeft;
+    var right = left + chosen.offsetWidth;
+    var offScreen = left < row.scrollLeft + 16 || right > row.scrollLeft + row.clientWidth - 16;
+    if (offScreen) row.scrollLeft = left - (row.clientWidth - chosen.offsetWidth) / 2;
+  }
+}
+
+// ---------- the shopping list ----------
+
+// Draws the shopping list for the current week, grouped by aisle. Weeks that start a fortnight
+// include the 2-week stock-up (pantry and freezer), and the buttons above the list show it all,
+// just this week's fresh food, or just the stock-up. Each item has a tick box, its price, links
+// to search the chosen stores, an "At home?" button and who ticked it.
+function renderList() {
+  var box = $("lists");
+  box.textContent = "";
+  box.className = hideDone ? "hide-done" : "";
+
+  var partBox = $("shopPart");
+  partBox.textContent = "";
+  var hasStock = stockFor(week) > -1;
+  partBox.hidden = !hasStock;
+  if (hasStock) {
+    [["all", "Everything"], ["week", "This week"], ["stock", "2-week stock-up"]].forEach(function (option) {
+      var b = el("button", "btn", option[1]);
+      b.type = "button";
+      b.setAttribute("aria-pressed", shopPart === option[0]);
+      b.onclick = function () {
+        shopPart = option[0];
+        try { localStorage.setItem("coles-plan-shop-part", shopPart); } catch (e) {}
+        renderList();
+      };
+      partBox.appendChild(b);
+    });
+  }
+
+  grouped(shopItems(week, hasStock ? shopPart : "all")).forEach(function (group) {
+    var sectionEl = el("section");
+    var heading = el("h2", null, group[0]);
+    var subtotal = 0;
+    group[1].forEach(function (it) {
+      if (!isHome(it.name)) subtotal += it.price;
+    });
+    heading.appendChild(el("small", null, money(subtotal)));
+    sectionEl.appendChild(heading);
+    var list = el("ul");
+    group[1].forEach(function (it) {
+      list.appendChild(shopItem(it, hasStock && shopPart === "all"));
+    });
+    sectionEl.appendChild(list);
+    box.appendChild(sectionEl);
+  });
+  refreshBylines();
+  updateSummary();
+}
+
+// One shopping item. Its tick is saved under the plan week it comes from and its position
+// there ("section-item"). `tagStock` adds a small "Stock-up" tag to stock-up items.
+function shopItem(it, tagStock) {
+  var name = it.name;
+  var home = isHome(name);
+  var ticked = isTicked(it);
+  var row = el("li", (ticked ? "done " : "") + (home ? "home" : ""));
+
+  var label = el("label", "row");
+  var box = el("input");
+  box.type = "checkbox";
+  box.checked = ticked;
+  box.onchange = function () { toggle(it, box.checked, row); };
+  label.appendChild(box);
+  label.appendChild(el("span", "box"));   // the drawn tick box
+  var nameEl = el("span", "name", name);
+  if (tagStock && it.stock) nameEl.appendChild(el("span", "stocktag", "Stock-up"));
+  label.appendChild(nameEl);
+  label.appendChild(el("span", "price", money(it.price)));
+
+  var links = storeLinks(name);
+
+  var homeButton = el("button", "homebtn", home ? "✓ At home" : "At home?");
+  homeButton.type = "button";
+  homeButton.setAttribute("aria-pressed", home);
+  homeButton.setAttribute("aria-label", (home ? "Remove from at home: " : "Mark as at home: ") + name);
+  homeButton.onclick = function () { toggleHome(name); };
+
+  var byline = el("span", "byline");   // "Ticked by Sam · Sat 8 Nov, 5:02 pm"
+  byline.dataset.k = it.src + "|" + it.id;
+
+  var actions = el("div", "acts");
+  if (links.length > 1) actions.appendChild(el("span", "findlab", "Search"));
+  links.forEach(function (a) { actions.appendChild(a); });
+  actions.appendChild(homeButton);
+  var pin = pinButton(name);
+  if (pin) actions.appendChild(pin);
+  actions.appendChild(byline);
+  row.appendChild(label);
+  row.appendChild(actions);
+  return row;
+}
+
+// "Ticked by Sam · Sat 8 Nov, 5:02 pm" for one item, or "" if nobody is recorded.
+function byText(key) {
+  var by = BY[key];
+  if (!by) return "";
+  var d = new Date(by.at);
+  var whenText = isNaN(d)
+    ? ""
+    : " · " + d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
+  return "Ticked by " + nameOf(by.who) + whenText;
+}
+
+// Updates every "Ticked by" line without redrawing the list.
+function refreshBylines() {
+  document.querySelectorAll("#lists .byline").forEach(function (line) {
+    var parts = line.dataset.k.split("|");
+    line.textContent = (ticks[parts[0]] || []).indexOf(parts[1]) > -1 ? byText(line.dataset.k) : "";
+  });
+}
+
+// ---------- meal ratings ----------
+
+// This person's rating for a meal this week: {s: score, n: note}, or {} if none.
+function getRate(id) {
+  return (rates[week] || {})[id] || {};
+}
+
+// Changes a rating. `patch` is the part that changed, like {s: 7} or {n: "too salty"}.
+// A rating with no score and no note is removed. `dish` is saved too, for the Ratings view.
+function setRate(id, patch, dish) {
+  var weekRates = rates[week] || {};
+  var rating = Object.assign({}, weekRates[id] || {}, patch);
+  if (!rating.s) delete rating.s;
+  if (!rating.n || !rating.n.trim()) delete rating.n;
+  if (rating.s || rating.n) {
+    if (dish) rating.t = dish;
+    weekRates[id] = rating;
+  } else {
+    delete weekRates[id];
+  }
+  if (Object.keys(weekRates).length) rates[week] = weekRates;
+  else delete rates[week];
   save();
 }
-function rateUI(id,what,btn,sum,box,dish){
-  var key=week+"|"+id,boxId="rate-"+key.replace(/[^a-z0-9]/gi,"-");box.id=boxId;btn.setAttribute("aria-controls",boxId);
-  function paint(){
-    var v=getRate(id),open=openRate===key;
-    btn.textContent=v.s?v.s+"/10":(v.n?"Note":"Rate");btn.className="rate-btn"+(v.s||v.n?" has":"");
-    btn.setAttribute("aria-expanded",open);btn.setAttribute("aria-label",(v.s?"Rated "+v.s+" out of 10. ":"")+"Rate "+what);
-    sum.hidden=open||!v.n;sum.textContent=v.n?"\u201c"+v.n.trim()+"\u201d":"";
-    box.hidden=!open;
+
+// Makes a meal's Rate button work. `button` opens `box`, which has scores 1 to 10, a note and
+// Clear/Done buttons. `summary` shows the note when the box is closed. Only one box is open at a time.
+function rateUI(id, what, button, summary, box, dish) {
+  var key = week + "|" + id;
+  var boxId = "rate-" + key.replace(/[^a-z0-9]/gi, "-");
+  box.id = boxId;
+  button.setAttribute("aria-controls", boxId);
+
+  // Updates the button, the summary and whether the box is showing.
+  function paint() {
+    var rating = getRate(id);
+    var open = openRate === key;
+    button.textContent = rating.s ? rating.s + "/10" : (rating.n ? "Note" : "Rate");
+    button.className = "rate-btn" + (rating.s || rating.n ? " has" : "");
+    button.setAttribute("aria-expanded", open);
+    button.setAttribute("aria-label", (rating.s ? "Rated " + rating.s + " out of 10. " : "") + "Rate " + what);
+    summary.hidden = open || !rating.n;
+    summary.textContent = rating.n ? "“" + rating.n.trim() + "”" : "";
+    box.hidden = !open;
   }
-  function build(){
-    box.textContent="";
-    var v=getRate(id);
-    box.appendChild(el("p",null,"How was it? 1 = did not like it, 10 = loved it."));
-    var g=el("div","scores");g.setAttribute("role","group");g.setAttribute("aria-label","Score out of 10");
-    for(var n=1;n<=10;n++)(function(n){
-      var b=el("button",null,String(n));b.type="button";b.setAttribute("aria-pressed",v.s===n);b.setAttribute("aria-label",n+" out of 10");
-      b.onclick=function(){var cur=getRate(id).s;setRate(id,{s:cur===n?0:n},dish);g.querySelectorAll("button").forEach(function(x,i){x.setAttribute("aria-pressed",getRate(id).s===i+1);});paint();};
-      g.appendChild(b);
-    })(n);
-    box.appendChild(g);
-    var tid=boxId+"-note",lb=el("label",null,"What didn't you like? (optional)");lb.htmlFor=tid;box.appendChild(lb);
-    var ta=el("textarea");ta.id=tid;ta.maxLength=1000;ta.rows=2;ta.placeholder="e.g. too spicy, sauce was bland, not enough veg";ta.value=v.n||"";
-    ta.oninput=function(){setRate(id,{n:ta.value},dish);paint();sum.hidden=true;};box.appendChild(ta);
-    var f=el("div","rate-foot"),cl=el("button","btn","Clear rating"),dn=el("button","btn","Done");cl.type=dn.type="button";
-    cl.onclick=function(){setRate(id,{s:0,n:""});build();paint();};
-    dn.onclick=function(){openRate="";paint();btn.focus();};
-    f.appendChild(cl);f.appendChild(dn);box.appendChild(f);
+
+  // Fills the box with the score buttons, the note and the Clear/Done buttons.
+  function build() {
+    box.textContent = "";
+    var rating = getRate(id);
+    box.appendChild(el("p", null, "How was it? 1 = did not like it, 10 = loved it."));
+
+    var scores = el("div", "scores");
+    scores.setAttribute("role", "group");
+    scores.setAttribute("aria-label", "Score out of 10");
+    for (var n = 1; n <= 10; n++) {
+      scores.appendChild(scoreButton(n, rating, scores));
+    }
+    box.appendChild(scores);
+
+    var noteId = boxId + "-note";
+    var label = el("label", null, "What didn't you like? (optional)");
+    label.htmlFor = noteId;
+    box.appendChild(label);
+    var note = el("textarea");
+    note.id = noteId;
+    note.maxLength = 1000;
+    note.rows = 2;
+    note.placeholder = "e.g. too spicy, sauce was bland, not enough veg";
+    note.value = rating.n || "";
+    note.oninput = function () {
+      setRate(id, { n: note.value }, dish);
+      paint();
+      summary.hidden = true;
+    };
+    box.appendChild(note);
+
+    var foot = el("div", "rate-foot");
+    var clear = el("button", "btn", "Clear rating");
+    var done = el("button", "btn", "Done");
+    clear.type = done.type = "button";
+    clear.onclick = function () {
+      setRate(id, { s: 0, n: "" });
+      build();
+      paint();
+    };
+    done.onclick = function () {
+      openRate = "";
+      paint();
+      button.focus();
+    };
+    foot.appendChild(clear);
+    foot.appendChild(done);
+    box.appendChild(foot);
   }
-  btn.onclick=function(){
-    if(openRate===key){openRate="";paint();return;}
-    var prev=openRate&&document.getElementById("rate-"+openRate.replace(/[^a-z0-9]/gi,"-"));
-    openRate=key;build();paint();
-    if(prev){prev.hidden=true;var pb=document.querySelector('[aria-controls="'+prev.id+'"]');if(pb)pb.setAttribute("aria-expanded","false");var ps=prev.previousSibling;if(ps&&ps.className==="rate-sum"&&ps.textContent)ps.hidden=false;}
+
+  // One score button. Pressing the current score again clears it.
+  function scoreButton(n, rating, scores) {
+    var b = el("button", null, String(n));
+    b.type = "button";
+    b.setAttribute("aria-pressed", rating.s === n);
+    b.setAttribute("aria-label", n + " out of 10");
+    b.onclick = function () {
+      var current = getRate(id).s;
+      setRate(id, { s: current === n ? 0 : n }, dish);
+      scores.querySelectorAll("button").forEach(function (other, i) {
+        other.setAttribute("aria-pressed", getRate(id).s === i + 1);
+      });
+      paint();
+    };
+    return b;
+  }
+
+  // Opening this box closes any other open one.
+  button.onclick = function () {
+    if (openRate === key) {
+      openRate = "";
+      paint();
+      return;
+    }
+    var previous = openRate && document.getElementById("rate-" + openRate.replace(/[^a-z0-9]/gi, "-"));
+    openRate = key;
+    build();
+    paint();
+    if (previous) {
+      previous.hidden = true;
+      var previousButton = document.querySelector('[aria-controls="' + previous.id + '"]');
+      if (previousButton) previousButton.setAttribute("aria-expanded", "false");
+      var previousSummary = previous.previousSibling;
+      if (previousSummary && previousSummary.className === "rate-sum" && previousSummary.textContent) previousSummary.hidden = false;
+    }
   };
-  if(openRate===key)build();
+
+  if (openRate === key) build();
   paint();
 }
-function renderRatings(){
-  var box=$("ratesView");box.textContent="";
-  if(!ADMINV()){box.appendChild(el("p","emptyline","Only an admin can see everyone's ratings."));return;}
-  var scope="all";try{scope=localStorage.getItem("coles-plan-rscope")||"all";}catch(e){}
-  var head=el("div","rs-head");head.appendChild(el("h2",null,"Meal ratings"));
-  var sg=el("div","seg");
-  [["all","All weeks"],["week","This week"]].forEach(function(o){
-    var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",scope===o[0]);
-    b.onclick=function(){try{localStorage.setItem("coles-plan-rscope",o[0]);}catch(e){}renderRatings();};sg.appendChild(b);
+
+// The Ratings view (admins only): every rated dish with everyone's scores and notes,
+// lowest average first, so the meals worth changing are at the top.
+function renderRatings() {
+  var box = $("ratesView");
+  box.textContent = "";
+  if (!isAdmin()) {
+    box.appendChild(el("p", "emptyline", "Only an admin can see everyone's ratings."));
+    return;
+  }
+
+  // "All weeks" or "This week".
+  var scope = "all";
+  try { scope = localStorage.getItem("coles-plan-rscope") || "all"; } catch (e) {}
+  var head = el("div", "rs-head");
+  head.appendChild(el("h2", null, "Meal ratings"));
+  var choice = el("div", "seg");
+  [["all", "All weeks"], ["week", "This week"]].forEach(function (option) {
+    var b = el("button", "btn", option[1]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", scope === option[0]);
+    b.onclick = function () {
+      try { localStorage.setItem("coles-plan-rscope", option[0]); } catch (e) {}
+      renderRatings();
+    };
+    choice.appendChild(b);
   });
-  head.appendChild(sg);box.appendChild(head);
-  // Everyone's ratings; the person being edited on this device uses the freshest local copy.
-  var all=Object.assign({},ALLR);all[ukey(USER)]=rates;
-  var dishes={},order=[],people={};
-  Object.keys(all).forEach(function(pk){
-    var r=all[pk]||{};
-    Object.keys(r).forEach(function(w){
-      var wi=+w;if(!PLAN.weeks[wi]||(scope==="week"&&wi!==week))return;
-      Object.keys(r[w]).forEach(function(id){
-        var v=r[w][id],parts=id.split("|"),day=parts[0],lab=parts[1]||"",dm=(PLAN.weeks[wi].meals||[]).filter(function(x){return x.day===day;})[0];
-        var dish=v.t||(dm&&dm[lab.toLowerCase()])||(day+" "+lab),k=dish.trim().toLowerCase();
-        if(!dishes[k]){dishes[k]={name:dish.trim(),rows:[],where:{}};order.push(k);}
-        var wn=PLAN.weeks[wi].name||("Week "+(wi+1)),where=wn+", "+day+" "+lab.toLowerCase();
-        dishes[k].where[where]=1;dishes[k].rows.push({who:nameOf(pk),s:v.s,n:v.n,where:where});people[pk]=1;
+  head.appendChild(choice);
+  box.appendChild(head);
+
+  var collected = collectRatings(scope);
+  var dishes = collected.dishes;
+  var order = collected.order;
+  if (!order.length) {
+    var none = scope === "week"
+      ? "Nobody has rated a meal this week yet."
+      : "Nobody has rated a meal yet. Ratings show up here once people use the Rate button on the Meals tab.";
+    box.appendChild(el("p", "emptyline", none));
+    return;
+  }
+
+  // Average score for each dish (dishes with only notes have no average).
+  order.forEach(function (key) {
+    var dish = dishes[key];
+    var scored = dish.rows.filter(function (r) { return r.s; });
+    dish.avg = scored.length ? scored.reduce(function (sum, r) { return sum + r.s; }, 0) / scored.length : null;
+    dish.n = scored.length;
+  });
+  // Lowest average first, then the most ratings. Dishes with no score go last.
+  order.sort(function (a, b) {
+    var A = dishes[a], B = dishes[b];
+    if (A.avg === null) return B.avg === null ? 0 : 1;
+    if (B.avg === null) return -1;
+    return A.avg - B.avg || B.n - A.n;
+  });
+
+  var peopleCount = collected.peopleCount;
+  box.appendChild(el("p", "rs-note", order.length + (order.length === 1 ? " dish" : " dishes") + " rated by " + peopleCount + (peopleCount === 1 ? " person" : " people") + ". Lowest average score first, so meals worth changing are at the top."));
+  var list = el("ul", "rs-list");
+  order.forEach(function (key) {
+    list.appendChild(ratingCard(dishes[key]));
+  });
+  box.appendChild(list);
+}
+
+// Gathers everyone's ratings by dish. Returns {dishes: {key: {name, rows, where}}, order, peopleCount}.
+function collectRatings(scope) {
+  // The person being edited on this device uses the freshest local copy.
+  var all = Object.assign({}, ALL_RATINGS);
+  all[ukey(USER)] = rates;
+  var dishes = {}, order = [], people = {};
+
+  Object.keys(all).forEach(function (personKey) {
+    var personRates = all[personKey] || {};
+    Object.keys(personRates).forEach(function (w) {
+      var weekIndex = +w;
+      if (!PLAN.weeks[weekIndex] || (scope === "week" && weekIndex !== week)) return;
+      Object.keys(personRates[w]).forEach(function (id) {
+        var rating = personRates[w][id];
+        var parts = id.split("|");   // "Mon|Dinner"
+        var day = parts[0];
+        var meal = parts[1] || "";
+        var dayMeals = (PLAN.weeks[weekIndex].meals || []).filter(function (x) { return x.day === day; })[0];
+        // The dish name saved with the rating, or the one in the plan, or just "Mon Dinner".
+        var dish = rating.t || (dayMeals && dayMeals[meal.toLowerCase()]) || (day + " " + meal);
+        var key = dish.trim().toLowerCase();
+        if (!dishes[key]) {
+          dishes[key] = { name: dish.trim(), rows: [], where: {} };
+          order.push(key);
+        }
+        var weekName = PLAN.weeks[weekIndex].name || ("Week " + (weekIndex + 1));
+        var where = weekName + ", " + day + " " + meal.toLowerCase();
+        dishes[key].where[where] = 1;
+        dishes[key].rows.push({ who: nameOf(personKey), s: rating.s, n: rating.n, where: where });
+        people[personKey] = 1;
       });
     });
   });
-  if(!order.length){box.appendChild(el("p","emptyline",scope==="week"?"Nobody has rated a meal this week yet.":"Nobody has rated a meal yet. Ratings show up here once people use the Rate button on the Meals tab."));return;}
-  order.forEach(function(k){var d=dishes[k],sc=d.rows.filter(function(r){return r.s;});d.avg=sc.length?sc.reduce(function(a,r){return a+r.s;},0)/sc.length:null;d.n=sc.length;});
-  order.sort(function(a,b){var A=dishes[a],B=dishes[b];if(A.avg===null)return B.avg===null?0:1;if(B.avg===null)return -1;return A.avg-B.avg||B.n-A.n;});
-  var np=Object.keys(people).length;
-  box.appendChild(el("p","rs-note",order.length+(order.length===1?" dish":" dishes")+" rated by "+np+(np===1?" person":" people")+". Lowest average score first, so meals worth changing are at the top."));
-  var ul=el("ul","rs-list");
-  order.forEach(function(k){
-    var d=dishes[k],li=el("li","rs-card"),top=el("div","rs-top"),nm=el("div","rs-dish",d.name);
-    var multi=d.rows.some(function(r,i){return d.rows.some(function(q,j){return j!==i&&q.where!==r.where;});});
-    nm.appendChild(el("span","rs-where",Object.keys(d.where).join(" \u00b7 ")));top.appendChild(nm);
-    var av=el("div","rs-avg"+(d.avg===null?"":d.avg<5?" low":d.avg<7?" mid":" high"));
-    if(d.avg===null){av.appendChild(el("b",null,"\u2013"));av.appendChild(el("small",null,"no score"));}
-    else{av.appendChild(el("b",null,(Math.round(d.avg*10)/10)+""));av.appendChild(el("small",null,d.n>1?"avg of "+d.n:"out of 10"));}
-    av.setAttribute("aria-label",d.avg===null?"No score yet":"Average "+(Math.round(d.avg*10)/10)+" out of 10 from "+d.n+(d.n===1?" rating":" ratings"));
-    top.appendChild(av);li.appendChild(top);
-    var pl=el("ul","rs-people");
-    d.rows.sort(function(a,b){return (a.s||11)-(b.s||11);}).forEach(function(r){
-      var row=el("li");row.appendChild(el("span","rs-who",r.who));row.appendChild(el("span","rs-sc",r.s?r.s+"/10":"\u2013"));
-      var t=el("span","rs-txt",r.n?"\u201c"+r.n.trim()+"\u201d":(r.s?"No note":""));
-      if(multi){t.appendChild(document.createTextNode(r.n||r.s?" ":""));t.appendChild(el("i",null,"("+r.where+")"));}
-      row.appendChild(t);pl.appendChild(row);
-    });
-    li.appendChild(pl);ul.appendChild(li);
+  return { dishes: dishes, order: order, peopleCount: Object.keys(people).length };
+}
+
+// One dish in the Ratings view: its name, where it was eaten, the average, and each person's score and note.
+function ratingCard(dish) {
+  var card = el("li", "rs-card");
+  var top = el("div", "rs-top");
+  var name = el("div", "rs-dish", dish.name);
+  // If the dish was eaten on more than one day, say which day each rating is for.
+  var severalPlaces = dish.rows.some(function (r, i) {
+    return dish.rows.some(function (other, j) { return j !== i && other.where !== r.where; });
   });
-  box.appendChild(ul);
+  name.appendChild(el("span", "rs-where", Object.keys(dish.where).join(" · ")));
+  top.appendChild(name);
+
+  var colour = dish.avg === null ? "" : dish.avg < 5 ? " low" : dish.avg < 7 ? " mid" : " high";
+  var average = el("div", "rs-avg" + colour);
+  var rounded = Math.round(dish.avg * 10) / 10;
+  if (dish.avg === null) {
+    average.appendChild(el("b", null, "–"));
+    average.appendChild(el("small", null, "no score"));
+  } else {
+    average.appendChild(el("b", null, rounded + ""));
+    average.appendChild(el("small", null, dish.n > 1 ? "avg of " + dish.n : "out of 10"));
+  }
+  average.setAttribute("aria-label", dish.avg === null ? "No score yet" : "Average " + rounded + " out of 10 from " + dish.n + (dish.n === 1 ? " rating" : " ratings"));
+  top.appendChild(average);
+  card.appendChild(top);
+
+  // Each person, lowest score first (notes without a score last).
+  var list = el("ul", "rs-people");
+  dish.rows.sort(function (a, b) { return (a.s || 11) - (b.s || 11); }).forEach(function (r) {
+    var row = el("li");
+    row.appendChild(el("span", "rs-who", r.who));
+    row.appendChild(el("span", "rs-sc", r.s ? r.s + "/10" : "–"));
+    var text = el("span", "rs-txt", r.n ? "“" + r.n.trim() + "”" : (r.s ? "No note" : ""));
+    if (severalPlaces) {
+      text.appendChild(document.createTextNode(r.n || r.s ? " " : ""));
+      text.appendChild(el("i", null, "(" + r.where + ")"));
+    }
+    row.appendChild(text);
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+  return card;
 }
-var TODAY=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date().getDay()],scrollToday=false;
-function markToday(li,h3,day){
-  if(String(day||"").slice(0,3)!==TODAY)return;
-  li.classList.add("today");h3.appendChild(el("span","today-tag","Today"));
-  if(scrollToday){scrollToday=false;setTimeout(function(){var y=li.getBoundingClientRect().top+window.scrollY-12;window.scrollTo(0,Math.max(0,y));},0);}
+
+// ---------- today ----------
+
+var TODAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
+var scrollToday = false;   // scroll to today's card once, after opening Meals or Exercise
+
+// Highlights today's day card with a "Today" tag (and scrolls to it if asked).
+function markToday(card, heading, day) {
+  if (String(day || "").slice(0, 3) !== TODAY) return;
+  card.classList.add("today");
+  heading.appendChild(el("span", "today-tag", "Today"));
+  if (scrollToday) {
+    scrollToday = false;
+    setTimeout(function () {
+      var y = card.getBoundingClientRect().top + window.scrollY - 12;
+      window.scrollTo(0, Math.max(0, y));
+    }, 0);
+  }
 }
-// "Add to calendar" for a person's suggested eating times.
-function localYmd(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
-function calBlock(pk){
-  var start=localYmd(new Date(Date.now()+864e5)),q="?start="+start,wrap=el("div","cal");
-  wrap.appendChild(el("h4",null,"Add these times to your calendar"));
-  var row=el("div","cal-btns"),a=el("a","btn","Apple Calendar");a.href="/api/calendar/"+pk+".ics"+q;
-  a.setAttribute("aria-label","Add all suggested times to Apple Calendar or Outlook");row.appendChild(a);
-  var g=el("details","cal-g"),gs=el("summary","btn","Google Calendar");g.appendChild(gs);var gl=el("ul","cal-list");g.appendChild(gl);row.appendChild(g);
+
+// ---------- calendar ----------
+
+// A date as YYYY-MM-DD in the phone's own time zone.
+function localYmd(d) {
+  return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+}
+
+// "Add to calendar" for a person's suggested eating times: an Apple Calendar file (which also
+// works in Outlook), and a list of Google Calendar links that loads when opened.
+function calBlock(personKey) {
+  var start = localYmd(new Date(Date.now() + 864e5));   // tomorrow
+  var startQuery = "?start=" + start;
+  var wrap = el("div", "cal");
+  wrap.appendChild(el("h4", null, "Add these times to your calendar"));
+
+  var row = el("div", "cal-btns");
+  var apple = el("a", "btn", "Apple Calendar");
+  apple.href = "/api/calendar/" + personKey + ".ics" + startQuery;
+  apple.setAttribute("aria-label", "Add all suggested times to Apple Calendar or Outlook");
+  row.appendChild(apple);
+
+  var google = el("details", "cal-g");
+  google.appendChild(el("summary", "btn", "Google Calendar"));
+  var links = el("ul", "cal-list");
+  google.appendChild(links);
+  row.appendChild(google);
   wrap.appendChild(row);
-  wrap.appendChild(el("p","note2","Starts tomorrow, repeats for 4 weeks, with a reminder 10 minutes before. \u201cMon to Fri\u201d times skip weekends. Apple Calendar adds them all at once. For Google, add each time below, or download the Apple file and import it at calendar.google.com (Settings, Import)."));
-  g.addEventListener("toggle",function(){
-    if(!g.open||gl.childNodes.length)return;
-    gl.appendChild(el("li",null,"Loading\u2026"));
-    var tz="";try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"";}catch(e){}
-    api("GET","/api/calendar/"+pk+".json"+q).then(function(c){
-      gl.textContent="";
-      c.events.forEach(function(e){
-        var u="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(e.title)+"&dates="+e.date+"T"+e.start+"/"+e.date+"T"+e.end+
-          "&details="+encodeURIComponent(e.details)+"&recur="+encodeURIComponent("RRULE:"+e.rrule)+(tz?"&ctz="+encodeURIComponent(tz):"");
-        var li=el("li"),l=el("a",null,"Add \u201c"+e.title+"\u201d");l.href=u;l.target="_blank";l.rel="noopener noreferrer";
-        li.appendChild(l);li.appendChild(el("span","mk2"," \u00b7 "+e.when));gl.appendChild(li);
+  wrap.appendChild(el("p", "note2", "Starts tomorrow, repeats for 4 weeks, with a reminder 10 minutes before. “Mon to Fri” times skip weekends. Apple Calendar adds them all at once. For Google, add each time below, or download the Apple file and import it at calendar.google.com (Settings, Import)."));
+
+  // The Google links are only fetched the first time the list is opened.
+  google.addEventListener("toggle", function () {
+    if (!google.open || links.childNodes.length) return;
+    links.appendChild(el("li", null, "Loading…"));
+    var timeZone = "";
+    try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+    api("GET", "/api/calendar/" + personKey + ".json" + startQuery).then(function (cal) {
+      links.textContent = "";
+      cal.events.forEach(function (e) {
+        var url = "https://calendar.google.com/calendar/render?action=TEMPLATE"
+          + "&text=" + encodeURIComponent(e.title)
+          + "&dates=" + e.date + "T" + e.start + "/" + e.date + "T" + e.end
+          + "&details=" + encodeURIComponent(e.details)
+          + "&recur=" + encodeURIComponent("RRULE:" + e.rrule)
+          + (timeZone ? "&ctz=" + encodeURIComponent(timeZone) : "");
+        var item = el("li");
+        var link = el("a", null, "Add “" + e.title + "”");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        item.appendChild(link);
+        item.appendChild(el("span", "mk2", " · " + e.when));
+        links.appendChild(item);
       });
-    }).catch(function(){gl.textContent="";gl.appendChild(el("li",null,"Could not load the times. Check your connection."));});
+    }).catch(function () {
+      links.textContent = "";
+      links.appendChild(el("li", null, "Could not load the times. Check your connection."));
+    });
   });
   return wrap;
 }
-function renderMeals(){
-  var m=$("meals");m.textContent="";
-  var w=PLAN.weeks[week],ppl=PLAN.people||null;
-  if(!w.meals||!w.meals.length){m.appendChild(el("p","emptyline","No meals are listed for this week."));return;}
-  var who="all";try{who=localStorage.getItem("coles-plan-person")||"all";}catch(e){}
-  if(!ppl||(who!=="all"&&!ppl[who]))who="all";
-  if(ppl){
-    var seg=el("div","seg pseg");
-    [["all","Everyone"]].concat(Object.keys(ppl).filter(function(k){return ppl[k]&&ppl[k].name;}).map(function(k){return [k,ppl[k].name];})).forEach(function(o){
-      var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",who===o[0]);
-      b.onclick=function(){try{localStorage.setItem("coles-plan-person",o[0]);}catch(e){}renderMeals();};
-      seg.appendChild(b);
+
+// ---------- meals ----------
+
+// The meals one person eats on a day, as [label, dish] pairs: the shared meal, then their own
+// breakfast or packed school lunch, then anything an admin set just for them (day.people[key]).
+// `person` is the person's plan entry (or null for everyone) and `personKey` their key.
+function mealRows(day, person, personKey) {
+  var rows = [["Breakfast", day.breakfast], ["Lunch", day.lunch], ["Dinner", day.dinner]];
+  var extra = [];
+  if (person && person.weekday && person.weekday[day.day]) {
+    var school = person.weekday[day.day];
+    // "School provides lunch" is not packed.
+    if (school.lunch) rows[1] = ["Lunch", school.lunch + (school.lunch.indexOf("School") === 0 ? "" : " (packed)")];
+    if (school.snack) extra.push(["School snack", school.snack]);
+  }
+  if (person && person.breakfast) rows[0] = ["Breakfast", person.breakfast];
+  var own = personKey && day.people && day.people[personKey];
+  if (own) {
+    rows.forEach(function (row) {
+      var dish = own[row[0].toLowerCase()];
+      if (dish) row[1] = dish;
     });
-    m.appendChild(seg);
-    if(who!=="all"){
-      var P=ppl[who],box=el("div","exfocus");
-      box.appendChild(el("h3",null,P.name+" (portion "+P.portion+"× average)"));
-      if(P.guide)box.appendChild(el("p",null,P.guide));
-      if(P.times&&P.times.length){box.appendChild(el("h4",null,"Suggested eating times"));P.times.forEach(function(s){var p=el("p","meal");p.appendChild(el("span","mk",s.when));p.appendChild(el("span","mv",s.what));box.appendChild(p);});if(P.timesNote)box.appendChild(el("p","note2",P.timesNote));box.appendChild(calBlock(who));}
-      if(P.tips&&P.tips.length){box.appendChild(el("h4",null,"Cravings and energy"));var tl=el("ul","bul");P.tips.forEach(function(s){tl.appendChild(el("li",null,s));});box.appendChild(tl);}
-      if(P.snacks&&P.snacks.length)box.appendChild(el("h4",null,"Snacks"));
-      (P.snacks||[]).forEach(function(s){var p=el("p","meal");p.appendChild(el("span","mk",s.when));p.appendChild(el("span","mv",s.what));box.appendChild(p);});
-      m.appendChild(box);
+  }
+  // Leave out empty meals.
+  return rows.concat(extra).filter(function (row) { return row[1]; });
+}
+
+// ---------- macros ----------
+// Macros come from the plan's "macros" block: {"Dish name": {"p": protein g, "c": carbs g, "f": fat g}}
+// for one average serve. A person's numbers are scaled by their portion.
+
+// How a dish name is matched to its macros: lower case, ignoring a trailing "(packed)".
+function macroKey(s) {
+  return String(s || "").replace(/\s*\(packed\)\s*$/i, "").trim().toLowerCase();
+}
+
+// The macros for a dish as {p, c, f, kj}, or null if there are none.
+function macrosOf(dish) {
+  var macros = PLAN.macros || {};
+  // Build a lookup by macroKey the first time (PLAN._mk), so later lookups are quick.
+  if (!PLAN._mk) {
+    PLAN._mk = {};
+    Object.keys(macros).forEach(function (name) {
+      PLAN._mk[macroKey(name)] = macros[name];
+    });
+  }
+  var v = PLAN._mk[macroKey(dish)];
+  if (!v || typeof v !== "object") return null;
+  var p = +v.p || 0, c = +v.c || 0, f = +v.f || 0;
+  if (!p && !c && !f && !v.kj && !v.kcal) return null;
+  // Energy in kJ from the factors on Australian food labels (FSANZ): 17 kJ/g protein and carbs, 37 kJ/g fat.
+  var kj = +v.kj || (+v.kcal ? v.kcal * 4.184 : 17 * p + 17 * c + 37 * f);
+  return { p: p, c: c, f: f, kj: kj };
+}
+
+// The food groups in one average serve of a dish, from the plan's "groups" block (made by
+// tools/estimate_groups.py), or null. Used by the healthy-eating guidelines card (guidelines.js).
+function groupsOf(dish) {
+  var groups = PLAN.groups || {};
+  if (!PLAN._gk) {
+    PLAN._gk = {};
+    Object.keys(groups).forEach(function (name) {
+      PLAN._gk[macroKey(name)] = groups[name];
+    });
+  }
+  var g = PLAN._gk[macroKey(dish)];
+  return g && typeof g === "object" ? g : null;
+}
+
+// Multiplies macros by a number (such as a portion of 1.2).
+function scaleM(m, factor) {
+  return { p: m.p * factor, c: m.c * factor, f: m.f * factor, kj: m.kj * factor };
+}
+
+// Adds macros `m` onto the running total `t`.
+function addM(t, m) {
+  t.p += m.p;
+  t.c += m.c;
+  t.f += m.f;
+  t.kj += m.kj;
+}
+
+// "1,234 kJ".
+function kjText(n) {
+  if (window.Appearance) return Appearance.energyText(n);   // kJ or kcal, from Settings
+  return Math.round(n).toLocaleString("en-AU") + " kJ";
+}
+
+// "1,234 kJ · P 20 g · C 40 g · F 10 g".
+function macroLine(m) {
+  return kjText(m.kj) + " · P " + Math.round(m.p) + " g · C " + Math.round(m.c) + " g · F " + Math.round(m.f) + " g";
+}
+
+var macroMode = "";   // the macros card: "today" or "avg" (daily average); "" means pick for me
+
+// The three macros: [name, letter, kJ per gram, colour].
+var MACROS = [
+  ["Protein", "p", 17, "var(--m-p)"],
+  ["Carbs", "c", 17, "var(--m-c)"],
+  ["Fat", "f", 37, "var(--m-f)"],
+];
+
+// kJ from protein, carbs and fat only (used for the percentages, so they add up to 100).
+function macroEnergy(m) {
+  return MACROS.reduce(function (sum, x) { return sum + m[x[1]] * x[2]; }, 0);
+}
+
+// A thin bar split into protein, carbs and fat by their share of the energy (kJ).
+// With `legend` (the list under the main card), hovering or focusing a block highlights its
+// row. Without one (the per-day bars) the text line under the bar has the numbers, so the bar
+// is just decoration and is hidden from screen readers.
+function macroBar(m, legend) {
+  var sum = macroEnergy(m);
+  var bar = el("div", "mac-bar");
+  bar.setAttribute("role", "img");
+  bar.setAttribute("aria-label", "Energy by macro: " + MACROS.map(function (x) {
+    return x[0] + " " + (sum ? Math.round(m[x[1]] * x[2] / sum * 100) : 0) + "%";
+  }).join(", "));
+
+  MACROS.forEach(function (x, i) {
+    var energy = m[x[1]] * x[2];
+    if (!sum || !energy) return;
+    var block = el("span");
+    var text = x[0] + ": " + Math.round(m[x[1]]) + " g, " + Math.round(energy / sum * 100) + "% of energy";
+    block.style.flexGrow = energy;   // each block's width is its share of the energy
+    block.style.flexBasis = "0";
+    block.style.setProperty("--c", x[3]);
+    block.title = text;
+    block.tabIndex = 0;
+    block.setAttribute("aria-label", text);
+
+    var legendRow = legend ? legend.children[i] : null;
+    if (!legendRow) {
+      block.removeAttribute("tabindex");
+      block.removeAttribute("aria-label");
+      bar.removeAttribute("role");
+      bar.setAttribute("aria-hidden", "true");
+      bar.appendChild(block);
+      return;
+    }
+    block.onmouseenter = block.onfocus = function () { legendRow.classList.add("hi"); };
+    block.onmouseleave = block.onblur = function () { legendRow.classList.remove("hi"); };
+    bar.appendChild(block);
+  });
+  return bar;
+}
+
+// The big card at the top of the Macros view: today's (or the daily average) kJ, the bar, and
+// grams and percentages for each macro. Returns null when there is nothing to show.
+function macroCard(days, person) {
+  var withData = days.filter(function (x) { return x.known; });
+  var missing = days.reduce(function (sum, x) { return sum + x.miss; }, 0);
+  var box = el("section", "mac");
+  var head = el("div", "mac-head");
+  var heading = el("h3");
+  head.appendChild(heading);
+  box.appendChild(head);
+
+  if (!withData.length) {
+    heading.textContent = "Macros";
+    box.appendChild(el("p", "mac-note", "No macros are set for this week's meals yet." + (isAdmin() ? " Add them on the Edit plan page (account menu)." : "")));
+    return isAdmin() ? box : null;
+  }
+
+  // "Today" or "Daily average". Today is only offered when today is in this week.
+  var today = withData.filter(function (x) { return String(x.d.day || "").slice(0, 3) === TODAY; })[0];
+  var mode = macroMode || (today ? "today" : "avg");
+  if (mode === "today" && !today) mode = "avg";
+  if (today) {
+    var choice = el("div", "seg");
+    [["today", "Today"], ["avg", "Daily average"]].forEach(function (option) {
+      var b = el("button", "btn", option[1]);
+      b.type = "button";
+      b.setAttribute("aria-pressed", mode === option[0]);
+      b.onclick = function () {
+        macroMode = option[0];
+        var y = window.scrollY;
+        renderMacros();
+        window.scrollTo(0, y);
+      };
+      choice.appendChild(b);
+    });
+    head.appendChild(choice);
+  }
+
+  var m = { p: 0, c: 0, f: 0, kj: 0 };
+  var source = mode === "today" ? [today] : withData;
+  source.forEach(function (x) { addM(m, x.tot); });
+  if (mode !== "today") m = scaleM(m, 1 / withData.length);
+  heading.textContent = (mode === "today" ? "Today’s macros" : "Daily macros (average)") + (person ? " · " + person.name : "");
+
+  var energy = macroEnergy(m);
+  var kjLine = el("p", "mac-kj");
+  var unit = window.Appearance ? Appearance.energyUnit() : "kJ";
+  kjLine.appendChild(el("b", null, Math.round(window.Appearance ? Appearance.energyValue(m.kj) : m.kj).toLocaleString("en-AU")));
+  kjLine.appendChild(el("span", null, unit));
+  box.appendChild(kjLine);
+
+  var legend = el("ul", "mac-leg");
+  MACROS.forEach(function (x) {
+    var item = el("li");
+    var swatch = el("span", "mac-sw");
+    swatch.style.background = x[3];
+    item.appendChild(swatch);
+    var text = el("span");
+    text.appendChild(document.createTextNode(x[0] + " "));
+    text.appendChild(el("b", null, Math.round(m[x[1]]) + " g"));
+    item.appendChild(text);
+    item.appendChild(el("small", null, (energy ? Math.round(m[x[1]] * x[2] / energy * 100) : 0) + "%"));
+    legend.appendChild(item);
+  });
+  box.appendChild(macroBar(m, legend));
+  box.appendChild(legend);
+
+  var note = person
+    ? "Scaled to " + person.name + "’s portion (" + person.portion + "×). "
+    : "For one average serve. Pick a person above to see their portion. ";
+  note += "The bar and percentages show the share of energy from each. ";
+  note += person
+    ? "Includes " + person.name + "’s snacks, apart from any marked “if hungry”."
+    : "Snacks are different for each person, so pick a person to include them.";
+  if (mode !== "today" && withData.length < days.length) note += " Averaged over " + withData.length + " of " + days.length + " days.";
+  if (missing) note += " " + missing + (missing === 1 ? " meal has" : " meals have") + " no macros yet, so the totals are low.";
+  box.appendChild(el("p", "mac-note", note));
+  return box;
+}
+
+// Which person is picked on the Meals and Macros views ("all" for everyone), remembered on this device.
+function pickWho(ppl) {
+  var who = "all";
+  try { who = localStorage.getItem("coles-plan-person") || "all"; } catch (e) {}
+  return (!ppl || (who !== "all" && !ppl[who])) ? "all" : who;
+}
+
+// The "Everyone / Alex / Sam / Riley" buttons. `rerender` redraws the view after a pick.
+function personSeg(ppl, who, rerender) {
+  var seg = el("div", "seg pseg");
+  var options = [["all", "Everyone"]].concat(
+    Object.keys(ppl)
+      .filter(function (key) { return ppl[key] && ppl[key].name; })
+      .map(function (key) { return [key, ppl[key].name]; })
+  );
+  options.forEach(function (option) {
+    var b = el("button", "btn", option[1]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", who === option[0]);
+    b.onclick = function () {
+      try { localStorage.setItem("coles-plan-person", option[0]); } catch (e) {}
+      rerender();
+    };
+    seg.appendChild(b);
+  });
+  return seg;
+}
+
+
+// Each day's meals for one person (or everyone), with macros scaled to their portion.
+// With `withSnacks`, the person's snacks are added too. Snacks marked "optional" (like
+// "if hungry") are shown last but not added to the totals.
+// Returns a list of {d: the day, rows: [[label, dish, macros]], tot: macro totals, known, miss}.
+function mealDays(w, person, who, withSnacks) {
+  var portion = person && +person.portion > 0 ? +person.portion : 1;
+  return w.meals.map(function (day) {
+    var rows = mealRows(day, person, person ? who : "");
+    var tot = { p: 0, c: 0, f: 0, kj: 0 };
+    var known = 0;    // meals with macros
+    var miss = 0;     // meals without
+    var optional = [];
+
+    rows.forEach(function (row) {
+      var m = macrosOf(row[1]);
+      row.push(m ? scaleM(m, portion) : null);
+      if (m) {
+        known++;
+        addM(tot, row[2]);
+      } else {
+        miss++;
+      }
+    });
+
+    if (withSnacks && person && Array.isArray(person.snacks)) {
+      person.snacks.forEach(function (snack) {
+        if (!snack || !snack.what || !snackOn(snack, day.day, who, PLAN.weeks.indexOf(w))) return;
+        // Snack amounts are already written for this person, so they are not scaled.
+        var row = ["Snack" + (snack.when ? " · " + snack.when : ""), snack.what, macrosOf(snack.what)];
+        row.snack = true;   // already sized for this person, so not scaled by their portion
+        if (snack.optional) {
+          row.optional = true;
+          optional.push(row);
+          return;
+        }
+        rows.push(row);
+        if (row[2]) {
+          known++;
+          addM(tot, row[2]);
+        } else {
+          miss++;
+        }
+      });
+    }
+    return { d: day, rows: rows.concat(optional), tot: tot, known: known, miss: miss };
+  });
+}
+
+// The Macros view: the person picker, the macros card, then each day with its kJ, a bar and every meal.
+function renderMacros() {
+  var panel = $("macView");
+  panel.textContent = "";
+  var w = PLAN.weeks[week];
+  var ppl = PLAN.people || null;
+  if (!w.meals || !w.meals.length) {
+    panel.appendChild(el("p", "emptyline", "No meals are listed for this week."));
+    return;
+  }
+  var who = pickWho(ppl);
+  if (ppl) {
+    panel.appendChild(personSeg(ppl, who, function () {
+      var y = window.scrollY;
+      renderMacros();
+      window.scrollTo(0, y);
+    }));
+  }
+  var person = who !== "all" && ppl ? ppl[who] : null;
+  var days = mealDays(w, person, who, true);
+  var card = macroCard(days, person);
+  if (card) panel.appendChild(card);
+  // How the week compares with healthy-eating guidelines (for one person, since they depend on age and sex).
+  if (person && window.Guidelines) {
+    panel.appendChild(Guidelines.card({
+      days: days,
+      person: person,
+      who: who,
+      portion: +person.portion > 0 ? +person.portion : 1,
+      groupsOf: groupsOf,
+      profileKey: ukey(person.name),
+      isAdmin: isAdmin(),
+    }));
+  } else if (ppl && window.Guidelines) {
+    panel.appendChild(el("p", "mac-note", "Pick a person to compare their week with healthy-eating guidelines."));
+  }
+  if (!days.some(function (x) { return x.known; })) return;
+
+  // "Each day" heading with a colour key.
+  var head = el("div", "mac-h");
+  head.appendChild(el("h2", null, "Each day"));
+  var key = el("div", "mac-key");
+  key.setAttribute("aria-hidden", "true");
+  MACROS.forEach(function (x) {
+    var item = el("span");
+    var swatch = el("span", "mac-sw");
+    swatch.style.background = x[3];
+    item.appendChild(swatch);
+    item.appendChild(document.createTextNode(x[0]));
+    key.appendChild(item);
+  });
+  head.appendChild(key);
+  panel.appendChild(head);
+
+  var list = el("ul", "days");
+  days.forEach(function (dayInfo) {
+    var day = dayInfo.d;
+    var card = el("li", "day");
+    var heading = el("h3", null, day.day || "");
+    card.appendChild(heading);
+    markToday(card, heading, day.day);
+    if (dayInfo.known) {
+      // "+" means some meals have no macros, so the real total is higher.
+      heading.appendChild(el("span", "dk", kjText(dayInfo.tot.kj) + (dayInfo.miss ? "+" : "")));
+      card.appendChild(macroBar(dayInfo.tot, null));
+      var t = dayInfo.tot;
+      card.appendChild(el("p", "mac-day", "P " + Math.round(t.p) + " g · C " + Math.round(t.c) + " g · F " + Math.round(t.f) + " g" + (dayInfo.miss ? " · " + dayInfo.miss + " without macros" : "")));
+    }
+    dayInfo.rows.forEach(function (row) {
+      var line = el("p", "mrow");
+      line.appendChild(el("span", "mk", row[0]));
+      line.appendChild(el("span", "mv", row[1]));
+      line.appendChild(row[2] ? el("span", "mm", macroLine(row[2])) : el("span", "mm none", "No macros yet"));
+      if (row.optional) {
+        line.className = "mrow opt";
+        line.appendChild(el("span", "mm none", "If hungry, so not in the totals"));
+      }
+      card.appendChild(line);
+    });
+    list.appendChild(card);
+  });
+  panel.appendChild(list);
+}
+
+// The Meals view: the person picker, that person's guide (times, tips, snacks), each day's
+// meals with "eaten" ticks and Rate buttons, then the recipes.
+// Shown under each person's meal guide and exercise plan.
+var CHECK_WITH_GP = "Please check this meal and exercise plan with your GP, dietitian or physio before you start, especially if you take medicines, are pregnant or have a health condition. It’s general information, not medical advice.";
+
+// The box at the top of the Meals view for one person: portion, guide, suggested eating times
+// (with "Add to calendar"), tips and snacks.
+function personGuide(person, personKey) {
+  var box = el("div", "exfocus");
+  box.appendChild(el("h3", null, person.name + " (portion " + person.portion + "× average)"));
+  if (person.guide) box.appendChild(el("p", null, person.guide));
+
+  // A line with a label on the left and text on the right.
+  function line(label, text) {
+    var p = el("p", "meal");
+    p.appendChild(el("span", "mk", label));
+    p.appendChild(el("span", "mv", text));
+    return p;
+  }
+
+  if (person.times && person.times.length) {
+    box.appendChild(el("h4", null, "Suggested eating times"));
+    person.times.forEach(function (t) { box.appendChild(line(t.when, t.what)); });
+    if (person.timesNote) box.appendChild(el("p", "note2", person.timesNote));
+    box.appendChild(calBlock(personKey));
+  }
+  if (person.tips && person.tips.length) {
+    box.appendChild(el("h4", null, "Tips and things to check"));
+    var tips = el("ul", "bul");
+    person.tips.forEach(function (tip) { tips.appendChild(el("li", null, tip)); });
+    box.appendChild(tips);
+  }
+  if (person.snacks && person.snacks.length) box.appendChild(el("h4", null, "Snacks"));
+  (person.snacks || []).forEach(function (snack) { box.appendChild(line(snack.when, snack.what)); });
+  box.appendChild(el("p", "note2", CHECK_WITH_GP));
+  return box;
+}
+
+// One meal in a day card: an "eaten" tick box, the label and dish, anyone with a different meal
+// (in the Everyone view), and a Rate button with its rating box.
+function mealRow(card, day, row, person, ppl, updateEaten) {
+  var line = el("p", "meal");
+  var id = (day.day || "") + "|" + row[0];   // like "Mon|Dinner"
+  var eatenThisWeek = eaten[week] || [];
+
+  var box = el("input", "eat");
+  box.type = "checkbox";
+  box.checked = eatenThisWeek.indexOf(id) > -1;
+  box.setAttribute("aria-label", "Eaten: " + (day.day || "") + " " + row[0] + " (" + USER + ")");
+  line.className = "meal" + (box.checked ? " eaten" : "");
+  box.onchange = function () {
+    var list = eaten[week] || [];
+    var at = list.indexOf(id);
+    if (box.checked && at < 0) list.push(id);
+    if (!box.checked && at > -1) list.splice(at, 1);
+    eaten[week] = list;
+    save();
+    line.className = "meal" + (box.checked ? " eaten" : "");
+    updateEaten();
+  };
+
+  var text = el("span", "mt");
+  text.appendChild(el("span", "mk", row[0]));
+  text.appendChild(el("span", "mv", row[1]));
+  // In the Everyone view, show anyone who has a different meal in this slot.
+  if (!person && ppl && day.people) {
+    Object.keys(day.people).forEach(function (personKey) {
+      var own = day.people[personKey];
+      var dish = own && own[row[0].toLowerCase()];
+      if (dish && ppl[personKey] && ppl[personKey].name) {
+        var other = el("span", "ov");
+        other.appendChild(el("b", null, ppl[personKey].name + ": "));
+        other.appendChild(document.createTextNode(dish));
+        text.appendChild(other);
+      }
+    });
+  }
+  line.appendChild(box);
+  line.appendChild(text);
+
+  var rateButton = el("button", "rate-btn");
+  rateButton.type = "button";
+  line.appendChild(rateButton);
+  card.appendChild(line);
+  var summary = el("p", "rate-sum");
+  var rateBox = el("div", "rate-box");
+  card.appendChild(summary);
+  card.appendChild(rateBox);
+  rateUI(id, (day.day || "") + " " + row[0].toLowerCase(), rateButton, summary, rateBox, row[1]);
+}
+
+// ---------- one day at a time (Meals and Exercise) ----------
+
+var FULLDAY = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
+var dayName = TODAY;   // the day shown in Meals and Exercise ("Mon"); starts on today
+
+function short(day) {
+  return String(day || "").slice(0, 3);
+}
+
+// The meal weeks (not stock-ups), in order.
+function mealWeeks() {
+  var out = [];
+  PLAN.weeks.forEach(function (w, i) { if (w.kind !== "stockup") out.push(i); });
+  return out;
+}
+
+// The day header: ‹ arrow, the day's name, › arrow, then a row of day buttons. Going past the
+// last day moves to the next week (and back from the first day to the week before), wrapping
+// around the plan. `days` is the week's list of {day: "Mon", ...}.
+function dayNav(days, rerender) {
+  var names = days.map(function (d) { return short(d.day); });
+  var at = Math.max(0, names.indexOf(dayName));
+  var weeks = mealWeeks();
+  var wAt = weeks.indexOf(week);
+
+  function step(dir) {
+    var next = at + dir;
+    if (next >= 0 && next < names.length) {
+      dayName = names[next];
+      rerender();
+      return;
+    }
+    var nw = weeks[(wAt + dir + weeks.length) % weeks.length];
+    var other = (PLAN.weeks[nw][view === "exercise" ? "exercise" : "meals"] && nw !== week) ? nw : week;
+    var otherDays = view === "exercise" ? ((exFor(other) || {}).days || days) : (PLAN.weeks[other].meals || days);
+    dayName = short((dir > 0 ? otherDays[0] : otherDays[otherDays.length - 1]).day);
+    if (other === week) rerender();
+    else go(other, view);
+  }
+
+  var wrap = el("div", "daynav");
+  var top = el("div", "daynav-top");
+  var prev = el("button", "btn arrow", "‹");
+  prev.type = "button";
+  prev.setAttribute("aria-label", "Previous day");
+  prev.onclick = function () { step(-1); };
+  var title = el("div", "daynav-title");
+  var h = el("h2", null, FULLDAY[names[at]] || names[at] || "");
+  if (names[at] === TODAY) h.appendChild(el("span", "today-tag", "Today"));
+  title.appendChild(h);
+  title.appendChild(el("span", null, PLAN.weeks[week].name || "Week " + (week + 1)));
+  var next = el("button", "btn arrow", "›");
+  next.type = "button";
+  next.setAttribute("aria-label", "Next day");
+  next.onclick = function () { step(1); };
+  top.appendChild(prev);
+  top.appendChild(title);
+  top.appendChild(next);
+  wrap.appendChild(top);
+
+  var chips = el("div", "daychips");
+  names.forEach(function (n, i) {
+    var b = el("button", null, n.slice(0, 2));
+    b.type = "button";
+    b.setAttribute("aria-label", FULLDAY[n] || n);
+    b.setAttribute("aria-pressed", i === at);
+    if (n === TODAY) b.className = "is-today";
+    b.onclick = function () { dayName = n; rerender(); };
+    chips.appendChild(b);
+  });
+  wrap.appendChild(chips);
+  return { el: wrap, index: at, step: step };
+}
+
+// Lets a swipe left or right on `target` move to the next or previous day.
+function swipeDays(target, step) {
+  var x0 = null, y0 = null;
+  target.addEventListener("touchstart", function (e) {
+    x0 = e.touches[0].clientX;
+    y0 = e.touches[0].clientY;
+  }, { passive: true });
+  target.addEventListener("touchend", function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    var dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+  });
+}
+
+// A titled box of lines (strings), or null if there are none.
+function adviceBox(title, lines, cls) {
+  lines = lines.filter(Boolean);
+  if (!lines.length) return null;
+  var box = el("section", "advice" + (cls ? " " + cls : ""));
+  box.appendChild(el("h3", null, title));
+  var list = el("ul", "bul");
+  lines.forEach(function (t) { list.appendChild(el("li", null, t)); });
+  box.appendChild(list);
+  return box;
+}
+
+// The same as a box that opens and closes (closed to start), or null if there are no lines.
+function noteFold(title, lines, cls) {
+  lines = lines.filter(Boolean);
+  if (!lines.length) return null;
+  var fold = el("details", "exfold" + (cls ? " " + cls : ""));
+  fold.appendChild(el("summary", null, title));
+  var inner = el("div");
+  var list = el("ul", "bul");
+  lines.forEach(function (t) { list.appendChild(el("li", null, t)); });
+  inner.appendChild(list);
+  fold.appendChild(inner);
+  return fold;
+}
+
+// ---------- exercise for a person and day ----------
+
+// A person's exercise plan for a week (by plan key), or null. One plan for everyone
+// ({"days": [...]}) or one per person ({"<person key>": {"days": [...]}}).
+function exPlanFor(weekIndex, personKey) {
+  var e = PLAN.weeks[weekIndex] && PLAN.weeks[weekIndex].exercise;
+  if (!e) return null;
+  if (Array.isArray(e.days)) return e;
+  return e[personKey] && Array.isArray(e[personKey].days) ? e[personKey] : null;
+}
+
+// The day's sessions from a person's exercise plan: {day, cardio, strength, ...}, {} for a day
+// with nothing on, or null when they have no exercise plan that week.
+function exDayOf(weekIndex, personKey, day) {
+  var plan = exPlanFor(weekIndex, personKey);
+  if (!plan) return null;
+  return plan.days.filter(function (d) { return short(d.day) === short(day); })[0] || {};
+}
+
+// True if a day has a strength (weights) session.
+function isWeightsDay(exDay) {
+  if (!exDay) return false;
+  if (exDay.strength) return true;
+  return EXSLOTS.some(function (slot) {
+    return exDay[slot[0]] && /strength|weights|resistance/i.test(exDay[slot[0]]) && !/^optional/i.test(exDay[slot[0]]);
+  });
+}
+
+// True if any session is planned on a day.
+function isActiveDay(exDay) {
+  return !!exDay && EXSLOTS.some(function (slot) { return exDay[slot[0]] && !/^optional|^rest/i.test(exDay[slot[0]]); });
+}
+
+// True if a snack is eaten on `day`: its "days" list includes the day (or it has no list), and
+// its "exercise" fits that day's exercise: "strength" (weights days only), "rest" (days without
+// weights), "active" (days with any session) or "inactive". Without an exercise plan for the
+// person, the exercise rule is ignored.
+function snackOn(snack, day, personKey, weekIndex) {
+  day = short(day);
+  if (Array.isArray(snack.days) && snack.days.indexOf(day) < 0) return false;
+  if (!snack.exercise || !personKey || weekIndex == null) return true;
+  var exDay = exDayOf(weekIndex, personKey, day);
+  if (!exDay) return true;
+  if (snack.exercise === "strength") return isWeightsDay(exDay);
+  if (snack.exercise === "rest") return !isWeightsDay(exDay);
+  if (snack.exercise === "active") return isActiveDay(exDay);
+  if (snack.exercise === "inactive") return !isActiveDay(exDay);
+  return true;
+}
+
+// The sessions on a day as text: "Strength: Strength A …".
+function sessionLines(exDay) {
+  var out = [];
+  EXSLOTS.forEach(function (slot) {
+    if (exDay && exDay[slot[0]]) out.push(slot[1] + ": " + exDay[slot[0]]);
+  });
+  return out;
+}
+
+// ---------- meals ----------
+
+// The Meals view: the person picker, then one day: its meals and that person's snacks to tick,
+// things to consider that day, the recipes for the day, and the person's eating guide and times.
+function renderMeals() {
+  var panel = $("meals");
+  panel.textContent = "";
+  var w = PLAN.weeks[week];
+  var ppl = PLAN.people || null;
+  if (!w.meals || !w.meals.length) {
+    panel.appendChild(el("p", "emptyline", "No meals are listed for this week."));
+    return;
+  }
+  var who = pickWho(ppl);
+  if (ppl) panel.appendChild(personSeg(ppl, who, renderMeals));
+  var person = who !== "all" && ppl ? ppl[who] : null;
+
+  var nav = dayNav(w.meals, renderMeals);
+  panel.appendChild(nav.el);
+  var dayInfo = mealDays(w, person, who, true)[nav.index];
+  var day = dayInfo.d;
+
+  var card = el("section", "day daycard");
+  var count = el("p", "count");
+  card.appendChild(count);
+  var ids = dayInfo.rows.map(function (row) { return (day.day || "") + "|" + row[0]; });
+  function updateEaten() {
+    var done = (eaten[week] || []).filter(function (id) { return ids.indexOf(id) > -1; }).length;
+    count.textContent = "";
+    count.appendChild(el("b", null, done + " of " + ids.length + " eaten"));
+    count.appendChild(el("span", null, "Tick once eaten"));
+  }
+  dayInfo.rows.forEach(function (row) {
+    mealRow(card, day, row, person, ppl, updateEaten);
+  });
+  updateEaten();
+  panel.appendChild(card);
+  swipeDays(card, nav.step);
+
+  // Things to consider today: training today and what that means for snacks, the plan's note for the
+  // day, and a tip (a different one each day).
+  var lines = [];
+  if (day.note) lines.push(day.note);
+  if (person) {
+    var exDay = exDayOf(week, who, day.day);
+    if (exDay) {
+      var sessions = sessionLines(exDay);
+      lines.push(sessions.length ? "Exercise today: " + sessions.join("; ") : "No exercise planned today: a rest day.");
+      var tied = (person.snacks || []).filter(function (s) { return s && s.exercise === "strength"; });
+      if (tied.length) {
+        lines.push(isWeightsDay(exDay)
+          ? "Strength day: " + tied.map(function (s) { return s.what; }).join(", ") + " is in today’s snacks, after training."
+          : "No weights today, so " + tied.map(function (s) { return s.what.replace(/^\d+\s*ml\s+/, ""); }).join(", ") + " is left out.");
+      }
+    }
+    if (person.tips && person.tips.length) lines.push("Tip: " + person.tips[nav.index % person.tips.length]);
+  } else if (ppl) {
+    lines.push("Pick a person above to see their snacks and notes for the day.");
+  }
+  var advice = adviceBox("Today’s considerations" + (short(day.day) === TODAY ? "" : ": " + (FULLDAY[short(day.day)] || day.day)), lines);
+  if (advice) panel.appendChild(advice);
+
+  // Recipes for the dishes on this day, then the rest of the week's in a fold.
+  if (w.recipes && w.recipes.length) {
+    var forPerson = person;
+    var dishes = dayInfo.rows.map(function (row) { return String(row[1]).replace(/ \(packed\)$/, ""); });
+    var today = w.recipes.filter(function (r) { return dishes.indexOf(r.name) > -1; });
+    var rest = w.recipes.filter(function (r) { return dishes.indexOf(r.name) < 0; });
+    var qty = forPerson ? " (amounts for " + forPerson.name + ")" : " (amounts for everyone)";
+    if (today.length) {
+      panel.appendChild(el("h2", "rh", "Today’s recipes" + qty));
+      var list = el("ul", "recipes");
+      today.forEach(function (r) { list.appendChild(recipeItem(r, forPerson)); });
+      panel.appendChild(list);
+    }
+    if (rest.length) {
+      var fold = el("details", "exfold");
+      fold.appendChild(el("summary", null, (today.length ? "The rest of this week’s recipes" : "This week’s recipes") + qty));
+      var inner = el("div");
+      var more = el("ul", "recipes");
+      rest.forEach(function (r) { more.appendChild(recipeItem(r, forPerson)); });
+      inner.appendChild(more);
+      fold.appendChild(inner);
+      panel.appendChild(fold);
     }
   }
-  var ec=el("p","count");ec.id="eatCount";m.appendChild(ec);
-  function updateEaten(){var n=(eaten[week]||[]).length,t=0;w.meals.forEach(function(d){["breakfast","lunch","dinner"].forEach(function(k){if(d[k])t++;});});ec.textContent="";ec.appendChild(el("b",null,n+" of "+t+" meals eaten"));ec.appendChild(el("span",null,"Tick once eaten"));}
-  updateEaten();
-  var ul=el("ul","days");
-  w.meals.forEach(function(d){
-    var li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
-    var rows=[["Breakfast",d.breakfast],["Lunch",d.lunch],["Dinner",d.dinner]];
-    var extra=[];
-    var WP=who!=="all"&&ppl?ppl[who]:null;
-    if(WP&&WP.weekday&&WP.weekday[d.day]){
-      var wd=WP.weekday[d.day];
-      rows[1]=["Lunch",wd.lunch+(wd.lunch.indexOf("School")===0?"":" (packed)")];
-      extra.push(["School snack",wd.snack]);
-    }
-    if(WP&&WP.breakfast)rows[0]=["Breakfast",WP.breakfast];
-    function mrow(r){
-      var p=el("p","meal"),id=(d.day||"")+"|"+r[0],a=eaten[week]||[];
-      var cb=el("input","eat");cb.type="checkbox";cb.checked=a.indexOf(id)>-1;cb.setAttribute("aria-label","Eaten: "+(d.day||"")+" "+r[0]+" ("+USER+")");
-      p.className="meal"+(cb.checked?" eaten":"");
-      cb.onchange=function(){var a2=eaten[week]||[],i=a2.indexOf(id);if(cb.checked&&i<0)a2.push(id);if(!cb.checked&&i>-1)a2.splice(i,1);eaten[week]=a2;save();p.className="meal"+(cb.checked?" eaten":"");updateEaten();};
-      var mt=el("span","mt");mt.appendChild(el("span","mk",r[0]));mt.appendChild(el("span","mv",r[1]));p.appendChild(cb);p.appendChild(mt);
-      var rb=el("button","rate-btn");rb.type="button";p.appendChild(rb);li.appendChild(p);
-      var sum=el("p","rate-sum"),box=el("div","rate-box");li.appendChild(sum);li.appendChild(box);
-      rateUI(id,(d.day||"")+" "+r[0].toLowerCase(),rb,sum,box,r[1]);
-    }
-    rows.forEach(function(r){if(r[1])mrow(r);});
-    extra.forEach(function(r){mrow(r);});
-    ul.appendChild(li);
-  });
-  m.appendChild(ul);
-  if(w.recipes&&w.recipes.length){
-    var qp=(who!=="all"&&ppl&&ppl[who])?ppl[who]:null;
-    function fq(v,l,isInt){
-      if(isInt)return String(Math.max(1,Math.round(v)));
-      if(/^(g|ml)\b/.test(l)){var s=v<50?5:10;return String(Math.max(5,Math.round(v/s)*s));}
-      var r=Math.max(0.5,Math.round(v*4)/4),wh=Math.floor(r),fr={0:"",0.25:"\u00bc",0.5:"\u00bd",0.75:"\u00be"}[r-wh];
-      return (wh?String(wh):"")+fr;
-    }
-    m.appendChild(el("h2","rh",qp?"Recipes (quantities for "+qp.name+" only)":"Recipes (quantities for the whole household)"));
-    if(qp)m.appendChild(el("p","note2","These amounts are one serve for "+qp.name+" ("+qp.portion+"\u00d7 an average serve). Tap Everyone above for the full household amounts."));
-    var rl=el("ul","recipes");
-    w.recipes.forEach(function(r){
-      var li=el("li","rec");
-      if(typeof r==="string"){var p=el("p"),i=r.indexOf(": ");if(i>0){p.appendChild(el("strong",null,r.slice(0,i+1)));p.appendChild(document.createTextNode(r.slice(i+1)));}else p.textContent=r;li.appendChild(p);rl.appendChild(li);return;}
-      var det=el("details"),sm=el("summary");sm.appendChild(el("strong",null,r.name));
-      var mk=qp?("1 serve for "+qp.name):r.makes;if(mk)sm.appendChild(el("span","mk2"," \u00b7 "+mk));
-      det.appendChild(sm);
-      var ingl=r.ingredients;
-      if(r.items&&r.items.length)ingl=r.items.map(function(it){var v=(qp&&r.units)?it.q*qp.portion/r.units:it.q;return fq(v,it.l,it.i)+" "+it.l;});
-      if(ingl&&ingl.length){det.appendChild(el("h4",null,"Ingredients"));var ul2=el("ul","bul");ingl.forEach(function(x){ul2.appendChild(el("li",null,x));});det.appendChild(ul2);}
-      if(r.pantry&&r.pantry.length){det.appendChild(el("p","note2","Pantry: "+r.pantry.join(", ")+". Oil, salt, pepper and dried spices as needed."));}
-      else det.appendChild(el("p","note2","Oil, salt, pepper and dried spices as needed."));
-      if(r.steps&&r.steps.length){det.appendChild(el("h4",null,"Method"));var ol=el("ol","steps");r.steps.concat((!qp&&r.leftoverStep)?[r.leftoverStep]:[]).forEach(function(x){ol.appendChild(el("li",null,x));});det.appendChild(ol);}
-      if(r.kid)det.appendChild(el("p","kid",(kidName()+"'s version: ")+r.kid));
-      if(!qp)(r.others||[]).forEach(function(x){det.appendChild(el("p","note2",x));});
-      li.appendChild(det);rl.appendChild(li);
-    });
-    m.appendChild(rl);
+
+  if (person) {
+    var guide = el("details", "exfold");
+    guide.appendChild(el("summary", null, person.name + "’s guide, eating times and calendar"));
+    var g = el("div");
+    g.appendChild(personGuide(person, who));
+    guide.appendChild(g);
+    panel.appendChild(guide);
   }
 }
-function exCount(ex){var n=0;(ex.days||[]).forEach(function(d){["morning","afternoon","session"].forEach(function(k){if(d[k])n++;});});return n;}
-// Exercise can be one plan for everyone ({"days":[...]}) or one per person ({"<person key>":{"days":[...]}}).
-function pkOf(name){return PMAP[name]||ukey(name);}
-function exFor(wi){var e=PLAN.weeks[wi]&&PLAN.weeks[wi].exercise;if(!e)return null;if(Array.isArray(e.days))return e;var k=pkOf(USER);return e[k]&&Array.isArray(e[k].days)?e[k]:null;}
-function exExtras(){var e=PLAN.exercise||{};if(e.workouts||e.notes||e.videos)return e;return e[pkOf(USER)]||{};}
-function updateExCount(){var c=$("exCount"),ex=exFor(week);if(c&&ex){c.textContent="";c.appendChild(el("b",null,(exTicks[week]||[]).length+" of "+exCount(ex)+" sessions done"));c.appendChild(el("span",null,"This week"));}}
-function renderExercise(){
-  var x=$("exView");x.textContent="";
-  var w=PLAN.weeks[week],ex=exFor(week),pe=exExtras();
-  if(!ex){x.appendChild(el("p","emptyline",w.exercise?"No exercise plan for "+USER+" this week yet.":"No exercise plan is listed for this week."));return;}
-  var cnt=el("p","count");cnt.id="exCount";x.appendChild(cnt);
-  var fd=el("details","exfold"),fs=el("summary",null,ex.focus||"This week's plan"),f=el("div","exfocus"),fw=el("div");
-  if(ex.targets&&ex.targets.length){var u=el("ul","bul");ex.targets.forEach(function(t){u.appendChild(el("li",null,t));});f.appendChild(u);}
-  fd.appendChild(fs);fw.appendChild(f);fd.appendChild(fw);x.appendChild(fd);
-  var done=exTicks[week]||[],ul=el("ul","days");
-  (ex.days||[]).forEach(function(d){
-    var li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
-    [["morning","Morning"],["afternoon","Afternoon"],["session","Session"]].forEach(function(k){
-      if(!d[k[0]])return;
-      var id=d.day+"-"+k[0],lab=el("label","sess"),inp=el("input");inp.type="checkbox";inp.checked=done.indexOf(id)>-1;
-      inp.onchange=function(){var a=exTicks[week]||[],i=a.indexOf(id);if(inp.checked&&i<0)a.push(id);if(!inp.checked&&i>-1)a.splice(i,1);exTicks[week]=a;save();updateExCount();};
-      var t=el("span","stxt");t.appendChild(el("span","sk",k[1]));t.appendChild(document.createTextNode(d[k[0]]));
-      lab.appendChild(inp);lab.appendChild(el("span","box"));lab.appendChild(t);li.appendChild(lab);
-    });
-    ul.appendChild(li);
+
+// ---------- recipe amounts ----------
+
+// A household amount, rounded so it is easy to measure: whole numbers for counted things,
+// the nearest 5 or 10 for grams and millilitres, and the nearest quarter for anything else.
+function fq(v, label, isWhole) {
+  if (isWhole) return String(Math.max(1, Math.round(v)));
+  if (/^(g|ml)\b/.test(label)) {
+    var step = v < 50 ? 5 : 10;
+    return String(Math.max(5, Math.round(v / step) * step));
+  }
+  var rounded = Math.max(0.5, Math.round(v * 4) / 4);
+  var whole = Math.floor(rounded);
+  var part = { 0: "", 0.25: "¼", 0.5: "½", 0.75: "¾" }[rounded - whole];
+  return (whole ? String(whole) : "") + part;
+}
+
+// A number as a whole number and the nearest simple fraction (⅕ ¼ ⅓ ½ ⅔ ¾): 1.3 gives "1⅓".
+function frac(v) {
+  var FRACTIONS = [[0, ""], [0.2, "⅕"], [0.25, "¼"], [1 / 3, "⅓"], [0.5, "½"], [2 / 3, "⅔"], [0.75, "¾"], [1, ""]];
+  var whole = Math.floor(v);
+  var rest = v - whole;
+  var best = FRACTIONS[0];
+  FRACTIONS.forEach(function (x) {
+    if (Math.abs(rest - x[0]) < Math.abs(rest - best[0])) best = x;
   });
-  x.appendChild(ul);
-  if(pe.workouts&&pe.workouts.length){
-    x.appendChild(el("h2","rh","Workouts"));
-    pe.workouts.forEach(function(wo){
-      var d=el("details"),s=el("summary",null,wo.name||"Workout");
-      if(wo.time)s.appendChild(el("span",null,wo.time));
-      d.appendChild(s);var o=el("ol","bul steps");
-      (wo.items||[]).forEach(function(i){
-        var li=el("li",null,i),k=i.indexOf(": ");
-        if(k>0){
-          var nm=i.slice(0,k).replace(/\s*\(.*?\)/g,"").trim(),vd=pe.videos||{};
-          if(Object.prototype.hasOwnProperty.call(vd,nm)){
-            li.appendChild(document.createTextNode(" "));
-            if(/^https?:\/\//.test(vd[nm])){var a=el("a","vlink","Demo");a.href=vd[nm];a.target="_blank";a.rel="noopener noreferrer";li.appendChild(a);li.appendChild(document.createTextNode(" \u00b7 "));}
-            var y=el("a","vlink","YouTube");y.href="https://www.youtube.com/results?search_query="+encodeURIComponent(nm+" exercise form");y.target="_blank";y.rel="noopener noreferrer";li.appendChild(y);
-          }
-        }
-        o.appendChild(li);
-      });
-      d.appendChild(o);x.appendChild(d);
+  if (best[0] === 1) {   // nearer the next whole number
+    whole++;
+    best = FRACTIONS[0];
+  }
+  return (whole ? String(whole) : "") + best[1];
+}
+
+// One person's share of a batch recipe. Small amounts get proper fractions (⅕ to ¾) instead of
+// rounding up to ½ or 1, and part of a can or jar is shown in grams, e.g. "about 130 g red kidney beans".
+function personQty(v, label, isWhole) {
+  var can = /^× (\d+) ?(g|ml) (?:can|jar|tin) (?:of )?(.+)$/.exec(label);   // "× 400 g can chickpeas"
+  if (can && v < 0.9) {
+    var amount = v * +can[1];
+    var step = amount < 50 ? 5 : 10;
+    return "about " + Math.max(5, Math.round(amount / step) * step) + " " + can[2] + " " + can[3] + " (from a " + can[1] + " " + can[2] + " can)";
+  }
+  if (/^(g|ml)\b/.test(label)) return fq(v, label, isWhole) + " " + label;
+  // "1 can", "½ tomato": one or less reads as singular.
+  var singular = function (x) {
+    return x.replace(/\b(tomato|egg|wrap|sausage|can|slice)(e?s)\b/, "$1");
+  };
+  if (isWhole && v >= 0.75) {
+    var n = Math.round(v);
+    return n + " " + (n === 1 ? singular(label) : label);
+  }
+  if (v < 0.15) return "a little " + label.replace(/^(× )/, "");
+  return frac(v) + " " + (v < 1.1 ? singular(label) : label);
+}
+
+// One recipe in the list. A recipe can be a line of text ("Name: details") or a full recipe
+// object, shown as a fold-out with ingredients, method and notes. With `forPerson`, the amounts
+// are one serve for that person (q × portion ÷ units).
+function recipeItem(r, forPerson) {
+  var item = el("li", "rec");
+  if (typeof r === "string") {
+    var p = el("p");
+    var colon = r.indexOf(": ");
+    if (colon > 0) {
+      p.appendChild(el("strong", null, r.slice(0, colon + 1)));
+      p.appendChild(document.createTextNode(r.slice(colon + 1)));
+    } else {
+      p.textContent = r;
+    }
+    item.appendChild(p);
+    return item;
+  }
+
+  var fold = el("details");
+  var summary = el("summary");
+  summary.appendChild(el("strong", null, r.name));
+  var makes = forPerson ? ("1 serve for " + forPerson.name) : r.makes;
+  if (makes) summary.appendChild(el("span", "mk2", " · " + makes));
+  fold.appendChild(summary);
+
+  var ingredients = r.ingredients;
+  if (r.items && r.items.length) {
+    ingredients = r.items.map(function (it) {
+      if (forPerson && r.units) return personQty(it.q * forPerson.portion / r.units, it.l, it.i);
+      return fq(it.q, it.l, it.i) + " " + it.l;
     });
   }
-  if(pe.notes&&pe.notes.length){
-    x.appendChild(el("h2","rh","Good to know"));
-    var nb=el("div","exfocus"),nu=el("ul","bul");
-    pe.notes.forEach(function(n){nu.appendChild(el("li",null,n));});
-    nb.appendChild(nu);x.appendChild(nb);
+  if (ingredients && ingredients.length) {
+    fold.appendChild(el("h4", null, "Ingredients"));
+    var list = el("ul", "bul");
+    ingredients.forEach(function (x) { list.appendChild(el("li", null, x)); });
+    fold.appendChild(list);
   }
+  if (r.pantry && r.pantry.length) {
+    fold.appendChild(el("p", "note2", "Pantry: " + r.pantry.join(", ") + ". Oil, salt, pepper and dried spices as needed."));
+  } else {
+    fold.appendChild(el("p", "note2", "Oil, salt, pepper and dried spices as needed."));
+  }
+  if (r.steps && r.steps.length) {
+    fold.appendChild(el("h4", null, "Method"));
+    var steps = el("ol", "steps");
+    // The leftovers step only makes sense for the whole household's batch.
+    var allSteps = r.steps.concat((!forPerson && r.leftoverStep) ? [r.leftoverStep] : []);
+    allSteps.forEach(function (x) { steps.appendChild(el("li", null, x)); });
+    fold.appendChild(steps);
+  }
+  if (r.kid) fold.appendChild(el("p", "kid", (kidName() + "'s version: ") + r.kid));
+  if (!forPerson) {
+    (r.others || []).forEach(function (x) { fold.appendChild(el("p", "note2", x)); });
+  }
+  item.appendChild(fold);
+  return item;
+}
+
+// ---------- exercise ----------
+
+// Session slots a day can have, in display order: [key in plan.json, label]. "cardio", "strength"
+// and "mobility" suit plans that don't fix a time of day; "morning", "afternoon" and "session" are the original ones.
+var EXSLOTS = [
+  ["morning", "Morning"],
+  ["afternoon", "Afternoon"],
+  ["cardio", "Easy cardio"],
+  ["strength", "Strength"],
+  ["mobility", "Mobility"],
+  ["session", "Session"],
+];
+
+// How many sessions a week's exercise plan has.
+function exCount(ex) {
+  var n = 0;
+  (ex.days || []).forEach(function (day) {
+    EXSLOTS.forEach(function (slot) {
+      if (day[slot[0]]) n++;
+    });
+  });
+  return n;
+}
+
+// The person key for a name: "Alex" gives "adult1".
+function pkOf(name) {
+  return PMAP[name] || ukey(name);
+}
+
+// This person's exercise plan for a week, or null.
+function exFor(weekIndex) {
+  return exPlanFor(weekIndex, pkOf(USER));
+}
+
+// The plan-wide exercise details (workouts, notes, medical considerations, videos), shared or for this person.
+function exExtras() {
+  var e = PLAN.exercise || {};
+  if (e.workouts || e.notes || e.medical || e.videos) return e;
+  return e[pkOf(USER)] || {};
+}
+
+// Updates "3 of 11 sessions done this week".
+function updateExCount() {
+  var count = $("exCount");
+  var ex = exFor(week);
+  if (!count || !ex) return;
+  count.textContent = "";
+  count.appendChild(el("b", null, (exTicks[week] || []).length + " of " + exCount(ex) + " sessions done"));
+  count.appendChild(el("span", null, "This week"));
+}
+
+// The short name a workout goes by in the day plan: "Strength A" from "Strength A: Squat, press…".
+function workoutKey(workout) {
+  return String(workout.name || "").split(":")[0].trim().toLowerCase();
+}
+
+// The workouts a day's sessions mention, in the order they are mentioned.
+function workoutsFor(exDay, workouts) {
+  var text = sessionLines(exDay).join(" ").toLowerCase();
+  return workouts.filter(function (wk) {
+    var key = workoutKey(wk);
+    return key && new RegExp("\\b" + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b").test(text);
+  });
+}
+
+// The Exercise view: one day's sessions to tick, the workouts for that day (open, to follow
+// mid-workout), the week's focus, all the workouts, general notes, and a separate box of
+// medical considerations, each in a box that opens.
+function renderExercise() {
+  var panel = $("exView");
+  panel.textContent = "";
+  var w = PLAN.weeks[week];
+  var ex = exFor(week);
+  var extras = exExtras();
+  if (!ex) {
+    panel.appendChild(el("p", "emptyline", w.exercise ? "No exercise plan for " + USER + " this week yet." : "No exercise plan is listed for this week."));
+    return;
+  }
+  var count = el("p", "count");
+  count.id = "exCount";
+  panel.appendChild(count);
+
+  var days = ex.days || [];
+  var nav = dayNav(days, renderExercise);
+  panel.appendChild(nav.el);
+  var day = days[nav.index] || {};
+  var done = exTicks[week] || [];
+
+  var card = el("section", "day daycard");
+  var any = false;
+  EXSLOTS.forEach(function (slot) {
+    if (day[slot[0]]) {
+      card.appendChild(sessionRow(day, slot, done));
+      any = true;
+    }
+  });
+  if (!any) card.appendChild(el("p", "restday", "Rest day. Nothing planned today."));
+  panel.appendChild(card);
+  swipeDays(card, nav.step);
+
+  var workouts = extras.workouts || [];
+  var todays = workoutsFor(day, workouts);
+  if (todays.length) {
+    panel.appendChild(el("h2", "rh", "Today’s workouts"));
+    todays.forEach(function (workout) {
+      var fold = workoutFold(workout, extras.videos || {});
+      fold.open = true;
+      panel.appendChild(fold);
+    });
+  }
+
+  // The week's focus, which opens to show its targets.
+  if (ex.focus || (ex.targets && ex.targets.length)) {
+    var fold = el("details", "exfold");
+    var inner = el("div");
+    var focus = el("div", "exfocus");
+    if (ex.targets && ex.targets.length) {
+      var targets = el("ul", "bul");
+      ex.targets.forEach(function (t) { targets.appendChild(el("li", null, t)); });
+      focus.appendChild(targets);
+    }
+    fold.appendChild(el("summary", null, ex.focus || "This week's plan"));
+    inner.appendChild(focus);
+    fold.appendChild(inner);
+    panel.appendChild(fold);
+  }
+
+  var others = workouts.filter(function (wk) { return todays.indexOf(wk) < 0; });
+  if (others.length) {
+    var all = el("details", "exfold");
+    all.appendChild(el("summary", null, todays.length ? "Other workouts" : "Workouts"));
+    var allInner = el("div");
+    others.forEach(function (workout) { allInner.appendChild(workoutFold(workout, extras.videos || {})); });
+    all.appendChild(allInner);
+    panel.appendChild(all);
+  }
+
+  var notes = noteFold("Good to know", extras.notes || []);
+  if (notes) panel.appendChild(notes);
+
+  var medical = noteFold("Medical considerations", extras.medical || [], "medical");
+  if (medical) {
+    medical.lastChild.appendChild(el("p", "note2", "This is general information, not medical advice. What your doctor, physio or other health professional tells you comes first. If anything here doesn’t match what they said, follow them."));
+    panel.appendChild(medical);
+  }
+  panel.appendChild(el("p", "note2", CHECK_WITH_GP));
   updateExCount();
 }
-function toggle(id,on,li){
-  var a=ticks[week]||[],i=a.indexOf(id);
-  if(on&&i<0)a.push(id);if(!on&&i>-1)a.splice(i,1);
-  ticks[week]=a;var k=week+"|"+id;if(on){if(ME)BY[k]={who:ME.person,at:Date.now()};}else delete BY[k];refreshBylines();
-  save();li.className=(on?"done ":"")+(li.className.indexOf("home")>-1?"home":"");updateSummary();
+
+// One exercise session to tick, such as "Easy cardio: 20 minute walk". Saved as "Mon-cardio".
+function sessionRow(day, slot, done) {
+  var id = day.day + "-" + slot[0];
+  var label = el("label", "sess");
+  var box = el("input");
+  box.type = "checkbox";
+  box.checked = done.indexOf(id) > -1;
+  box.onchange = function () {
+    var list = exTicks[week] || [];
+    var at = list.indexOf(id);
+    if (box.checked && at < 0) list.push(id);
+    if (!box.checked && at > -1) list.splice(at, 1);
+    exTicks[week] = list;
+    save();
+    updateExCount();
+  };
+  var text = el("span", "stxt");
+  text.appendChild(el("span", "sk", slot[1]));
+  text.appendChild(document.createTextNode(day[slot[0]]));
+  label.appendChild(box);
+  label.appendChild(el("span", "box"));
+  label.appendChild(text);
+  return label;
 }
-function toggleHome(name){
-  var k=query(name).toLowerCase(),i=have.indexOf(k),y=window.scrollY;
-  if(i<0)have.push(k);else have.splice(i,1);
-  save();renderTabs();renderList();window.scrollTo(0,y);
+
+// One workout as a fold-out list of exercises. An exercise written as "Goblet squat (3 × 10): ..."
+// whose name is in `videos` gets a Demo link and a YouTube search link.
+function workoutFold(workout, videos) {
+  var fold = el("details");
+  var summary = el("summary", null, workout.name || "Workout");
+  if (workout.time) summary.appendChild(el("span", null, workout.time));
+  fold.appendChild(summary);
+  var list = el("ol", "bul steps");
+  (workout.items || []).forEach(function (text) {
+    var item = el("li", null, text);
+    var colon = text.indexOf(": ");
+    if (colon > 0) {
+      var name = text.slice(0, colon).replace(/\s*\(.*?\)/g, "").trim();
+      if (Object.prototype.hasOwnProperty.call(videos, name)) {
+        item.appendChild(document.createTextNode(" "));
+        if (/^https?:\/\//.test(videos[name])) {
+          var demo = el("a", "vlink", "Demo");
+          demo.href = videos[name];
+          demo.target = "_blank";
+          demo.rel = "noopener noreferrer";
+          item.appendChild(demo);
+          item.appendChild(document.createTextNode(" · "));
+        }
+        var youtube = el("a", "vlink", "YouTube");
+        youtube.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(name + " exercise form");
+        youtube.target = "_blank";
+        youtube.rel = "noopener noreferrer";
+        item.appendChild(youtube);
+      }
+    }
+    list.appendChild(item);
+  });
+  fold.appendChild(list);
+  return fold;
 }
-function updateSummary(){
-  var done=ticks[week]||[],n=0,c=0,h=0,left=0,all=0;
-  sections(week).forEach(function(s,si){s[1].forEach(function(it,idx){
-    if(isHome(it[0])){h++;return;}
-    n++;all+=it[1];
-    if(done.indexOf(si+"-"+idx)>-1)c++;else left+=it[1];
-  });});
-  $("left").textContent=money(left)+" left";
-  $("meta").textContent=c+" of "+n+" ticked"+(h?" \u00b7 "+h+" at home":"")+" \u00b7 total "+money(all);
-  $("bar").style.width=(n?c/n*100:0)+"%";
-  $("allDone").style.display=(n>0&&c===n)?"block":"none";
+
+// ---------- shopping ticks and "At home" ----------
+
+// Ticks or unticks a shopping item, and records who ticked it.
+function toggle(it, on, row) {
+  var list = ticks[it.src] || [];
+  var at = list.indexOf(it.id);
+  if (on && at < 0) list.push(it.id);
+  if (!on && at > -1) list.splice(at, 1);
+  ticks[it.src] = list;
+  var key = it.src + "|" + it.id;
+  if (on) {
+    if (ME) BY[key] = { who: ME.person, at: Date.now() };
+  } else {
+    delete BY[key];
+  }
+  refreshBylines();
+  save();
+  row.className = (on ? "done " : "") + (row.className.indexOf("home") > -1 ? "home" : "");
+  updateSummary();
 }
-function leftText(){
-  var done=ticks[week]||[],out=[(PLAN.weeks[week].name||"Week "+(week+1))+" shopping list"];
-  sections(week).forEach(function(s,si){
-    var lines=[];s[1].forEach(function(it,idx){if(!isHome(it[0])&&done.indexOf(si+"-"+idx)<0)lines.push("- "+it[0]);});
-    if(lines.length){out.push("");out.push(s[0]);out=out.concat(lines);}
+
+// Marks an item "At home" (or not). It is remembered by its simplified name, in every week.
+function toggleHome(name) {
+  var key = query(name).toLowerCase();
+  var at = have.indexOf(key);
+  var y = window.scrollY;
+  if (at < 0) have.push(key);
+  else have.splice(at, 1);
+  save();
+  renderTabs();   // the week totals change
+  renderList();
+  window.scrollTo(0, y);
+}
+
+// The items on the list as it is shown now (all, this week, or the stock-up).
+function shownItems() {
+  return shopItems(week, stockFor(week) > -1 ? shopPart : "all");
+}
+
+// Updates the summary above the list: "$120.00 left", "3 of 25 ticked", the progress bar,
+// and the "All done" message.
+function updateSummary() {
+  var count = 0, tickedCount = 0, homeCount = 0, left = 0, all = 0;
+  shownItems().forEach(function (it) {
+    if (isHome(it.name)) {
+      homeCount++;
+      return;
+    }
+    count++;
+    all += it.price;
+    if (isTicked(it)) tickedCount++;
+    else left += it.price;
+  });
+  $("left").textContent = money(left) + " left";
+  $("meta").textContent = tickedCount + " of " + count + " ticked" + (homeCount ? " · " + homeCount + " at home" : "") + " · total " + money(all);
+  $("bar").style.width = (count ? tickedCount / count * 100 : 0) + "%";
+  $("allDone").style.display = (count > 0 && tickedCount === count) ? "block" : "none";
+}
+
+// The items still to buy as plain text, grouped by aisle, for "Copy list".
+function leftText() {
+  var out = [(PLAN.weeks[week].name || "Week " + (week + 1)) + " shopping list"];
+  grouped(shownItems()).forEach(function (group) {
+    var lines = group[1].filter(function (it) { return !isHome(it.name) && !isTicked(it); })
+      .map(function (it) { return "- " + it.name; });
+    if (lines.length) {
+      out.push("");
+      out.push(group[0]);
+      out = out.concat(lines);
+    }
   });
   return out.join("\n");
 }
-function flash(btn,msg,orig){btn.textContent=msg;setTimeout(function(){btn.textContent=orig;},1800);}
-function show(){
-  var m=/^#week-(\d+)(-meals|-exercise|-ratings)?$/.exec(location.hash),n=m?+m[1]:1;
-  week=(n>=1&&n<=PLAN.weeks.length)?n-1:0;view=(m&&m[2])?m[2].slice(1):"shop";var so=PLAN.weeks[week].kind==="stockup";if(view==="ratings"&&!ADMINV())view="shop";if(so&&view!=="ratings")view="shop";$("vRates").hidden=!ADMINV();
-  $("whoRow").hidden=!(ADMINV()&&(view==="meals"||view==="exercise"));
-  try{localStorage.setItem("coles-plan-place",location.hash);}catch(e){}
-  renderTabs();
-  $("shopView").hidden=view!=="shop";$("meals").hidden=view!=="meals";$("exView").hidden=view!=="exercise";$("ratesView").hidden=view!=="ratings";$("vRates").setAttribute("aria-pressed",view==="ratings");
-  $("vShop").setAttribute("aria-pressed",view==="shop");$("vMeals").setAttribute("aria-pressed",view==="meals");$("vEx").setAttribute("aria-pressed",view==="exercise");
-  if(view==="shop")renderList();else if(view==="meals")renderMeals();else if(view==="ratings")renderRatings();else renderExercise();
+
+// ---------- shop mode: one item at a time ----------
+
+// While shop mode is open: {queue: [items in aisle order], at: position, skipped: {key: true}}.
+var SHOP = null;
+var wakeLock = null;
+
+function itemKey(it) { return it.src + "|" + it.id; }
+
+// The items still to get, in aisle order (not ticked, not at home).
+function shopQueue(only) {
+  var out = [];
+  grouped(shownItems()).forEach(function (g) {
+    g[1].forEach(function (it) {
+      it.aisle = g[0];
+      if (!isHome(it.name) && !isTicked(it) && (!only || only[itemKey(it)])) out.push(it);
+    });
+  });
+  return out;
 }
-$("vShop").onclick=function(){window.scrollTo(0,0);go(week,"shop");};
-// Stock-up weeks have no meals or exercise, so those buttons jump to the next normal week.
-function planWeek(w){for(var i=w;i<PLAN.weeks.length;i++)if(PLAN.weeks[i].kind!=="stockup")return i;for(i=w;i>=0;i--)if(PLAN.weeks[i].kind!=="stockup")return i;return w;}
-function goTop(w,v){scrollToday=(v==="meals"||v==="exercise");window.scrollTo(0,0);go(w,v);}
-$("vMeals").onclick=function(){goTop(planWeek(week),"meals");};
-$("vEx").onclick=function(){goTop(planWeek(week),"exercise");};
-$("vRates").onclick=function(){window.scrollTo(0,0);go(week,"ratings");};
-$("hide").onclick=function(){
-  hideDone=!hideDone;this.setAttribute("aria-pressed",hideDone);
-  $("lists").className=hideDone?"hide-done":"";
-};
-$("copy").onclick=function(){
-  var b=this,txt=leftText();
-  function fallback(){
-    var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
-    document.body.appendChild(ta);ta.select();var ok=false;
-    try{ok=document.execCommand("copy");}catch(e){}
-    document.body.removeChild(ta);flash(b,ok?"Copied":"Copy not available","Copy list");
+
+function shopOpen() {
+  SHOP = { queue: shopQueue(), at: 0, skipped: {} };
+  $("shopMode").hidden = false;
+  document.documentElement.classList.add("sm-open");
+  try {
+    if (navigator.wakeLock) navigator.wakeLock.request("screen").then(function (l) { wakeLock = l; }).catch(function () {});
+  } catch (e) {}
+  shopDraw();
+}
+
+function shopClose() {
+  SHOP = null;
+  $("shopMode").hidden = true;
+  document.documentElement.classList.remove("sm-open");
+  try { if (wakeLock) wakeLock.release(); } catch (e) {}
+  wakeLock = null;
+  renderList();
+  $("shopModeBtn").focus();
+}
+
+// Draws the item at SHOP.at, or the "finished" screen past the end.
+function shopDraw() {
+  if (!SHOP) return;
+  var q = SHOP.queue;
+  var it = q[SHOP.at];
+  var done = q.filter(function (x) { return isTicked(x) || isHome(x.name); }).length;
+  $("smBar").style.width = (q.length ? done / q.length * 100 : 0) + "%";
+  $("smBack").disabled = SHOP.at === 0;
+  var links = $("smLinks");
+  links.textContent = "";
+  if (!it) {
+    var skipped = q.filter(function (x) { return SHOP.skipped[itemKey(x)] && !isTicked(x) && !isHome(x.name); });
+    $("smCount").textContent = q.length ? done + " of " + q.length + " got" : "";
+    $("smAisle").textContent = "";
+    $("smName").textContent = !q.length ? "Nothing left to get" : skipped.length ? skipped.length + " skipped" : "All done";
+    $("smPrice").textContent = skipped.length ? "Go back through the ones you skipped, or finish here." : "Everything on this list is ticked off or at home.";
+    $("smState").textContent = "";
+    $("smGot").textContent = skipped.length ? "Go through skipped" : "Finish";
+    $("smGot").onclick = skipped.length ? function () {
+      var only = {};
+      skipped.forEach(function (x) { only[itemKey(x)] = true; });
+      SHOP = { queue: shopQueue(only), at: 0, skipped: {} };
+      shopDraw();
+    } : shopClose;
+    $("smSkip").hidden = $("smHome").hidden = true;
+    $("smName").focus();
+    return;
   }
-  try{navigator.clipboard.writeText(txt).then(function(){flash(b,"Copied","Copy list");},fallback);}catch(e){fallback();}
+  var ticked = isTicked(it);
+  var home = isHome(it.name);
+  $("smSkip").hidden = $("smHome").hidden = false;
+  $("smCount").textContent = (SHOP.at + 1) + " of " + q.length;
+  $("smAisle").textContent = it.aisle + (it.stock ? " · Stock-up" : "");
+  $("smName").textContent = it.name;
+  $("smPrice").textContent = money(it.price);
+  $("smState").textContent = ticked ? "✓ Got it" : home ? "✓ At home" : "";
+  storeLinks(it.name).forEach(function (a) { links.appendChild(a); });
+  var pin = pinButton(it.name);
+  if (pin) links.appendChild(pin);
+  $("smGot").textContent = ticked ? "Untick" : "Got it";
+  $("smGot").onclick = function () {
+    toggle(it, !ticked, document.createElement("li"));
+    if (ticked) shopDraw();
+    else shopStep(1);
+  };
+  $("smHome").textContent = home ? "Not at home" : "At home";
+  $("smHome").onclick = function () {
+    toggleHome(it.name);
+    if (home) shopDraw();
+    else shopStep(1);
+  };
+  $("smSkip").onclick = function () {
+    SHOP.skipped[itemKey(it)] = true;
+    shopStep(1);
+  };
+  $("smName").focus();
+}
+
+function shopStep(by) {
+  if (!SHOP) return;
+  SHOP.at = Math.max(0, Math.min(SHOP.queue.length, SHOP.at + by));
+  shopDraw();
+}
+
+$("shopModeBtn").onclick = shopOpen;
+$("smClose").onclick = shopClose;
+$("smBack").onclick = function () { shopStep(-1); };
+document.addEventListener("keydown", function (e) {
+  if (!SHOP || $("pinDlg").open) return;
+  if (e.key === "Escape") shopClose();
+});
+
+// Shows a message on a button for a moment, then puts its label back.
+function flash(button, message, original) {
+  button.textContent = message;
+  setTimeout(function () { button.textContent = original; }, 1800);
+}
+
+// ---------- showing a view ----------
+
+// Reads the address (#week-2-meals) and draws that week and view.
+function show() {
+  var match = /^#week-(\d+)(-meals|-macros|-exercise|-ratings)?$/.exec(location.hash);
+  var n = match ? +match[1] : 1;
+  week = (n >= 1 && n <= PLAN.weeks.length) ? n - 1 : 0;
+  view = (match && match[2]) ? match[2].slice(1) : "shop";
+  // Ratings are for admins only. Stock-up weeks are shown as part of the week after them.
+  if (view === "ratings" && !isAdmin()) view = "shop";
+  if (PLAN.weeks[week].kind === "stockup") week = planWeek(week);
+  $("vRates").hidden = !isAdmin();
+  $("whoRow").hidden = !(isAdmin() && (view === "meals" || view === "exercise"));
+  try { localStorage.setItem("coles-plan-place", location.hash); } catch (e) {}   // reopen here next time
+
+  renderTabs();
+  $("shopView").hidden = view !== "shop";
+  $("meals").hidden = view !== "meals";
+  $("macView").hidden = view !== "macros";
+  $("exView").hidden = view !== "exercise";
+  $("ratesView").hidden = view !== "ratings";
+  $("vRates").setAttribute("aria-pressed", view === "ratings");
+  $("vShop").setAttribute("aria-pressed", view === "shop");
+  $("vMeals").setAttribute("aria-pressed", view === "meals");
+  $("vMac").setAttribute("aria-pressed", view === "macros");
+  $("vEx").setAttribute("aria-pressed", view === "exercise");
+
+  if (view === "shop") renderList();
+  else if (view === "meals") renderMeals();
+  else if (view === "macros") renderMacros();
+  else if (view === "ratings") renderRatings();
+  else renderExercise();
+}
+
+// Stock-up weeks have no meals or exercise, so those buttons jump to the next normal week
+// (or the one before, if there is none after).
+function planWeek(from) {
+  for (var i = from; i < PLAN.weeks.length; i++) {
+    if (PLAN.weeks[i].kind !== "stockup") return i;
+  }
+  for (i = from; i >= 0; i--) {
+    if (PLAN.weeks[i].kind !== "stockup") return i;
+  }
+  return from;
+}
+
+// Goes to a view from the top of the page (and to today's card for Meals and Exercise).
+function goTop(weekIndex, toView) {
+  scrollToday = (toView === "meals" || toView === "exercise");
+  window.scrollTo(0, 0);
+  go(weekIndex, toView);
+}
+
+// The buttons along the bottom.
+$("vShop").onclick = function () {
+  window.scrollTo(0, 0);
+  go(week, "shop");
 };
-function twoTap(id,label,armedLabel,fn){
-  var b=$(id),armed=false,t;
-  b.onclick=function(){
-    if(!armed){armed=true;b.textContent=armedLabel;t=setTimeout(function(){armed=false;b.textContent=label;},2500);return;}
-    clearTimeout(t);armed=false;b.textContent=label;fn();
+$("vMeals").onclick = function () { goTop(planWeek(week), "meals"); };
+$("vMac").onclick = function () { goTop(planWeek(week), "macros"); };
+$("vEx").onclick = function () { goTop(planWeek(week), "exercise"); };
+$("vRates").onclick = function () {
+  window.scrollTo(0, 0);
+  go(week, "ratings");
+};
+
+// "Hide ticked".
+$("hide").onclick = function () {
+  hideDone = !hideDone;
+  this.setAttribute("aria-pressed", hideDone);
+  $("lists").className = hideDone ? "hide-done" : "";
+};
+
+// "Copy list": copies what is left to buy. Older browsers use a hidden text box instead.
+$("copy").onclick = function () {
+  var button = this;
+  var text = leftText();
+  function fallback() {
+    var box = document.createElement("textarea");
+    box.value = text;
+    box.style.position = "fixed";
+    box.style.opacity = "0";
+    document.body.appendChild(box);
+    box.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(box);
+    flash(button, ok ? "Copied" : "Copy not available", "Copy list");
+  }
+  try {
+    navigator.clipboard.writeText(text).then(function () { flash(button, "Copied", "Copy list"); }, fallback);
+  } catch (e) {
+    fallback();
+  }
+};
+
+// A button that has to be tapped twice within 2.5 seconds, for things that can't be undone.
+function twoTap(id, label, armedLabel, action) {
+  var button = $(id);
+  var armed = false;
+  var timer;
+  button.onclick = function () {
+    if (!armed) {
+      armed = true;
+      button.textContent = armedLabel;
+      timer = setTimeout(function () {
+        armed = false;
+        button.textContent = label;
+      }, 2500);
+      return;
+    }
+    clearTimeout(timer);
+    armed = false;
+    button.textContent = label;
+    action();
   };
 }
-twoTap("clear","Clear ticks","Tap again to clear",function(){ticks[week]=[];save();renderList();});
-twoTap("resetall","Reset all","Tap again to reset everyone",function(){
-  if(!(ME&&ME.admin))return;
-  USERS.forEach(function(u){try{localStorage.removeItem(BASE+"-"+ukey(u));localStorage.removeItem(BASEX+"-"+ukey(u));localStorage.removeItem(BASEE+"-"+ukey(u));}catch(e){}});
-  try{localStorage.removeItem(BASE);localStorage.removeItem(BASEX);}catch(e){}
-  ticks={};exTicks={};eaten={};have=[];saveLocal();api("POST","api/reset").then(function(){setSync("Reset on server");pull();}).catch(function(){setSync("Offline: reset on this device only");});show();
+
+twoTap("clear", "Clear ticks", "Tap again to clear", function () {
+  // Clears the ticks on the list as shown (this week, its stock-up, or both).
+  shownItems().forEach(function (it) {
+    ticks[it.src] = (ticks[it.src] || []).filter(function (id) { return id !== it.id; });
+  });
+  save();
+  renderList();
 });
-$("user").onchange=function(){
-  try{localStorage.setItem("coles-plan-user",this.value);localStorage.setItem("coles-plan-person",PMAP[this.value]);}catch(e){}
-  if(PLAN){loadUser();show();pull();}
+
+// "Reset all" (admins): clears everyone's ticks, ratings and "At home" marks, here and on the server.
+twoTap("resetall", "Reset all", "Tap again to reset everyone", function () {
+  if (!(ME && ME.admin)) return;
+  USERS.forEach(function (name) {
+    try {
+      localStorage.removeItem(TICKS_BASE + "-" + ukey(name));
+      localStorage.removeItem(EX_BASE + "-" + ukey(name));
+      localStorage.removeItem(EATEN_BASE + "-" + ukey(name));
+    } catch (e) {}
+  });
+  try {
+    localStorage.removeItem(TICKS_BASE);
+    localStorage.removeItem(EX_BASE);
+  } catch (e) {}
+  ticks = {};
+  exTicks = {};
+  eaten = {};
+  have = [];
+  saveLocal();
+  api("POST", "api/reset")
+    .then(function () {
+      setSync("Reset on server");
+      pull();
+    })
+    .catch(function () { setSync("Offline: reset on this device only"); });
+  show();
+});
+
+// "Ticks for" picker (admins): switch whose meal and exercise ticks are shown.
+$("user").onchange = function () {
+  try {
+    localStorage.setItem("coles-plan-user", this.value);
+    localStorage.setItem("coles-plan-person", PMAP[this.value]);
+  } catch (e) {}
+  if (PLAN) {
+    loadUser();
+    show();
+    pull();
+  }
 };
-window.addEventListener("hashchange",function(){if(PLAN)show();});
-(function boot(){
-  if(!location.hash){var pl=lsGet("coles-plan-place");if(pl&&/^#week-\d+/.test(pl))history.replaceState(null,"",pl);}
-  if(/-(meals|exercise)$/.test(location.hash))scrollToday=true;
-  try{have=JSON.parse(localStorage.getItem(HK))||[];}catch(e){have=[];}
-  defaultPlan=JSON.parse($("plan-data").textContent);
-  if(!PLAN_URL){usePlan(defaultPlan);return;}
-  function getPlan(u){return fetch(u,{cache:"no-cache"}).then(function(r){if(r.redirected&&/\/login/.test(r.url)){toLogin();throw {};}return r;});}
-  getPlan(PLAN_URL).then(function(r){return r.status===404?getPlan("plan.example.json"):r;}).then(function(r){if(!r.ok)throw {};return r.text();}).then(function(t){
-    var p;try{p=JSON.parse(t);}catch(e){throw {msg:"plan.json is not valid JSON ("+e.message+"). Showing the built-in plan."};}
-    var v=validate(p);if(v)throw {msg:"plan.json problem: "+v+" Showing the built-in plan."};
-    usePlan(p);
-  }).catch(function(e){usePlan(defaultPlan);if(e&&e.msg)showErr(e.msg);});
+
+window.addEventListener("hashchange", function () {
+  if (PLAN) show();
+});
+
+// ---------- start ----------
+(function start() {
+  // With no #week-... in the address, go back to where this device was last time.
+  if (!location.hash) {
+    var place = lsGet("coles-plan-place");
+    if (place && /^#week-\d+/.test(place)) history.replaceState(null, "", place);
+  }
+  if (/-(meals|exercise)$/.test(location.hash)) scrollToday = true;
+  try { have = JSON.parse(localStorage.getItem(HAVE_KEY)) || []; } catch (e) { have = []; }
+  defaultPlan = JSON.parse($("plan-data").textContent);
+  if (!PLAN_URL) {
+    usePlan(defaultPlan);
+    return;
+  }
+
+  // Fetches the plan. If the login has run out, Caddy redirects to the login page instead.
+  function getPlan(url) {
+    return fetch(url, { cache: "no-cache" }).then(function (response) {
+      if (response.redirected && /\/login/.test(response.url)) {
+        toLogin();
+        throw {};
+      }
+      return response;
+    });
+  }
+
+  // plan.json, or the example plan if there isn't one yet. If it is broken, show the built-in
+  // plan with a red message saying what is wrong.
+  getPlan(PLAN_URL)
+    .then(function (response) { return response.status === 404 ? getPlan("plan.example.json") : response; })
+    .then(function (response) {
+      if (!response.ok) throw {};
+      return response.text();
+    })
+    .then(function (text) {
+      var p;
+      try {
+        p = JSON.parse(text);
+      } catch (e) {
+        throw { msg: "plan.json is not valid JSON (" + e.message + "). Showing the built-in plan." };
+      }
+      var problem = validate(p);
+      if (problem) throw { msg: "plan.json problem: " + problem + " Showing the built-in plan." };
+      usePlan(p);
+    })
+    .catch(function (e) {
+      usePlan(defaultPlan);
+      if (e && e.msg) showErr(e.msg);
+    });
 })();
 </script>
 <script>
-if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}
-function setMe(d){document.getElementById("me").textContent="Logged in as "+d.user+(d.admin?" (admin)":"");document.getElementById("avatar").textContent=d.user.charAt(0);}
-if(ME&&ME.user)setMe(ME);
-document.addEventListener("click",function(e){document.querySelectorAll("details.acctmenu[open],details.more[open]").forEach(function(dt){if(!dt.contains(e.target))dt.removeAttribute("open");});});
-fetch("/auth/me",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(d){
-  if(!d||!d.user)return;
+// Works offline once installed: sw.js keeps a copy of the page and plan on the phone.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+
+// Redraw the shopping list when the person's store choice arrives or changes.
+window.addEventListener("stores-changed", function () { if (PLAN) show(); });
+// And the Macros numbers when the energy unit changes.
+window.addEventListener("units-changed", function () { if (PLAN) show(); });
+
+// Shows who is logged in, in the account menu (top right).
+function setMe(d) {
+  var roles = { owner: " (owner)", admin: " (admin)" };
+  document.getElementById("me").textContent = "Logged in as " + (d.email || d.user) + (roles[d.role] || (d.admin ? " (admin)" : ""));
+  document.getElementById("adminLink").hidden = !d.admin;
+  document.getElementById("familyLink").hidden = !d.admin;
+  document.getElementById("setupLink").hidden = !d.admin;
+  document.getElementById("emailNudge").hidden = !d.needsEmail;
+  // Admins still on the example plan are pointed at Plan setup.
+  document.getElementById("setupNudge").hidden = !(d.admin && PLAN && /^example/i.test(String(PLAN.id || "")));
+  document.getElementById("avatar").textContent = (d.person || d.user).charAt(0);
+}
+if (ME && ME.user) setMe(ME);   // straight away, from the copy remembered on this device
+
+// Clicking anywhere else closes the account menu and the "More" menu.
+document.addEventListener("click", function (e) {
+  document.querySelectorAll("details.acctmenu[open],details.more[open]").forEach(function (menu) {
+    if (!menu.contains(e.target)) menu.removeAttribute("open");
+  });
+});
+
+// Ask the server who is logged in. If it differs from the remembered copy, redraw.
+fetch("/auth/me", { cache: "no-store" }).then(function (response) {
+  return response.ok ? response.json() : null;
+}).then(function (d) {
+  if (!d || !d.user) return;
   setMe(d);
-  var was=JSON.stringify(ME);ME=d;try{localStorage.setItem("coles-plan-me",JSON.stringify(d));}catch(e){}
-  if(was!==JSON.stringify(d)&&PLAN){loadUser();show();pull();}
-}).catch(function(){});
+  var before = JSON.stringify(ME);
+  ME = d;
+  try { localStorage.setItem("coles-plan-me", JSON.stringify(d)); } catch (e) {}
+  if (before !== JSON.stringify(d) && PLAN) {
+    loadUser();
+    show();
+    pull();
+  }
+  askAboutMe(d);
+}).catch(function () {});
+
+// Asks people who haven't answered the About me questions to do so, until they tap "Later".
+function askAboutMe(d) {
+  var key = "coles-plan-ask-later-" + d.person;
+  try { if (localStorage.getItem(key)) return; } catch (e) {}
+  fetch("/api/profile", { cache: "no-store" }).then(function (response) {
+    return response.ok ? response.json() : null;
+  }).then(function (profile) {
+    if (!profile || profile.answers) return;
+    var box = document.getElementById("ask");
+    box.hidden = false;
+    document.getElementById("askLater").onclick = function () {
+      box.hidden = true;
+      try { localStorage.setItem(key, "1"); } catch (e) {}
+    };
+  }).catch(function () {});
+}
+
 // On log out, also drop the offline copy so the lists are not left on the phone.
-document.getElementById("logout").addEventListener("submit",function(e){
-  try{localStorage.removeItem("coles-plan-me");}catch(e){}
-  var f=this;if(!window.caches)return;e.preventDefault();
-  caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));}).catch(function(){}).then(function(){f.submit();});
+document.getElementById("logout").addEventListener("submit", function (e) {
+  try { localStorage.removeItem("coles-plan-me"); } catch (e) {}
+  var form = this;
+  if (!window.caches) return;
+  e.preventDefault();
+  caches.keys()
+    .then(function (keys) { return Promise.all(keys.map(function (k) { return caches.delete(k); })); })
+    .catch(function () {})
+    .then(function () { form.submit(); });
 });
 </script>
 </body>

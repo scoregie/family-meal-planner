@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Edit plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--low:#b3261e;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--field:#fbfbfa;--warn-bg:#fdf3dc;--warn:#6b4a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--field:#161618;--warn-bg:#3a2e10;--warn:#f2c14e;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--field:#161618;--warn-bg:#3a2e10;--warn:#f2c14e;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.4;padding-bottom:5.5rem}
+main{max-width:48rem;margin:0 auto;padding:1.25rem 1rem 2rem}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+h2{font-size:1.1rem;margin:1.2rem 0 .5rem}
+h3{font-size:1rem;margin:0 0 .5rem}
+a{color:var(--accent)}
+.sub{color:var(--mute);margin:0 0 1rem;font-size:.95rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.5rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.primary:disabled{opacity:.45;cursor:default}
+.btn.small{min-height:2rem;padding:.15rem .55rem;font-size:.82rem}
+.btn.danger{color:var(--low)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.tabs{display:flex;gap:.35rem;flex-wrap:wrap;margin:0 0 1rem;border-bottom:1px solid var(--line);padding-bottom:.6rem}
+.tabs button{font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.5rem;padding:.4rem .8rem;cursor:pointer;min-height:2.5rem}
+.tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem}
+.row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:0 0 .8rem}
+label.f{display:grid;gap:.15rem;font-size:.8rem;color:var(--mute);font-weight:700}
+input,select,textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:.4rem;padding:.4rem .5rem;min-height:2.3rem;width:100%;min-width:0}
+input[type=number]{font-variant-numeric:tabular-nums}
+input[type=checkbox]{width:auto;min-height:0}
+select{width:auto}
+textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem;line-height:1.35;min-height:60vh;white-space:pre;tab-size:1}
+.meal-grid{display:grid;grid-template-columns:1fr;gap:.5rem}
+@media(min-width:40rem){.meal-grid{grid-template-columns:repeat(3,1fr)}}
+details.who{margin-top:.6rem}
+details.who summary{cursor:pointer;color:var(--accent);font-size:.88rem;font-weight:700}
+.who-p{margin:.6rem 0 0;padding:.6rem 0 0;border-top:1px solid var(--line)}
+.who-p h4{margin:0 0 .4rem;font-size:.88rem}
+.hint{color:var(--mute);font-size:.85rem;margin:.3rem 0 0}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th{text-align:left;font-size:.78rem;color:var(--mute);font-weight:700;padding:.3rem .3rem;border-bottom:1px solid var(--line)}
+td{padding:.3rem .3rem;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.dish{overflow-wrap:anywhere}
+td.dish small{display:block;color:var(--mute);font-size:.78rem}
+td.n{width:4.6rem}
+td.k,th.k{width:4.5rem;text-align:right;font-variant-numeric:tabular-nums;color:var(--mute)}
+tr.missing td.dish::before{content:"";display:inline-block;width:.45rem;height:.45rem;border-radius:50%;background:var(--warn);margin-right:.4rem;vertical-align:middle}
+@media(max-width:34rem){
+  .mtab thead{display:none}
+  .mtab tr{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:.3rem .4rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+  .mtab td{border:0;padding:0}
+  .mtab td.dish{grid-column:1/-1}
+  .mtab td.n{width:auto}
+  .mtab td.n::before{content:attr(data-l);display:block;font-size:.72rem;color:var(--mute);font-weight:700}
+  .mtab td.k{align-self:end;padding-bottom:.5rem}
+}
+.sec{margin:0 0 1rem}
+.sec-head{display:flex;gap:.4rem;align-items:center;margin:0 0 .4rem}
+.sec-head input{font-weight:700}
+.item{display:grid;grid-template-columns:1fr 4.3rem auto;gap:.35rem;align-items:center;margin:0 0 .35rem}
+.total{font-weight:700;font-variant-numeric:tabular-nums}
+.msg{border-radius:.6rem;padding:.7rem .9rem;margin:0 0 1rem}
+.msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
+.msg.warn{background:var(--warn-bg);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
+.msg.ok{background:color-mix(in srgb,var(--accent) 14%,var(--card));border:1px solid var(--accent)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom,0px));z-index:5}
+.bar-in{max-width:48rem;margin:0 auto;display:flex;gap:.6rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.bar-status{color:var(--mute);font-size:.9rem}
+.bar-status.dirty{color:var(--warn);font-weight:700}
+.bk{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--line)}
+.bk:last-child{border-bottom:0}
+.person{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.person:last-child{border-bottom:0}
+.person h3{margin:0;font-size:1rem}
+.person small{display:block;color:var(--mute);font-size:.82rem}
+.badge{display:inline-block;font-size:.72rem;font-weight:700;border:1px solid var(--line);border-radius:1rem;padding:0 .45rem;margin-left:.3rem;color:var(--mute)}
+.add-grid{display:grid;grid-template-columns:1fr;gap:.6rem}
+@media (min-width:34rem){.add-grid{grid-template-columns:1fr 1fr}}
+label.check{display:flex;gap:.45rem;align-items:center;font-size:.9rem}
+[hidden]{display:none!important}
+</style>
+<script src="appearance.js"></script>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Edit plan</h1><p class="sub" id="sub">Loading…</p></div>
+    <a class="btn" href="./">← Back to the app</a>
+  </div>
+  <div id="msg"></div>
+  <p id="reqLink" hidden style="margin:0 0 .8rem"><a class="btn" href="assistant.html?tab=requests">Requests for changes <b id="reqOpen"></b></a></p>
+  <div id="app" hidden>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <section id="pMeals" role="tabpanel"></section>
+    <section id="pMacros" role="tabpanel" hidden></section>
+    <section id="pShop" role="tabpanel" hidden></section>
+    <section id="pJson" role="tabpanel" hidden></section>
+    <section id="pBackups" role="tabpanel" hidden></section>
+    <section id="pPeople" role="tabpanel" hidden></section>
+  </div>
+</main>
+<div class="bar" id="bar" hidden>
+  <div class="bar-in">
+    <span class="bar-status" id="status" role="status">No changes</span>
+    <span><button class="btn" id="undo" type="button" disabled>Discard changes</button> <button class="btn primary" id="save" type="button" disabled>Save plan</button></span>
+  </div>
+</div>
+<script>
+// The "Edit plan" page, for admins. It loads plan.json from the server (GET /api/plan),
+// lets you change it in tabs (Meals, Macros, Shopping, raw JSON, Backups), and saves the
+// whole plan back (PUT /api/plan). Nothing is saved until you press "Save plan".
+"use strict";
+
+// ---------- what the page remembers ----------
+var PLAN = null;        // the plan being edited (changes go straight into this object)
+var ORIG = "";          // the plan as it was when loaded, as text, to tell if anything changed
+var VERSION = null;     // the server's version of the plan, so two admins can't overwrite each other
+var DIRTY = false;      // true when there are unsaved changes
+var TAB = "meals";      // which tab is open
+var WEEK = null;        // which week the Meals tab shows
+var SHOPWEEK = 0;       // which week the Shopping tab shows
+var MFILTER = "missing"; // Macros tab: "missing" (only dishes without macros) or "all"
+var MSEARCH = "";       // Macros tab: the search text
+var JSON_TEXT = null;   // JSON tab: the edited text, or null if it hasn't been edited
+var MEALS = ["breakfast", "lunch", "dinner"];
+
+// ---------- small helpers ----------
+
+// Shortcut for document.getElementById.
+function $(id) {
+  return document.getElementById(id);
+}
+
+// Makes a new element, with an optional class name and text: el("p", "hint", "Hello").
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+// Capital first letter: "lunch" becomes "Lunch".
+function cap(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Shows a message at the top of the page. kind is "ok", "warn" or "err". No text clears it.
+// `extra` is an optional element (like a button) added after the text.
+function msg(kind, text, extra) {
+  var box = $("msg");
+  box.textContent = "";
+  if (!text) return;
+  var m = el("div", "msg " + kind, text);
+  if (extra) m.appendChild(extra);
+  box.appendChild(m);
+}
+
+// Calls the server and returns its JSON answer. If the server says no, it throws an error
+// with the server's message and the HTTP status (for example 409 if someone else saved first).
+function api(method, url, body) {
+  var options = {
+    method: method,
+    cache: "no-store",
+    headers: body ? { "Content-Type": "application/json" } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  };
+  return fetch(url, options).then(function (response) {
+    return response.json().catch(function () { return {}; }).then(function (data) {
+      if (!response.ok) {
+        var error = new Error(data.error || ("Request failed (" + response.status + ")"));
+        error.status = response.status;
+        throw error;
+      }
+      return data;
+    });
+  });
+}
+
+// How a dish name is matched to its macros (the same rule the app uses): lower case, and a
+// trailing "(packed)" is ignored, so "Chicken wrap (packed)" uses the "Chicken wrap" macros.
+function macroKey(s) {
+  return String(s || "").replace(/\s*\(packed\)\s*$/i, "").trim().toLowerCase();
+}
+
+// The plan's people that have a name: {adult1: {...}, adult2: {...}}.
+function people() {
+  var out = {};
+  var all = PLAN.people || {};
+  Object.keys(all).forEach(function (key) {
+    var person = all[key];
+    if (person && typeof person === "object" && person.name) out[key] = person;
+  });
+  return out;
+}
+
+// The positions of the weeks that have meals (stock-up weeks have none).
+function mealWeeks() {
+  var list = [];
+  PLAN.weeks.forEach(function (week, i) {
+    if (Array.isArray(week.meals) && week.meals.length) list.push(i);
+  });
+  return list;
+}
+
+// Works out if anything has changed since loading, and updates the Save bar to match.
+function markDirty() {
+  DIRTY = JSON.stringify(PLAN) !== ORIG;
+  var status = $("status");
+  status.textContent = DIRTY ? "Unsaved changes" : "No changes";
+  status.className = "bar-status" + (DIRTY ? " dirty" : "");
+  $("save").disabled = !DIRTY;
+  $("undo").disabled = !DIRTY;
+}
+
+// Warn before leaving the page with unsaved changes.
+window.addEventListener("beforeunload", function (e) {
+  if (DIRTY) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+// ---------- tabs ----------
+
+// Each tab: [id, label, id of its panel].
+var TABS = [
+  ["meals", "Meals", "pMeals"],
+  ["macros", "Macros", "pMacros"],
+  ["shop", "Shopping", "pShop"],
+  ["json", "JSON", "pJson"],
+  ["backups", "Backups", "pBackups"],
+  ["people", "People", "pPeople"],
+];
+
+// Draws the row of tab buttons.
+function renderTabs() {
+  var row = $("tabs");
+  row.textContent = "";
+  TABS.forEach(function (tab) {
+    var button = el("button", null, tab[1]);
+    button.type = "button";
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", TAB === tab[0]);
+    button.onclick = function () {
+      if (TAB === "json" && !leaveJson()) return;   // ask about unapplied JSON edits first
+      TAB = tab[0];
+      render();
+    };
+    row.appendChild(button);
+  });
+}
+
+// Shows the open tab's panel, hides the others, and draws the open one.
+function render() {
+  renderTabs();
+  TABS.forEach(function (tab) {
+    $(tab[2]).hidden = TAB !== tab[0];
+  });
+  var drawers = { meals: renderMeals, macros: renderMacros, shop: renderShop, json: renderJson, backups: renderBackups, people: renderPeople };
+  drawers[TAB]();
+}
+
+// A drop-down list of weeks. `list` is the week positions to offer, `current` the selected one,
+// and onPick(position) is called when another is chosen.
+function weekPicker(list, current, onPick) {
+  var select = el("select");
+  select.setAttribute("aria-label", "Week");
+  list.forEach(function (i) {
+    var option = el("option", null, PLAN.weeks[i].name || ("Week " + (i + 1)));
+    option.value = i;
+    if (i === current) option.selected = true;
+    select.appendChild(option);
+  });
+  select.onchange = function () {
+    onPick(+select.value);
+  };
+  return select;
+}
+
+// A labelled text box. onInput(newValue, box) runs on every keystroke, then the Save bar updates.
+// opts can set type, step, min and placeholder.
+function field(labelText, value, onInput, opts) {
+  opts = opts || {};
+  var label = el("label", "f", labelText);
+  var input = el("input");
+  if (opts.type) input.type = opts.type;
+  if (opts.step) input.step = opts.step;
+  if (opts.min != null) input.min = opts.min;
+  if (opts.placeholder) input.placeholder = opts.placeholder;
+  input.value = value == null ? "" : value;
+  input.oninput = function () {
+    onInput(input.value, input);
+    markDirty();
+  };
+  label.appendChild(input);
+  return label;
+}
+
+// ---------- Meals tab ----------
+
+// Draws one card per day with breakfast, lunch and dinner boxes, plus "Different for…"
+// boxes to give one person a different meal that day.
+function renderMeals() {
+  var panel = $("pMeals");
+  panel.textContent = "";
+  var weeks = mealWeeks();
+  if (!weeks.length) {
+    panel.appendChild(el("p", "hint", "This plan has no weeks with meals."));
+    return;
+  }
+  if (WEEK == null || weeks.indexOf(WEEK) < 0) WEEK = weeks[0];
+
+  var row = el("div", "row");
+  row.appendChild(weekPicker(weeks, WEEK, function (i) {
+    WEEK = i;
+    renderMeals();
+  }));
+  row.appendChild(el("span", "hint", "Change the shared meals for each day. Use “Different for…” when one person eats something else."));
+  panel.appendChild(row);
+
+  var ppl = people();
+  PLAN.weeks[WEEK].meals.forEach(function (day) {
+    var card = el("div", "card");
+    card.appendChild(el("h3", null, day.day || "Day"));
+
+    // The shared meals. An empty box removes that meal.
+    var grid = el("div", "meal-grid");
+    MEALS.forEach(function (meal) {
+      grid.appendChild(field(cap(meal), day[meal], function (value) {
+        if (value.trim()) day[meal] = value;
+        else delete day[meal];
+      }));
+    });
+    card.appendChild(grid);
+
+    var keys = Object.keys(ppl);
+    if (keys.length) card.appendChild(differentFor(day, ppl, keys));
+    panel.appendChild(card);
+  });
+}
+
+// The "Different for…" section of a day: a box per person and meal. Filled boxes are saved in
+// day.people[personKey][meal]. Emptying a box removes it, and empty objects are tidied away.
+function differentFor(day, ppl, keys) {
+  var details = el("details", "who");
+  var setCount = day.people ? Object.keys(day.people).length : 0;
+  details.appendChild(el("summary", null, "Different for… " + (setCount ? "(" + setCount + " set)" : "")));
+  if (setCount) details.open = true;
+
+  keys.forEach(function (personKey) {
+    var box = el("div", "who-p");
+    box.appendChild(el("h4", null, ppl[personKey].name));
+    var grid = el("div", "meal-grid");
+    MEALS.forEach(function (meal) {
+      var current = day.people && day.people[personKey] && day.people[personKey][meal];
+      grid.appendChild(field(cap(meal), current, function (value) {
+        value = value.trim();
+        if (value) {
+          day.people = day.people || {};
+          day.people[personKey] = day.people[personKey] || {};
+          day.people[personKey][meal] = value;
+        } else if (day.people && day.people[personKey]) {
+          delete day.people[personKey][meal];
+          if (!Object.keys(day.people[personKey]).length) delete day.people[personKey];
+          if (!Object.keys(day.people).length) delete day.people;
+        }
+      }, { placeholder: "Same as everyone" }));
+    });
+    box.appendChild(grid);
+    details.appendChild(box);
+  });
+  return details;
+}
+
+// ---------- Macros tab ----------
+
+// Every dish anyone eats: shared meals, per-day overrides, each person's breakfast, snacks,
+// and packed lunches and school snacks. Each entry is {name, key, uses, where}.
+function allDishes() {
+  var byKey = {};
+  var order = [];   // keys in the order they were first seen
+
+  // Counts one use of a dish. `where` is "breakfast", "lunch", "dinner" or "snack".
+  function add(name, where) {
+    if (!name || typeof name !== "string") return;
+    var key = macroKey(name);
+    if (!key) return;
+    if (!byKey[key]) {
+      byKey[key] = { name: name.replace(/\s*\(packed\)\s*$/i, "").trim(), key: key, uses: 0, where: {} };
+      order.push(key);
+    }
+    byKey[key].uses++;
+    byKey[key].where[where] = 1;
+  }
+
+  PLAN.weeks.forEach(function (week) {
+    (week.meals || []).forEach(function (day) {
+      MEALS.forEach(function (meal) { add(day[meal], meal); });
+      if (day.people) {
+        Object.values(day.people).forEach(function (own) {
+          if (own) MEALS.forEach(function (meal) { add(own[meal], meal); });
+        });
+      }
+    });
+  });
+
+  var ppl = people();
+  Object.keys(ppl).forEach(function (key) {
+    var person = ppl[key];
+    add(person.breakfast, "breakfast");
+    (person.snacks || []).forEach(function (snack) {
+      if (snack) add(snack.what, "snack");
+    });
+    if (person.weekday) {
+      Object.values(person.weekday).forEach(function (schoolDay) {
+        if (!schoolDay) return;
+        add(schoolDay.lunch, "lunch");
+        add(schoolDay.snack, "snack");
+      });
+    }
+  });
+
+  return order.map(function (key) { return byKey[key]; });
+}
+
+// Finds the macros entry for a dish key. Returns {name: the name used in the plan, v: {p, c, f}} or null.
+function findMacro(key) {
+  var macros = PLAN.macros || {};
+  for (var name in macros) {
+    if (macroKey(name) === key) return { name: name, v: macros[name] };
+  }
+  return null;
+}
+
+// Kilojoules for a macros entry. Same factors as the app and Australian food labels:
+// 17 kJ per gram of protein and of carbs, 37 kJ per gram of fat. A saved kj (or older kcal) wins.
+function kjOf(v) {
+  if (!v) return 0;
+  if (+v.kj) return +v.kj;
+  if (+v.kcal) return v.kcal * 4.184;
+  return 17 * (+v.p || 0) + 17 * (+v.c || 0) + 37 * (+v.f || 0);
+}
+
+// A kJ number for the table, like "1,234", or "–" when there are no macros.
+function kjText(entry) {
+  return entry ? Math.round(kjOf(entry.v)).toLocaleString("en-AU") : "–";
+}
+
+// Draws the Macros tab: a filter and search box, then a table of dishes with
+// protein, carbs and fat boxes, and the kJ worked out as you type.
+function renderMacros() {
+  var panel = $("pMacros");
+  panel.textContent = "";
+  var dishes = allDishes();
+  var missing = dishes.filter(function (d) { return !findMacro(d.key); }).length;
+  panel.appendChild(el("p", "hint", "Grams of protein, carbs and fat for one average serve. The app scales them to each person’s portion. Snacks from a person’s snack list are the exception: they give exact amounts (like “150 g plain yoghurt”), so enter the macros for that amount, and they are not scaled. Energy is worked out in kilojoules as 17 × protein + 17 × carbs + 37 × fat, the same factors used on Australian food labels."));
+
+  // Filter: missing only, or all.
+  var row = el("div", "row");
+  var filter = el("select");
+  filter.setAttribute("aria-label", "Show");
+  [["missing", "Missing only (" + missing + ")"], ["all", "All dishes (" + dishes.length + ")"]].forEach(function (choice) {
+    var option = el("option", null, choice[1]);
+    option.value = choice[0];
+    if (MFILTER === choice[0]) option.selected = true;
+    filter.appendChild(option);
+  });
+  filter.onchange = function () {
+    MFILTER = filter.value;
+    renderMacros();
+  };
+  row.appendChild(filter);
+
+  // Search. Redrawing replaces the box, so put the cursor back where it was afterwards.
+  var search = el("input");
+  search.type = "search";
+  search.placeholder = "Search dishes";
+  search.value = MSEARCH;
+  search.style.maxWidth = "16rem";
+  search.oninput = function () {
+    MSEARCH = search.value;
+    var cursor = search.selectionStart;
+    renderMacros();
+    var newBox = $("pMacros").querySelector("input[type=search]");
+    newBox.focus();
+    newBox.setSelectionRange(cursor, cursor);
+  };
+  row.appendChild(search);
+  panel.appendChild(row);
+
+  var shown = dishes.filter(function (d) {
+    if (MFILTER === "missing" && findMacro(d.key) && !d._editing) return false;
+    return !MSEARCH || d.key.indexOf(MSEARCH.toLowerCase()) > -1;
+  });
+  if (!shown.length) {
+    var none = MFILTER === "missing" && !MSEARCH ? "Every dish has macros. Choose “All dishes” to change them." : "No dishes match.";
+    panel.appendChild(el("div", "card", none));
+    renderOrphans(panel, dishes);
+    return;
+  }
+
+  var card = el("div", "card");
+  var table = el("table", "mtab");
+  var head = el("thead");
+  var headRow = el("tr");
+  [["Dish"], ["Protein g"], ["Carbs g"], ["Fat g"], ["kJ", "k"]].forEach(function (h) {
+    headRow.appendChild(el("th", h[1] || null, h[0]));
+  });
+  head.appendChild(headRow);
+  table.appendChild(head);
+  var tbody = el("tbody");
+  shown.forEach(function (dish) {
+    tbody.appendChild(macroRow(dish));
+  });
+  table.appendChild(tbody);
+  card.appendChild(table);
+  panel.appendChild(card);
+  renderOrphans(panel, dishes);
+}
+
+// One row of the macros table: the dish name (with where and how often it is eaten),
+// a number box each for protein, carbs and fat, and the kJ.
+function macroRow(dish) {
+  var row = el("tr");
+  var hit = findMacro(dish.key);
+  var values = hit ? hit.v : null;
+  if (!hit) row.className = "missing";
+
+  var nameCell = el("td", "dish", dish.name);
+  nameCell.appendChild(el("small", null, Object.keys(dish.where).join(", ") + " · " + dish.uses + "×"));
+  row.appendChild(nameCell);
+  var kjCell = el("td", "k", kjText(hit));
+
+  [["p", "Protein g"], ["c", "Carbs g"], ["f", "Fat g"]].forEach(function (part) {
+    var letter = part[0];
+    var cell = el("td", "n");
+    cell.setAttribute("data-l", part[1]);   // shown as a label on phones (see the CSS)
+    var input = el("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "0.5";
+    input.inputMode = "decimal";
+    input.setAttribute("aria-label", dish.name + " " + part[1]);
+    input.value = values && values[letter] != null ? values[letter] : "";
+    input.oninput = function () {
+      PLAN.macros = PLAN.macros || {};
+      var existing = findMacro(dish.key);
+      var name = existing ? existing.name : dish.name;
+      var entry = existing ? existing.v : {};
+      if (input.value === "") delete entry[letter];
+      else entry[letter] = Math.max(0, +input.value);
+      // A saved kJ or kcal would override the grams, so drop it and let it be worked out again.
+      delete entry.kcal;
+      delete entry.kj;
+      if (!Object.keys(entry).length) delete PLAN.macros[name];
+      else PLAN.macros[name] = entry;
+      if (!Object.keys(PLAN.macros).length) delete PLAN.macros;
+      dish._editing = true;   // keep the row visible in "missing only" while typing
+      var now = findMacro(dish.key);
+      kjCell.textContent = kjText(now);
+      row.className = now ? "" : "missing";
+      markDirty();
+    };
+    cell.appendChild(input);
+    row.appendChild(cell);
+  });
+  row.appendChild(kjCell);
+  return row;
+}
+
+// Lists macros for dishes no longer in the plan (maybe renamed), with a button to remove them.
+function renderOrphans(panel, dishes) {
+  var used = {};
+  dishes.forEach(function (d) { used[d.key] = 1; });
+  var orphans = Object.keys(PLAN.macros || {}).filter(function (name) {
+    return !used[macroKey(name)];
+  });
+  if (!orphans.length) return;
+
+  var card = el("div", "card");
+  card.appendChild(el("h3", null, "Not used in the plan (" + orphans.length + ")"));
+  card.appendChild(el("p", "hint", "These have macros but no meal uses them, maybe because the meal was renamed. They do no harm."));
+  var remove = el("button", "btn small danger", "Remove them");
+  remove.type = "button";
+  remove.onclick = function () {
+    orphans.forEach(function (name) { delete PLAN.macros[name]; });
+    if (!Object.keys(PLAN.macros).length) delete PLAN.macros;
+    markDirty();
+    renderMacros();
+  };
+  card.appendChild(el("p", "hint", orphans.join(" · ")));
+  card.appendChild(remove);
+  panel.appendChild(card);
+}
+
+// ---------- Shopping tab ----------
+
+// Adds up a week's prices, rounded to the cent.
+function weekTotal(week) {
+  var total = 0;
+  Object.values(week.shopping || {}).forEach(function (items) {
+    items.forEach(function (item) {
+      total += +item[1] || 0;
+    });
+  });
+  return Math.round(total * 100) / 100;
+}
+
+// A price as "$12.50".
+function money(n) {
+  return "$" + (+n).toFixed(2);
+}
+
+// Draws the Shopping tab: a week picker and total, then one card per section with
+// its items (name, price, remove), and buttons to add items and sections.
+function renderShop() {
+  var panel = $("pShop");
+  panel.textContent = "";
+  if (SHOPWEEK >= PLAN.weeks.length) SHOPWEEK = 0;
+  var week = PLAN.weeks[SHOPWEEK];
+  week.shopping = week.shopping || {};
+
+  var row = el("div", "row");
+  var allWeeks = PLAN.weeks.map(function (_, i) { return i; });
+  row.appendChild(weekPicker(allWeeks, SHOPWEEK, function (i) {
+    SHOPWEEK = i;
+    renderShop();
+  }));
+  var total = el("span", "total", "Total " + money(weekTotal(week)));
+  row.appendChild(total);
+  panel.appendChild(row);
+
+  // Updates the total without redrawing (so typing in a price box isn't interrupted).
+  function retotal() {
+    total.textContent = "Total " + money(weekTotal(week));
+  }
+
+  panel.appendChild(el("p", "hint", "Ticks people have made stay with an item as long as its name is the same. Renaming an item clears its tick."));
+  var sectionNames = Object.keys(week.shopping);
+  sectionNames.forEach(function (section) {
+    panel.appendChild(shopSection(week, section, sectionNames, retotal));
+  });
+
+  var addSection = el("button", "btn", "+ Add section");
+  addSection.type = "button";
+  addSection.onclick = function () {
+    var name = prompt("Name of the new section (for example “Fruit and veg”)");
+    if (!name || !name.trim()) return;
+    name = name.trim();
+    if (week.shopping[name]) {
+      alert("That section already exists.");
+      return;
+    }
+    week.shopping[name] = [];
+    markDirty();
+    renderShop();
+  };
+  panel.appendChild(addSection);
+}
+
+// One section card: its name (editable), Delete section, each item, and "+ Add item".
+function shopSection(week, section, sectionNames, retotal) {
+  var items = week.shopping[section];
+  var box = el("div", "card sec");
+  var head = el("div", "sec-head");
+
+  // Renaming a section rebuilds week.shopping so the sections keep their order.
+  var nameInput = el("input");
+  nameInput.value = section;
+  nameInput.setAttribute("aria-label", "Section name");
+  nameInput.onchange = function () {
+    var newName = nameInput.value.trim();
+    if (!newName || newName === section) {
+      nameInput.value = section;
+      return;
+    }
+    if (week.shopping[newName]) {
+      alert("There is already a section called “" + newName + "”.");
+      nameInput.value = section;
+      return;
+    }
+    var renamed = {};
+    Object.keys(week.shopping).forEach(function (key) {
+      renamed[key === section ? newName : key] = week.shopping[key];
+    });
+    week.shopping = renamed;
+    markDirty();
+    renderShop();
+  };
+  head.appendChild(nameInput);
+
+  var del = el("button", "btn small danger", "Delete section");
+  del.type = "button";
+  del.onclick = function () {
+    if (items.length && !confirm("Delete “" + section + "” and its " + items.length + " items?")) return;
+    delete week.shopping[section];
+    markDirty();
+    renderShop();
+  };
+  head.appendChild(del);
+  box.appendChild(head);
+
+  items.forEach(function (item, index) {
+    box.appendChild(shopItem(items, item, index, retotal));
+  });
+
+  // Adds an empty item, redraws, then puts the cursor in the new item's name box.
+  var add = el("button", "btn small", "+ Add item");
+  add.type = "button";
+  add.onclick = function () {
+    items.push(["", 0]);
+    markDirty();
+    renderShop();
+    var sectionCard = $("pShop").querySelectorAll(".sec")[sectionNames.indexOf(section)];
+    var nameBoxes = sectionCard.querySelectorAll(".item input:not([type])");
+    if (nameBoxes.length) nameBoxes[nameBoxes.length - 1].focus();
+  };
+  box.appendChild(add);
+  return box;
+}
+
+// One shopping item: [name, price] with a name box, a price box and a ✕ to remove it.
+function shopItem(items, item, index, retotal) {
+  var row = el("div", "item");
+
+  var name = el("input");
+  name.value = item[0];
+  name.setAttribute("aria-label", "Item name");
+  name.oninput = function () {
+    item[0] = name.value;
+    markDirty();
+  };
+
+  var price = el("input");
+  price.type = "number";
+  price.step = "0.01";
+  price.min = "0";
+  price.inputMode = "decimal";
+  price.value = item[1];
+  price.setAttribute("aria-label", "Price for " + item[0]);
+  price.oninput = function () {
+    item[1] = price.value === "" ? 0 : Math.round(+price.value * 100) / 100;
+    retotal();
+    markDirty();
+  };
+
+  var remove = el("button", "btn small danger", "✕");
+  remove.type = "button";
+  remove.setAttribute("aria-label", "Remove " + item[0]);
+  remove.onclick = function () {
+    items.splice(index, 1);
+    markDirty();
+    renderShop();
+  };
+
+  row.appendChild(name);
+  row.appendChild(price);
+  row.appendChild(remove);
+  return row;
+}
+
+// ---------- JSON tab ----------
+
+// Draws a big text box with the whole plan as JSON, for anything the other tabs don't cover.
+function renderJson() {
+  var panel = $("pJson");
+  panel.textContent = "";
+  panel.appendChild(el("p", "hint", "The whole plan, for anything the other tabs don’t cover (recipes, exercise, people). Press “Use this” to check it and bring it into the other tabs, then save."));
+
+  var box = el("textarea");
+  box.spellcheck = false;
+  box.setAttribute("aria-label", "Plan JSON");
+  box.value = JSON_TEXT != null ? JSON_TEXT : JSON.stringify(PLAN, null, 2);
+  box.oninput = function () {
+    JSON_TEXT = box.value;
+    $("status").textContent = "JSON edited. Press “Use this” to apply";
+    $("status").className = "bar-status dirty";
+  };
+
+  var row = el("div", "row");
+  row.style.marginTop = ".6rem";
+  var use = el("button", "btn primary", "Use this");
+  use.type = "button";
+  use.onclick = function () {
+    applyJson(box.value);
+  };
+  var reset = el("button", "btn", "Reset text");
+  reset.type = "button";
+  reset.onclick = function () {
+    JSON_TEXT = null;
+    renderJson();
+    markDirty();
+  };
+  row.appendChild(use);
+  row.appendChild(reset);
+  panel.appendChild(box);
+  panel.appendChild(row);
+}
+
+// Checks the JSON text and, if it is a valid plan, makes it the plan being edited.
+// Returns true if it worked.
+function applyJson(text) {
+  var newPlan;
+  try {
+    newPlan = JSON.parse(text);
+  } catch (e) {
+    msg("err", "That isn’t valid JSON: " + e.message);
+    return false;
+  }
+  var problem = checkPlan(newPlan);
+  if (problem) {
+    msg("err", problem);
+    return false;
+  }
+  PLAN = newPlan;
+  JSON_TEXT = null;
+  msg("ok", "JSON applied. Remember to save.");
+  markDirty();
+  return true;
+}
+
+// Called before leaving the JSON tab. If the text was edited but not applied, asks whether to
+// use it. Returns false if the edit could not be used (so you stay on the tab to fix it).
+function leaveJson() {
+  if (JSON_TEXT == null || JSON_TEXT === JSON.stringify(PLAN, null, 2)) {
+    JSON_TEXT = null;
+    return true;
+  }
+  if (confirm("Use the JSON you edited? Press Cancel to throw that edit away.")) return applyJson(JSON_TEXT);
+  JSON_TEXT = null;
+  markDirty();
+  return true;
+}
+
+// Checks a plan has the basic shape the app needs, so mistakes show up before saving.
+// Returns '' if it is fine, or a message. The server checks again when it saves
+// (checkPlan in api/server.js, which also checks the exercise plans).
+function checkPlan(plan) {
+  var isObj = function (v) { return v && typeof v === "object" && !Array.isArray(v); };
+  if (!isObj(plan) || !Array.isArray(plan.weeks) || !plan.weeks.length) return "The plan needs a non-empty \"weeks\" list.";
+  for (var i = 0; i < plan.weeks.length; i++) {
+    var week = plan.weeks[i];
+    var where = "Week " + (i + 1) + ": ";
+    if (!isObj(week) || !isObj(week.shopping)) return where + "\"shopping\" must be an object of sections.";
+    for (var section in week.shopping) {
+      var items = week.shopping[section];
+      if (!Array.isArray(items)) return where + "section \"" + section + "\" must be a list.";
+      for (var j = 0; j < items.length; j++) {
+        var item = items[j];
+        var looksRight = Array.isArray(item) && typeof item[0] === "string" && typeof item[1] === "number" && isFinite(item[1]);
+        if (!looksRight) return where + "each item in \"" + section + "\" needs a name and a price.";
+      }
+    }
+    if (week.meals !== undefined && !Array.isArray(week.meals)) return where + "\"meals\" must be a list.";
+  }
+  if (plan.macros !== undefined && !isObj(plan.macros)) return "\"macros\" must be an object.";
+  return "";
+}
+
+// ---------- Backups tab ----------
+
+// Turns a backup file name like "plan-2026-11-08T01-02-03-456Z.json" into a local date and time.
+function prettyBackup(name) {
+  var m = name.match(/^plan-(\d{4})-(\d\d)-(\d\d)T(\d\d)-(\d\d)-(\d\d)/);
+  if (!m) return name;
+  var date = new Date(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]));   // months count from 0
+  return date.toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+// Lists the saved backups, each with a Restore button.
+function renderBackups() {
+  var panel = $("pBackups");
+  panel.textContent = "";
+  panel.appendChild(el("p", "hint", "Each save keeps the previous plan here (the last 30). Restoring one replaces the current plan straight away. The current plan is backed up first, so you can undo a restore."));
+  var card = el("div", "card", "Loading…");
+  panel.appendChild(card);
+
+  api("GET", "/api/plan/backups").then(function (data) {
+    card.textContent = "";
+    if (!data.backups.length) {
+      card.textContent = "No backups yet. One is made each time you save.";
+      return;
+    }
+    data.backups.forEach(function (name) {
+      var row = el("div", "bk");
+      row.appendChild(el("span", null, prettyBackup(name)));
+      var restore = el("button", "btn small", "Restore");
+      restore.type = "button";
+      restore.onclick = function () {
+        if (DIRTY && !confirm("You have unsaved changes. Restoring throws them away. Carry on?")) return;
+        if (!confirm("Replace the current plan with the one from " + prettyBackup(name) + "?")) return;
+        restore.disabled = true;
+        api("POST", "/api/plan/restore", { name: name })
+          .then(function () { return load(); })
+          .then(function () {
+            msg("ok", "Restored the plan from " + prettyBackup(name) + ".");
+            TAB = "backups";
+            render();
+          })
+          .catch(function (e) {
+            restore.disabled = false;
+            msg("err", "Could not restore: " + e.message);
+          });
+      };
+      row.appendChild(restore);
+      card.appendChild(row);
+    });
+  }).catch(function (e) {
+    card.textContent = "Could not load backups: " + e.message;
+  });
+}
+
+// ---------- People tab ----------
+
+// Calls the people API. Changes need the X-Requested-With header, which proves they came from this page.
+function peopleApi(method, url, body) {
+  var options = {
+    method: method,
+    cache: "no-store",
+    headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
+    body: body ? JSON.stringify(body) : undefined,
+  };
+  return fetch(url, options).then(function (response) {
+    return response.json().catch(function () { return {}; }).then(function (data) {
+      if (!response.ok) throw new Error(data.error || ("Request failed (" + response.status + ")"));
+      return data;
+    });
+  });
+}
+
+// A date like "8 Nov 2026".
+function shortDate(ms) {
+  return new Date(ms).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// Lists everyone in the plan with their logins and whether they have answered the About me
+// questions, then a form to add a new person.
+function renderPeople() {
+  var panel = $("pPeople");
+  panel.textContent = "";
+  panel.appendChild(el("p", "hint", "Everyone in the plan, and the logins that tick as them. To add someone, invite them from the Family page: they get a link, choose a password, and are added to the plan with the portion you pick."));
+  var card = el("div", "card", "Loading…");
+  panel.appendChild(card);
+  var invite = el("a", "btn primary", "Invite someone (Family page)");
+  invite.href = "family.html";
+  panel.appendChild(invite);
+
+  peopleApi("GET", "/api/people").then(function (data) {
+    card.textContent = "";
+    data.people.forEach(function (p) {
+      card.appendChild(personRow(p));
+    });
+    if (data.otherLogins.length) {
+      var names = data.otherLogins.map(function (l) { return l.username + " (ticks as " + l.person + ")"; }).join(", ");
+      card.appendChild(el("p", "hint", "Logins that don’t match anyone in the plan: " + names + "."));
+    }
+  }).catch(function (e) {
+    card.textContent = "Could not load people: " + e.message;
+  });
+}
+
+// One person: name, portion, logins and a link to their answers.
+function personRow(p) {
+  var row = el("div", "person");
+  var text = el("div");
+  text.appendChild(el("h3", null, p.name));
+  var logins = p.logins.length
+    ? "Login: " + p.logins.map(function (l) { return (l.email || l.username) + (l.admin ? " (admin)" : ""); }).join(", ")
+    : "No login yet";
+  text.appendChild(el("small", null, "Portion " + (p.portion != null ? p.portion : 1) + "× · " + logins));
+  text.appendChild(el("small", null, p.answered ? "Answered the questions (updated " + shortDate(p.answered) + ")" : "Hasn’t answered the questions yet"));
+  row.appendChild(text);
+  var view = el("a", "btn small", p.answered ? "View answers" : "Answer for them");
+  view.href = "profile.html?person=" + encodeURIComponent(p.person);
+  row.appendChild(view);
+  return row;
+}
+
+// ---------- loading and saving ----------
+
+// Gets the plan from the server and remembers it as the "unchanged" copy.
+function load() {
+  return api("GET", "/api/plan").then(function (data) {
+    PLAN = data.plan;
+    ORIG = JSON.stringify(PLAN);
+    VERSION = data.version;
+    JSON_TEXT = null;
+    $("sub").textContent = (PLAN.title || "Plan") + " · " + PLAN.weeks.length + " weeks";
+    if (data.example) msg("warn", "There is no plan.json yet, so this is the example plan. Saving creates plan.json.");
+    markDirty();
+  });
+}
+
+// Tidies the plan (week totals, empty items), checks it, and sends it to the server.
+function save() {
+  if (TAB === "json" && JSON_TEXT != null && !leaveJson()) return;
+
+  // Keep each week's total in step with its items.
+  PLAN.weeks.forEach(function (week) {
+    if (week.shopping) week.cost = weekTotal(week);
+  });
+  // Drop items with no name (for example an "+ Add item" that was never filled in).
+  PLAN.weeks.forEach(function (week) {
+    Object.keys(week.shopping || {}).forEach(function (section) {
+      week.shopping[section] = week.shopping[section].filter(function (item) {
+        return String(item[0]).trim();
+      });
+    });
+  });
+
+  var problem = checkPlan(PLAN);
+  if (problem) {
+    msg("err", problem);
+    return;
+  }
+
+  var button = $("save");
+  button.disabled = true;
+  button.textContent = "Saving…";
+  api("PUT", "/api/plan", { plan: PLAN, version: VERSION }).then(function (data) {
+    VERSION = data.version;
+    ORIG = JSON.stringify(PLAN);
+    markDirty();
+    msg("ok", "Saved. Everyone sees the new plan next time their app refreshes.");
+    render();
+  }).catch(function (e) {
+    if (e.status === 409) {
+      // Someone else saved since this page loaded. Offer to load their version.
+      var reload = el("button", "btn small", "Reload the latest plan");
+      reload.type = "button";
+      reload.style.marginLeft = ".5rem";
+      reload.onclick = function () {
+        DIRTY = false;   // so the "unsaved changes" warning doesn't stop the reload
+        location.reload();
+      };
+      msg("err", e.message, reload);
+    } else {
+      msg("err", "Could not save: " + e.message);
+    }
+    markDirty();
+  }).then(function () {
+    button.textContent = "Save plan";
+  });
+}
+
+$("save").onclick = save;
+
+// "Discard changes": go back to the plan as it was loaded.
+$("undo").onclick = function () {
+  if (!confirm("Throw away your unsaved changes?")) return;
+  PLAN = JSON.parse(ORIG);
+  JSON_TEXT = null;
+  markDirty();
+  msg("");
+  render();
+};
+
+// Start: check who is logged in. Only admins can use this page.
+fetch("/auth/me", { cache: "no-store" }).then(function (response) {
+  return response.ok ? response.json() : null;
+}).then(function (me) {
+  if (!me) {
+    location.href = "/login?next=%2Fadmin.html";
+    return;
+  }
+  if (!me.admin) {
+    $("sub").textContent = "";
+    msg("err", "Only an admin can edit the plan. You are logged in as " + me.user + ".");
+    return;
+  }
+  return load().then(function () {
+    $("app").hidden = false;
+    $("bar").hidden = false;
+    render();
+  });
+}).catch(function (e) {
+  $("sub").textContent = "";
+  msg("err", "Could not load the plan: " + e.message);
+});
+</script>
+<script>
+// Shows how many people are waiting for an admin to look at a suggested change (from Ask AI).
+fetch("/api/requests", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (got) {
+  if (!got || !got.admin) return;
+  var open = got.requests.filter(function (r) { return r.status === "open"; }).length;
+  document.getElementById("reqOpen").textContent = open ? "(" + open + " waiting)" : "";
+  document.getElementById("reqLink").hidden = false;
+}).catch(function () { /* the link just stays hidden */ });
+</script>
+</body>
+</html>

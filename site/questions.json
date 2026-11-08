@@ -1,0 +1,121 @@
+{
+  "intro": "These questions help shape your meals, portions and exercise. Answer what you're comfortable with and skip the rest. Only you and the plan's admins can see your answers. Your answers are saved as you go.",
+  "sections": [
+    {
+      "id": "goals",
+      "title": "Your goals",
+      "questions": [
+        { "id": "goal", "label": "What would you most like help with?", "type": "multi",
+          "options": ["Lose weight", "Keep my weight steady", "Gain weight", "Build muscle", "More energy", "Eat healthier", "Save money on food", "Manage a health condition"] },
+        { "id": "goal_detail", "label": "Anything more about your goal?", "type": "long", "placeholder": "e.g. fit back into my work clothes, get ready for a fun run" },
+        { "id": "pace", "label": "How fast would you like to go?", "type": "choice",
+          "options": ["Slow and steady", "A moderate pace", "As fast as is safe"], "help": "Slower changes are easier to keep." }
+      ]
+    },
+    {
+      "id": "body",
+      "title": "About you",
+      "questions": [
+        { "id": "age", "label": "Age", "type": "number", "unit": "years", "min": 1, "max": 120 },
+        { "id": "sex", "label": "Sex", "type": "choice",
+          "options": ["Female", "Male", "Prefer not to say"], "help": "Used only to estimate how much energy your body needs." },
+        { "id": "height", "label": "Height", "type": "number", "unit": "cm", "min": 50, "max": 250 },
+        { "id": "weight", "label": "Weight now", "type": "number", "unit": "kg", "min": 10, "max": 400, "step": 0.1 },
+        { "id": "goal_weight", "label": "Goal weight, if you have one", "type": "number", "unit": "kg", "min": 10, "max": 400, "step": 0.1 },
+        { "id": "activity", "label": "How active is a normal day?", "type": "choice",
+          "options": ["Mostly sitting (desk job)", "On my feet some of the day", "On my feet most of the day", "Physical work all day"] }
+      ]
+    },
+    {
+      "id": "health",
+      "title": "Health",
+      "warn": "This plan is general information, not medical advice. Check your meals and exercise with your GP, dietitian or pharmacist before you start, especially if you take medicines, are pregnant, or have a health condition.",
+      "questions": [
+        { "id": "conditions", "label": "Do any of these apply to you?", "type": "multi",
+          "options": ["Type 1 diabetes", "Type 2 diabetes or pre-diabetes", "High blood pressure", "High cholesterol", "Heart condition", "Kidney condition", "Coeliac disease", "Irritable bowel (IBS)", "Reflux", "Pregnant or breastfeeding", "None of these"] },
+        { "id": "conditions_other", "label": "Any other health conditions?", "type": "long" },
+        { "id": "medicine_types", "label": "Do you take any of these medicines?", "type": "multi",
+          "options": ["Blood thinner (like warfarin)", "Insulin, or diabetes tablets that can cause low blood sugar", "Weight-loss or diabetes injection (like Ozempic or Mounjaro)", "Blood pressure or heart medicine", "Fluid tablets (diuretics)", "Cholesterol medicine (statin)", "Thyroid medicine", "Steroid tablets (like prednisolone)", "ADHD stimulant medicine", "An MAOI antidepressant", "Iron or calcium supplements", "Other medicines", "None of these"],
+          "help": "Some medicines change what to eat or how to exercise. This only adds things for you to check with your doctor or pharmacist. Never change your medicines because of this plan." },
+        { "id": "medicines", "label": "Which medicines or supplements, and anything you were told about food with them", "type": "long", "placeholder": "e.g. warfarin: keep leafy greens steady. Iron tablets." },
+        { "id": "injuries", "label": "Injuries or pain that affect exercise", "type": "long", "placeholder": "e.g. sore left knee on stairs" },
+        { "id": "gp", "label": "Has a doctor or dietitian given you advice about food or exercise?", "type": "long", "help": "Their advice comes first. The plan works around it." }
+      ]
+    },
+    {
+      "id": "support",
+      "title": "Support needs",
+      "intro": "Optional. Some people find meals and exercise easier with a few changes: reminders, fewer decisions, foods that feel safe, or less cooking. Skip anything you'd rather not say. Only you and the family's admins can see this.",
+      "questions": [
+        { "id": "support_needs", "label": "Do any of these apply to you?", "type": "multi",
+          "options": ["ADHD", "Autism", "Sensory sensitivities", "Anxiety", "Depression", "Dyslexia or another learning difference", "Intellectual disability", "Low energy or chronic fatigue", "Chronic pain", "Weak grip or limited hand movement", "Low vision", "Use a wheelchair or mobility aid", "Prefer not to say"] },
+        { "id": "sensory", "label": "Are any of these hard for you with food?", "type": "multi",
+          "options": ["Mushy or soft textures", "Slimy textures", "Crunchy or hard textures", "Lumpy or mixed textures (like stews)", "Foods touching on the plate", "Strong smells", "Spicy food", "Strong or bitter flavours", "Very hot or very cold food", "A brand or recipe changing"], "help": "Meals and suggestions will avoid them where possible." },
+        { "id": "safe_foods", "label": "What are your safe foods: things you can always eat, even on a hard day?", "type": "long", "help": "These will be kept in your plan, and used as a starting point for anything new." },
+        { "id": "reminders", "label": "Would reminders help?", "type": "choice",
+          "options": ["Yes, remind me to eat", "Yes, remind me to eat and exercise", "Just exercise reminders", "No thanks"], "help": "Reminders go into your phone's calendar, so they work even when the app is closed." },
+        { "id": "cooking_help", "label": "What would make meals easier?", "type": "multi",
+          "options": ["Meals with only a few steps", "Pre-cut or frozen vegetables", "No knives or chopping", "One-pan or tray-bake meals", "Sitting down while cooking", "Cooking a batch on a good day", "Ready-to-eat options for low-energy days", "Eating the same meals often (fewer decisions)", "Pictures or very clear steps", "Someone else does the cooking"] },
+        { "id": "support_other", "label": "Anything else that would help?", "type": "long" }
+      ]
+    },
+    {
+      "id": "food",
+      "title": "Food",
+      "questions": [
+        { "id": "allergies", "label": "Allergies or intolerances", "type": "multi",
+          "options": ["Peanuts", "Tree nuts", "Milk", "Eggs", "Wheat or gluten", "Soy", "Fish", "Shellfish", "Sesame", "Lactose", "None"] },
+        { "id": "allergies_other", "label": "Other allergies, and how serious they are", "type": "long" },
+        { "id": "diet", "label": "Do you follow any of these?", "type": "multi",
+          "options": ["Vegetarian", "Vegan", "Pescatarian", "Halal", "Kosher", "No pork", "No beef", "None"] },
+        { "id": "dislikes", "label": "Foods you won't eat", "type": "long", "placeholder": "e.g. mushrooms, coriander, spicy food" },
+        { "id": "likes", "label": "Foods and meals you love", "type": "long", "placeholder": "e.g. stir-fries, roast chicken, curries" },
+        { "id": "cuisines", "label": "Kinds of food you'd like more of", "type": "multi",
+          "options": ["Australian classics", "Italian", "Mexican", "Indian", "Chinese", "Japanese", "Korean", "Thai", "Vietnamese", "Middle Eastern", "Greek", "British"] },
+        { "id": "breakfast", "label": "What's breakfast like for you?", "type": "choice",
+          "options": ["I always eat breakfast", "Sometimes", "I usually skip it", "Only coffee"] },
+        { "id": "hungry", "label": "When do you get hungriest or have cravings?", "type": "multi",
+          "options": ["Mid-morning", "Mid-afternoon", "After dinner", "Late at night", "After training", "When I'm stressed or tired"] },
+        { "id": "guidelines", "label": "Which countries' healthy-eating guidelines would you like your meals compared with?", "type": "multi",
+          "options": ["Australia", "New Zealand", "United Kingdom", "Japan", "Korea"], "help": "Pick one or more. The Macros tab shows the first one you pick, and you can switch between the others there." },
+        { "id": "drinks", "label": "What do you usually drink?", "type": "multi",
+          "options": ["Water", "Coffee", "Tea", "Milk", "Soft drink", "Energy drinks", "Juice", "Alcohol a few times a week", "Alcohol most days"] }
+      ]
+    },
+    {
+      "id": "routine",
+      "title": "Your week",
+      "questions": [
+        { "id": "schedule", "label": "What does a normal week look like?", "type": "long", "placeholder": "e.g. work 7 to 3:30 Mon to Fri, school drop-off at 8:30, footy Saturday mornings" },
+        { "id": "packed_lunch", "label": "Do you need lunches you can take with you?", "type": "choice",
+          "options": ["Yes, most days", "Some days", "No, I eat at home", "Work or school provides lunch"] },
+        { "id": "cook_time", "label": "Time for cooking on a weeknight", "type": "choice",
+          "options": ["15 minutes or less", "About 30 minutes", "Up to an hour", "I don't cook"] },
+        { "id": "eat_out", "label": "How often do you buy takeaway or eat out?", "type": "choice",
+          "options": ["Rarely", "Once a week", "2 or 3 times a week", "Most days"] },
+        { "id": "kitchen", "label": "What can you cook with?", "type": "multi",
+          "options": ["Oven", "Stovetop", "Microwave", "Air fryer", "Slow cooker", "Barbecue", "Rice cooker", "Blender"] }
+      ]
+    },
+    {
+      "id": "exercise",
+      "title": "Exercise",
+      "questions": [
+        { "id": "exercise_now", "label": "What exercise do you do now, and how often?", "type": "long", "placeholder": "e.g. gym 3 times a week, walk the dog most mornings" },
+        { "id": "exercise_time", "label": "How much time could you give exercise on most days?", "type": "choice",
+          "options": ["Less than 15 minutes", "15 to 30 minutes", "30 to 60 minutes", "More than an hour"] },
+        { "id": "equipment", "label": "What can you use?", "type": "multi",
+          "options": ["Gym membership", "Dumbbells", "Resistance bands", "Exercise bike", "Rowing machine", "Treadmill", "Pool", "Bike", "None"] },
+        { "id": "exercise_likes", "label": "Exercise you enjoy, or want to avoid", "type": "long" }
+      ]
+    },
+    {
+      "id": "money",
+      "title": "Budget",
+      "questions": [
+        { "id": "budget", "label": "What would you like the household to spend on food each week?", "type": "number", "unit": "$", "min": 0, "max": 2000 },
+        { "id": "anything_else", "label": "Anything else that would help?", "type": "long" }
+      ]
+    }
+  ]
+}

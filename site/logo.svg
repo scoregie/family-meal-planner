@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Family Health Planner">
+  <!-- Family Health Planner logo: a home (the family) holding a heart (health) with a leaf (food).
+       The background fills the square; phones round the corners themselves. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1a9a7c"/>
+      <stop offset="1" stop-color="#0b5a49"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- the roof -->
+  <path d="M112 236 L256 118 L400 236" fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- the heart -->
+  <path d="M256 404
+           C 214 372, 152 330, 152 272
+           C 152 236, 179 212, 210 212
+           C 232 212, 248 224, 256 240
+           C 264 224, 280 212, 302 212
+           C 333 212, 360 236, 360 272
+           C 360 330, 298 372, 256 404 Z" fill="#fff"/>
+  <!-- the leaf inside the heart -->
+  <path d="M206 330 C 206 282, 246 254, 300 252 C 300 304, 262 336, 206 330 Z" fill="#14876c"/>
+  <path d="M214 322 C 238 302, 258 288, 284 268" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+</svg>

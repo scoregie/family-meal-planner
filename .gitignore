@@ -6,3 +6,8 @@ plan-prompt.txt
 
 node_modules/
 .DS_Store
+__pycache__/
+
+# Backups of the plan made by hand
+site/plan.json.bak
+site/*.bak

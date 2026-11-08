@@ -3,12 +3,25 @@ services:
     image: node:22-alpine
     container_name: shopping-list-api
     restart: unless-stopped
-    command: ["node", "/app/server.js"]
-    env_file: .env          # LOGIN_<NAME>= lines
+    # On start: install the one package the server uses (the Anthropic SDK, for Claude)
+    # into the "api_deps" volume, only when package-lock.json has changed. Then start the server.
+    # If the install fails (no internet), the app still starts; only Claude is off (the other AIs and the built-in plan builder still work).
+    command:
+      - sh
+      - -c
+      - >-
+        cd /deps &&
+        (cmp -s /app/package-lock.json package-lock.json ||
+         (cp /app/package.json /app/package-lock.json . && npm ci --omit=dev --no-audit --no-fund --update-notifier=false --loglevel=error) ||
+         rm -f package-lock.json) ;
+        cd / && NODE_PATH=/deps/node_modules exec node --disable-warning=ExperimentalWarning /app/server.js
+    env_file: .env          # your settings and optional AI keys (see .env.example)
     volumes:
       - ./api:/app:ro
       - ./data:/data
-      - ./site:/site:ro       # reads plan.json for calendar files
+      - ./site:/site          # reads plan.json, and saves it from the admin page
+      - ./docs:/docs:ro       # docs/plan-format.md, which the assistant reads
+      - api_deps:/deps        # the installed Anthropic SDK (see "command" above)
 
   caddy:
     image: caddy:2
@@ -29,5 +42,6 @@ services:
       - caddy_config:/config
 
 volumes:
+  api_deps:
   caddy_data:
   caddy_config:

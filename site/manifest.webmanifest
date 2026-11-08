@@ -1,10 +1,10 @@
 {
-  "name": "Shopping lists",
-  "short_name": "Shopping",
+  "name": "Family Health Planner",
+  "short_name": "Family Health",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f1f5f3",
+  "background_color": "#f5f5f4",
   "theme_color": "#0e6b57",
   "icons": [
     {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
