@@ -72,99 +72,331 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </main>
 <script>
+// The "My files" page. It asks the server (api/uploads.js) for this person's files,
+// shows one box per kind of file, and uploads new files with a progress bar.
 "use strict";
-var ME=null,PERSON=null,DATA=null,BUSY=0;
-function $(id){return document.getElementById(id);}
-function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
-function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
-function size(n){if(n<1024)return n+" B";if(n<1048576)return Math.round(n/1024)+" KB";if(n<1073741824)return (n/1048576).toFixed(n<10485760?1:0)+" MB";return (n/1073741824).toFixed(2)+" GB";}
-function when(ms){return new Date(ms).toLocaleString("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"});}
-function q(o){return Object.keys(o).map(function(k){return encodeURIComponent(k)+"="+encodeURIComponent(o[k]);}).join("&");}
-function api(method,url){
-  return fetch(url,{method:method,cache:"no-store",headers:{"X-Requested-With":"files"}}).then(function(r){
-    return r.json().catch(function(){return {};}).then(function(d){if(!r.ok)throw new Error(d.error||("Request failed ("+r.status+")"));return d;});
+var ME = null;      // who is logged in: {user, person, admin}
+var PERSON = null;  // whose files are shown (admins can switch)
+var DATA = null;    // the last answer from the server: {person, people, categories}
+var BUSY = 0;       // how many uploads are running right now
+
+// Shortcut for document.getElementById.
+function $(id) {
+  return document.getElementById(id);
+}
+
+// Makes a new element, with an optional class name and text: el("p", "hint", "Hello").
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+// Capital first letter: "alex" becomes "Alex".
+function cap(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// A file size people can read: 2048 becomes "2 KB".
+function size(bytes) {
+  var KB = 1024, MB = 1048576, GB = 1073741824;
+  if (bytes < KB) return bytes + " B";
+  if (bytes < MB) return Math.round(bytes / KB) + " KB";
+  if (bytes < GB) return (bytes / MB).toFixed(bytes < 10 * MB ? 1 : 0) + " MB";   // one decimal place under 10 MB
+  return (bytes / GB).toFixed(2) + " GB";
+}
+
+// A date and time people can read, such as "8 Nov 2026, 2:15 pm".
+function when(ms) {
+  return new Date(ms).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+// Builds the "?a=1&b=2" part of an address, safely encoding each value.
+function q(params) {
+  return Object.keys(params).map(function (key) {
+    return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
+  }).join("&");
+}
+
+// Calls the server and returns its JSON answer. If the server says no, it throws an error with
+// the server's message. The X-Requested-With header proves the request came from this page.
+function api(method, url) {
+  return fetch(url, { method: method, cache: "no-store", headers: { "X-Requested-With": "files" } }).then(function (response) {
+    return response.json().catch(function () { return {}; }).then(function (data) {
+      if (!response.ok) throw new Error(data.error || ("Request failed (" + response.status + ")"));
+      return data;
+    });
   });
 }
-function load(){
-  return api("GET","/api/uploads?"+q({person:PERSON})).then(function(d){DATA=d;PERSON=d.person;render();});
-}
-function render(){
-  $("sub").textContent=(PERSON===ME.person?"Your":cap(PERSON)+"’s")+" uploads";
-  var pp=$("people");pp.textContent="";pp.hidden=DATA.people.length<2;
-  DATA.people.forEach(function(p){
-    var b=el("button","btn",cap(p)+(p===ME.person?" (me)":""));b.type="button";b.setAttribute("aria-pressed",p===PERSON);
-    b.onclick=function(){if(BUSY){alert("Wait for the upload to finish first.");return;}PERSON=p;load();};pp.appendChild(b);
+
+// Fetches the current person's file list and redraws the page.
+function load() {
+  return api("GET", "/api/uploads?" + q({ person: PERSON })).then(function (data) {
+    DATA = data;
+    PERSON = data.person;
+    render();
   });
-  var box=$("cats");box.textContent="";
-  DATA.categories.forEach(function(c){box.appendChild(catCard(c));});
-  $("privacy").textContent=ME.admin?"Each person can only see their own files. As an admin you can see everyone’s.":"Only you and the plan’s admin can see these files.";
 }
-function catCard(c){
-  var card=el("section","cat");card.setAttribute("aria-labelledby","h-"+c.id);
-  var head=el("div","cat-head"),t=el("div"),h=el("h2");h.id="h-"+c.id;h.textContent=c.label;
-  h.appendChild(el("small",null,c.files.length?c.files.length+(c.files.length===1?" file":" files"):""));
-  t.appendChild(h);t.appendChild(el("p","hint",c.hint));t.appendChild(el("p","where","Saved in uploads/"+PERSON+"/"+c.id+"/"));head.appendChild(t);
-  var inp=el("input");inp.type="file";inp.multiple=true;inp.accept=c.accept;inp.id="f-"+c.id;inp.setAttribute("aria-label","Upload to "+c.label);
-  var up=el("label","btn primary small","Upload");up.htmlFor=inp.id;up.setAttribute("role","button");up.tabIndex=0;
-  up.onkeydown=function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();inp.click();}};
-  head.appendChild(up);card.appendChild(head);card.appendChild(inp);
-  var status=el("div");card.appendChild(status);
-  inp.onchange=function(){var fs=[].slice.call(inp.files);inp.value="";uploadAll(c,fs,status);};
-  // Drag and drop onto the box.
-  card.addEventListener("dragover",function(e){e.preventDefault();card.classList.add("over");});
-  card.addEventListener("dragleave",function(e){if(!card.contains(e.relatedTarget))card.classList.remove("over");});
-  card.addEventListener("drop",function(e){e.preventDefault();card.classList.remove("over");uploadAll(c,[].slice.call(e.dataTransfer.files||[]),status);});
-  if(!c.files.length){card.appendChild(el("p","empty","Nothing here yet."));return card;}
-  var ul=el("ul","files");
-  c.files.forEach(function(f){
-    var li=el("li"),nm=el("div","nm"),a=el("a",null,f.name),base="/api/uploads/file?"+q({person:PERSON,category:c.id,name:f.name});
-    a.href=base;a.target="_blank";a.rel="noopener";nm.appendChild(a);nm.appendChild(el("span","meta",size(f.size)+" · added "+when(f.at)));li.appendChild(nm);
-    var dl=el("a","btn small","Download");dl.href=base+"&download=1";dl.setAttribute("aria-label","Download "+f.name);li.appendChild(dl);
-    var del=el("button","btn small danger","Delete");del.type="button";del.setAttribute("aria-label","Delete "+f.name);
-    del.onclick=function(){
-      if(!confirm("Delete “"+f.name+"”? This can’t be undone."))return;
-      del.disabled=true;api("DELETE",base).then(load).catch(function(e){del.disabled=false;alert("Could not delete it: "+e.message);});
+
+// Draws the whole page from DATA: the person picker (admins only), then one box per kind of file.
+function render() {
+  $("sub").textContent = (PERSON === ME.person ? "Your" : cap(PERSON) + "’s") + " uploads";
+
+  // Person picker. Only shown when there is more than one person to pick from.
+  var picker = $("people");
+  picker.textContent = "";
+  picker.hidden = DATA.people.length < 2;
+  DATA.people.forEach(function (person) {
+    var button = el("button", "btn", cap(person) + (person === ME.person ? " (me)" : ""));
+    button.type = "button";
+    button.setAttribute("aria-pressed", person === PERSON);
+    button.onclick = function () {
+      if (BUSY) {
+        alert("Wait for the upload to finish first.");
+        return;
+      }
+      PERSON = person;
+      load();
     };
-    li.appendChild(del);ul.appendChild(li);
+    picker.appendChild(button);
   });
-  card.appendChild(ul);return card;
+
+  var boxes = $("cats");
+  boxes.textContent = "";
+  DATA.categories.forEach(function (category) {
+    boxes.appendChild(catCard(category));
+  });
+
+  $("privacy").textContent = ME.admin
+    ? "Each person can only see their own files. As an admin you can see everyone’s."
+    : "Only you and the plan’s admin can see these files.";
 }
-// Uploads one file at a time with a progress bar (big Apple Health exports can take a while).
-function uploadAll(c,files,status){
-  if(!files.length)return;
-  var okExt=c.accept.split(","),bad=files.filter(function(f){var e=(f.name.match(/\.[^.]+$/)||[""])[0].toLowerCase();return okExt.indexOf(e)<0;});
-  status.textContent="";
-  if(bad.length){var m=el("div","msg err",c.label+" takes "+okExt.join(", ")+" files, so "+bad.map(function(f){return f.name;}).join(", ")+(bad.length===1?" was":" were")+" skipped.");status.appendChild(m);}
-  files=files.filter(function(f){return bad.indexOf(f)<0;});
-  if(!files.length)return;
-  var i=0,done=[],prog=el("div","prog"),label=el("div"),bar=el("div","bar"),fill=el("i");bar.appendChild(fill);prog.appendChild(label);prog.appendChild(bar);status.appendChild(prog);
+
+// Makes the box for one kind of file (such as "Blood tests"): a heading, an Upload button,
+// drag and drop, and the list of files with Download and Delete buttons.
+function catCard(c) {
+  var card = el("section", "cat");
+  card.setAttribute("aria-labelledby", "h-" + c.id);
+
+  // Heading, hint and folder name.
+  var head = el("div", "cat-head");
+  var text = el("div");
+  var heading = el("h2");
+  heading.id = "h-" + c.id;
+  heading.textContent = c.label;
+  var count = c.files.length ? c.files.length + (c.files.length === 1 ? " file" : " files") : "";
+  heading.appendChild(el("small", null, count));
+  text.appendChild(heading);
+  text.appendChild(el("p", "hint", c.hint));
+  text.appendChild(el("p", "where", "Saved in uploads/" + PERSON + "/" + c.id + "/"));
+  head.appendChild(text);
+
+  // The Upload button is a <label> for a hidden file picker, so tapping it opens the picker.
+  var input = el("input");
+  input.type = "file";
+  input.multiple = true;
+  input.accept = c.accept;
+  input.id = "f-" + c.id;
+  input.setAttribute("aria-label", "Upload to " + c.label);
+  var uploadButton = el("label", "btn primary small", "Upload");
+  uploadButton.htmlFor = input.id;
+  uploadButton.setAttribute("role", "button");
+  uploadButton.tabIndex = 0;
+  // Let keyboard users press Enter or Space on it, like a real button.
+  uploadButton.onkeydown = function (e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      input.click();
+    }
+  };
+  head.appendChild(uploadButton);
+  card.appendChild(head);
+  card.appendChild(input);
+
+  var status = el("div");   // progress bars and messages go here
+  card.appendChild(status);
+  input.onchange = function () {
+    var picked = [].slice.call(input.files);   // copy the list before clearing the picker
+    input.value = "";
+    uploadAll(c, picked, status);
+  };
+
+  // Drag and drop onto the box.
+  card.addEventListener("dragover", function (e) {
+    e.preventDefault();
+    card.classList.add("over");
+  });
+  card.addEventListener("dragleave", function (e) {
+    if (!card.contains(e.relatedTarget)) card.classList.remove("over");
+  });
+  card.addEventListener("drop", function (e) {
+    e.preventDefault();
+    card.classList.remove("over");
+    uploadAll(c, [].slice.call(e.dataTransfer.files || []), status);
+  });
+
+  if (!c.files.length) {
+    card.appendChild(el("p", "empty", "Nothing here yet."));
+    return card;
+  }
+
+  var list = el("ul", "files");
+  c.files.forEach(function (f) {
+    list.appendChild(fileRow(c, f));
+  });
+  card.appendChild(list);
+  return card;
+}
+
+// One line in a file list: the name (opens it), its size and date, Download, and Delete.
+function fileRow(c, f) {
+  var row = el("li");
+  var fileUrl = "/api/uploads/file?" + q({ person: PERSON, category: c.id, name: f.name });
+
+  var nameBox = el("div", "nm");
+  var link = el("a", null, f.name);
+  link.href = fileUrl;
+  link.target = "_blank";
+  link.rel = "noopener";
+  nameBox.appendChild(link);
+  nameBox.appendChild(el("span", "meta", size(f.size) + " · added " + when(f.at)));
+  row.appendChild(nameBox);
+
+  var download = el("a", "btn small", "Download");
+  download.href = fileUrl + "&download=1";
+  download.setAttribute("aria-label", "Download " + f.name);
+  row.appendChild(download);
+
+  var del = el("button", "btn small danger", "Delete");
+  del.type = "button";
+  del.setAttribute("aria-label", "Delete " + f.name);
+  del.onclick = function () {
+    if (!confirm("Delete “" + f.name + "”? This can’t be undone.")) return;
+    del.disabled = true;
+    api("DELETE", fileUrl).then(load).catch(function (e) {
+      del.disabled = false;
+      alert("Could not delete it: " + e.message);
+    });
+  };
+  row.appendChild(del);
+  return row;
+}
+
+// The file type of a name, with its dot, in lower case: "Scan.JPG" gives ".jpg".
+function dotExt(name) {
+  return (name.match(/\.[^.]+$/) || [""])[0].toLowerCase();
+}
+
+// Uploads files one at a time with a progress bar (big Apple Health exports can take a while).
+// Files of the wrong type for this box are skipped, with a message saying so.
+function uploadAll(c, files, status) {
+  if (!files.length) return;
+  var allowed = c.accept.split(",");   // like [".pdf", ".jpg"]
+  var wrongType = files.filter(function (f) {
+    return allowed.indexOf(dotExt(f.name)) < 0;
+  });
+  status.textContent = "";
+  if (wrongType.length) {
+    var names = wrongType.map(function (f) { return f.name; }).join(", ");
+    var message = c.label + " takes " + allowed.join(", ") + " files, so " + names + (wrongType.length === 1 ? " was" : " were") + " skipped.";
+    status.appendChild(el("div", "msg err", message));
+  }
+  files = files.filter(function (f) {
+    return wrongType.indexOf(f) < 0;
+  });
+  if (!files.length) return;
+
+  // The progress bar: a label, and a bar whose inner <i> grows from 0% to 100%.
+  var progress = el("div", "prog");
+  var label = el("div");
+  var bar = el("div", "bar");
+  var fill = el("i");
+  bar.appendChild(fill);
+  progress.appendChild(label);
+  progress.appendChild(bar);
+  status.appendChild(progress);
+
+  var index = 0;      // which file is next
+  var uploaded = [];  // names of the files that worked
   BUSY++;
-  function next(){
-    if(i>=files.length){BUSY--;prog.remove();load().then(function(){
-      var s=$("cats").querySelectorAll(".cat")[DATA.categories.map(function(x){return x.id;}).indexOf(c.id)];
-      if(s&&done.length){var m=el("div","msg ok","Uploaded "+done.length+(done.length===1?" file.":" files."));s.insertBefore(m,s.querySelector(".files,.empty"));setTimeout(function(){m.remove();},4000);}
-    });return;}
-    var f=files[i++],x=new XMLHttpRequest();
-    label.textContent="Uploading "+f.name+" ("+size(f.size)+")"+(files.length>1?" · "+i+" of "+files.length:"");fill.style.width="0";
-    x.open("POST","/api/uploads?"+q({person:PERSON,category:c.id,name:f.name}));
-    x.setRequestHeader("X-Requested-With","files");x.setRequestHeader("Content-Type","application/octet-stream");
-    x.upload.onprogress=function(e){if(e.lengthComputable)fill.style.width=Math.round(e.loaded/e.total*100)+"%";};
-    x.onload=function(){
-      var d={};try{d=JSON.parse(x.responseText);}catch(e){}
-      if(x.status===200)done.push(d.name);else status.insertBefore(el("div","msg err",f.name+": "+(d.error||"upload failed ("+x.status+")")),prog);
+
+  // Called when every file has been tried: refresh the list and say how many worked.
+  function finished() {
+    BUSY--;
+    progress.remove();
+    load().then(function () {
+      var position = DATA.categories.map(function (x) { return x.id; }).indexOf(c.id);
+      var box = $("cats").querySelectorAll(".cat")[position];   // the redrawn box for this kind
+      if (!box || !uploaded.length) return;
+      var done = el("div", "msg ok", "Uploaded " + uploaded.length + (uploaded.length === 1 ? " file." : " files."));
+      box.insertBefore(done, box.querySelector(".files,.empty"));
+      setTimeout(function () { done.remove(); }, 4000);
+    });
+  }
+
+  // Shows an error for one file, above the progress bar.
+  function showError(text) {
+    status.insertBefore(el("div", "msg err", text), progress);
+  }
+
+  // Uploads the next file, then calls itself again when that one is done.
+  function next() {
+    if (index >= files.length) {
+      finished();
+      return;
+    }
+    var f = files[index++];
+    label.textContent = "Uploading " + f.name + " (" + size(f.size) + ")" + (files.length > 1 ? " · " + index + " of " + files.length : "");
+    fill.style.width = "0";
+
+    // XMLHttpRequest is used instead of fetch() because it can report upload progress.
+    var request = new XMLHttpRequest();
+    request.open("POST", "/api/uploads?" + q({ person: PERSON, category: c.id, name: f.name }));
+    request.setRequestHeader("X-Requested-With", "files");
+    request.setRequestHeader("Content-Type", "application/octet-stream");
+    request.upload.onprogress = function (e) {
+      if (e.lengthComputable) fill.style.width = Math.round(e.loaded / e.total * 100) + "%";
+    };
+    request.onload = function () {
+      var answer = {};
+      try { answer = JSON.parse(request.responseText); } catch (e) {}
+      if (request.status === 200) uploaded.push(answer.name);
+      else showError(f.name + ": " + (answer.error || "upload failed (" + request.status + ")"));
       next();
     };
-    x.onerror=function(){status.insertBefore(el("div","msg err",f.name+": the upload failed. Check your connection and try again."),prog);next();};
-    x.send(f);
+    request.onerror = function () {
+      showError(f.name + ": the upload failed. Check your connection and try again.");
+      next();
+    };
+    request.send(f);
   }
   next();
 }
-window.addEventListener("beforeunload",function(e){if(BUSY){e.preventDefault();e.returnValue="";}});
-fetch("/auth/me",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(me){
-  if(!me){location.href="/login?next=%2Ffiles.html";return;}
-  ME=me;PERSON=me.person;
-  return load().then(function(){$("app").hidden=false;});
-}).catch(function(e){$("sub").textContent="";$("pmsg").appendChild(el("div","msg err","Could not load your files: "+e.message));});
+
+// Warn before leaving the page while an upload is still running.
+window.addEventListener("beforeunload", function (e) {
+  if (BUSY) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+// Start: find out who is logged in, then load their files.
+fetch("/auth/me", { cache: "no-store" }).then(function (response) {
+  return response.ok ? response.json() : null;
+}).then(function (me) {
+  if (!me) {
+    location.href = "/login?next=%2Ffiles.html";
+    return;
+  }
+  ME = me;
+  PERSON = me.person;
+  return load().then(function () { $("app").hidden = false; });
+}).catch(function (e) {
+  $("sub").textContent = "";
+  $("pmsg").appendChild(el("div", "msg err", "Could not load your files: " + e.message));
+});
 </script>
 </body>
 </html>
