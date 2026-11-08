@@ -35,4 +35,5 @@ input[type=text],input[type=email],input[type=password],input[type=number],selec
 .status.err{background:var(--low);color:#fff}
 .link{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin:.5rem 0}
 .link input{flex:1;min-width:12rem;font-size:.85rem}
+a{color:var(--accent)}
 [hidden]{display:none!important}

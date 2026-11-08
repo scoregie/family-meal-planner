@@ -47,6 +47,9 @@ button[type=submit]:disabled{opacity:.6}
 .links{text-align:center;margin:1rem 0 0;font-size:.92rem}
 .links a,.linkbtn{color:var(--accent);font-weight:700;background:none;border:0;font:inherit;font-weight:700;cursor:pointer;padding:.3rem;text-decoration:underline}
 .hint{color:var(--mute);font-size:.85rem;margin:-.6rem 0 1rem}
+.signup{display:flex;align-items:center;justify-content:center;gap:.6rem;border-top:1px solid var(--line);margin:1rem -1.25rem 0;padding:1rem 1.25rem 0;color:var(--mute);font-size:.95rem}
+.btn2{font:inherit;font-weight:700;color:var(--accent);background:transparent;border:2px solid var(--accent);border-radius:.5rem;min-height:2.75rem;padding:0 1.2rem;cursor:pointer}
+.btn2:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 [hidden]{display:none!important}
 </style>
 <script src="appearance.js"></script>
@@ -61,9 +64,9 @@ button[type=submit]:disabled{opacity:.6}
   <!-- Log in (a normal form, so password managers recognise it) -->
   <form method="post" action="/auth/login" id="f" hidden>
     <input type="hidden" name="next" id="next" value="/">
-    <label for="u">Email</label>
+    <label for="u">Email or username</label>
     <input id="u" name="username" type="text" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
-    <p class="hint">Haven’t added your email yet? Use your username.</p>
+    <p class="hint">Kids and older logins use a username instead of an email.</p>
     <label for="p">Password</label>
     <div class="pw">
       <input id="p" name="password" type="password" autocomplete="current-password" required>
@@ -71,6 +74,7 @@ button[type=submit]:disabled{opacity:.6}
     </div>
     <button type="submit" id="go">Log in</button>
     <p class="links"><button type="button" class="linkbtn" id="forgotLink">Forgot your password?</button></p>
+    <div class="signup"><span>New here?</span> <button type="button" class="btn2" id="signupLink">Sign up</button></div>
   </form>
 
   <!-- Create the family's first account, invite, reset and "forgot password" forms (sent with fetch) -->
@@ -101,6 +105,7 @@ button[type=submit]:disabled{opacity:.6}
 //   /login?join=<link>   accept an invite: choose a password
 //   /login?reset=<link>  choose a new password
 //   /login?forgot        ask for a reset email (only works if email is set up on the server)
+// and "Sign up" (a sign-up an admin approves on the Family page).
 (function () {
   "use strict";
   var q = new URLSearchParams(location.search);
@@ -172,6 +177,10 @@ button[type=submit]:disabled{opacity:.6}
     $("go").disabled = false;
     $("go").textContent = "Log in";
   });
+  $("signupLink").addEventListener("click", function () {
+    say("");
+    showForm("signup", "Create your login. Someone in your family who manages the app approves it, then you can log in. Got an invite link? Use that instead: it lets you straight in.", ["nameRow", "emailRow", "pwRow"], "Sign up");
+  });
   $("forgotLink").addEventListener("click", function () {
     say("");
     showForm("forgot", "Enter your email. If email is set up on this server, we’ll send you a link to choose a new password.", ["emailRow"], "Send the link");
@@ -189,6 +198,16 @@ button[type=submit]:disabled{opacity:.6}
     b.textContent = "Please wait…";
     var done;
     if (MODE === "register") done = api("POST", "/auth/register", { name: $("n").value, email: $("e").value, password: password }).then(goHome);
+    else if (MODE === "signup") done = api("POST", "/auth/signup", { name: $("n").value, email: $("e").value, password: password }).then(function (d) {
+      if (!d.pending) return goHome();   // a brand-new server: they're the owner, and logged in
+      $("f2").hidden = true;
+      $("sub").textContent = "";
+      say("Thanks, " + $("n").value.trim() + "! Your sign-up is waiting for approval. Once someone in your family approves it, log in with " + $("e").value.trim() + " and the password you chose.", "ok");
+      var back = document.createElement("p");
+      back.className = "links";
+      back.innerHTML = '<a href="/login">Back to log in</a>';
+      $("msg").after(back);
+    });
     else if (MODE === "join") done = api("POST", "/auth/join", { t: q.get("join"), email: $("e").value, password: password }).then(goHome);
     else if (MODE === "reset") done = api("POST", "/auth/reset", { t: q.get("reset"), password: password }).then(goHome);
     else done = api("POST", "/auth/forgot", { email: $("e").value }).then(function (d) {

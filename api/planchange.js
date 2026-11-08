@@ -67,7 +67,10 @@ function preview(value) {
 
 // Tries the steps on a copy of `plan`. Returns {plan, summary: [lines]} or {error}.
 // `check(plan)` is the server's plan check: it returns a problem as text, or nothing.
-function apply(plan, steps, check) {
+// `opts.maxValue` raises the size limit for one value; only whole-plan drafts the server wrote
+// itself (plandraft.js) use it. Changes Claude suggests in a chat keep the normal limit.
+function apply(plan, steps, check, opts) {
+  const maxValue = (opts && opts.maxValue) || 50000;
   if (!Array.isArray(steps) || !steps.length) return { error: 'there are no changes' };
   if (steps.length > MAX_STEPS) return { error: 'too many changes at once (up to ' + MAX_STEPS + ')' };
   const copy = JSON.parse(JSON.stringify(plan));
@@ -79,7 +82,7 @@ function apply(plan, steps, check) {
     if (found.error) return { error: where + found.error };
     const { parent, key } = found;
     const place = describePath(copy, step.path);
-    if (JSON.stringify(step.value === undefined ? null : step.value).length > 50000) return { error: where + 'the value is too big' };
+    if (JSON.stringify(step.value === undefined ? null : step.value).length > maxValue) return { error: where + 'the value is too big' };
 
     if (step.op === 'set') {
       if (step.value === undefined) return { error: where + '"set" needs a value' };
@@ -119,4 +122,7 @@ function apply(plan, steps, check) {
   return { plan: copy, summary };
 }
 
-module.exports = { apply, describePath };
+// The size limit for one part of a whole-plan draft (a full plan is usually 100 to 200 KB).
+const FULL_PLAN_MAX = 2000000;
+
+module.exports = { apply, describePath, FULL_PLAN_MAX };

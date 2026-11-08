@@ -363,13 +363,14 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
       <span id="sync" class="sync" role="status"></span>
       <details class="acctmenu" id="acct">
         <summary aria-label="Account and log out"><span class="avatar" id="avatar" aria-hidden="true"></span></summary>
-        <div class="menu"><p id="me"></p><a class="btn" href="profile.html" style="text-decoration:none">About me</a><a class="btn" href="progress.html" style="text-decoration:none">Progress</a><a class="btn" href="assistant.html" style="text-decoration:none">Ask Claude</a><a class="btn" href="settings.html" style="text-decoration:none">Settings</a><a class="btn" href="account.html" style="text-decoration:none">Account</a><a class="btn" id="familyLink" href="family.html" hidden style="text-decoration:none">Family</a><a class="btn" href="files.html" style="text-decoration:none">My files</a><a class="btn" id="adminLink" href="admin.html" hidden style="text-decoration:none">Edit plan</a><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
+        <div class="menu"><p id="me"></p><a class="btn" href="profile.html" style="text-decoration:none">About me</a><a class="btn" href="progress.html" style="text-decoration:none">Progress</a><a class="btn" href="assistant.html" style="text-decoration:none">Ask Claude</a><a class="btn" href="settings.html" style="text-decoration:none">Settings</a><a class="btn" href="account.html" style="text-decoration:none">Account</a><a class="btn" id="familyLink" href="family.html" hidden style="text-decoration:none">Family</a><a class="btn" id="setupLink" href="setup.html" hidden style="text-decoration:none">Plan setup</a><a class="btn" href="files.html" style="text-decoration:none">My files</a><a class="btn" id="adminLink" href="admin.html" hidden style="text-decoration:none">Edit plan</a><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
       </details>
     </div>
     <div class="tabs" role="tablist" aria-label="Weeks" id="tabs"></div>
   </header>
   <p class="err" id="err" hidden></p>
   <div class="ask" id="emailNudge" hidden><span>You can log in with your email now. Add it to your account (your username keeps working).</span> <a class="btn primary" href="account.html">Add email</a></div>
+  <div class="ask" id="setupNudge" hidden><span>Set up your family’s plan: get everyone’s About me answers in, then have Claude draft 4 weeks of meals, shopping and exercise.</span> <a class="btn primary" href="setup.html">Plan setup</a></div>
   <div class="ask" id="ask" hidden><span>Help shape your meals and exercise: answer a few questions about you.</span> <a class="btn primary" href="profile.html">Start</a> <button class="btn" type="button" id="askLater">Later</button></div>
   <div class="who" id="whoRow" hidden><label for="user">Ticks for</label><select id="user"></select><span class="me-name" id="meName" hidden></span></div>
   <div id="shopView">
@@ -934,6 +935,7 @@ function usePlan(p) {
   document.title = p.title ? p.title + " · Family Health Planner" : "Family Health Planner";
   show();
   pull();
+  if (ME && ME.user && typeof setMe === "function") setMe(ME);   // the Plan setup banner depends on the plan
 }
 
 // ---------- week tabs ----------
@@ -2826,7 +2828,10 @@ function setMe(d) {
   document.getElementById("me").textContent = "Logged in as " + (d.email || d.user) + (roles[d.role] || (d.admin ? " (admin)" : ""));
   document.getElementById("adminLink").hidden = !d.admin;
   document.getElementById("familyLink").hidden = !d.admin;
+  document.getElementById("setupLink").hidden = !d.admin;
   document.getElementById("emailNudge").hidden = !d.needsEmail;
+  // Admins still on the example plan are pointed at Plan setup.
+  document.getElementById("setupNudge").hidden = !(d.admin && PLAN && /^example/i.test(String(PLAN.id || "")));
   document.getElementById("avatar").textContent = (d.person || d.user).charAt(0);
 }
 if (ME && ME.user) setMe(ME);   // straight away, from the copy remembered on this device

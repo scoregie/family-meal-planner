@@ -116,7 +116,10 @@ function render() {
     $("emailBtn").textContent = "Add email";
   } else {
     $("emailTitle").textContent = "Your email";
-    $("emailNote").textContent = "You log in with this email." + (a.username ? " Your old username “" + a.username + "” still works too." : "");
+    var isName = String(a.email || "").indexOf("@") < 0;   // a child's login can be a username
+    $("emailNote").textContent = isName
+      ? "You log in with the username “" + a.email + "”. You can change it to an email here if you like."
+      : "You log in with this email." + (a.username ? " Your old username “" + a.username + "” still works too." : "");
     $("email").value = a.email;
     $("emailBtn").textContent = "Change email";
   }

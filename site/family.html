@@ -29,6 +29,12 @@
   </div>
   <div id="msg"></div>
   <div id="app" hidden>
+    <section class="card" id="signupsCard" hidden>
+      <h2>Waiting for approval</h2>
+      <p class="note">These people signed up on the login page. Only approve people you know.</p>
+      <div id="signups"></div>
+    </section>
+
     <section class="card">
       <h2>Logins</h2>
       <div id="members"></div>
@@ -48,6 +54,7 @@
         <div class="row"><button class="btn primary" type="submit">Make invite link</button></div>
       </form>
       <div id="newLink"></div>
+      <p class="note" style="margin-top:.8rem">Adding a child without an email? Use <a href="setup.html">Plan setup</a>: you can give them a username and password to log in with.</p>
     </section>
 
     <section class="card" id="invitesCard" hidden>
@@ -207,6 +214,35 @@ function render() {
 
   $("roleBox").hidden = DATA.me.role !== "owner";
   if (DATA.mail) $("inviteNote").textContent = "If you add their email, the invite is emailed to them. You also get a link to send yourself. It works for 7 days.";
+
+  var su = $("signups");
+  su.textContent = "";
+  $("signupsCard").hidden = !(DATA.signups || []).length;
+  (DATA.signups || []).forEach(function (x) {
+    var row = el("div", "member");
+    var text = el("div");
+    text.appendChild(el("h3", null, x.name));
+    text.appendChild(el("small", null, x.email + " · signed up " + when(x.created_at)));
+    row.appendChild(text);
+    var acts = el("div", "acts");
+    function decide(label, cls, body, ask) {
+      var b = el("button", "btn small" + (cls ? " " + cls : ""), label);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        if (ask && !confirm(ask)) return;
+        api("POST", "/api/family/signup/" + x.id, body).then(function () {
+          status(body.action === "approve" ? x.name + " can log in now." : "Declined.");
+          return load();
+        }).catch(function (e) { status(e.message, true); });
+      });
+      acts.appendChild(b);
+    }
+    decide("Approve", "primary", { action: "approve", role: "member" });
+    if (DATA.me.role === "owner") decide("Approve as admin", "", { action: "approve", role: "admin" }, "Make " + x.name + " an admin? Admins can edit the plan and manage members.");
+    decide("Decline", "danger", { action: "decline" }, "Decline " + x.name + "’s sign-up?");
+    row.appendChild(acts);
+    su.appendChild(row);
+  });
 
   var inv = $("invites");
   inv.textContent = "";

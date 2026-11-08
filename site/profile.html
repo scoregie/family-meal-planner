@@ -29,6 +29,8 @@ h1{font-size:1.5rem;margin:0 0 .2rem}
 .pseg .btn{border-radius:1.2rem;border-width:1px;min-height:2.3rem}
 .pseg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .intro{color:var(--mute);font-size:.9rem;margin:0 0 1rem}
+.finish{border-color:var(--accent)}
+.finish-row{display:flex;gap:.5rem;flex-wrap:wrap}
 .remind{background:var(--bg);border:1px solid var(--line);border-radius:.6rem;padding:.6rem .8rem;margin:-.4rem 0 1rem}
 .remind p{margin:.2rem 0 .5rem}
 .progress{font-size:.9rem;margin:0 0 1rem;font-variant-numeric:tabular-nums}
@@ -75,6 +77,11 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
     <p class="intro" id="intro"></p>
     <div class="progress" id="progress"></div>
     <form id="form" novalidate></form>
+    <section class="card finish" id="finishCard" hidden>
+      <h2 id="finishTitle">Finished?</h2>
+      <p class="intro" id="finishText"></p>
+      <div class="finish-row"><button class="btn primary" type="button" id="finishBtn">I’m finished</button> <a class="btn" id="setupLink" href="setup.html" hidden>Plan setup</a></div>
+    </section>
     <section class="card pw" id="pwCard" hidden>
       <h2>Change your password</h2>
       <form id="pwForm">
@@ -342,9 +349,45 @@ function load(names) {
     var name = names[PERSON] || PERSON;
     $("sub").textContent = PERSON === ME.person ? "Your answers" : name + "’s answers";
     $("pwCard").hidden = !data.canChangePassword;
+    FINISHED = !!data.finished_at;
     render();
+    showFinish();
   });
 }
+
+// "I'm finished": tells the family's admins these answers are ready for drafting the plan.
+var FINISHED = false;
+function showFinish() {
+  var mine = PERSON === ME.person;
+  var name = mine ? "you" : $("sub").textContent.replace(/’s answers$/, "");
+  $("finishCard").hidden = false;
+  $("setupLink").hidden = !ME.admin;
+  if (FINISHED) {
+    $("finishTitle").textContent = "Finished";
+    $("finishText").textContent = (mine ? "Thanks! Your answers are ready" : name + "’s answers are marked ready") +
+      " for the family’s plan. You can still change anything here; the next plan uses the latest answers.";
+    $("finishBtn").textContent = "Not finished yet";
+    $("finishBtn").className = "btn";
+  } else {
+    $("finishTitle").textContent = "Finished?";
+    $("finishText").textContent = "When " + (mine ? "you’ve" : name + " has") + " answered what you can, tap below. Once everyone in the family is finished, an admin can have Claude draft a 4-week plan from everyone’s answers. Skipped questions are fine.";
+    $("finishBtn").textContent = "I’m finished";
+    if (!mine) $("finishBtn").textContent = "Mark " + name + " as finished";
+    $("finishBtn").className = "btn primary";
+  }
+}
+
+$("finishBtn").onclick = function () {
+  var before = saveTimer ? saveNow() : Promise.resolve();
+  before.then(function () {
+    return api("PUT", "/api/profile?person=" + encodeURIComponent(PERSON), { finished: !FINISHED });
+  }).then(function (d) {
+    FINISHED = !!d.finished_at;
+    showFinish();
+  }).catch(function (err) {
+    $("finishText").textContent = err.message;
+  });
+};
 
 // Admins: buttons to switch whose answers are shown.
 function renderPicker(list, names) {

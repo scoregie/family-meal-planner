@@ -46,12 +46,14 @@ Open `http://<server-ip>/` and create the family's first account (you'll be the 
 
 ## People, logins and admins
 
-Everyone logs in with their **email address and a password**. One family uses each server.
+Everyone logs in with their **email address (or, for kids, a username) and a password**. One family uses each server.
 
-1. **The first account:** open the site on a new server and you're asked to create the first account. That person is the family's **owner**. After that, nobody else can register.
+1. **The first account:** open the site on a new server and you're asked to create the first account. That person is the family's **owner**.
 2. **Inviting people:** the owner and admins open **Family** (account menu) and make an invite: a name, an optional email, a portion size and (for the owner) whether they're an admin. They get a link to send by text or any messaging app. The person opens it, chooses a password and is logged in. Links work for 7 days and only once. New people are added to the plan's `"people"` block automatically (with a backup of the plan first).
-3. **Forgotten passwords:** an admin taps **Reset link** next to the person on the Family page and sends them the link (it works for 24 hours). If email is set up (below), **Forgot your password?** on the login page emails a link instead.
-4. **Your own account:** **Account** (account menu) changes your email or password, logs you out on your other devices, or deletes your account (and, if you choose, your history: About me answers, weigh-ins, ratings, exercise and chats).
+3. **Signing up:** anyone can tap **Sign up** on the login page and enter their name, email and a password. They can't log in until an admin approves them under **Waiting for approval** on the Family page (or declines it), so someone who finds the address can't let themselves in. If email is set up, admins get an email about each sign-up, and the person gets one when they're approved. An invite link skips the wait.
+4. **Kids without an email:** on **Plan setup** (account menu, admins), **Add someone without an email** adds a child to the plan. Tick **Give them a login** to choose a username and password for them; they log in with the username. Usernames must be different from everyone else's, and so must names in the family (answers, ticks and logins are matched by name). Without a login, an admin answers About me for them.
+5. **Forgotten passwords:** an admin taps **Reset link** next to the person on the Family page and sends them the link (it works for 24 hours). If email is set up (below), **Forgot your password?** on the login page emails a link instead.
+6. **Your own account:** **Account** (account menu) changes your email or password, logs you out on your other devices, or deletes your account (and, if you choose, your history: About me answers, weigh-ins, ratings, exercise and chats).
 
 **Roles:**
 
@@ -83,7 +85,17 @@ Any email provider's SMTP settings work (for Gmail, make an "app password" in yo
 
 ## About me questions
 
-Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to.
+Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to. At the bottom, **I'm finished** tells the admins their answers are ready for the family's plan (they can still change them afterwards).
+
+## Plan setup: Claude drafts the family's plan
+
+Admins have **Plan setup** in the account menu (and a banner on the main page while the example plan is in use):
+
+1. **Everyone's About me answers:** who is in the plan and who has finished. Admins can answer for people without a login, and add children.
+2. **Draft the plan:** once everyone is finished (or earlier, if you choose), **Draft our plan** asks Claude to write a whole 4-week plan from everyone's answers and the stores you shop at: meals, snacks tied to exercise days, recipes, shopping lists with prices, exercise for each person, and medical considerations from what people said. Add a note for anything that applies to everyone. It runs in the background and takes about 5 to 10 minutes. It uses the admin's own Claude key if they've saved one in Settings, otherwise the family's key, and as one long request it costs noticeably more than a chat.
+3. **Review and approve:** the draft shows each week's cost and dinners, and everyone's snacks and exercise focus. **Approve** replaces the plan (the old one is backed up first in `data/plan-backups/`) and everyone's ticks start fresh. **Discard** throws it away. After approving, Ask Claude can make smaller tweaks.
+
+**Rebuild our plan** on the same page does it again whenever answers change, for example after a new person joins.
 
 ## Uploading files
 

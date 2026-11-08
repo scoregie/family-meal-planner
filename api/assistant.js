@@ -598,7 +598,9 @@ function requestAction(res, me, id, action, b, ctx) {
     const plan = ctx.readPlan();
     if (!plan) return send(res, 500, { error: 'plan.json could not be read.' });
     // Apply the steps to the plan as it is now (it may have changed since the draft was made).
-    const tried = planchange.apply(plan, r.change && r.change.steps, ctx.checkPlan);
+    // A whole-plan draft (from Plan setup) was written by the server, so it may be bigger.
+    const opts = r.change && r.change.kind === 'full-plan' ? { maxValue: planchange.FULL_PLAN_MAX } : undefined;
+    const tried = planchange.apply(plan, r.change && r.change.steps, ctx.checkPlan, opts);
     if (tried.error) return send(res, 409, { error: 'This change no longer fits the plan (it may have been edited since). ' + tried.error + ' Ask the assistant to suggest it again.' });
     ctx.savePlan(tried.plan);
     db.setRequestStatus(id, 'done', me.user, String(b.reply || '').slice(0, 1000) || null);

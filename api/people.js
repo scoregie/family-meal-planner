@@ -160,12 +160,19 @@ async function handle(req, res, urlPath, url, me, ctx) {
         person: who.person,
         answers: profile ? profile.answers : null,
         updated_at: profile ? profile.updated_at : null,
+        finished_at: profile ? profile.finished_at : null,
         canChangePassword: ownAppLogin,
       });
       return true;
     }
     if (req.method === 'PUT') {
       const b = await body(req);
+      // {finished: true/false} alone marks the answers finished (or not) without changing them.
+      if (typeof b.finished === 'boolean' && b.answers === undefined) {
+        db.setProfileFinished(who.person, b.finished);
+        send(res, 200, { ok: true, finished_at: db.getProfile(who.person).finished_at });
+        return true;
+      }
       const answers = cleanAnswers(b.answers);
       db.saveProfile(who.person, answers);
       send(res, 200, { ok: true, answers });

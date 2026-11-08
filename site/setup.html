@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Plan setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="page.css">
+<style>
+.member{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.65rem 0;border-top:1px solid var(--line)}
+.member:first-child{border-top:0}
+.member h3{font-size:1rem;margin:0 0 .1rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.member small{display:block;color:var(--mute);font-size:.85rem}
+.member small.ok{color:var(--accent);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:0 .8rem}
+textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .65rem;width:100%;min-height:5rem;resize:vertical}
+.bar{height:.6rem;background:var(--line);border-radius:1rem;overflow:hidden;margin:.6rem 0 .3rem}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:1rem;transition:width .6s}
+.wk{border-top:1px solid var(--line);padding:.5rem 0}
+.wk:first-of-type{border-top:0}
+.wk summary{cursor:pointer;display:flex;justify-content:space-between;gap:.5rem;font-weight:700}
+.wk summary span{font-weight:400;color:var(--mute)}
+.wk ul{margin:.3rem 0 .2rem 1.1rem;padding:0;font-size:.9rem}
+.step{display:inline-grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:.85rem;margin-right:.35rem}
+.details{white-space:pre-wrap}
+</style>
+<script src="appearance.js"></script>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Plan setup</h1><p class="sub">Get everyone’s answers in, then have Claude draft your family’s 4-week plan</p></div>
+    <a class="btn" href="./">← Back to the app</a>
+  </div>
+  <div id="msg"></div>
+  <div id="app" hidden>
+    <section class="card">
+      <h2><span class="step">1</span>Everyone’s About me answers</h2>
+      <p class="note">Each person answers the About me questions and taps “I’m finished”. For someone without a login (like a young child), you can answer for them.</p>
+      <div id="people"></div>
+      <details>
+        <summary class="btn small" style="margin-top:.6rem">Add someone without an email (like a child)</summary>
+        <form id="addForm">
+          <div class="grid">
+            <div><label class="f" for="aName">Name</label><input type="text" id="aName" maxlength="40" required placeholder="e.g. Riley"></div>
+            <div><label class="f" for="aPortion">Portion (1.0 is an average adult serve)</label><input type="number" id="aPortion" value="0.8" step="0.1" min="0.3" max="2.5"></div>
+          </div>
+          <label class="check"><input type="checkbox" id="aLogin"> Give them a login (a username and password you choose)</label>
+          <div class="grid" id="aLoginRow" hidden>
+            <div><label class="f" for="aUser">Username</label><input type="text" id="aUser" maxlength="30" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="e.g. riley"></div>
+            <div><label class="f" for="aPw">Password (at least 8 characters)</label><input type="text" id="aPw" maxlength="200" autocomplete="off" spellcheck="false"></div>
+          </div>
+          <p class="note" id="aLoginNote" hidden>Usernames must be different from everyone else’s. Tell them their username and password; they log in with those instead of an email. You can make a password-reset link for them on the Family page.</p>
+          <div class="row"><button class="btn primary" type="submit">Add to the family</button></div>
+        </form>
+      </details>
+      <p class="note" style="margin-top:.8rem"><a href="family.html">Invite someone with their own login →</a></p>
+    </section>
+
+    <section class="card" id="draftCard">
+      <h2><span class="step">2</span><span id="draftTitle">Draft the plan</span></h2>
+      <div id="draftBody"></div>
+    </section>
+
+    <section class="card" id="reviewCard" hidden>
+      <h2><span class="step">3</span>Review and approve</h2>
+      <div id="review"></div>
+    </section>
+  </div>
+</main>
+<div class="status" id="status" role="status" hidden></div>
+<script>
+// The Plan setup page (admins): who has finished About me, adding people without a login,
+// having Claude draft a whole new plan, and approving it.
+"use strict";
+var DATA = null;
+var pollTimer = 0;
+var ROLE_NAMES = { owner: "Owner", admin: "Admin", member: "Member", username: "Username login" };
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+function api(method, url, body) {
+  return fetch(url, {
+    method: method,
+    cache: "no-store",
+    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      if (!r.ok) throw new Error(d.error || "The server said " + r.status);
+      return d;
+    });
+  });
+}
+
+function status(text, isError) {
+  var s = $("status");
+  s.textContent = text;
+  s.className = "status" + (isError ? " err" : "");
+  s.hidden = false;
+  clearTimeout(status.timer);
+  status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 3000);
+}
+
+function money(n) {
+  return "$" + Math.round(n || 0);
+}
+
+// Step 1: everyone in the plan and how far through About me they are.
+function renderPeople() {
+  var box = $("people");
+  box.textContent = "";
+  DATA.people.forEach(function (p) {
+    var row = el("div", "member");
+    var text = el("div");
+    var h = el("h3", null, p.name);
+    h.appendChild(el("span", "chip" + (p.login === "owner" ? " owner" : p.login ? "" : " older"), p.login ? ROLE_NAMES[p.login] : "No login"));
+    text.appendChild(h);
+    if (p.finished) text.appendChild(el("small", "ok", "✓ Finished"));
+    else if (p.answered) text.appendChild(el("small", null, p.answered + " of " + DATA.questions + " answered, not marked finished yet"));
+    else text.appendChild(el("small", null, "Not started"));
+    row.appendChild(text);
+    var a = el("a", "btn small", p.login ? (p.finished ? "See answers" : "Answer or check") : "Answer for " + p.name);
+    a.href = "profile.html?person=" + encodeURIComponent(p.person);
+    row.appendChild(a);
+    box.appendChild(row);
+  });
+  if (!DATA.people.length) box.appendChild(el("p", "note", "Nobody is in the plan yet. Add people below, or invite them."));
+}
+
+// Step 2: the button to draft (or rebuild) the plan, or its progress while Claude writes it.
+function renderDraft() {
+  var box = $("draftBody");
+  box.textContent = "";
+  var job = DATA.job;
+  var finished = DATA.people.filter(function (p) { return p.finished; }).length;
+  var all = DATA.people.length;
+  $("draftTitle").textContent = DATA.isExample ? "Draft the plan" : "Draft a new plan";
+
+  if (job && job.state === "running") {
+    box.appendChild(el("p", null, "Claude is writing your plan: " + (job.stage || "starting") + "…"));
+    var bar = el("div", "bar");
+    var fill = el("i");
+    fill.style.width = Math.round((job.progress || 0.02) * 100) + "%";
+    bar.appendChild(fill);
+    box.appendChild(bar);
+    box.appendChild(el("p", "note", "This usually takes 5 to 10 minutes. You can close this page; the draft keeps going and shows up here when it’s ready."));
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(load, 4000);
+    return;
+  }
+  if (job && job.state === "failed") box.appendChild(el("div", "msg err", "The last draft didn’t work: " + job.error));
+
+  if (!DATA.claude.enabled) {
+    box.appendChild(el("p", "note", DATA.claude.reason || "Claude isn’t set up."));
+    var link = el("a", "btn", "Add your Claude key in Settings");
+    link.href = "settings.html";
+    box.appendChild(link);
+    return;
+  }
+
+  box.appendChild(el("p", "note", "Claude writes 4 weeks of meals, snacks, recipes, shopping lists and exercise for everyone, from their About me answers and the stores you shop at. It takes 5 to 10 minutes and uses " +
+    (DATA.claude.own ? "your own Claude key" : "the family’s Claude key") + " (one long request, so it costs more than a chat). Nothing changes until you approve it." +
+    (DATA.isExample ? "" : " Approving a new plan replaces the current one (it’s backed up first) and everyone’s ticks start fresh.")));
+  box.appendChild(el("p", null, finished + " of " + all + " finished."));
+  var label = el("label", "f", "Anything Claude should know for the whole family? (optional)");
+  label.htmlFor = "note";
+  box.appendChild(label);
+  var note = el("textarea");
+  note.id = "note";
+  note.maxLength = 2000;
+  note.placeholder = "e.g. Keep it under $250 a week. Thursday is footy night, so something quick.";
+  box.appendChild(note);
+  var row = el("div", "row");
+  var ready = all > 0 && finished === all;
+  var button = el("button", "btn primary", (DATA.isExample ? "Draft our plan" : "Rebuild our plan") + (ready ? "" : " anyway"));
+  button.type = "button";
+  button.disabled = !all;
+  button.onclick = function () {
+    if (!ready && !confirm("Not everyone has finished their answers. Draft the plan anyway?")) return;
+    if (DATA.draft && !confirm("There’s already a draft waiting for approval. Replace it with a new one?")) return;
+    button.disabled = true;
+    api("POST", "/api/plan/draft", { note: note.value }).then(load).catch(function (e) {
+      button.disabled = false;
+      status(e.message, true);
+    });
+  };
+  row.appendChild(button);
+  if (!ready && all) row.appendChild(el("span", "note", "Best once everyone has finished."));
+  box.appendChild(row);
+}
+
+// Step 3: a waiting draft, with enough detail to decide, and Approve or Discard.
+function renderReview() {
+  var d = DATA.draft;
+  $("reviewCard").hidden = !d;
+  if (!d) return;
+  var box = $("review");
+  box.textContent = "";
+  if (d.details) box.appendChild(el("p", "details", d.details));
+  d.weeks.forEach(function (w) {
+    var wk = el("details", "wk");
+    var s = el("summary", null, w.name);
+    s.appendChild(el("span", null, "about " + money(w.cost)));
+    wk.appendChild(s);
+    var list = el("ul");
+    if (w.kind === "stockup") list.appendChild(el("li", null, "Pantry and freezer items for the next two weeks"));
+    w.dinners.forEach(function (t) { list.appendChild(el("li", null, t)); });
+    wk.appendChild(list);
+    box.appendChild(wk);
+  });
+  d.people.forEach(function (p) {
+    var wk = el("details", "wk");
+    var s = el("summary", null, p.name);
+    s.appendChild(el("span", null, "portion " + p.portion));
+    wk.appendChild(s);
+    var list = el("ul");
+    if (p.focus) list.appendChild(el("li", null, "Exercise: " + p.focus));
+    p.snacks.forEach(function (t) { list.appendChild(el("li", null, "Snack: " + t)); });
+    wk.appendChild(list);
+    box.appendChild(wk);
+  });
+  var row = el("div", "row");
+  var ok = el("button", "btn primary", "Approve and use this plan");
+  ok.type = "button";
+  ok.onclick = function () {
+    if (!confirm("Replace the current plan with this one? The current plan is backed up first, and everyone’s ticks start fresh.")) return;
+    ok.disabled = true;
+    api("POST", "/api/requests/" + d.id + "/approve", {}).then(function () {
+      $("msg").textContent = "";
+      var done = el("div", "msg ok", "Your new plan is ready. ");
+      var a = el("a", null, "Open the app →");
+      a.href = "./";
+      done.appendChild(a);
+      $("msg").appendChild(done);
+      window.scrollTo(0, 0);
+      return load();
+    }).catch(function (e) {
+      ok.disabled = false;
+      status(e.message, true);
+    });
+  };
+  var no = el("button", "btn", "Discard");
+  no.type = "button";
+  no.onclick = function () {
+    if (!confirm("Discard this draft?")) return;
+    api("POST", "/api/requests/" + d.id + "/decline", { reply: "Discarded on the Plan setup page." }).then(load).catch(function (e) { status(e.message, true); });
+  };
+  row.appendChild(ok);
+  row.appendChild(no);
+  box.appendChild(row);
+  box.appendChild(el("p", "note", "Want changes? Approve it and ask Claude for tweaks afterwards, or discard it and draft again with a note."));
+}
+
+function load() {
+  return api("GET", "/api/plan/setup").then(function (d) {
+    DATA = d;
+    $("app").hidden = false;
+    renderPeople();
+    renderDraft();
+    renderReview();
+  }).catch(function (e) {
+    $("msg").textContent = "";
+    $("msg").appendChild(el("div", "msg err", e.message));
+  });
+}
+
+$("aLogin").addEventListener("change", function () {
+  $("aLoginRow").hidden = !this.checked;
+  $("aLoginNote").hidden = !this.checked;
+  // Suggest a username from their name.
+  if (this.checked && !$("aUser").value) $("aUser").value = $("aName").value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+});
+
+$("addForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var withLogin = $("aLogin").checked;
+  var name = $("aName").value.trim();
+  api("POST", "/api/family/person", {
+    name: name, portion: $("aPortion").value,
+    username: withLogin ? $("aUser").value.trim() : "", password: withLogin ? $("aPw").value : "",
+  }).then(function (d) {
+    status(d.username ? name + " can log in as “" + d.username + "”." : "Added. Answer their About me questions next.");
+    $("aName").value = "";
+    $("aUser").value = "";
+    $("aPw").value = "";
+    return load();
+  }).catch(function (err) { status(err.message, true); });
+});
+
+load();
+</script>
+</body>
+</html>

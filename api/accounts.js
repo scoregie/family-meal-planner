@@ -89,6 +89,11 @@ function cleanEmail(email) {
   return EMAIL.test(e) && e.length <= 200 ? e : '';
 }
 
+// True if a name has at least one letter or number (so it makes a usable person key).
+function goodName(name) {
+  return /[a-z0-9]/i.test(String(name || ''));
+}
+
 function passwordProblem(password) {
   const p = String(password || '');
   if (p.length < 8) return 'The password needs at least 8 characters.';
@@ -152,7 +157,7 @@ async function register(req, res, ctx) {
   const email = cleanEmail(b.email);
   const name = String(b.name || '').trim().slice(0, 40);
   if (!email) return send(res, 400, { error: 'Enter a valid email address.' });
-  if (!name) return send(res, 400, { error: 'Enter your name.' });
+  if (!goodName(name)) return send(res, 400, { error: 'Enter your name (with at least one letter or number).' });
   const bad = passwordProblem(b.password);
   if (bad) return send(res, 400, { error: bad });
   const person = ensurePerson(name, 1, ctx);
@@ -161,6 +166,92 @@ async function register(req, res, ctx) {
   if (!needsSetup()) return send(res, 403, { error: 'This family already has an account.' });
   const id = db.addAccount({ email, hash: auth.hash(b.password), person, role: 'owner', createdBy: 'register' });
   return send(res, 200, { ok: true }, auth.loginCookie(req, 'acct-' + id));
+}
+
+// Signing up without an invite. On a brand-new server that makes the owner (like register).
+// Otherwise the sign-up waits for an admin to approve it on the Family page, so someone who
+// finds the address can't just let themselves in.
+async function signup(req, res, ctx) {
+  if (needsSetup()) return register(req, res, ctx);
+  if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
+  countTry(req);   // every sign-up counts towards the limit, so it can't be used to flood the list
+  const b = await body(req);
+  const email = cleanEmail(b.email);
+  const name = String(b.name || '').trim().slice(0, 40);
+  if (!goodName(name)) return send(res, 400, { error: 'Enter your name (with at least one letter or number).' });
+  if (!email) return send(res, 400, { error: 'Enter a valid email address.' });
+  const bad = passwordProblem(b.password);
+  if (bad) return send(res, 400, { error: bad });
+  if (db.accountByEmail(email)) return send(res, 409, { error: 'There’s already an account with that email. Log in instead.' });
+  if (db.countSignups() >= 20) return send(res, 429, { error: 'There are too many sign-ups waiting. Ask someone in your family for an invite link.' });
+  db.addSignup({ name, email, hash: auth.hash(b.password) });
+  if (mailer.configured()) {
+    const admins = db.listAccounts().filter(a => a.role !== 'member');
+    for (const a of admins) {
+      await mailer.send(a.email, name + ' would like to join the Family Health Planner',
+        name + ' (' + email + ') signed up to join your family’s planner.\n\nIf you know them, approve them on the Family page:\n' + mailer.link('/family.html') +
+        '\n\nIf you don’t, decline it there and nothing else happens.');
+    }
+  }
+  return send(res, 200, { ok: true, pending: true });
+}
+
+// An admin approving or declining a sign-up.
+async function decideSignup(req, res, me, ctx, id) {
+  const b = await body(req);
+  const s = db.getSignup(id);
+  if (!s) return send(res, 404, { error: 'That sign-up has already been dealt with.' });
+  if (b.action === 'decline') {
+    db.deleteSignup(id);
+    return send(res, 200, { ok: true });
+  }
+  if (b.action !== 'approve') return send(res, 400, { error: 'bad request' });
+  const role = b.role === 'admin' ? 'admin' : 'member';
+  if (role === 'admin' && me.role !== 'owner') return send(res, 403, { error: 'Only the owner can make admins.' });
+  if (db.accountByEmail(s.email)) {
+    db.deleteSignup(id);
+    return send(res, 409, { error: 'There’s already an account with that email.' });
+  }
+  const person = ctx.toKey(s.name);
+  if (db.listAccounts().some(a => a.person === person)) {
+    return send(res, 409, { error: 'Someone called ' + s.name + ' already has a login. Decline this one and send them an invite with a different name (like “' + s.name + ' B”).' });
+  }
+  ensurePerson(s.name, 1, ctx);
+  db.addAccount({ email: s.email, hash: s.hash, person, role, createdBy: me.user });
+  db.deleteSignup(id);
+  db.deleteInvitesFor(person);
+  if (mailer.configured()) {
+    await mailer.send(s.email, 'You’re in: Family Health Planner',
+      'Your family has approved your sign-up. Log in with this email and the password you chose:\n' + mailer.link('/login'));
+  }
+  return send(res, 200, { ok: true });
+}
+
+// True if a username is free: not an account's email or username, an older login, or a sign-up.
+function usernameFree(username) {
+  return !db.accountByEmail(username) && !auth.users().includes(username) && !db.getLogin(username) &&
+    !db.listSignups().some(x => x.email === username);
+}
+
+async function addPersonNoEmail(req, res, me, ctx) {
+  const b = await body(req);
+  const name = String(b.name || '').trim().slice(0, 40);
+  const portion = b.portion === undefined || b.portion === '' ? 1 : Number(b.portion);
+  const username = String(b.username || '').trim().toLowerCase();
+  if (!goodName(name)) return send(res, 400, { error: 'Enter their name (with at least one letter or number).' });
+  if (!Number.isFinite(portion) || portion < 0.3 || portion > 2.5) return send(res, 400, { error: 'The portion should be between 0.3 and 2.5 (1.0 is an average serve).' });
+  // Each person's name is unique in the family: their answers, ticks and login are matched by it.
+  if (ctx.people().includes(ctx.toKey(name))) return send(res, 409, { error: 'Someone called ' + name + ' is already in the family. Use a different name, like “' + name + ' B”.' });
+  if (username) {
+    if (!/^[a-z0-9][a-z0-9._-]{1,29}$/.test(username)) return send(res, 400, { error: 'Usernames are 2 to 30 letters, numbers, dots, dashes or underscores, with no spaces.' });
+    if (!usernameFree(username)) return send(res, 409, { error: 'The username “' + username + '” is already taken. Try another, like “' + username + '2”.' });
+    const bad = passwordProblem(b.password);
+    if (bad) return send(res, 400, { error: bad });
+  }
+  const person = ensurePerson(name, portion, ctx);
+  if (!person) return send(res, 400, { error: 'Enter a name with at least one letter or number.' });
+  if (username) db.addAccount({ email: username, hash: auth.hash(b.password), person, role: 'member', createdBy: me.user });
+  return send(res, 200, { ok: true, person, username: username || null });
 }
 
 function inviteInfo(res, url, ctx) {
@@ -306,7 +397,7 @@ function family(res, me, ctx) {
     .map(l => Object.assign(l, { person: auth.describe(l.username).person, name: nameOf(auth.describe(l.username).person, ctx) }));
   const plan = ctx.readPlan() || {};
   const people = Object.values(plan.people || {}).filter(p => p && p.name).map(p => ({ person: ctx.toKey(p.name), name: p.name }));
-  send(res, 200, { me: { accountId: me.accountId || null, role: me.role }, accounts, older, invites: db.listInvites(), people, mail: mailer.configured() });
+  send(res, 200, { me: { accountId: me.accountId || null, role: me.role }, accounts, older, invites: db.listInvites(), signups: db.listSignups(), people, mail: mailer.configured() });
 }
 
 async function invite(req, res, me, ctx) {
@@ -314,7 +405,7 @@ async function invite(req, res, me, ctx) {
   const name = String(b.name || '').trim().slice(0, 40);
   const email = b.email ? cleanEmail(b.email) : '';
   const role = b.role === 'admin' ? 'admin' : 'member';
-  if (!name) return send(res, 400, { error: 'Enter their name.' });
+  if (!goodName(name)) return send(res, 400, { error: 'Enter their name (with at least one letter or number).' });
   if (b.email && !email) return send(res, 400, { error: 'That email address doesn’t look right.' });
   if (email && db.accountByEmail(email)) return send(res, 409, { error: 'There is already an account with that email.' });
   if (role === 'admin' && me.role !== 'owner') return send(res, 403, { error: 'Only the owner can invite admins.' });
@@ -379,7 +470,7 @@ async function memberAction(req, res, me, id, action, ctx) {
 
 // Public routes under /auth/. Changes need the X-Requested-With header (sent by the pages).
 async function handlePublic(req, res, urlPath, url, ctx) {
-  const routes = ['/auth/status', '/auth/register', '/auth/invite', '/auth/join', '/auth/forgot', '/auth/reset'];
+  const routes = ['/auth/status', '/auth/register', '/auth/signup', '/auth/invite', '/auth/join', '/auth/forgot', '/auth/reset'];
   if (!routes.includes(urlPath)) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
     send(res, 403, { error: 'bad request' });
@@ -387,6 +478,7 @@ async function handlePublic(req, res, urlPath, url, ctx) {
   }
   if (urlPath === '/auth/status' && req.method === 'GET') send(res, 200, { setup: needsSetup(), mail: mailer.configured() });
   else if (urlPath === '/auth/register' && req.method === 'POST') await register(req, res, ctx);
+  else if (urlPath === '/auth/signup' && req.method === 'POST') await signup(req, res, ctx);
   else if (urlPath === '/auth/invite' && req.method === 'GET') inviteInfo(res, url, ctx);
   else if (urlPath === '/auth/join' && req.method === 'POST') await join(req, res, ctx);
   else if (urlPath === '/auth/forgot' && req.method === 'POST') await forgot(req, res, ctx);
@@ -444,6 +536,17 @@ async function handle(req, res, urlPath, url, me, ctx) {
   }
   if (urlPath === '/api/family/invite' && req.method === 'POST') {
     await invite(req, res, me, ctx);
+    return true;
+  }
+  const sm = urlPath.match(/^\/api\/family\/signup\/(\d+)$/);
+  if (sm && req.method === 'POST') {
+    await decideSignup(req, res, me, ctx, Number(sm[1]));
+    return true;
+  }
+  // Someone without an email (a child, say). Optionally with a username and password the adult
+  // chooses, so they can log in themselves; otherwise an admin answers About me for them.
+  if (urlPath === '/api/family/person' && req.method === 'POST') {
+    await addPersonNoEmail(req, res, me, ctx);
     return true;
   }
   if (urlPath === '/api/family/invite' && req.method === 'DELETE') {

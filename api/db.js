@@ -178,6 +178,19 @@ const MIGRATIONS = [
     used_at    INTEGER
   );
   `,
+
+  // Step 6: when someone said they had finished their About me answers (so the family's plan can
+  // be drafted once everyone has), and sign-ups waiting for an admin to approve them.
+  `
+  ALTER TABLE profiles ADD COLUMN finished_at INTEGER;
+  CREATE TABLE signups (
+    id         INTEGER PRIMARY KEY,
+    name       TEXT NOT NULL,
+    email      TEXT NOT NULL UNIQUE,
+    hash       TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  `,
 ];
 
 let db = null;
@@ -693,8 +706,8 @@ function useReset(tokenHash) {
 
 // A person's answers ({question id: answer}) and when they were saved, or null.
 function getProfile(person) {
-  const row = open().prepare('SELECT answers, updated_at FROM profiles WHERE person = ?').get(person);
-  return row ? { answers: JSON.parse(row.answers), updated_at: row.updated_at } : null;
+  const row = open().prepare('SELECT answers, updated_at, finished_at FROM profiles WHERE person = ?').get(person);
+  return row ? { answers: JSON.parse(row.answers), updated_at: row.updated_at, finished_at: row.finished_at || null } : null;
 }
 
 // Saves a person's answers, replacing what was there.
@@ -704,7 +717,40 @@ function saveProfile(person, answers) {
     .run(person, JSON.stringify(answers), Date.now());
 }
 
+// ---------- sign-ups waiting for approval ----------
+
+// Saves a sign-up (replacing an earlier one with the same email).
+function addSignup(s) {
+  open().prepare(`INSERT INTO signups (name, email, hash, created_at) VALUES (?, ?, ?, ?)
+    ON CONFLICT (email) DO UPDATE SET name = excluded.name, hash = excluded.hash, created_at = excluded.created_at`)
+    .run(s.name, s.email, s.hash, Date.now());
+}
+
+// Waiting sign-ups, oldest first, without their password hashes.
+function listSignups() {
+  return open().prepare('SELECT id, name, email, created_at FROM signups ORDER BY created_at').all();
+}
+
+function getSignup(id) {
+  return open().prepare('SELECT * FROM signups WHERE id = ?').get(id) || null;
+}
+
+function deleteSignup(id) {
+  open().prepare('DELETE FROM signups WHERE id = ?').run(id);
+}
+
+function countSignups() {
+  return open().prepare('SELECT COUNT(*) AS n FROM signups').get().n;
+}
+
+// Marks a person's About me answers as finished (or not).
+function setProfileFinished(person, finished) {
+  if (!getProfile(person)) saveProfile(person, {});
+  open().prepare('UPDATE profiles SET finished_at = ? WHERE person = ?').run(finished ? Date.now() : null, person);
+}
+
 module.exports = {
+  setProfileFinished, addSignup, listSignups, getSignup, deleteSignup, countSignups,
   open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, dishKey, DB_FILE,
   saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, sessionsSince, getSetting, setSetting, planKeyFor,
   getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,

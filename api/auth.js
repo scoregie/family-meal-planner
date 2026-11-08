@@ -183,8 +183,16 @@ function checkLogin(login, password) {
     if (a) [stored, subject] = [a.hash, 'acct-' + a.id];
   } else {
     // An old username that has become an account uses the account's password from then on.
+    // A child's account can use a username instead of an email (stored in the email column).
     const linked = linkedAccount(login);
+    let named;
+    try {
+      named = database().accountByEmail(login);
+    } catch (e) {
+      named = undefined;
+    }
     if (linked) [stored, subject] = [linked.hash, 'acct-' + linked.id];
+    else if (named) [stored, subject] = [named.hash, 'acct-' + named.id];
     else if (hashFor(login)) [stored, subject] = [hashFor(login), login];
   }
   const passwordOk = verify(password, stored || DUMMY);
