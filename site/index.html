@@ -258,9 +258,9 @@ li.done .acts .find{color:var(--done)}
 .mac-head h3{margin:0;font-size:1rem}
 .mac-head .seg{display:flex;gap:.3rem;margin:0}
 .mac-head .btn{min-height:2.2rem;padding:.2rem .7rem;font-size:.82rem;border-radius:1.1rem;border-width:1px}
-.mac-kcal{margin:0;display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap}
-.mac-kcal b{font-size:1.9rem;line-height:1.1}
-.mac-kcal span{color:var(--mute);font-size:.9rem}
+.mac-kj{margin:0;display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap}
+.mac-kj b{font-size:1.9rem;line-height:1.1}
+.mac-kj span{color:var(--mute);font-size:.9rem}
 /* Thin segmented bar: 8px band, 2px surface gaps, rounded ends; each block is a 20px-tall hover/focus target. */
 .mac-bar{display:flex;gap:2px;margin:.5rem 0 .7rem}
 .mac-bar span{position:relative;height:1.25rem;min-width:0;cursor:default;outline-offset:2px}
@@ -277,6 +277,18 @@ li.done .acts .find{color:var(--done)}
 .mac-leg b{font-variant-numeric:tabular-nums}
 .mac-leg small{color:var(--mute);font-variant-numeric:tabular-nums;font-size:.8rem;min-width:2.6rem;text-align:right}
 .mac-note{color:var(--mute);font-size:.82rem;margin:.6rem 0 0}
+.mac-h{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin:1.1rem 0 .4rem}
+.mac-h h2{margin:0}
+.mac-key{display:flex;gap:.8rem;font-size:.8rem;color:var(--mute)}
+.mac-key span{display:inline-flex;align-items:center;gap:.3rem}
+.mac-key .mac-sw{width:.65rem;height:.65rem}
+.days .mac-bar{margin:.15rem 0 .1rem}
+.mac-day{color:var(--mute);font-size:.82rem;font-variant-numeric:tabular-nums;margin:0 0 .35rem}
+.mrow{margin:.35rem 0 0;padding-top:.35rem;border-top:1px solid var(--line)}
+.mrow .mk{display:block;width:auto;font-size:.75rem;padding:0;letter-spacing:.02em}
+.mrow .mv{display:block}
+.mrow .mm.none{font-style:italic}
+.mrow.opt .mv{color:var(--mute)}
 .mm{display:block;color:var(--mute);font-size:.78rem;font-variant-numeric:tabular-nums;margin-top:.1rem}
 .dk{float:right;font-weight:400;color:var(--mute);font-size:.8rem;font-variant-numeric:tabular-nums}
 .ov{display:block;color:var(--mute);font-size:.82rem;margin-top:.1rem}
@@ -314,6 +326,7 @@ li.done .acts .find{color:var(--done)}
   <p class="empty" id="allDone">Everything is ticked off. Nice work.</p>
   </div>
   <div id="meals" hidden></div>
+  <div id="macView" hidden></div>
   <div id="exView" hidden></div>
   <div id="ratesView" hidden></div>
   <details class="about"><summary>About this plan</summary><p id="sub"></p><p class="note">Tap the box to tick an item off. Tap &ldquo;At home?&rdquo; on anything you already have. It is removed from your total and stays marked in every week. Oil, salt, pepper and dried spices are assumed on hand. The Coles links open a search for that item, so pick the size and brand that suits you.</p></details>
@@ -321,6 +334,7 @@ li.done .acts .find{color:var(--done)}
 <nav class="bottomnav" aria-label="Sections">
   <button type="button" id="vShop" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11h11L21 8H6.2"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg><span>Shopping</span></button>
   <button type="button" id="vMeals" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4.5-3.5 8h3.5"/></svg><span>Meals</span></button>
+  <button type="button" id="vMac" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h7M14 7h6M4 12h3M10 12h10M4 17h11M18 17h2"/></svg><span>Macros</span></button>
   <button type="button" id="vEx" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg><span>Exercise</span></button>
   <button type="button" id="vRates" aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Ratings</span></button>
 </nav>
@@ -638,25 +652,29 @@ function macrosOf(dish){
   var m=PLAN.macros||{};
   if(!PLAN._mk){PLAN._mk={};Object.keys(m).forEach(function(k){PLAN._mk[macroKey(k)]=m[k];});}
   var v=PLAN._mk[macroKey(dish)];if(!v||typeof v!=="object")return null;
-  var p=+v.p||0,c=+v.c||0,f=+v.f||0;if(!p&&!c&&!f&&!v.kcal)return null;
-  return {p:p,c:c,f:f,kcal:+v.kcal||(4*p+4*c+9*f)};
+  var p=+v.p||0,c=+v.c||0,f=+v.f||0;if(!p&&!c&&!f&&!v.kj&&!v.kcal)return null;
+  // Energy in kJ from the factors on Australian food labels (FSANZ): 17 kJ/g protein and carbs, 37 kJ/g fat.
+  return {p:p,c:c,f:f,kj:+v.kj||(+v.kcal?v.kcal*4.184:17*p+17*c+37*f)};
 }
-function scaleM(m,k){return {p:m.p*k,c:m.c*k,f:m.f*k,kcal:m.kcal*k};}
-function addM(t,m){t.p+=m.p;t.c+=m.c;t.f+=m.f;t.kcal+=m.kcal;}
-function macroLine(m){return Math.round(m.kcal)+" kcal · P "+Math.round(m.p)+" g · C "+Math.round(m.c)+" g · F "+Math.round(m.f)+" g";}
+function scaleM(m,k){return {p:m.p*k,c:m.c*k,f:m.f*k,kj:m.kj*k};}
+function addM(t,m){t.p+=m.p;t.c+=m.c;t.f+=m.f;t.kj+=m.kj;}
+function kjText(n){return Math.round(n).toLocaleString("en-AU")+" kJ";}
+function macroLine(m){return kjText(m.kj)+" · P "+Math.round(m.p)+" g · C "+Math.round(m.c)+" g · F "+Math.round(m.f)+" g";}
 var macroMode="";
-// Thin segmented bar of where the calories come from. The list below it carries the numbers;
+// Thin segmented bar of where the energy (kJ) comes from. The list below it carries the numbers;
 // hovering or focusing a block highlights its row and says its share.
-var MACROS=[["Protein","p",4,"var(--m-p)"],["Carbs","c",4,"var(--m-c)"],["Fat","f",9,"var(--m-f)"]];
+var MACROS=[["Protein","p",17,"var(--m-p)"],["Carbs","c",17,"var(--m-c)"],["Fat","f",37,"var(--m-f)"]];  // kJ per gram
 function macroBar(m,leg){
   var sum=MACROS.reduce(function(a,x){return a+m[x[1]]*x[2];},0),bar=el("div","mac-bar");
   bar.setAttribute("role","img");
-  bar.setAttribute("aria-label","Calories by macro: "+MACROS.map(function(x){return x[0]+" "+(sum?Math.round(m[x[1]]*x[2]/sum*100):0)+"%";}).join(", "));
+  bar.setAttribute("aria-label","Energy by macro: "+MACROS.map(function(x){return x[0]+" "+(sum?Math.round(m[x[1]]*x[2]/sum*100):0)+"%";}).join(", "));
   MACROS.forEach(function(x,i){
     var k=m[x[1]]*x[2];if(!sum||!k)return;
-    var s=el("span"),txt=x[0]+": "+Math.round(m[x[1]])+" g, "+Math.round(k/sum*100)+"% of calories";
+    var s=el("span"),txt=x[0]+": "+Math.round(m[x[1]])+" g, "+Math.round(k/sum*100)+"% of energy";
     s.style.flexGrow=k;s.style.flexBasis="0";s.style.setProperty("--c",x[3]);s.title=txt;s.tabIndex=0;s.setAttribute("aria-label",txt);
-    var row=leg.children[i];
+    // Without a list beside it (the per-day bars) the text line under the bar carries the numbers,
+    // so the bar is decorative there and its blocks are not tab stops.
+    var row=leg?leg.children[i]:null;if(!row){s.removeAttribute("tabindex");s.removeAttribute("aria-label");bar.removeAttribute("role");bar.setAttribute("aria-hidden","true");bar.appendChild(s);return;}
     s.onmouseenter=s.onfocus=function(){row.classList.add("hi");};
     s.onmouseleave=s.onblur=function(){row.classList.remove("hi");};
     bar.appendChild(s);
@@ -677,15 +695,15 @@ function macroCard(days,WP){
   var mode=macroMode||(today?"today":"avg");if(mode==="today"&&!today)mode="avg";
   if(today){
     var sg=el("div","seg");
-    [["today","Today"],["avg","Daily average"]].forEach(function(o){var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",mode===o[0]);b.onclick=function(){macroMode=o[0];var y=window.scrollY;renderMeals();window.scrollTo(0,y);};sg.appendChild(b);});
+    [["today","Today"],["avg","Daily average"]].forEach(function(o){var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",mode===o[0]);b.onclick=function(){macroMode=o[0];var y=window.scrollY;renderMacros();window.scrollTo(0,y);};sg.appendChild(b);});
     head.appendChild(sg);
   }
-  var m={p:0,c:0,f:0,kcal:0},src=mode==="today"?[today]:withData;
+  var m={p:0,c:0,f:0,kj:0},src=mode==="today"?[today]:withData;
   src.forEach(function(x){addM(m,x.tot);});
   if(mode!=="today")m=scaleM(m,1/withData.length);
   h.textContent=(mode==="today"?"Today’s macros":"Daily macros (average)")+(WP?" · "+WP.name:"");
   var cal=MACROS.reduce(function(a,x){return a+m[x[1]]*x[2];},0);
-  var kc=el("p","mac-kcal");kc.appendChild(el("b",null,Math.round(m.kcal).toLocaleString("en-AU")));kc.appendChild(el("span",null,"kcal · "+Math.round(m.kcal*4.184).toLocaleString("en-AU")+" kJ"));box.appendChild(kc);
+  var kc=el("p","mac-kj");kc.appendChild(el("b",null,Math.round(m.kj).toLocaleString("en-AU")));kc.appendChild(el("span",null,"kJ"));box.appendChild(kc);
   var leg=el("ul","mac-leg");
   MACROS.forEach(function(x){
     var li=el("li"),sw=el("span","mac-sw");sw.style.background=x[3];li.appendChild(sw);
@@ -693,26 +711,81 @@ function macroCard(days,WP){
     li.appendChild(el("small",null,(cal?Math.round(m[x[1]]*x[2]/cal*100):0)+"%"));leg.appendChild(li);
   });
   box.appendChild(macroBar(m,leg));box.appendChild(leg);
-  var note=(WP?"Scaled to "+WP.name+"’s portion ("+WP.portion+"×). ":"For one average serve. Pick a person above to see their portion. ")+"The bar and percentages show the share of calories from each. Snacks are not included.";
+  var note=(WP?"Scaled to "+WP.name+"’s portion ("+WP.portion+"×). ":"For one average serve. Pick a person above to see their portion. ")+"The bar and percentages show the share of energy (kJ) from each. "+(WP?"Includes "+WP.name+"’s snacks, apart from any marked “if hungry”.":"Snacks are different for each person, so pick a person to include them.");
   if(mode!=="today"&&withData.length<days.length)note+=" Averaged over "+withData.length+" of "+days.length+" days.";
   if(miss)note+=" "+miss+(miss===1?" meal has":" meals have")+" no macros yet, so the totals are low.";
   box.appendChild(el("p","mac-note",note));
   return box;
 }
+function pickWho(ppl){
+  var who="all";try{who=localStorage.getItem("coles-plan-person")||"all";}catch(e){}
+  return (!ppl||(who!=="all"&&!ppl[who]))?"all":who;
+}
+function personSeg(ppl,who,rerender){
+  var seg=el("div","seg pseg");
+  [["all","Everyone"]].concat(Object.keys(ppl).filter(function(k){return ppl[k]&&ppl[k].name;}).map(function(k){return [k,ppl[k].name];})).forEach(function(o){
+    var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",who===o[0]);
+    b.onclick=function(){try{localStorage.setItem("coles-plan-person",o[0]);}catch(e){}rerender();};
+    seg.appendChild(b);
+  });
+  return seg;
+}
+// Each day's meals for one person (or everyone), with macros scaled to their portion.
+// A person's own snack is eaten on a day if its "days" list includes it (all days when there is no list).
+// Snacks marked "optional" (e.g. "if hungry") are shown but not added to the totals.
+function snackOn(s,day){day=String(day||"").slice(0,3);return !Array.isArray(s.days)||s.days.indexOf(day)>-1;}
+function mealDays(w,WP,who,withSnacks){
+  var fac=WP&&+WP.portion>0?+WP.portion:1;
+  return w.meals.map(function(d){
+    var r=mealRows(d,WP,WP?who:""),tot={p:0,c:0,f:0,kj:0},known=0,miss=0,opt=[];
+    r.forEach(function(x){var mc=macrosOf(x[1]);x.push(mc?scaleM(mc,fac):null);if(mc){known++;addM(tot,x[2]);}else miss++;});
+    if(withSnacks&&WP&&Array.isArray(WP.snacks))WP.snacks.forEach(function(s){
+      if(!s||!s.what||!snackOn(s,d.day))return;
+      var row=["Snack"+(s.when?" · "+s.when:""),s.what,macrosOf(s.what)];
+      if(s.optional){row.optional=true;opt.push(row);return;}
+      r.push(row);if(row[2]){known++;addM(tot,row[2]);}else miss++;
+    });
+    return {d:d,rows:r.concat(opt),tot:tot,known:known,miss:miss};
+  });
+}
+function renderMacros(){
+  var m=$("macView");m.textContent="";
+  var w=PLAN.weeks[week],ppl=PLAN.people||null;
+  if(!w.meals||!w.meals.length){m.appendChild(el("p","emptyline","No meals are listed for this week."));return;}
+  var who=pickWho(ppl);
+  if(ppl)m.appendChild(personSeg(ppl,who,function(){var y=window.scrollY;renderMacros();window.scrollTo(0,y);}));
+  var WP=who!=="all"&&ppl?ppl[who]:null,days=mealDays(w,WP,who,true);
+  var card=macroCard(days,WP);if(card)m.appendChild(card);
+  if(!days.some(function(x){return x.known;}))return;
+  var hd=el("div","mac-h");hd.appendChild(el("h2",null,"Each day"));
+  var key=el("div","mac-key");key.setAttribute("aria-hidden","true");
+  MACROS.forEach(function(x){var s=el("span"),sw=el("span","mac-sw");sw.style.background=x[3];s.appendChild(sw);s.appendChild(document.createTextNode(x[0]));key.appendChild(s);});
+  hd.appendChild(key);m.appendChild(hd);
+  var ul=el("ul","days");
+  days.forEach(function(dd){
+    var d=dd.d,li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
+    if(dd.known){
+      h3.appendChild(el("span","dk",kjText(dd.tot.kj)+(dd.miss?"+":"")));
+      li.appendChild(macroBar(dd.tot,null));
+      li.appendChild(el("p","mac-day","P "+Math.round(dd.tot.p)+" g · C "+Math.round(dd.tot.c)+" g · F "+Math.round(dd.tot.f)+" g"+(dd.miss?" · "+dd.miss+" without macros":"")));
+    }
+    dd.rows.forEach(function(r){
+      var p=el("p","mrow");p.appendChild(el("span","mk",r[0]));p.appendChild(el("span","mv",r[1]));
+      p.appendChild(r[2]?el("span","mm",macroLine(r[2])):el("span","mm none","No macros yet"));
+      if(r.optional){p.className="mrow opt";p.appendChild(el("span","mm none","If hungry, so not in the totals"));}
+      li.appendChild(p);
+    });
+    ul.appendChild(li);
+  });
+  m.appendChild(ul);
+}
 function renderMeals(){
   var m=$("meals");m.textContent="";
   var w=PLAN.weeks[week],ppl=PLAN.people||null;
   if(!w.meals||!w.meals.length){m.appendChild(el("p","emptyline","No meals are listed for this week."));return;}
-  var who="all";try{who=localStorage.getItem("coles-plan-person")||"all";}catch(e){}
-  if(!ppl||(who!=="all"&&!ppl[who]))who="all";
+  var who=pickWho(ppl);
   if(ppl){
-    var seg=el("div","seg pseg");
-    [["all","Everyone"]].concat(Object.keys(ppl).filter(function(k){return ppl[k]&&ppl[k].name;}).map(function(k){return [k,ppl[k].name];})).forEach(function(o){
-      var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",who===o[0]);
-      b.onclick=function(){try{localStorage.setItem("coles-plan-person",o[0]);}catch(e){}renderMeals();};
-      seg.appendChild(b);
-    });
-    m.appendChild(seg);
+    m.appendChild(personSeg(ppl,who,renderMeals));
     if(who!=="all"){
       var P=ppl[who],box=el("div","exfocus");
       box.appendChild(el("h3",null,P.name+" (portion "+P.portion+"× average)"));
@@ -724,27 +797,19 @@ function renderMeals(){
       m.appendChild(box);
     }
   }
-  var WP=who!=="all"&&ppl?ppl[who]:null,fac=WP&&+WP.portion>0?+WP.portion:1;
-  var days=w.meals.map(function(d){
-    var r=mealRows(d,WP,WP?who:""),tot={p:0,c:0,f:0,kcal:0},known=0,miss=0;
-    r.forEach(function(x){var mc=macrosOf(x[1]);x.push(mc?scaleM(mc,fac):null);if(mc){known++;addM(tot,x[2]);}else miss++;});
-    return {d:d,rows:r,tot:tot,known:known,miss:miss};
-  });
-  var mcard=macroCard(days,WP);if(mcard)m.appendChild(mcard);
+  var WP=who!=="all"&&ppl?ppl[who]:null,days=mealDays(w,WP,who);
   var ec=el("p","count");ec.id="eatCount";m.appendChild(ec);
   function updateEaten(){var n=(eaten[week]||[]).length,t=0;w.meals.forEach(function(d){["breakfast","lunch","dinner"].forEach(function(k){if(d[k])t++;});});ec.textContent="";ec.appendChild(el("b",null,n+" of "+t+" meals eaten"));ec.appendChild(el("span",null,"Tick once eaten"));}
   updateEaten();
   var ul=el("ul","days");
   days.forEach(function(dd){
     var d=dd.d,li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
-    if(dd.known)h3.appendChild(el("span","dk",Math.round(dd.tot.kcal)+" kcal"+(dd.miss?"+":"")));
     function mrow(r){
       var p=el("p","meal"),id=(d.day||"")+"|"+r[0],a=eaten[week]||[];
       var cb=el("input","eat");cb.type="checkbox";cb.checked=a.indexOf(id)>-1;cb.setAttribute("aria-label","Eaten: "+(d.day||"")+" "+r[0]+" ("+USER+")");
       p.className="meal"+(cb.checked?" eaten":"");
       cb.onchange=function(){var a2=eaten[week]||[],i=a2.indexOf(id);if(cb.checked&&i<0)a2.push(id);if(!cb.checked&&i>-1)a2.splice(i,1);eaten[week]=a2;save();p.className="meal"+(cb.checked?" eaten":"");updateEaten();};
       var mt=el("span","mt");mt.appendChild(el("span","mk",r[0]));mt.appendChild(el("span","mv",r[1]));
-      if(r[2])mt.appendChild(el("span","mm",macroLine(r[2])));
       // In the Everyone view, show anyone who has a different meal in this slot.
       if(!WP&&ppl&&d.people)Object.keys(d.people).forEach(function(pk){var o=d.people[pk],v=o&&o[r[0].toLowerCase()];if(v&&ppl[pk]&&ppl[pk].name){var s2=el("span","ov");s2.appendChild(el("b",null,ppl[pk].name+": "));s2.appendChild(document.createTextNode(v));mt.appendChild(s2);}});
       p.appendChild(cb);p.appendChild(mt);
@@ -764,6 +829,24 @@ function renderMeals(){
       var r=Math.max(0.5,Math.round(v*4)/4),wh=Math.floor(r),fr={0:"",0.25:"\u00bc",0.5:"\u00bd",0.75:"\u00be"}[r-wh];
       return (wh?String(wh):"")+fr;
     }
+    // One person's share of a batch recipe. Small amounts get proper fractions (⅕ to ¾) instead of
+    // rounding up to ½ or 1, and part of a can or jar is shown in grams, e.g. "about 130 g red kidney beans".
+    function frac(v){
+      var F=[[0,""],[0.2,"\u2155"],[0.25,"\u00bc"],[1/3,"\u2153"],[0.5,"\u00bd"],[2/3,"\u2154"],[0.75,"\u00be"],[1,""]];
+      var wh=Math.floor(v),r=v-wh,best=F[0];F.forEach(function(x){if(Math.abs(r-x[0])<Math.abs(r-best[0]))best=x;});
+      if(best[0]===1){wh++;best=F[0];}
+      return (wh?String(wh):"")+best[1];
+    }
+    function personQty(v,l,isInt){
+      var can=/^× (\d+) ?(g|ml) (?:can|jar|tin) (?:of )?(.+)$/.exec(l);
+      if(can&&v<0.9){var amt=v*+can[1],st=amt<50?5:10;return "about "+Math.max(5,Math.round(amt/st)*st)+" "+can[2]+" "+can[3]+" (from a "+can[1]+" "+can[2]+" can)";}
+      if(/^(g|ml)\b/.test(l))return fq(v,l,isInt)+" "+l;
+      // "1 can", "½ tomato": one or less reads as singular.
+      var one=function(x){return x.replace(/\b(tomato|egg|wrap|sausage|can|slice)(e?s)\b/,"$1");};
+      if(isInt&&v>=0.75){var n=Math.round(v);return n+" "+(n===1?one(l):l);}
+      if(v<0.15)return "a little "+l.replace(/^(× )/,"");
+      return frac(v)+" "+(v<1.1?one(l):l);
+    }
     m.appendChild(el("h2","rh",qp?"Recipes (quantities for "+qp.name+" only)":"Recipes (quantities for the whole household)"));
     if(qp)m.appendChild(el("p","note2","These amounts are one serve for "+qp.name+" ("+qp.portion+"\u00d7 an average serve). Tap Everyone above for the full household amounts."));
     var rl=el("ul","recipes");
@@ -774,7 +857,7 @@ function renderMeals(){
       var mk=qp?("1 serve for "+qp.name):r.makes;if(mk)sm.appendChild(el("span","mk2"," \u00b7 "+mk));
       det.appendChild(sm);
       var ingl=r.ingredients;
-      if(r.items&&r.items.length)ingl=r.items.map(function(it){var v=(qp&&r.units)?it.q*qp.portion/r.units:it.q;return fq(v,it.l,it.i)+" "+it.l;});
+      if(r.items&&r.items.length)ingl=r.items.map(function(it){if(qp&&r.units)return personQty(it.q*qp.portion/r.units,it.l,it.i);return fq(it.q,it.l,it.i)+" "+it.l;});
       if(ingl&&ingl.length){det.appendChild(el("h4",null,"Ingredients"));var ul2=el("ul","bul");ingl.forEach(function(x){ul2.appendChild(el("li",null,x));});det.appendChild(ul2);}
       if(r.pantry&&r.pantry.length){det.appendChild(el("p","note2","Pantry: "+r.pantry.join(", ")+". Oil, salt, pepper and dried spices as needed."));}
       else det.appendChild(el("p","note2","Oil, salt, pepper and dried spices as needed."));
@@ -786,7 +869,10 @@ function renderMeals(){
     m.appendChild(rl);
   }
 }
-function exCount(ex){var n=0;(ex.days||[]).forEach(function(d){["morning","afternoon","session"].forEach(function(k){if(d[k])n++;});});return n;}
+// Session slots a day can have, in display order. "cardio", "strength" and "mobility" suit plans
+// that don't fix a time of day; "morning", "afternoon" and "session" are the original ones.
+var EXSLOTS=[["morning","Morning"],["afternoon","Afternoon"],["cardio","Easy cardio"],["strength","Strength"],["mobility","Mobility"],["session","Session"]];
+function exCount(ex){var n=0;(ex.days||[]).forEach(function(d){EXSLOTS.forEach(function(k){if(d[k[0]])n++;});});return n;}
 // Exercise can be one plan for everyone ({"days":[...]}) or one per person ({"<person key>":{"days":[...]}}).
 function pkOf(name){return PMAP[name]||ukey(name);}
 function exFor(wi){var e=PLAN.weeks[wi]&&PLAN.weeks[wi].exercise;if(!e)return null;if(Array.isArray(e.days))return e;var k=pkOf(USER);return e[k]&&Array.isArray(e[k].days)?e[k]:null;}
@@ -803,7 +889,7 @@ function renderExercise(){
   var done=exTicks[week]||[],ul=el("ul","days");
   (ex.days||[]).forEach(function(d){
     var li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
-    [["morning","Morning"],["afternoon","Afternoon"],["session","Session"]].forEach(function(k){
+    EXSLOTS.forEach(function(k){
       if(!d[k[0]])return;
       var id=d.day+"-"+k[0],lab=el("label","sess"),inp=el("input");inp.type="checkbox";inp.checked=done.indexOf(id)>-1;
       inp.onchange=function(){var a=exTicks[week]||[],i=a.indexOf(id);if(inp.checked&&i<0)a.push(id);if(!inp.checked&&i>-1)a.splice(i,1);exTicks[week]=a;save();updateExCount();};
@@ -875,20 +961,21 @@ function leftText(){
 }
 function flash(btn,msg,orig){btn.textContent=msg;setTimeout(function(){btn.textContent=orig;},1800);}
 function show(){
-  var m=/^#week-(\d+)(-meals|-exercise|-ratings)?$/.exec(location.hash),n=m?+m[1]:1;
+  var m=/^#week-(\d+)(-meals|-macros|-exercise|-ratings)?$/.exec(location.hash),n=m?+m[1]:1;
   week=(n>=1&&n<=PLAN.weeks.length)?n-1:0;view=(m&&m[2])?m[2].slice(1):"shop";var so=PLAN.weeks[week].kind==="stockup";if(view==="ratings"&&!ADMINV())view="shop";if(so&&view!=="ratings")view="shop";$("vRates").hidden=!ADMINV();
   $("whoRow").hidden=!(ADMINV()&&(view==="meals"||view==="exercise"));
   try{localStorage.setItem("coles-plan-place",location.hash);}catch(e){}
   renderTabs();
-  $("shopView").hidden=view!=="shop";$("meals").hidden=view!=="meals";$("exView").hidden=view!=="exercise";$("ratesView").hidden=view!=="ratings";$("vRates").setAttribute("aria-pressed",view==="ratings");
-  $("vShop").setAttribute("aria-pressed",view==="shop");$("vMeals").setAttribute("aria-pressed",view==="meals");$("vEx").setAttribute("aria-pressed",view==="exercise");
-  if(view==="shop")renderList();else if(view==="meals")renderMeals();else if(view==="ratings")renderRatings();else renderExercise();
+  $("shopView").hidden=view!=="shop";$("meals").hidden=view!=="meals";$("macView").hidden=view!=="macros";$("exView").hidden=view!=="exercise";$("ratesView").hidden=view!=="ratings";$("vRates").setAttribute("aria-pressed",view==="ratings");
+  $("vShop").setAttribute("aria-pressed",view==="shop");$("vMeals").setAttribute("aria-pressed",view==="meals");$("vMac").setAttribute("aria-pressed",view==="macros");$("vEx").setAttribute("aria-pressed",view==="exercise");
+  if(view==="shop")renderList();else if(view==="meals")renderMeals();else if(view==="macros")renderMacros();else if(view==="ratings")renderRatings();else renderExercise();
 }
 $("vShop").onclick=function(){window.scrollTo(0,0);go(week,"shop");};
 // Stock-up weeks have no meals or exercise, so those buttons jump to the next normal week.
 function planWeek(w){for(var i=w;i<PLAN.weeks.length;i++)if(PLAN.weeks[i].kind!=="stockup")return i;for(i=w;i>=0;i--)if(PLAN.weeks[i].kind!=="stockup")return i;return w;}
 function goTop(w,v){scrollToday=(v==="meals"||v==="exercise");window.scrollTo(0,0);go(w,v);}
 $("vMeals").onclick=function(){goTop(planWeek(week),"meals");};
+$("vMac").onclick=function(){goTop(planWeek(week),"macros");};
 $("vEx").onclick=function(){goTop(planWeek(week),"exercise");};
 $("vRates").onclick=function(){window.scrollTo(0,0);go(week,"ratings");};
 $("hide").onclick=function(){

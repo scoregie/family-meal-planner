@@ -210,15 +210,17 @@ function allDishes(){
   });});
   var ppl=people();
   Object.keys(ppl).forEach(function(pk){var P=ppl[pk];add(P.breakfast,"breakfast");
+    (P.snacks||[]).forEach(function(s){if(s)add(s.what,"snack");});
     if(P.weekday)Object.values(P.weekday).forEach(function(wd){if(wd){add(wd.lunch,"lunch");add(wd.snack,"snack");}});});
   return order.map(function(k){return map[k];});
 }
 function findMacro(key){var m=PLAN.macros||{};for(var n in m)if(macroKey(n)===key)return {name:n,v:m[n]};return null;}
-function kcalOf(v){if(!v)return 0;return +v.kcal||(4*(+v.p||0)+4*(+v.c||0)+9*(+v.f||0));}
+// Same factors as the app and Australian food labels: 17 kJ/g protein and carbs, 37 kJ/g fat.
+function kjOf(v){if(!v)return 0;return +v.kj||(+v.kcal?v.kcal*4.184:17*(+v.p||0)+17*(+v.c||0)+37*(+v.f||0));}
 function renderMacros(){
   var p=$("pMacros");p.textContent="";
   var dishes=allDishes(),missing=dishes.filter(function(d){return !findMacro(d.key);}).length;
-  p.appendChild(el("p","hint","Grams of protein, carbs and fat for one average serve. The app scales them to each person’s portion. Calories are worked out as 4 × protein + 4 × carbs + 9 × fat."));
+  p.appendChild(el("p","hint","Grams of protein, carbs and fat for one average serve. The app scales them to each person’s portion. Snacks from a person’s snack list are the exception: they give exact amounts (like “150 g plain yoghurt”), so enter the macros for that amount, and they are not scaled. Energy is worked out in kilojoules as 17 × protein + 17 × carbs + 37 × fat, the same factors used on Australian food labels."));
   var r=el("div","row");
   var sel=el("select");sel.setAttribute("aria-label","Show");
   [["missing","Missing only ("+missing+")"],["all","All dishes ("+dishes.length+")"]].forEach(function(o){var op=el("option",null,o[1]);op.value=o[0];if(MFILTER===o[0])op.selected=true;sel.appendChild(op);});
@@ -232,24 +234,24 @@ function renderMacros(){
   });
   if(!list.length){p.appendChild(el("div","card",MFILTER==="missing"&&!MSEARCH?"Every dish has macros. Choose “All dishes” to change them.":"No dishes match."));renderOrphans(p,dishes);return;}
   var card=el("div","card"),t=el("table","mtab"),th=el("thead"),hr=el("tr");
-  [["Dish"],["Protein g"],["Carbs g"],["Fat g"],["kcal","k"]].forEach(function(h){hr.appendChild(el("th",h[1]||null,h[0]));});
+  [["Dish"],["Protein g"],["Carbs g"],["Fat g"],["kJ","k"]].forEach(function(h){hr.appendChild(el("th",h[1]||null,h[0]));});
   th.appendChild(hr);t.appendChild(th);var tb=el("tbody");
   list.forEach(function(d){
     var tr=el("tr"),hit=findMacro(d.key),v=hit?hit.v:null;
     if(!hit)tr.className="missing";
     var td=el("td","dish",d.name);td.appendChild(el("small",null,Object.keys(d.where).join(", ")+" · "+d.uses+"×"));tr.appendChild(td);
-    var kc=el("td","k",v?Math.round(kcalOf(v)):"–");
+    var kc=el("td","k",v?Math.round(kjOf(v)).toLocaleString("en-AU"):"–");
     [["p","Protein g"],["c","Carbs g"],["f","Fat g"]].forEach(function(f){
       var c=el("td","n");c.setAttribute("data-l",f[1]);var i=el("input");i.type="number";i.min="0";i.step="0.5";i.inputMode="decimal";
       i.setAttribute("aria-label",d.name+" "+f[1]);i.value=v&&v[f[0]]!=null?v[f[0]]:"";
       i.oninput=function(){
         PLAN.macros=PLAN.macros||{};var h=findMacro(d.key),name=h?h.name:d.name,o=h?h.v:{};
         if(i.value==="")delete o[f[0]];else o[f[0]]=Math.max(0,+i.value);
-        delete o.kcal; // recalculated from the grams
+        delete o.kcal;delete o.kj; // recalculated from the grams
         if(!Object.keys(o).length)delete PLAN.macros[name];else PLAN.macros[name]=o;
         if(!Object.keys(PLAN.macros).length)delete PLAN.macros;
         d._editing=true; // keep the row visible in "missing only" while typing
-        var now=findMacro(d.key);kc.textContent=now?Math.round(kcalOf(now.v)):"–";tr.className=now?"":"missing";markDirty();
+        var now=findMacro(d.key);kc.textContent=now?Math.round(kjOf(now.v)).toLocaleString("en-AU"):"–";tr.className=now?"":"missing";markDirty();
       };
       c.appendChild(i);tr.appendChild(c);
     });
