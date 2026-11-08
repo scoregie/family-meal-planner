@@ -1,0 +1,33 @@
+services:
+  api:
+    image: node:22-alpine
+    container_name: shopping-list-api
+    restart: unless-stopped
+    command: ["node", "/app/server.js"]
+    env_file: .env          # LOGIN_<NAME>= lines
+    volumes:
+      - ./api:/app:ro
+      - ./data:/data
+      - ./site:/site:ro       # reads plan.json for calendar files
+
+  caddy:
+    image: caddy:2
+    container_name: shopping-list
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # Only needed if Caddy handles HTTPS itself (no Nginx Proxy Manager):
+      # - "443:443"
+    depends_on:
+      - api
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

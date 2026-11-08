@@ -1,0 +1,15 @@
+I run a shopping-list web app that reads a file called plan.json. I have attached my current plan.json as the example of the exact format.
+
+Please create a NEW plan for [N] weeks that feeds [3] people, with [a budget of about $150 a week at Coles in Australia].
+Preferences: [foods we like / dislike / allergies, e.g. no bananas, no mushrooms].
+Rules: every meal uses 5 ingredients or fewer (oil, salt, pepper and dried spices do not count), plenty of protein and fibre, and dinners that make lunches for the next day where it helps.
+
+Output ONLY valid JSON, in exactly the same structure as my example:
+- a new "id" (for example "2027-01-plan") so old ticks are not reused
+- for each week: "name", "meals" (7 days with day, breakfast, lunch, dinner), "recipes" (a list of short strings) and "shopping" (sections such as "Fruit and veg", "Meat and fish", "Dairy and eggs", "Pantry", each a list of ["Item name with size", price_as_a_number])
+- item names should be plain shop wording, for example "Greek-style natural yoghurt 1 kg × 2"; prices are numbers with no $ sign
+- no comments and no trailing commas
+
+Exercise: keep the "exercise" blocks exactly as in my example unless I say otherwise. If I ask for a new exercise plan, tell me my equipment and how much time I have each day, and follow the same structure (a top-level "exercise" with "workouts" and "notes", plus an "exercise" block with "focus", "targets" and "days" in each week).
+
+Household: [3 people: me (trains most days), my partner (no bananas), our 8 year old (simple foods, packed school lunches Mon to Thu)]. Keep the "people" block (give each person their own "exercise" plan if I ask) and use recipe objects (name, makes, ingredients, steps, kid) exactly as in the example, with ingredient quantities scaled for the whole household.

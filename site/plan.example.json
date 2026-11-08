@@ -1,0 +1,1253 @@
+{
+ "id": "example-plan",
+ "title": "Example meal and exercise plan",
+ "subtitle": "An example plan for three people (Alex, Sam and Riley). Do the stock-up shop first, then the weekly fresh shop. Prices are rough estimates for Coles in Australia.",
+ "weeks": [
+  {
+   "name": "Stock-up 1",
+   "kind": "stockup",
+   "shopping": {
+    "Pantry (buy once for these 2 weeks)": [
+     [
+      "Baked beans 420 g can",
+      1.5
+     ],
+     [
+      "Breadcrumbs 300 g × 2",
+      5.0
+     ],
+     [
+      "Brown lentils 400 g can",
+      1.5
+     ],
+     [
+      "Cannellini beans 400 g can × 3",
+      3.6
+     ],
+     [
+      "Chickpeas 400 g can × 2",
+      2.4
+     ],
+     [
+      "Coconut milk 400 ml can × 3",
+      5.4
+     ],
+     [
+      "Curry paste jar",
+      3.2
+     ],
+     [
+      "Diced tomatoes 400 g can × 8",
+      7.2
+     ],
+     [
+      "Dried mango 200 g (no added sugar)",
+      5.5
+     ],
+     [
+      "Egg noodles 440 g",
+      2.5
+     ],
+     [
+      "Long grain rice 1 kg × 2",
+      4.4
+     ],
+     [
+      "Macaroni 500 g",
+      1.5
+     ],
+     [
+      "Passata 700 g",
+      2.0
+     ],
+     [
+      "Pasta 500 g",
+      1.5
+     ],
+     [
+      "Peanut butter 375 g × 2",
+      8.0
+     ],
+     [
+      "Plain crackers 250 g",
+      2.5
+     ],
+     [
+      "Red kidney beans 400 g can × 3",
+      3.6
+     ],
+     [
+      "Red lentils 500 g",
+      2.8
+     ],
+     [
+      "Rolled oats 1 kg × 2",
+      6.0
+     ],
+     [
+      "Soy sauce 250 ml (salt-reduced)",
+      2.5
+     ],
+     [
+      "Taco seasoning sachet × 2",
+      3.0
+     ],
+     [
+      "Weet-Bix Bites Mixed Berry (about 500 g box) × 2",
+      11.0
+     ]
+    ],
+    "Freezer (buy once for these 2 weeks)": [
+     [
+      "Croissants 4-pack",
+      4.5
+     ],
+     [
+      "Frozen mixed berries 500 g × 2",
+      11.0
+     ],
+     [
+      "Frozen peas 1 kg",
+      3.0
+     ],
+     [
+      "Frozen stir-fry veg 1 kg",
+      4.5
+     ]
+    ],
+    "Fridge staples that keep": [
+     [
+      "Tasty cheese block 500 g",
+      7.0
+     ]
+    ]
+   },
+   "cost": 116.6
+  },
+  {
+   "name": "Week 1",
+   "meals": [
+    {
+     "day": "Mon",
+     "breakfast": "Yoghurt bowl",
+     "lunch": "Tuna salad",
+     "dinner": "Turkey and bean chilli with rice"
+    },
+    {
+     "day": "Tue",
+     "breakfast": "Eggs on toast",
+     "lunch": "Chilli leftovers",
+     "dinner": "Sausage and bean casserole"
+    },
+    {
+     "day": "Wed",
+     "breakfast": "Overnight oats",
+     "lunch": "Chicken and yoghurt wraps",
+     "dinner": "Baked chicken nuggets and wedges"
+    },
+    {
+     "day": "Thu",
+     "breakfast": "Yoghurt bowl",
+     "lunch": "Egg and spinach wraps",
+     "dinner": "Turkey and lentil bolognese"
+    },
+    {
+     "day": "Fri",
+     "breakfast": "Overnight oats",
+     "lunch": "Bolognese leftovers",
+     "dinner": "Wrap pizzas"
+    },
+    {
+     "day": "Sat",
+     "breakfast": "Eggs on toast",
+     "lunch": "Tuna salad",
+     "dinner": "Red lentil and sweet potato curry"
+    },
+    {
+     "day": "Sun",
+     "breakfast": "Yoghurt bowl",
+     "lunch": "Chicken and yoghurt wraps",
+     "dinner": "Butter chicken and rice"
+    }
+   ],
+   "recipes": [
+    {
+     "name": "Yoghurt bowl",
+     "makes": "breakfast for 2 adults",
+     "ingredients": [
+      "230 g plain yoghurt",
+      "70 g rolled oats",
+      "150 g frozen mixed berries"
+     ],
+     "items": [
+      {
+       "q": 230,
+       "l": "g plain yoghurt",
+       "i": 0
+      },
+      {
+       "q": 70,
+       "l": "g rolled oats",
+       "i": 0
+      },
+      {
+       "q": 150,
+       "l": "g frozen mixed berries",
+       "i": 0
+      }
+     ],
+     "units": 2.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Spoon the yoghurt into bowls.",
+      "Top with the oats and berries (straight from frozen, or thaw them for a minute in the microwave for a juicier bowl).",
+      "Add a little honey if you like. Banana slices are a good extra on your bowl."
+     ],
+     "kid": "Plain yoghurt with a few berries on the side. Oats are optional.",
+     "pantry": [],
+     "others": [
+      "Also on Thu breakfast, Sun breakfast: same amounts."
+     ]
+    },
+    {
+     "name": "Tuna salad",
+     "makes": "lunch for 2 adults",
+     "ingredients": [
+      "2 cans tuna (95 g)",
+      "5 slices wholegrain bread",
+      "30 g baby spinach",
+      "1 tomatoes",
+      "1 lime"
+     ],
+     "items": [
+      {
+       "q": 2,
+       "l": "cans tuna (95 g)",
+       "i": 1
+      },
+      {
+       "q": 5,
+       "l": "slices wholegrain bread",
+       "i": 1
+      },
+      {
+       "q": 30,
+       "l": "g baby spinach",
+       "i": 0
+      },
+      {
+       "q": 1,
+       "l": "tomatoes",
+       "i": 1
+      },
+      {
+       "q": 1.0,
+       "l": "lime",
+       "i": 0
+      }
+     ],
+     "units": 2.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Drain the tuna and flake it into a bowl.",
+      "Chop the tomato and mix it in with the spinach and a squeeze of lime.",
+      "Serve with the bread, toasted if you like."
+     ],
+     "kid": "",
+     "pantry": [],
+     "others": [
+      "Sat lunch: use about 1.4× these amounts"
+     ]
+    },
+    {
+     "name": "Turkey and bean chilli with rice",
+     "makes": "dinner for 3 plus lunch for 2 adults tomorrow",
+     "ingredients": [
+      "470 g turkey mince",
+      "2 × 400 g can red kidney beans",
+      "2 × 400 g can diced tomatoes",
+      "190 g brown onion",
+      "420 g rice (dry weight)",
+      "1 taco seasoning sachet"
+     ],
+     "items": [
+      {
+       "q": 470,
+       "l": "g turkey mince",
+       "i": 0
+      },
+      {
+       "q": 2.0,
+       "l": "× 400 g can red kidney beans",
+       "i": 0
+      },
+      {
+       "q": 2.0,
+       "l": "× 400 g can diced tomatoes",
+       "i": 0
+      },
+      {
+       "q": 190,
+       "l": "g brown onion",
+       "i": 0
+      },
+      {
+       "q": 420,
+       "l": "g rice (dry weight)",
+       "i": 0
+      },
+      {
+       "q": 1.0,
+       "l": "taco seasoning sachet",
+       "i": 0
+      }
+     ],
+     "units": 5.6,
+     "leftoverStep": "Pack the leftovers into a container for tomorrow's lunch and refrigerate once cool.",
+     "batch": true,
+     "steps": [
+      "Rinse the rice and simmer it covered in double its volume of water for 12 to 15 minutes. Rest 5 minutes.",
+      "Fry the diced onion in a little oil for 3 minutes. Add the mince and break it up until browned (5 to 6 minutes).",
+      "Stir in the taco seasoning, diced tomatoes and drained beans.",
+      "Simmer on low for 15 minutes, stirring now and then.",
+      "Serve over the rice."
+     ],
+     "kid": "Mince and rice served separately, with the sauce on the side.",
+     "pantry": [],
+     "others": []
+    },
+    {
+     "name": "Eggs on toast",
+     "makes": "breakfast for 2 adults",
+     "ingredients": [
+      "5 eggs",
+      "5 slices wholegrain bread",
+      "25 g baby spinach"
+     ],
+     "items": [
+      {
+       "q": 5,
+       "l": "eggs",
+       "i": 1
+      },
+      {
+       "q": 5,
+       "l": "slices wholegrain bread",
+       "i": 1
+      },
+      {
+       "q": 25,
+       "l": "g baby spinach",
+       "i": 0
+      }
+     ],
+     "units": 2.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Toast the bread.",
+      "Scramble or fry the eggs in a little oil on medium heat (2 to 3 minutes).",
+      "Wilt the spinach in the pan for the last 30 seconds for the adults, then pile onto the toast."
+     ],
+     "kid": "Plain scrambled egg on toast, no spinach.",
+     "pantry": [],
+     "others": [
+      "Also on Sat breakfast: same amounts."
+     ]
+    },
+    {
+     "name": "Sausage and bean casserole",
+     "makes": "dinner for 3",
+     "ingredients": [
+      "3 beef sausages",
+      "1 × 400 g can cannellini beans",
+      "1 × 400 g can diced tomatoes",
+      "110 g brown onion",
+      "110 g carrots"
+     ],
+     "items": [
+      {
+       "q": 3,
+       "l": "beef sausages",
+       "i": 1
+      },
+      {
+       "q": 1.0,
+       "l": "× 400 g can cannellini beans",
+       "i": 0
+      },
+      {
+       "q": 1.0,
+       "l": "× 400 g can diced tomatoes",
+       "i": 0
+      },
+      {
+       "q": 110,
+       "l": "g brown onion",
+       "i": 0
+      },
+      {
+       "q": 110,
+       "l": "g carrots",
+       "i": 0
+      }
+     ],
+     "units": 3.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Brown the sliced sausages in a pot with the onion for 5 minutes.",
+      "Add the diced carrot, tomatoes, drained beans and half a can of water.",
+      "Simmer 25 minutes, stirring now and then, until thick."
+     ],
+     "kid": "Sausage pieces and beans, plain.",
+     "pantry": [],
+     "others": []
+    },
+    {
+     "name": "Overnight oats",
+     "makes": "breakfast for 2 adults",
+     "ingredients": [
+      "100 g rolled oats",
+      "340 ml milk",
+      "150 g plain yoghurt",
+      "210 g apple (grated or diced)"
+     ],
+     "items": [
+      {
+       "q": 100,
+       "l": "g rolled oats",
+       "i": 0
+      },
+      {
+       "q": 340,
+       "l": "ml milk",
+       "i": 0
+      },
+      {
+       "q": 150,
+       "l": "g plain yoghurt",
+       "i": 0
+      },
+      {
+       "q": 210,
+       "l": "g apple (grated or diced)",
+       "i": 0
+      }
+     ],
+     "units": 2.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "The night before, stir the oats, milk and yoghurt together in a container.",
+      "Grate in the apple, stir, cover and refrigerate overnight.",
+      "Serve cold, or warm in the microwave for 1 to 2 minutes. Top yours with banana slices."
+     ],
+     "kid": "Plain oats and milk, with the apple left out if she prefers.",
+     "pantry": [],
+     "others": [
+      "Also on Fri breakfast: same amounts."
+     ]
+    },
+    {
+     "name": "Chicken and yoghurt wraps",
+     "makes": "lunch for 2 adults",
+     "ingredients": [
+      "2 wraps",
+      "170 g chicken breast",
+      "45 g plain yoghurt",
+      "25 g baby spinach",
+      "½ cucumber"
+     ],
+     "items": [
+      {
+       "q": 2,
+       "l": "wraps",
+       "i": 1
+      },
+      {
+       "q": 170,
+       "l": "g chicken breast",
+       "i": 0
+      },
+      {
+       "q": 45,
+       "l": "g plain yoghurt",
+       "i": 0
+      },
+      {
+       "q": 25,
+       "l": "g baby spinach",
+       "i": 0
+      },
+      {
+       "q": 0.5,
+       "l": "cucumber",
+       "i": 0
+      }
+     ],
+     "units": 2.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Cook the chicken in a little oil for 6 to 8 minutes per side until no pink remains (or use leftover cooked chicken). Rest, then slice.",
+      "Spread yoghurt on each wrap and add the chicken, spinach and sliced cucumber.",
+      "Roll up tightly and cut in half."
+     ],
+     "kid": "A plain chicken and cheese wrap if she prefers.",
+     "pantry": [],
+     "others": [
+      "Sun lunch: use about 1.4× these amounts"
+     ]
+    },
+    {
+     "name": "Baked chicken nuggets and wedges",
+     "makes": "dinner for 3",
+     "ingredients": [
+      "440 g chicken breast",
+      "2 eggs",
+      "160 g breadcrumbs",
+      "990 g potatoes"
+     ],
+     "items": [
+      {
+       "q": 440,
+       "l": "g chicken breast",
+       "i": 0
+      },
+      {
+       "q": 2,
+       "l": "eggs",
+       "i": 1
+      },
+      {
+       "q": 160,
+       "l": "g breadcrumbs",
+       "i": 0
+      },
+      {
+       "q": 990,
+       "l": "g potatoes",
+       "i": 0
+      }
+     ],
+     "units": 3.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Heat the oven to 220°C. Cut the potatoes into wedges, toss with oil and salt and roast on a tray for 35 minutes.",
+      "Cut the chicken into nugget-sized pieces.",
+      "Beat the eggs in one bowl and put the breadcrumbs in another. Dip the chicken in egg, then crumbs.",
+      "Place on a lined tray and drizzle or spray with oil. Bake 15 to 18 minutes, turning once, until golden and cooked through.",
+      "Serve with the wedges and cucumber sticks or peas."
+     ],
+     "kid": "One of her favourites. Serve the nuggets and wedges plain.",
+     "pantry": [],
+     "others": []
+    },
+    {
+     "name": "Egg and spinach wraps",
+     "makes": "lunch for 2 adults",
+     "ingredients": [
+      "2 wraps",
+      "5 eggs",
+      "25 g baby spinach",
+      "½ cucumber"
+     ],
+     "items": [
+      {
+       "q": 2,
+       "l": "wraps",
+       "i": 1
+      },
+      {
+       "q": 5,
+       "l": "eggs",
+       "i": 1
+      },
+      {
+       "q": 25,
+       "l": "g baby spinach",
+       "i": 0
+      },
+      {
+       "q": 0.5,
+       "l": "cucumber",
+       "i": 0
+      }
+     ],
+     "units": 2.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Scramble the eggs (2 to 3 minutes).",
+      "Fill the wraps with egg, spinach and sliced cucumber.",
+      "Roll up and serve."
+     ],
+     "kid": "",
+     "pantry": [],
+     "others": []
+    },
+    {
+     "name": "Turkey and lentil bolognese",
+     "makes": "dinner for 3 plus lunch for 2 adults tomorrow",
+     "ingredients": [
+      "470 g turkey mince",
+      "1 × 400 g can brown lentils",
+      "2 × 400 g can diced tomatoes",
+      "190 g brown onion",
+      "420 g pasta (dry weight)"
+     ],
+     "items": [
+      {
+       "q": 470,
+       "l": "g turkey mince",
+       "i": 0
+      },
+      {
+       "q": 1.0,
+       "l": "× 400 g can brown lentils",
+       "i": 0
+      },
+      {
+       "q": 2.0,
+       "l": "× 400 g can diced tomatoes",
+       "i": 0
+      },
+      {
+       "q": 190,
+       "l": "g brown onion",
+       "i": 0
+      },
+      {
+       "q": 420,
+       "l": "g pasta (dry weight)",
+       "i": 0
+      }
+     ],
+     "units": 5.6,
+     "leftoverStep": "Pack the leftovers into a container for tomorrow's lunch and refrigerate once cool.",
+     "batch": true,
+     "steps": [
+      "Cook the pasta in boiling salted water for 10 to 12 minutes and drain.",
+      "Fry the onion for 3 minutes, then add the mince and brown it.",
+      "Add the diced tomatoes and drained lentils and simmer 15 minutes.",
+      "Spoon the sauce over the pasta."
+     ],
+     "kid": "Plain pasta with a little butter, sauce on the side.",
+     "pantry": [],
+     "others": []
+    },
+    {
+     "name": "Wrap pizzas",
+     "makes": "dinner for 3",
+     "ingredients": [
+      "7 wraps",
+      "220 g passata",
+      "220 g mozzarella",
+      "1 capsicum"
+     ],
+     "items": [
+      {
+       "q": 7,
+       "l": "wraps",
+       "i": 1
+      },
+      {
+       "q": 220,
+       "l": "g passata",
+       "i": 0
+      },
+      {
+       "q": 220,
+       "l": "g mozzarella",
+       "i": 0
+      },
+      {
+       "q": 1.0,
+       "l": "capsicum",
+       "i": 0
+      }
+     ],
+     "units": 3.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Heat the oven to 220°C.",
+      "Spread passata over the wraps on trays, then top with mozzarella and sliced capsicum.",
+      "Bake 8 to 10 minutes until the cheese is bubbling and the edges are crisp."
+     ],
+     "kid": "A cheese-only wrap pizza.",
+     "pantry": [],
+     "others": []
+    },
+    {
+     "name": "Red lentil and sweet potato curry",
+     "makes": "dinner for 3",
+     "ingredients": [
+      "160 g red lentils",
+      "330 g sweet potato",
+      "1 × 400 ml can coconut milk",
+      "1½ tbsp curry paste",
+      "250 g rice (dry weight)"
+     ],
+     "items": [
+      {
+       "q": 160,
+       "l": "g red lentils",
+       "i": 0
+      },
+      {
+       "q": 330,
+       "l": "g sweet potato",
+       "i": 0
+      },
+      {
+       "q": 1.0,
+       "l": "× 400 ml can coconut milk",
+       "i": 0
+      },
+      {
+       "q": 1.5,
+       "l": "tbsp curry paste",
+       "i": 0
+      },
+      {
+       "q": 250,
+       "l": "g rice (dry weight)",
+       "i": 0
+      }
+     ],
+     "units": 3.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Cook the rice.",
+      "Fry the curry paste in a little oil for 1 minute. Add the diced sweet potato, red lentils, coconut milk and a can of water.",
+      "Simmer 20 minutes, stirring now and then, until the lentils and sweet potato are soft.",
+      "Serve over the rice."
+     ],
+     "kid": "Rice with a little sweet potato and the sauce on the side. A plain-rice and cheese slice dinner is fine too.",
+     "pantry": [],
+     "others": []
+    },
+    {
+     "name": "Butter chicken and rice",
+     "makes": "dinner for 3",
+     "ingredients": [
+      "550 g chicken breast",
+      "620 g butter chicken sauce",
+      "330 g rice (dry weight)",
+      "220 g frozen peas",
+      "110 g plain yoghurt"
+     ],
+     "items": [
+      {
+       "q": 550,
+       "l": "g chicken breast",
+       "i": 0
+      },
+      {
+       "q": 620,
+       "l": "g butter chicken sauce",
+       "i": 0
+      },
+      {
+       "q": 330,
+       "l": "g rice (dry weight)",
+       "i": 0
+      },
+      {
+       "q": 220,
+       "l": "g frozen peas",
+       "i": 0
+      },
+      {
+       "q": 110,
+       "l": "g plain yoghurt",
+       "i": 0
+      }
+     ],
+     "units": 3.3,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Cook the rice.",
+      "Cut the chicken into bite-sized pieces and brown it in a little oil for 5 minutes.",
+      "Add the butter chicken sauce and a splash of water. Simmer 12 to 15 minutes until the chicken is cooked through.",
+      "Stir in the peas for the last 3 minutes, then finish with the yoghurt.",
+      "Serve over the rice."
+     ],
+     "kid": "One of her favourites. Serve as normal, with the rice separate if she likes.",
+     "pantry": [],
+     "others": []
+    },
+    {
+     "name": "Weet-Bix Bites with milk",
+     "makes": "breakfast for Riley",
+     "ingredients": [
+      "45 g Weet-Bix Bites Mixed Berry",
+      "150 ml milk"
+     ],
+     "items": [
+      {
+       "q": 45,
+       "l": "g Weet-Bix Bites Mixed Berry",
+       "i": 0
+      },
+      {
+       "q": 150,
+       "l": "ml milk",
+       "i": 0
+      }
+     ],
+     "units": 1.0,
+     "leftoverStep": "",
+     "batch": false,
+     "steps": [
+      "Tip the Weet-Bix Bites into a bowl.",
+      "Pour over cold milk, or warm milk for a softer bowl."
+     ],
+     "kid": "Her favourite. Serve as usual.",
+     "pantry": [],
+     "others": [
+      "Also on Tue breakfast, Wed breakfast, Thu breakfast, Fri breakfast, Sat breakfast, Sun breakfast: same amounts."
+     ]
+    }
+   ],
+   "shopping": {
+    "Fruit and veg": [
+     [
+      "Apples (Gala or Granny Smith) ~1.8 kg",
+      9.9
+     ],
+     [
+      "Baby spinach 280 g",
+      5.0
+     ],
+     [
+      "Bananas ~500 g",
+      1.95
+     ],
+     [
+      "Brown onions ~500 g",
+      1.5
+     ],
+     [
+      "Capsicum × 2",
+      4.0
+     ],
+     [
+      "Carrots ~200 g",
+      0.44
+     ],
+     [
+      "Cucumbers",
+      1.25
+     ],
+     [
+      "Limes × 2",
+      2.0
+     ],
+     [
+      "Potatoes ~1.0 kg",
+      3.25
+     ],
+     [
+      "Sweet potato ~400 g",
+      2.0
+     ],
+     [
+      "Tomatoes × 2",
+      2.4
+     ]
+    ],
+    "Meat and fish": [
+     [
+      "Beef sausages 6-pack",
+      5.5
+     ],
+     [
+      "Chicken breast fillets ~1.5 kg",
+      16.5
+     ],
+     [
+      "Tuna in springwater 95 g × 6",
+      9.0
+     ],
+     [
+      "Turkey mince 500 g × 2",
+      13.0
+     ]
+    ],
+    "Dairy and eggs": [
+     [
+      "Cheese slices 12-pack",
+      3.5
+     ],
+     [
+      "Eggs 12-pack × 3",
+      18.3
+     ],
+     [
+      "Full cream milk 2 L",
+      3.0
+     ],
+     [
+      "Natural yoghurt 1 kg (Village) × 4",
+      19.96
+     ],
+     [
+      "Shaved leg ham 200 g",
+      4.5
+     ],
+     [
+      "Shredded mozzarella 500 g",
+      7.5
+     ]
+    ],
+    "Bread and pantry top-ups": [
+     [
+      "Butter chicken sauce 375 g jar × 2",
+      8.0
+     ],
+     [
+      "Wholegrain bread (about 20 slices) × 2",
+      7.0
+     ],
+     [
+      "Wholemeal wraps 8-pack × 2",
+      6.0
+     ]
+    ]
+   },
+   "exercise": {
+    "adult1": {
+     "focus": "Week 1: Getting started. Short, easy sessions to build the habit",
+     "targets": [
+      "Morning: easy cardio such as a walk, bike or row. You should be able to talk in full sentences.",
+      "Afternoon: strength on Mon, Wed and Fri, 2 sets of each exercise, stopping 3 to 4 reps before you could not do another.",
+      "Saturday: a longer easy session. Sunday: rest."
+     ],
+     "days": [
+      {
+       "day": "Mon",
+       "morning": "Workout F: Easy walk, 25 minutes.",
+       "afternoon": "Strength A: Squat, press, hinge (about 50 min)"
+      },
+      {
+       "day": "Tue",
+       "morning": "Workout D: Easy rowing, 25 minutes steady.",
+       "afternoon": "Optional: Workout E mobility and core, 20 minutes (or rest)."
+      },
+      {
+       "day": "Wed",
+       "morning": "Workout F: Easy walk, 25 minutes.",
+       "afternoon": "Strength B: Glutes, pull, arms (about 50 min)"
+      },
+      {
+       "day": "Thu",
+       "morning": "Workout F: Easy walk, 30 minutes, or an easy ride, 30 minutes.",
+       "afternoon": "Optional: Workout E mobility and core, 20 minutes (or rest)."
+      },
+      {
+       "day": "Fri",
+       "morning": "Workout F: Easy walk, 25 minutes.",
+       "afternoon": "Strength C: Full body and carries (about 50 min)"
+      },
+      {
+       "day": "Sat",
+       "session": "Workout G: Pool, steady laps with short rests, 45 minutes."
+      },
+      {
+       "day": "Sun"
+      }
+     ]
+    },
+    "adult2": {
+     "focus": "Week 1: Walking and mobility",
+     "targets": [
+      "A 30 minute walk on 4 days this week, at a pace where you can still chat.",
+      "10 minutes of stretching after two of the walks."
+     ],
+     "days": [
+      {
+       "day": "Mon",
+       "session": "Walk, 30 minutes."
+      },
+      {
+       "day": "Tue",
+       "session": "Rest or an easy 15 minute walk."
+      },
+      {
+       "day": "Wed",
+       "session": "Walk, 30 minutes, then 10 minutes of stretching."
+      },
+      {
+       "day": "Thu",
+       "session": "Rest."
+      },
+      {
+       "day": "Fri",
+       "session": "Walk, 30 minutes."
+      },
+      {
+       "day": "Sat",
+       "session": "Walk, 30 minutes, then 10 minutes of stretching."
+      },
+      {
+       "day": "Sun",
+       "session": "Rest."
+      }
+     ]
+    }
+   },
+   "cost": 155.45
+  }
+ ],
+ "exercise": {
+  "adult1": {
+   "workouts": [
+    {
+     "name": "Strength A: Squat, press, hinge (about 50 min)",
+     "time": "About 50 minutes",
+     "items": [
+      "Warm-up (5 minutes): easy rowing or a brisk walk, then arm circles, cat-cow × 8 and 8 slow bodyweight squats.",
+      "Goblet squat: hold one 10 to 12.5 kg dumbbell at your chest, 3 × 8 to 10. Start with bodyweight or a lighter dumbbell, to a comfortable depth.",
+      "Dumbbell bench press: 2 × 10 to 12.5 kg, 3 × 8 to 12. Lower slowly, press up.",
+      "Romanian deadlift (dumbbells): 2 × 10 to 12.5 kg, 3 × 8 to 10. Hinge at the hips with a flat back and soft knees.",
+      "Seated overhead press: 2 × 7 to 10 kg, 3 × 8 to 10.",
+      "Calf raise: 3 × 12 to 15, slow up and down. Hold a dumbbell once it feels easy.",
+      "Plank: 3 × 30 to 45 seconds.",
+      "Cool-down: the stretch routine below, focusing on whatever you worked."
+     ]
+    },
+    {
+     "name": "Strength B: Glutes, pull, arms (about 50 min)",
+     "time": "About 50 minutes",
+     "items": [
+      "Warm-up (5 minutes): easy rowing or a brisk walk, then arm circles, cat-cow × 8 and 8 slow bodyweight squats.",
+      "Hip thrust: shoulders on the flat bench, the 7 kg bar with discs across your hips (start with the bar and add small discs), 3 × 8 to 12. A pad or folded towel on the bar helps.",
+      "Chest-supported row: lie face down on the bench, 2 × 10 to 12.5 kg, 3 × 10 to 12.",
+      "One-arm dumbbell row: 10 to 12.5 kg, 3 × 10 each side.",
+      "Push-ups: hands on the bench to make them easier, 3 sets stopping 2 reps short of failure.",
+      "Dumbbell curl (bicep curl): 2 × 7 to 10 kg, 3 × 10 to 12.",
+      "Overhead triceps extension: one 7 to 10 kg dumbbell in both hands, 3 × 10 to 12.",
+      "Dead bug: 3 × 8 each side. Then bird dog: 3 × 8 each side.",
+      "Cool-down: the stretch routine below, focusing on whatever you worked."
+     ]
+    },
+    {
+     "name": "Strength C: Full body and carries (about 50 min)",
+     "time": "About 50 minutes",
+     "items": [
+      "Warm-up (5 minutes): easy rowing or a brisk walk, then arm circles, cat-cow × 8 and 8 slow bodyweight squats.",
+      "Squats: bodyweight or holding a dumbbell, 3 × 10 to 12, slow on the way down.",
+      "Dumbbell bench press: 3 × 8 to 12.",
+      "One-arm dumbbell row: 3 × 10 each side.",
+      "Romanian deadlift (dumbbells): 3 × 8 to 10.",
+      "Hammer curl: 2 × 7 to 10 kg, 3 × 10 to 12.",
+      "Farmer's carry: a 10 to 12.5 kg dumbbell in each hand, walk 30 to 40 steps, 3 rounds. Stand tall and walk at a steady pace.",
+      "Mountain climber: 3 rounds of 20 seconds on, 40 seconds rest, kept slow and controlled. Skip it if anything hurts.",
+      "Cool-down: the stretch routine below, focusing on whatever you worked."
+     ]
+    },
+    {
+     "name": "Workout D: Rowing (low impact cardio)",
+     "time": "20 to 35 minutes",
+     "items": [
+      "Rowing machine technique: damper at 3 to 5. Use smooth strokes and gentle leg drive. Shorten the stroke if your body complains.",
+      "Easy weeks (Week 1 and 4): steady and easy for the whole session. Keep it at an easy, chatty pace.",
+      "Build weeks (Week 2 and 3): easy for 5 minutes, then repeat the number of efforts listed for the day: 2 minutes moderate (breathing harder but still in control), then 1 minute easy. Finish with easy rowing.",
+      "Stop and swap to the walk or pool if anything hurts.",
+      "Finish with the stretch routine below, focusing on calves, hip flexors, hamstrings and glutes."
+     ]
+    },
+    {
+     "name": "Workout F: Easy walk or bike (steady cardio)",
+     "time": "30 to 55 minutes",
+     "items": [
+      "Walk on your local walking path or ride the bike path on the flat. Keep it easy, at a pace where you can chat.",
+      "Start with 5 minutes at an easier pace, then settle in. A 5 km walk takes about 55 minutes at an easy pace.",
+      "Add about 5 minutes a week. This steady work is what builds your aerobic base.",
+      "If your body complains above 3 out of 10, switch to the pool or shorten the session.",
+      "Finish with the stretch routine below, focusing on calves, hip flexors, hamstrings and glutes."
+     ]
+    },
+    {
+     "name": "Workout G: Pool laps (steady cardio)",
+     "time": "40 to 55 minutes",
+     "items": [
+      "Swim continuous easy laps in short blocks, for example 5 to 8 minutes, with 30 seconds rest between blocks.",
+      "Keep the pace comfortable, at a level you could keep up for a long time.",
+      "Add a block every week or two. Water walking is a good swap on a sore day.",
+      "Finish with the stretch routine below, focusing on calves, hip flexors, hamstrings and glutes."
+     ]
+    },
+    {
+     "name": "Workout E: Mobility and core (mat)",
+     "time": "About 30 minutes",
+     "items": [
+      "Cat-cow: 10 reps, then child's pose for 30 seconds.",
+      "Hip flexor stretch (half-kneeling, or standing if kneeling hurts): 30 to 45 seconds each side.",
+      "Figure-4 glute stretch: lying on your back, 30 to 45 seconds each side.",
+      "Thoracic twist: lying on your side (open book), 8 reps each side.",
+      "Dead bug: 8 reps each side.",
+      "Bird dog: 8 reps each side.",
+      "Side plank: 20 to 30 seconds each side.",
+      "Finish with 2 minutes of slow breathing on your back with your knees bent."
+     ]
+    },
+    {
+     "name": "Stretch routine (after training, 8 to 10 minutes)",
+     "time": "8 to 10 minutes",
+     "items": [
+      "Hold each stretch for 30 seconds (each side where it applies), breathing slowly. You should feel a gentle pull, never pain. If your body complains, ease off or skip that stretch.",
+      "Hip flexor stretch: half-kneeling (use a pad under the knee) or standing with one foot on a step, tuck your tailbone and lean forward slightly.",
+      "Figure-4 glute stretch: lying on your back with one ankle on the opposite knee, pull the knee toward your chest.",
+      "Hamstring stretch: lying on your back with a towel looped around one foot and the leg raised, keeping the knee slightly soft.",
+      "Calf stretch: hands on a wall, one leg back with the heel down, knee straight. Then bend the knee a little to reach the lower calf.",
+      "Quad stretch: standing, hold on to something, pull one heel toward your glute with the knees together.",
+      "Doorway chest stretch: forearm on the door frame, step through gently.",
+      "Child's pose: 30 to 45 seconds, arms stretched forward.",
+      "Thoracic twist: lying on your side with knees bent, rotate the top arm open, 8 reps each side."
+     ]
+    }
+   ],
+   "videos": {
+    "Dumbbell bench press": "https://www.fitfatherproject.com/dumbbell-bench-press/",
+    "One-arm dumbbell row": "https://www.fitfatherproject.com/one-arm-dumbbell-row/",
+    "Seated overhead press": "https://shop.centr.com/blogs/thewarmup/cp-tutorial-dumbbell-seated-shoulder-press",
+    "Dumbbell shoulder press": "https://shop.centr.com/blogs/thewarmup/cp-tutorial-dumbbell-seated-shoulder-press",
+    "Push-ups": "https://www.nasm.org/resource-center/exercise-library/incline-push-up",
+    "Lateral raise": "https://barbell-logic.com/dumbbell-lateral-raise-gym-shorts/",
+    "Dead bug": "https://library.theprehabguys.com/vimeo-video/dead-bug/",
+    "Plank": "https://fitbod.me/exercises/plank",
+    "Chest-supported row": "https://sweat.com/exercises/chest-supported-dumbbell-row",
+    "Glute bridge": "https://gethealthyutv.com/video/proper-glute-bridge-011568",
+    "Dumbbell curl": "https://middlesexhealth.org/learning-center/videos/video-biceps-curl-with-dumbbell",
+    "Hammer curl": "https://shop.hyroxequipment.centr.com/blogs/thewarmup/cp-tutorial-dumbbell-hammer-curls",
+    "Overhead triceps extension": "https://library.theprehabguys.com/vimeo-video/seated-overhead-tricep-extension-dumbbell-3/",
+    "Bird dog": "https://gethealthyu.com/exercise/bird-dog",
+    "Side plank": "https://www.fitfatherproject.com/side-plank-exercise/",
+    "Side-lying leg raise": "https://library.theprehabguys.com/vimeo-video/side-lying-hip-abduction/",
+    "Barbell bench press": "https://centr.com/blogs/features/cp-tutorial-barbell-flat-bench-press",
+    "Rowing machine technique": "",
+    "Cat-cow": "https://www.yourhousefitness.com/blog/exercise-tutorial-cat-cow",
+    "Hip flexor stretch": "https://library.theprehabguys.com/vimeo-video/half-kneeling-hip-flexor-stretch-2-2/",
+    "Figure-4 glute stretch": "https://www.physitrack.com/en-gb/exercise-library/how-to-perform-the-figure-4-stretch-exercise",
+    "Thoracic twist": "https://au.physitrack.com/home-exercise-video/thoracic-rotation-in-side-lying"
+   },
+   "notes": [
+    "This is an example plan. Ask a doctor or physio before starting a new exercise plan, especially with any injury or health condition.",
+    "If a session feels too hard, do less rather than skipping it. Consistency matters more than effort.",
+    "Stop and get checked if you have chest pain, dizziness, or sharp or shooting pain."
+   ]
+  },
+  "adult2": {
+   "notes": [
+    "Walk on flat ground to start. Good shoes help more than anything else."
+   ]
+  }
+ },
+ "people": {
+  "portion": {
+   "adult1": 1.1,
+   "adult2": 1.2,
+   "kid": 1.0
+  },
+  "adult1": {
+   "name": "Alex",
+   "portion": 1.1,
+   "guide": "Alex's serves are about 10% bigger than average because Alex trains most days.",
+   "times": [
+    {
+     "when": "6:30 to 7:30 am (Mon to Fri)",
+     "what": "Morning workout: easy cardio."
+    },
+    {
+     "when": "7:30 am",
+     "what": "Breakfast. Eggs on toast or a yoghurt bowl keep you fuller."
+    },
+    {
+     "when": "10:00 to 10:30 am",
+     "what": "Mid-morning snack (150 g plain yoghurt, Mon to Fri)."
+    },
+    {
+     "when": "12:00 to 12:30 pm",
+     "what": "Lunch, with protein and vegetables."
+    },
+    {
+     "when": "3:00 to 3:30 pm",
+     "what": "Snack (2 boiled eggs and an apple) before training."
+    },
+    {
+     "when": "4:30 to 5:30 pm (Mon to Fri)",
+     "what": "Afternoon workout: strength on Mon, Wed and Fri."
+    },
+    {
+     "when": "6:00 to 6:30 pm",
+     "what": "Dinner."
+    }
+   ],
+   "timesNote": "Example times. Shift them to suit your day.",
+   "snacks": [
+    {
+     "when": "Mid-morning, Mon to Fri",
+     "what": "150 g plain yoghurt"
+    },
+    {
+     "when": "Afternoon, before training",
+     "what": "2 boiled eggs and an apple"
+    }
+   ]
+  },
+  "adult2": {
+   "name": "Sam",
+   "portion": 1.2,
+   "guide": "Sam eats normally, with a slightly bigger serve (about 20% above average).",
+   "snacks": [
+    {
+     "when": "Afternoon",
+     "what": "150 g plain yoghurt with a spoon of oats"
+    }
+   ]
+  },
+  "kid": {
+   "name": "Riley",
+   "portion": 1.0,
+   "breakfast": "Cereal with milk",
+   "guide": "Simple, familiar food. Every recipe has a plain version for Riley.",
+   "weekday": {
+    "Mon": {
+     "lunch": "Croissant with ham and dried mango (25 g)",
+     "snack": "Crackers and a cheese slice, apple slices"
+    },
+    "Tue": {
+     "lunch": "Chicken and cheese wrap",
+     "snack": "Boiled egg and crackers, apple slices"
+    },
+    "Wed": {
+     "lunch": "Egg sandwich",
+     "snack": "Crackers and a cheese slice, apple slices"
+    },
+    "Thu": {
+     "lunch": "Croissant with ham and dried mango (25 g)",
+     "snack": "Crackers and a cheese slice, apple slices"
+    },
+    "Fri": {
+     "lunch": "School provides lunch",
+     "snack": "Crackers and a cheese slice"
+    }
+   },
+   "snacks": [
+    {
+     "when": "After school",
+     "what": "Plain yoghurt (about 100 g)"
+    }
+   ]
+  }
+ }
+}

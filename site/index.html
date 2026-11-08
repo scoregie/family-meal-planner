@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Shopping">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>4-week shopping lists</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--low:#b3261e;--mid:#8a5a00;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--done:#8e9d97;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;background:var(--bg)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1.0625rem;line-height:1.4;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior-y:none}
+main{max-width:40rem;margin:0 auto;padding:1.25rem 1rem 3rem}
+h1{font-size:1.6rem;line-height:1.15;margin:0 0 .25rem}
+.sub{margin:0 0 1rem;color:var(--mute);font-size:.95rem}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin-bottom:1rem}
+.tab{font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.6rem;padding:.55rem .2rem;cursor:pointer;text-align:center;line-height:1.2;min-height:2.75rem}
+.tab b{display:block;font-size:1rem}
+.tab span{font-size:.8rem;color:var(--mute)}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.tab[aria-selected="true"] span{color:var(--on-accent);opacity:.85}
+.sum{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem;margin-bottom:1rem}
+.sum-top{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap}
+.left{font-size:1.5rem;font-weight:700}
+.meta{color:var(--mute);font-size:.9rem}
+.bar{height:.5rem;background:var(--line);border-radius:1rem;margin-top:.6rem;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.tools{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.55rem .8rem;min-height:2.75rem;cursor:pointer}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+section{margin-bottom:1.25rem}
+h2{font-size:1.1rem;margin:0 0 .4rem;display:flex;justify-content:space-between;align-items:baseline}
+h2 small{font-weight:400;color:var(--mute);font-size:.85rem}
+ul{list-style:none;margin:0;padding:0;background:var(--card);border:1px solid var(--line);border-radius:.8rem;overflow:hidden}
+li{display:flex;align-items:stretch}
+li+li{border-top:1px solid var(--line)}
+.row{flex:1;min-width:0;display:flex;align-items:center;gap:.8rem;padding:.6rem .8rem .6rem 1rem;min-height:3.5rem;cursor:pointer}
+.row input{position:absolute;opacity:0;width:1px;height:1px}
+.box{flex:none;width:1.6rem;height:1.6rem;border:2px solid var(--mute);border-radius:.4rem;display:grid;place-items:center}
+.box::after{content:"";width:.7rem;height:.4rem;border-left:3px solid var(--on-accent);border-bottom:3px solid var(--on-accent);transform:rotate(-45deg) translate(1px,-1px);opacity:0}
+.row input:checked+.box{background:var(--accent);border-color:var(--accent)}
+.row input:checked+.box::after{opacity:1}
+.row input:focus-visible+.box{outline:3px solid var(--accent);outline-offset:2px}
+.txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.name{overflow-wrap:anywhere}
+.find{align-self:flex-start;color:var(--accent);font-size:.82rem;font-weight:700;text-decoration:underline;padding:.3rem .6rem .1rem 0}
+.price{flex:none;color:var(--mute);font-variant-numeric:tabular-nums;min-width:3.6rem;text-align:right}
+.row input:checked~.txt .name{color:var(--done);text-decoration:line-through}
+.row input:checked~.txt .find,.row input:checked~.price{color:var(--done)}
+.homebtn{flex:none;width:4.4rem;font:inherit;font-size:.78rem;line-height:1.15;color:var(--mute);background:transparent;border:0;border-left:1px solid var(--line);padding:.4rem;cursor:pointer}
+.homebtn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:700}
+.homebtn:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+li.home .row{opacity:.5}
+.hide-done li.done,.hide-done li.home{display:none}
+.empty{display:none;padding:1.5rem 1rem;text-align:center;color:var(--mute)}
+.note{color:var(--mute);font-size:.85rem;margin-top:1.5rem}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+
+[hidden]{display:none!important}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:1rem}
+.seg .btn{font-size:1rem}
+.tabs{grid-template-columns:repeat(auto-fit,minmax(4.5rem,1fr))}
+.err{background:var(--card);color:var(--ink);border:2px solid #c0392b;border-radius:.6rem;padding:.7rem 1rem;margin:0 0 1rem;font-size:.9rem}
+.days>li,.recipes>li{display:block;padding:.7rem 1rem}
+.day h3{margin:0 0 .3rem;font-size:1rem}
+.meal{margin:.2rem 0;display:flex;gap:.6rem}
+.mk{flex:none;width:5.2rem;color:var(--mute);font-size:.85rem;padding-top:.1rem}
+.mv{flex:1;min-width:0}
+.rh{margin-top:1.5rem}
+.rec p{margin:0}
+.emptyline{color:var(--mute);text-align:center;padding:1.5rem 0}
+
+.seg{grid-template-columns:repeat(3,1fr)}
+.pseg{grid-template-columns:repeat(4,1fr)}
+.rec details{padding:.1rem 0}.rec summary{cursor:pointer;padding:.4rem 0}.mk2{color:var(--mute);font-size:.85rem;font-weight:400}
+.rec h4{margin:.6rem 0 .2rem;font-size:.9rem}.steps{padding-left:1.3rem;margin:.2rem 0;list-style:decimal;background:none;border:0;border-radius:0;overflow:visible}
+.steps li{display:list-item;margin:.35rem 0}.note2{color:var(--mute);font-size:.85rem;margin:.4rem 0}.kid{background:var(--card);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .7rem;margin:.5rem 0;font-size:.9rem}
+.rate-btn{flex:none;align-self:flex-start;font:inherit;font-size:.8rem;color:var(--accent);background:transparent;border:1px solid var(--line);border-radius:1rem;padding:.25rem .65rem;min-height:2rem;cursor:pointer;white-space:nowrap}
+.rate-btn.has{color:var(--on-accent);background:var(--accent);border-color:var(--accent);font-weight:700}
+.rate-btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.rate-sum{margin:.1rem 0 .4rem 2.1rem;font-size:.85rem;color:var(--mute);overflow-wrap:anywhere;white-space:pre-line}
+.rate-box{margin:.35rem 0 .7rem 2.1rem;padding:.75rem;background:var(--bg);border:1px solid var(--line);border-radius:.6rem}
+.rate-box p{margin:0 0 .45rem;font-size:.85rem;color:var(--mute)}
+.scores{display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem;margin-bottom:.7rem}
+@media (min-width:30rem){.scores{grid-template-columns:repeat(10,1fr)}}
+.scores button{font:inherit;font-size:.95rem;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.45rem;min-height:2.6rem;cursor:pointer;padding:0}
+.scores button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.scores button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.rate-box label{display:block;font-weight:700;font-size:.85rem;margin:0 0 .3rem}
+.rate-box textarea{display:block;width:100%;font:inherit;font-size:1rem;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.45rem;padding:.5rem .6rem;min-height:4.5rem;resize:vertical}
+.rate-box textarea:focus{outline:none;border-color:var(--accent)}
+.rate-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;gap:.5rem}
+.rate-foot .btn{min-height:2.4rem;padding:.3rem .7rem;font-size:.85rem}
+.seg.four{grid-template-columns:repeat(2,1fr)}
+@media (min-width:30rem){.seg.four{grid-template-columns:repeat(4,1fr)}}
+.rs-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.6rem;margin:0 0 .6rem}
+.rs-head .seg{margin:0;grid-template-columns:repeat(2,auto)}
+.rs-head .btn{min-height:2.5rem;font-size:.9rem}
+.rs-note{margin:0 0 1rem;color:var(--mute);font-size:.9rem}
+.rs-list{list-style:none;margin:0;padding:0;display:grid;gap:.6rem}
+.rs-card{display:block;background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem}
+.rs-top{display:flex;align-items:flex-start;gap:.75rem}
+.rs-dish{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere}
+.rs-where{display:block;font-weight:400;color:var(--mute);font-size:.82rem;margin-top:.15rem}
+.rs-avg{flex:none;text-align:center;min-width:3.6rem;border-radius:.5rem;padding:.25rem .4rem;font-variant-numeric:tabular-nums;line-height:1.1;border:2px solid var(--line)}
+.rs-avg b{display:block;font-size:1.15rem}.rs-avg small{font-size:.7rem;color:var(--mute)}
+.rs-avg.low{border-color:var(--low)}.rs-avg.low b{color:var(--low)}
+.rs-avg.mid{border-color:var(--mid)}.rs-avg.mid b{color:var(--mid)}
+.rs-avg.high{border-color:var(--accent)}.rs-avg.high b{color:var(--accent)}
+.rs-people{list-style:none;margin:.6rem 0 0;padding:.5rem 0 0;border-top:1px solid var(--line);display:grid;gap:.35rem}
+.rs-people li{display:flex;gap:.6rem;font-size:.92rem;align-items:baseline}
+.rs-who{flex:none;width:4.6rem;font-weight:700}
+.rs-sc{flex:none;width:3rem;font-variant-numeric:tabular-nums}
+.rs-txt{flex:1;min-width:0;color:var(--mute);overflow-wrap:anywhere;white-space:pre-line}
+.rs-txt i{font-style:normal;font-size:.8rem}
+.byline{display:block;color:var(--mute);font-size:.8rem;margin-top:.1rem}
+.who .me-name{font-weight:700}
+.acct{display:flex;align-items:center;justify-content:flex-end;gap:.6rem;margin:0 0 .5rem;font-size:.9rem;color:var(--mute)}
+.acct form{margin:0}.acct .btn{min-height:2.5rem;padding:.4rem .75rem;font-size:.85rem}
+.who{display:flex;align-items:center;gap:.6rem;margin:0 0 .8rem}.who label{font-weight:700}
+.who select{font-size:1rem;min-height:2.75rem;padding:.4rem .7rem;border-radius:.6rem;border:1px solid var(--line);background:var(--card);color:inherit;flex:1;max-width:14rem}
+.eat{width:1.5rem;height:1.5rem;flex:none;accent-color:var(--accent);margin:0 .1rem 0 0}.meal.eaten .mv{color:var(--done);text-decoration:line-through}
+.pseg{grid-template-columns:repeat(4,1fr)}
+.rec details{padding:.1rem 0}.rec summary{cursor:pointer;padding:.4rem 0}.mk2{color:var(--mute);font-size:.85rem;font-weight:400}
+.rec h4{margin:.6rem 0 .2rem;font-size:.9rem}.steps{padding-left:1.3rem;margin:.2rem 0;list-style:decimal;background:none;border:0;border-radius:0;overflow:visible}
+.steps li{display:list-item;margin:.35rem 0}.note2{color:var(--mute);font-size:.85rem;margin:.4rem 0}.kid{background:var(--card);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .7rem;margin:.5rem 0;font-size:.9rem}
+.exfocus{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin-bottom:1rem}
+.exfocus h3{margin:0 0 .3rem;font-size:1.05rem}
+.bul{list-style:disc;padding-left:1.2rem;background:none;border:0;border-radius:0;overflow:visible;margin:.3rem 0 0}
+.bul li{display:list-item;margin:.3rem 0}
+.bul li+li{border-top:0}
+.steps{list-style:decimal}
+.sess{display:flex;gap:.7rem;align-items:flex-start;padding:.45rem 0;min-height:2.75rem;cursor:pointer}
+.sess input{position:absolute;opacity:0;width:1px;height:1px}
+.sess .box{margin-top:.15rem}
+.sess input:checked+.box{background:var(--accent);border-color:var(--accent)}
+.sess input:checked+.box::after{opacity:1}
+.sess input:focus-visible+.box{outline:3px solid var(--accent);outline-offset:2px}
+.sess input:checked~.stxt{color:var(--done)}
+.stxt{flex:1;min-width:0}
+.sk{display:block;font-size:.8rem;font-weight:700;color:var(--mute)}
+details{background:var(--card);border:1px solid var(--line);border-radius:.8rem;margin-bottom:.6rem;padding:.1rem 1rem}
+summary{padding:.7rem 0;font-weight:700;cursor:pointer;min-height:2.75rem}
+summary span{display:block;font-weight:400;color:var(--mute);font-size:.85rem}
+details[open] .bul{margin-bottom:.8rem}
+.vlink{color:var(--accent);font-weight:700;font-size:.85rem;white-space:nowrap;padding:.3rem .1rem}
+
+/* ---- calendar ---- */
+.cal{margin-top:.8rem;padding-top:.7rem;border-top:1px solid var(--line)}
+.cal h4{margin:0 0 .45rem}
+.cal-btns{display:flex;flex-wrap:wrap;gap:.4rem;align-items:flex-start}
+.cal-btns a.btn{display:inline-flex;align-items:center;text-decoration:none;min-height:2.5rem;padding:.3rem .8rem;font-size:.88rem}
+details.cal-g{background:none;border:0;padding:0;margin:0;flex:1 1 100%}
+.cal-g>summary.btn{display:inline-flex;align-items:center;min-height:2.5rem;padding:.3rem .8rem;font-size:.88rem;font-weight:400;list-style:none}
+.cal-g>summary::-webkit-details-marker{display:none}
+.cal-list{background:none;border:0;border-radius:0;margin:.4rem 0 0;padding:0}
+.cal-list li{display:block;padding:.35rem 0;font-size:.9rem}.cal-list li+li{border-top:1px solid var(--line)}
+.cal-list a{color:var(--accent);font-weight:700}
+/* ---- layout clean-up ---- */
+main{padding:.5rem 1rem calc(5.5rem + env(safe-area-inset-bottom,0px))}
+.top{margin:0 -1rem .75rem;padding:0 1rem .6rem;border-bottom:1px solid var(--line)}
+.topbar{display:flex;align-items:center;gap:.6rem;min-height:3rem}
+.topbar h1{flex:1;min-width:0;font-size:1.2rem;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync{flex:none;display:inline-flex;align-items:center;gap:.35rem;color:var(--mute);font-size:.8rem}
+.sync::before{content:"";width:.55rem;height:.55rem;border-radius:50%;background:var(--accent)}
+.sync:empty{display:none}
+.sync.off::before{background:var(--mid)}
+.acctmenu>summary,.more>summary,.exfold>summary,.about>summary{list-style:none}
+.acctmenu>summary::-webkit-details-marker,.more>summary::-webkit-details-marker,.exfold>summary::-webkit-details-marker,.about>summary::-webkit-details-marker{display:none}
+details.acctmenu,details.more,details.about{background:none;border:0;border-radius:0;margin:0;padding:0}
+details.exfold{padding:0}
+.acctmenu>summary{padding:0;min-height:0}
+.tools .more>summary.btn{display:flex;align-items:center;box-sizing:border-box;height:2.5rem;min-height:0;padding:0 .75rem;font-weight:400}
+.about>summary{min-height:0}
+.acctmenu,.more{position:relative}
+.acctmenu summary{cursor:pointer;border-radius:50%}
+.acctmenu summary:focus-visible,.more summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.avatar{display:grid;place-items:center;width:2.4rem;height:2.4rem;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:1rem;text-transform:uppercase}
+.menu{position:absolute;right:0;top:calc(100% + .4rem);z-index:20;min-width:12rem;background:var(--card);border:1px solid var(--line);border-radius:.7rem;padding:.6rem;box-shadow:0 8px 24px rgba(0,0,0,.15);display:grid;gap:.4rem}
+.menu p{margin:.1rem .2rem .3rem;font-size:.85rem;color:var(--mute)}
+.menu form{margin:0}.menu .btn{width:100%;text-align:left}
+.tabs{display:flex;gap:.4rem;overflow-x:auto;scrollbar-width:none;margin:.1rem -1rem 0;padding:.1rem 1rem;scroll-padding:0 1rem}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:4.9rem;padding:.35rem .7rem;min-height:2.9rem;border-width:1px;border-radius:.6rem}
+.tab b{font-size:.92rem;white-space:nowrap}.tab span{font-size:.75rem}
+.who{background:var(--card);border:1px solid var(--line);border-radius:.7rem;padding:.4rem .5rem .4rem .8rem;margin:0 0 .75rem;font-size:.92rem}
+.who select{min-height:2.4rem}
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--line);padding:0 .25rem env(safe-area-inset-bottom,0px)}
+.bottomnav button{flex:1;max-width:8rem;display:flex;flex-direction:column;align-items:center;gap:.15rem;font:inherit;font-size:.72rem;color:var(--mute);background:none;border:0;padding:.5rem .2rem .45rem;min-height:3.6rem;cursor:pointer}
+.bottomnav svg{width:1.5rem;height:1.5rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bottomnav button[aria-pressed="true"]{color:var(--accent);font-weight:700}
+.bottomnav button[aria-pressed="true"] svg{stroke-width:2.3}
+.bottomnav button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.sum{padding:.7rem .9rem;margin-bottom:1rem}
+.left{font-size:1.35rem}.meta{font-size:.85rem}
+.bar{margin-top:.5rem}
+.tools{margin-top:.65rem;gap:.4rem;flex-wrap:nowrap;align-items:center}
+.tools .btn{min-height:2.5rem;padding:.35rem .75rem;font-size:.85rem;white-space:nowrap}
+.tools .more{margin-left:auto}
+.more summary{cursor:pointer;display:flex;align-items:center}
+.more .menu{min-width:10rem}
+/* shopping rows: name gets the width, small actions line underneath */
+#lists li{display:block}
+#lists .row{padding:.55rem .9rem 0 1rem;min-height:0;align-items:flex-start}
+#lists .box{margin-top:.05rem}
+#lists .name{flex:1;min-width:0}
+#lists .price{padding-top:.05rem}
+.acts{display:flex;flex-wrap:wrap;align-items:center;gap:0 .9rem;padding:.05rem .9rem .45rem 3.4rem;font-size:.8rem}
+.acts .find{padding:.35rem 0;font-size:.8rem}
+.homebtn{width:auto;border:0;border-radius:1rem;padding:.3rem .6rem;margin-left:-.6rem;font-size:.8rem;min-height:2rem;color:var(--mute)}
+.homebtn[aria-pressed="true"]{padding:.3rem .7rem;margin-left:0}
+.byline{display:inline;margin:0;font-size:.78rem}
+.byline:empty{display:none}
+li.done .acts .find{color:var(--done)}
+.row input:checked~.name{color:var(--done);text-decoration:line-through}
+.row input:checked~.price{color:var(--done)}
+/* meals and exercise */
+.pseg{display:flex;gap:.35rem;overflow-x:auto;scrollbar-width:none;margin:0 0 .75rem}
+.pseg .btn{flex:none;min-height:2.3rem;padding:.25rem .8rem;font-size:.85rem;border-radius:1.2rem;border-width:1px}
+.count{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0 .75rem;margin:0 0 .6rem;font-size:.82rem;color:var(--mute)}
+.count b{color:var(--ink);font-size:1rem}
+.day.today{box-shadow:inset 4px 0 0 var(--accent)}
+.today-tag{display:inline-block;margin-left:.5rem;font-size:.72rem;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:1rem;padding:.05rem .5rem;vertical-align:.1rem}
+.meal{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:.6rem;margin:.15rem 0;padding:.25rem 0}
+.meal .mt{min-width:0}
+.meal .mk{display:block;width:auto;font-size:.75rem;padding:0;letter-spacing:.02em}
+.meal .mv{display:block}
+.eat{margin-top:.15rem}
+.rate-sum,.rate-box{margin-left:2.1rem}
+.exfold{background:var(--card);border:1px solid var(--line);border-radius:.8rem;margin-bottom:.75rem}
+.exfold>summary{cursor:pointer;padding:.7rem 1rem;font-weight:700;display:flex;justify-content:space-between;gap:.6rem}
+.exfold>summary::after{content:"Show";flex:none;font-weight:400;font-size:.85rem;color:var(--accent)}
+.exfold[open]>summary::after{content:"Hide"}
+.exfold>div{padding:0 1rem .8rem}
+.exfold .exfocus{border:0;padding:0;margin:0;background:none}
+.about{margin-top:1.5rem;color:var(--mute);font-size:.88rem}
+.about summary{cursor:pointer;padding:.6rem 0;color:var(--accent);font-weight:700}
+.about p{margin:.4rem 0}
+.about .note{margin-top:.6rem}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="topbar">
+      <h1 id="title">Shopping lists</h1>
+      <span id="sync" class="sync" role="status"></span>
+      <details class="acctmenu" id="acct">
+        <summary aria-label="Account and log out"><span class="avatar" id="avatar" aria-hidden="true"></span></summary>
+        <div class="menu"><p id="me"></p><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
+      </details>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Weeks" id="tabs"></div>
+  </header>
+  <p class="err" id="err" hidden></p>
+  <div class="who" id="whoRow" hidden><label for="user">Ticks for</label><select id="user"></select><span class="me-name" id="meName" hidden></span></div>
+  <div id="shopView">
+  <div class="sum">
+    <div class="sum-top"><span class="left" id="left"></span><span class="meta" id="meta"></span></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="tools">
+      <button class="btn" id="hide" aria-pressed="false">Hide ticked</button>
+      <button class="btn" id="copy">Copy list</button>
+      <details class="more"><summary class="btn" aria-label="More list options">More</summary>
+        <div class="menu"><button class="btn" id="clear">Clear ticks</button><button class="btn" id="resetall" hidden>Reset all</button></div>
+      </details>
+    </div>
+  </div>
+  <div id="lists"></div>
+  <p class="empty" id="allDone">Everything is ticked off. Nice work.</p>
+  </div>
+  <div id="meals" hidden></div>
+  <div id="exView" hidden></div>
+  <div id="ratesView" hidden></div>
+  <details class="about"><summary>About this plan</summary><p id="sub"></p><p class="note">Tap the box to tick an item off. Tap &ldquo;At home?&rdquo; on anything you already have. It is removed from your total and stays marked in every week. Oil, salt, pepper and dried spices are assumed on hand. The Coles links open a search for that item, so pick the size and brand that suits you.</p></details>
+</main>
+<nav class="bottomnav" aria-label="Sections">
+  <button type="button" id="vShop" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11h11L21 8H6.2"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg><span>Shopping</span></button>
+  <button type="button" id="vMeals" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4.5-3.5 8h3.5"/></svg><span>Meals</span></button>
+  <button type="button" id="vEx" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg><span>Exercise</span></button>
+  <button type="button" id="vRates" aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Ratings</span></button>
+</nav>
+<script type="application/json" id="plan-data">{"id":"no-plan","title":"Shopping lists","subtitle":"No plan.json was found. Copy site/plan.example.json to site/plan.json, or upload your own plan.","weeks":[{"name":"Week 1","shopping":{"Getting started":[["Add a plan.json to the site folder",0]]}}]}</script>
+<script>
+var PLAN_URL="plan.json";
+var HK="coles-plan-have-v1",PLAN=null,KEY="",EXK="",EAK="",eaten={},rates={},RK="",openRate="",ticks={},exTicks={},have=[],week=0,view="shop",hideDone=false,defaultPlan=null;
+function $(id){return document.getElementById(id);}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+function money(n){return "$"+n.toFixed(2);}
+function query(name){
+  return name.replace(/\(.*?\)/g," ").replace(/[×~]/g," ").replace(/\d+\s*-?\s*pack/gi," ").replace(/\d+(\.\d+)?\s*(kg|g|ml|l)\b/gi," ").replace(/\b\d+\b/g," ").replace(/\b(jar|sachet)\b/gi," ").replace(/\s+/g," ").trim();
+}
+function colesUrl(name){return "https://www.coles.com.au/search/products?q="+encodeURIComponent(query(name));}
+function isHome(name){return have.indexOf(query(name).toLowerCase())>-1;}
+function sections(wi){var sh=PLAN.weeks[wi].shopping;return Object.keys(sh).map(function(k){return [k,sh[k]];});}
+function total(wi){var t=0;sections(wi).forEach(function(s){s[1].forEach(function(i){if(!isHome(i[0]))t+=i[1];});});return t;}
+function validate(p){
+  if(!p||!Array.isArray(p.weeks)||!p.weeks.length)return "It needs a non-empty \"weeks\" list.";
+  for(var i=0;i<p.weeks.length;i++){
+    var w=p.weeks[i],n="Week "+(i+1)+": ";
+    if(!w||typeof w.shopping!=="object"||w.shopping===null||Array.isArray(w.shopping))return n+"\"shopping\" must be an object of sections.";
+    var keys=Object.keys(w.shopping);
+    if(!keys.length)return n+"\"shopping\" has no sections.";
+    for(var k=0;k<keys.length;k++){
+      var items=w.shopping[keys[k]];
+      if(!Array.isArray(items))return n+"section \""+keys[k]+"\" must be a list.";
+      for(var j=0;j<items.length;j++){
+        var it=items[j];
+        if(!Array.isArray(it)||typeof it[0]!=="string"||typeof it[1]!=="number")return n+"each item in \""+keys[k]+"\" must look like [\"Name\", 1.5] (item "+(j+1)+").";
+      }
+    }
+    if(w.meals&&!Array.isArray(w.meals))return n+"\"meals\" must be a list.";
+    if(w.recipes&&!Array.isArray(w.recipes))return n+"\"recipes\" must be a list.";
+    if(w.exercise){
+      if(typeof w.exercise!=="object")return n+"\"exercise\" must be an object.";
+      var blocks=Array.isArray(w.exercise.days)?[w.exercise]:Object.keys(w.exercise).map(function(k){return w.exercise[k];});
+      for(var b=0;b<blocks.length;b++)if(!blocks[b]||!Array.isArray(blocks[b].days))return n+"each \"exercise\" plan needs a \"days\" list.";
+    }
+  }
+  return "";
+}
+var ME=null,BY={},ALLR={};try{ME=JSON.parse(localStorage.getItem("coles-plan-me"));}catch(e){}
+var BASE="",BASEX="",BASEE="",USER="",USERS=[],PMAP={};
+// People come from the plan's "people" block (each entry with a "name").
+function ukey(n){return String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"-");}
+function nameOf(k){for(var i=0;i<USERS.length;i++)if(ukey(USERS[i])===k)return USERS[i];return cap(k);}
+function initPeople(p){
+  var pp=(p&&p.people)||{};USERS=[];PMAP={};
+  Object.keys(pp).forEach(function(k){var v=pp[k];if(v&&typeof v==="object"&&v.name){USERS.push(String(v.name));PMAP[v.name]=k;}});
+  if(!USERS.length)USERS=["Me"];
+  var s=$("user");if(s){s.textContent="";USERS.forEach(function(n){s.appendChild(el("option",null,n));});}
+  if(USERS.indexOf(USER)<0)USER=USERS[0];
+}
+function kidName(){var pp=(PLAN&&PLAN.people)||{};for(var k in pp)if(pp[k]&&pp[k].weekday&&pp[k].name)return pp[k].name;return "Kids";}
+function cap(s){s=String(s||"");return s.charAt(0).toUpperCase()+s.slice(1);}
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function loadUser(){
+  var u=lsGet("coles-plan-user");if(USERS.indexOf(u)>-1)USER=u;
+  if(ME&&!ME.admin){var mine=nameOf(ME.person);if(USERS.indexOf(mine)>-1)USER=mine;}
+  var k=ukey(USER);KEY=BASE;EXK=BASEX+"-"+k;EAK=BASEE+"-"+k;RK="coles-plan-rates-v1-"+(PLAN&&PLAN.id||"default")+"-"+k;
+  try{ticks=JSON.parse(lsGet(KEY))||{};}catch(e){ticks={};}
+  try{exTicks=JSON.parse(lsGet(EXK))||{};}catch(e){exTicks={};}
+  try{eaten=JSON.parse(lsGet(EAK))||{};}catch(e){eaten={};}
+  try{rates=JSON.parse(lsGet(RK))||{};}catch(e){rates={};}openRate="";
+  var s=$("user"),locked=!!(ME&&!ME.admin);
+  if(s){s.value=USER;s.hidden=locked;}
+  var mn=$("meName");if(mn){mn.textContent=USER;mn.hidden=!locked;}
+  var lb=document.querySelector('label[for="user"]');if(lb)lb.textContent="Ticks for";
+  var r=$("resetall");if(r)r.hidden=!(ME&&ME.admin);
+}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(ticks));localStorage.setItem(HK,JSON.stringify(have));localStorage.setItem(EXK,JSON.stringify(exTicks));localStorage.setItem(EAK,JSON.stringify(eaten));localStorage.setItem(RK,JSON.stringify(rates));}catch(e){}}
+var pushT=0,lastSrv="";
+function setSync(m){var s=$("sync");if(!s)return;var off=/^Offline/.test(m);s.textContent=off?"Offline":(/Reset/.test(m)?"Reset":"Synced");s.title=m;s.className="sync"+(off?" off":"");}
+function api(method,url,body){return fetch(url,{method:method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined,cache:"no-store"}).then(function(r){if(r.status===401)toLogin();if(!r.ok)throw 0;return r.json();});}
+function toLogin(){location.href="/login?next="+encodeURIComponent(location.pathname+location.search+location.hash);}
+var dirty=false;
+function pushNow(){
+  var u=ukey(USER);
+  api("PUT","api/shared",{ticks:ticks}).then(function(r){if(r&&r.by){var c=!same(r.by,BY);BY=r.by;if(c&&PLAN&&view==="shop")refreshBylines();}}).then(function(){return api("PUT","api/user/"+u,{ex:exTicks,eaten:eaten,ratings:rates});}).then(function(){return api("PUT","api/have",{have:have});}).then(function(){dirty=false;setSync("Saved to server");}).catch(function(){setSync("Offline: saved on this device only");});
+}
+function save(){saveLocal();dirty=true;clearTimeout(pushT);pushT=setTimeout(pushNow,400);}
+function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
+function pull(){
+  if(dirty){pushNow();return;}
+  api("GET","api/state").then(function(s){
+    var u=ukey(USER),need=false,changed=false;
+    var le=lsGet("coles-plan-epoch");
+    if(le!==null&&le!==String(s.epoch||0)){ticks={};exTicks={};eaten={};rates={};have=[];changed=true;}
+    try{localStorage.setItem("coles-plan-epoch",String(s.epoch||0));}catch(e){}
+    if(s.shared&&!same(s.shared.by||{},BY)){BY=s.shared.by||{};changed=true;}
+    if(s.shared&&s.shared.ticks){if(!same(s.shared.ticks,ticks)){ticks=s.shared.ticks;changed=true;}}
+    else if(Object.keys(ticks).length)need=true;
+    if(s.users&&s.users[u]){
+      var ne=s.users[u].ex||{},nd=s.users[u].eaten||{},nr=s.users[u].ratings;
+      if(!same(ne,exTicks)||!same(nd,eaten)){exTicks=ne;eaten=nd;changed=true;}
+      if(nr===undefined){if(Object.keys(rates).length)need=true;}else if(!same(nr,rates)){rates=nr;changed=true;}
+    }else if(Object.keys(exTicks).length||Object.keys(eaten).length||Object.keys(rates).length)need=true;
+    if(ME&&ME.admin){var ar={};Object.keys(s.users||{}).forEach(function(k){ar[k]=(s.users[k]&&s.users[k].ratings)||{};});if(!same(ar,ALLR)){ALLR=ar;if(view==="ratings")changed=true;}}
+    if(Array.isArray(s.have)){if(!same(s.have,have)){have=s.have;changed=true;}}
+    else if(have.length)need=true;
+    if(changed){saveLocal();var ae=document.activeElement;if(PLAN&&!(ae&&ae.tagName==="TEXTAREA"))show();}
+    if(need)pushNow();
+    setSync("Synced");
+  }).catch(function(){setSync("Offline: saved on this device only");});
+}
+setInterval(function(){if(!document.hidden&&PLAN)pull();},30000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&PLAN)pull();});
+function showErr(msg){var e=$("err");e.textContent=msg;e.hidden=false;}
+function usePlan(p){
+  PLAN=p;initPeople(p);BASE="coles-plan-ticks-v2-"+(p.id||"default");BASEX="coles-plan-ex-v1-"+(p.id||"default");BASEE="coles-plan-eaten-v1-"+(p.id||"default");loadUser();
+  $("title").textContent=p.title||"Shopping lists";
+  $("sub").textContent=p.subtitle||"";
+  document.title=p.title||"Shopping lists";
+  show();pull();
+}
+function go(w,v){location.hash="week-"+(w+1)+(v==="shop"?"":"-"+v);}
+var ADMINV=function(){return !!(ME&&ME.admin);};
+function renderTabs(){
+  var t=$("tabs");t.textContent="";
+  PLAN.weeks.forEach(function(wk,w){
+    var b=el("button","tab");b.type="button";b.setAttribute("role","tab");b.setAttribute("aria-selected",w===week);
+    b.appendChild(el("b",null,wk.name||("Week "+(w+1))));b.appendChild(el("span",null,"~$"+Math.round(total(w))));
+    b.onclick=function(){go(w,view);};
+    t.appendChild(b);
+  });
+  var sel=t.querySelector('[aria-selected="true"]');
+  if(sel){var l=sel.offsetLeft-t.offsetLeft,r=l+sel.offsetWidth;if(l<t.scrollLeft+16||r>t.scrollLeft+t.clientWidth-16)t.scrollLeft=l-(t.clientWidth-sel.offsetWidth)/2;}
+}
+function renderList(){
+  var box=$("lists");box.textContent="";
+  box.className=hideDone?"hide-done":"";
+  var done=ticks[week]||[];
+  sections(week).forEach(function(s,si){
+    var items=s[1],sec=el("section"),h=el("h2",null,s[0]),sub=0;
+    items.forEach(function(i){if(!isHome(i[0]))sub+=i[1];});
+    h.appendChild(el("small",null,money(sub)));sec.appendChild(h);
+    var ul=el("ul");
+    items.forEach(function(it,idx){
+      var id=si+"-"+idx,home=isHome(it[0]),on=done.indexOf(id)>-1;
+      var li=el("li",(on?"done ":"")+(home?"home":"")),lab=el("label","row"),inp=el("input");
+      inp.type="checkbox";inp.checked=on;
+      inp.onchange=function(){toggle(id,inp.checked,li);};
+      var bl=el("span","byline");bl.dataset.k=week+"|"+id;
+      var a=el("a","find","Search Coles");a.href=colesUrl(it[0]);a.target="_blank";a.rel="noopener noreferrer";
+      a.setAttribute("aria-label","Search Coles for "+it[0]);
+      lab.appendChild(inp);lab.appendChild(el("span","box"));lab.appendChild(el("span","name",it[0]));lab.appendChild(el("span","price",money(it[1])));
+      var hb=el("button","homebtn",home?"\u2713 At home":"At home?");hb.type="button";hb.setAttribute("aria-pressed",home);
+      hb.setAttribute("aria-label",(home?"Remove from at home: ":"Mark as at home: ")+it[0]);
+      hb.onclick=function(){toggleHome(it[0]);};
+      var acts=el("div","acts");acts.appendChild(a);acts.appendChild(hb);acts.appendChild(bl);
+      li.appendChild(lab);li.appendChild(acts);ul.appendChild(li);
+    });
+    sec.appendChild(ul);box.appendChild(sec);
+  });
+  refreshBylines();updateSummary();
+}
+function byText(k){
+  var b=BY[k];if(!b)return "";
+  var d=new Date(b.at),t=isNaN(d)?"":" \u00b7 "+d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"})+", "+d.toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});
+  return "Ticked by "+nameOf(b.who)+t;
+}
+function refreshBylines(){
+  var done=ticks[week]||[];
+  document.querySelectorAll("#lists .byline").forEach(function(s){var id=s.dataset.k.split("|")[1];s.textContent=done.indexOf(id)>-1?byText(s.dataset.k):"";});
+}
+function getRate(id){return (rates[week]||{})[id]||{};}
+function setRate(id,patch,dish){
+  var w=rates[week]||{},v=Object.assign({},w[id]||{},patch);
+  if(!v.s)delete v.s;if(!v.n||!v.n.trim())delete v.n;
+  if(v.s||v.n){if(dish)v.t=dish;w[id]=v;}else delete w[id];
+  if(Object.keys(w).length)rates[week]=w;else delete rates[week];
+  save();
+}
+function rateUI(id,what,btn,sum,box,dish){
+  var key=week+"|"+id,boxId="rate-"+key.replace(/[^a-z0-9]/gi,"-");box.id=boxId;btn.setAttribute("aria-controls",boxId);
+  function paint(){
+    var v=getRate(id),open=openRate===key;
+    btn.textContent=v.s?v.s+"/10":(v.n?"Note":"Rate");btn.className="rate-btn"+(v.s||v.n?" has":"");
+    btn.setAttribute("aria-expanded",open);btn.setAttribute("aria-label",(v.s?"Rated "+v.s+" out of 10. ":"")+"Rate "+what);
+    sum.hidden=open||!v.n;sum.textContent=v.n?"\u201c"+v.n.trim()+"\u201d":"";
+    box.hidden=!open;
+  }
+  function build(){
+    box.textContent="";
+    var v=getRate(id);
+    box.appendChild(el("p",null,"How was it? 1 = did not like it, 10 = loved it."));
+    var g=el("div","scores");g.setAttribute("role","group");g.setAttribute("aria-label","Score out of 10");
+    for(var n=1;n<=10;n++)(function(n){
+      var b=el("button",null,String(n));b.type="button";b.setAttribute("aria-pressed",v.s===n);b.setAttribute("aria-label",n+" out of 10");
+      b.onclick=function(){var cur=getRate(id).s;setRate(id,{s:cur===n?0:n},dish);g.querySelectorAll("button").forEach(function(x,i){x.setAttribute("aria-pressed",getRate(id).s===i+1);});paint();};
+      g.appendChild(b);
+    })(n);
+    box.appendChild(g);
+    var tid=boxId+"-note",lb=el("label",null,"What didn't you like? (optional)");lb.htmlFor=tid;box.appendChild(lb);
+    var ta=el("textarea");ta.id=tid;ta.maxLength=1000;ta.rows=2;ta.placeholder="e.g. too spicy, sauce was bland, not enough veg";ta.value=v.n||"";
+    ta.oninput=function(){setRate(id,{n:ta.value},dish);paint();sum.hidden=true;};box.appendChild(ta);
+    var f=el("div","rate-foot"),cl=el("button","btn","Clear rating"),dn=el("button","btn","Done");cl.type=dn.type="button";
+    cl.onclick=function(){setRate(id,{s:0,n:""});build();paint();};
+    dn.onclick=function(){openRate="";paint();btn.focus();};
+    f.appendChild(cl);f.appendChild(dn);box.appendChild(f);
+  }
+  btn.onclick=function(){
+    if(openRate===key){openRate="";paint();return;}
+    var prev=openRate&&document.getElementById("rate-"+openRate.replace(/[^a-z0-9]/gi,"-"));
+    openRate=key;build();paint();
+    if(prev){prev.hidden=true;var pb=document.querySelector('[aria-controls="'+prev.id+'"]');if(pb)pb.setAttribute("aria-expanded","false");var ps=prev.previousSibling;if(ps&&ps.className==="rate-sum"&&ps.textContent)ps.hidden=false;}
+  };
+  if(openRate===key)build();
+  paint();
+}
+function renderRatings(){
+  var box=$("ratesView");box.textContent="";
+  if(!ADMINV()){box.appendChild(el("p","emptyline","Only an admin can see everyone's ratings."));return;}
+  var scope="all";try{scope=localStorage.getItem("coles-plan-rscope")||"all";}catch(e){}
+  var head=el("div","rs-head");head.appendChild(el("h2",null,"Meal ratings"));
+  var sg=el("div","seg");
+  [["all","All weeks"],["week","This week"]].forEach(function(o){
+    var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",scope===o[0]);
+    b.onclick=function(){try{localStorage.setItem("coles-plan-rscope",o[0]);}catch(e){}renderRatings();};sg.appendChild(b);
+  });
+  head.appendChild(sg);box.appendChild(head);
+  // Everyone's ratings; the person being edited on this device uses the freshest local copy.
+  var all=Object.assign({},ALLR);all[ukey(USER)]=rates;
+  var dishes={},order=[],people={};
+  Object.keys(all).forEach(function(pk){
+    var r=all[pk]||{};
+    Object.keys(r).forEach(function(w){
+      var wi=+w;if(!PLAN.weeks[wi]||(scope==="week"&&wi!==week))return;
+      Object.keys(r[w]).forEach(function(id){
+        var v=r[w][id],parts=id.split("|"),day=parts[0],lab=parts[1]||"",dm=(PLAN.weeks[wi].meals||[]).filter(function(x){return x.day===day;})[0];
+        var dish=v.t||(dm&&dm[lab.toLowerCase()])||(day+" "+lab),k=dish.trim().toLowerCase();
+        if(!dishes[k]){dishes[k]={name:dish.trim(),rows:[],where:{}};order.push(k);}
+        var wn=PLAN.weeks[wi].name||("Week "+(wi+1)),where=wn+", "+day+" "+lab.toLowerCase();
+        dishes[k].where[where]=1;dishes[k].rows.push({who:nameOf(pk),s:v.s,n:v.n,where:where});people[pk]=1;
+      });
+    });
+  });
+  if(!order.length){box.appendChild(el("p","emptyline",scope==="week"?"Nobody has rated a meal this week yet.":"Nobody has rated a meal yet. Ratings show up here once people use the Rate button on the Meals tab."));return;}
+  order.forEach(function(k){var d=dishes[k],sc=d.rows.filter(function(r){return r.s;});d.avg=sc.length?sc.reduce(function(a,r){return a+r.s;},0)/sc.length:null;d.n=sc.length;});
+  order.sort(function(a,b){var A=dishes[a],B=dishes[b];if(A.avg===null)return B.avg===null?0:1;if(B.avg===null)return -1;return A.avg-B.avg||B.n-A.n;});
+  var np=Object.keys(people).length;
+  box.appendChild(el("p","rs-note",order.length+(order.length===1?" dish":" dishes")+" rated by "+np+(np===1?" person":" people")+". Lowest average score first, so meals worth changing are at the top."));
+  var ul=el("ul","rs-list");
+  order.forEach(function(k){
+    var d=dishes[k],li=el("li","rs-card"),top=el("div","rs-top"),nm=el("div","rs-dish",d.name);
+    var multi=d.rows.some(function(r,i){return d.rows.some(function(q,j){return j!==i&&q.where!==r.where;});});
+    nm.appendChild(el("span","rs-where",Object.keys(d.where).join(" \u00b7 ")));top.appendChild(nm);
+    var av=el("div","rs-avg"+(d.avg===null?"":d.avg<5?" low":d.avg<7?" mid":" high"));
+    if(d.avg===null){av.appendChild(el("b",null,"\u2013"));av.appendChild(el("small",null,"no score"));}
+    else{av.appendChild(el("b",null,(Math.round(d.avg*10)/10)+""));av.appendChild(el("small",null,d.n>1?"avg of "+d.n:"out of 10"));}
+    av.setAttribute("aria-label",d.avg===null?"No score yet":"Average "+(Math.round(d.avg*10)/10)+" out of 10 from "+d.n+(d.n===1?" rating":" ratings"));
+    top.appendChild(av);li.appendChild(top);
+    var pl=el("ul","rs-people");
+    d.rows.sort(function(a,b){return (a.s||11)-(b.s||11);}).forEach(function(r){
+      var row=el("li");row.appendChild(el("span","rs-who",r.who));row.appendChild(el("span","rs-sc",r.s?r.s+"/10":"\u2013"));
+      var t=el("span","rs-txt",r.n?"\u201c"+r.n.trim()+"\u201d":(r.s?"No note":""));
+      if(multi){t.appendChild(document.createTextNode(r.n||r.s?" ":""));t.appendChild(el("i",null,"("+r.where+")"));}
+      row.appendChild(t);pl.appendChild(row);
+    });
+    li.appendChild(pl);ul.appendChild(li);
+  });
+  box.appendChild(ul);
+}
+var TODAY=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date().getDay()],scrollToday=false;
+function markToday(li,h3,day){
+  if(String(day||"").slice(0,3)!==TODAY)return;
+  li.classList.add("today");h3.appendChild(el("span","today-tag","Today"));
+  if(scrollToday){scrollToday=false;setTimeout(function(){var y=li.getBoundingClientRect().top+window.scrollY-12;window.scrollTo(0,Math.max(0,y));},0);}
+}
+// "Add to calendar" for a person's suggested eating times.
+function localYmd(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
+function calBlock(pk){
+  var start=localYmd(new Date(Date.now()+864e5)),q="?start="+start,wrap=el("div","cal");
+  wrap.appendChild(el("h4",null,"Add these times to your calendar"));
+  var row=el("div","cal-btns"),a=el("a","btn","Apple Calendar");a.href="/api/calendar/"+pk+".ics"+q;
+  a.setAttribute("aria-label","Add all suggested times to Apple Calendar or Outlook");row.appendChild(a);
+  var g=el("details","cal-g"),gs=el("summary","btn","Google Calendar");g.appendChild(gs);var gl=el("ul","cal-list");g.appendChild(gl);row.appendChild(g);
+  wrap.appendChild(row);
+  wrap.appendChild(el("p","note2","Starts tomorrow, repeats for 4 weeks, with a reminder 10 minutes before. \u201cMon to Fri\u201d times skip weekends. Apple Calendar adds them all at once. For Google, add each time below, or download the Apple file and import it at calendar.google.com (Settings, Import)."));
+  g.addEventListener("toggle",function(){
+    if(!g.open||gl.childNodes.length)return;
+    gl.appendChild(el("li",null,"Loading\u2026"));
+    var tz="";try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"";}catch(e){}
+    api("GET","/api/calendar/"+pk+".json"+q).then(function(c){
+      gl.textContent="";
+      c.events.forEach(function(e){
+        var u="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(e.title)+"&dates="+e.date+"T"+e.start+"/"+e.date+"T"+e.end+
+          "&details="+encodeURIComponent(e.details)+"&recur="+encodeURIComponent("RRULE:"+e.rrule)+(tz?"&ctz="+encodeURIComponent(tz):"");
+        var li=el("li"),l=el("a",null,"Add \u201c"+e.title+"\u201d");l.href=u;l.target="_blank";l.rel="noopener noreferrer";
+        li.appendChild(l);li.appendChild(el("span","mk2"," \u00b7 "+e.when));gl.appendChild(li);
+      });
+    }).catch(function(){gl.textContent="";gl.appendChild(el("li",null,"Could not load the times. Check your connection."));});
+  });
+  return wrap;
+}
+function renderMeals(){
+  var m=$("meals");m.textContent="";
+  var w=PLAN.weeks[week],ppl=PLAN.people||null;
+  if(!w.meals||!w.meals.length){m.appendChild(el("p","emptyline","No meals are listed for this week."));return;}
+  var who="all";try{who=localStorage.getItem("coles-plan-person")||"all";}catch(e){}
+  if(!ppl||(who!=="all"&&!ppl[who]))who="all";
+  if(ppl){
+    var seg=el("div","seg pseg");
+    [["all","Everyone"]].concat(Object.keys(ppl).filter(function(k){return ppl[k]&&ppl[k].name;}).map(function(k){return [k,ppl[k].name];})).forEach(function(o){
+      var b=el("button","btn",o[1]);b.type="button";b.setAttribute("aria-pressed",who===o[0]);
+      b.onclick=function(){try{localStorage.setItem("coles-plan-person",o[0]);}catch(e){}renderMeals();};
+      seg.appendChild(b);
+    });
+    m.appendChild(seg);
+    if(who!=="all"){
+      var P=ppl[who],box=el("div","exfocus");
+      box.appendChild(el("h3",null,P.name+" (portion "+P.portion+"× average)"));
+      if(P.guide)box.appendChild(el("p",null,P.guide));
+      if(P.times&&P.times.length){box.appendChild(el("h4",null,"Suggested eating times"));P.times.forEach(function(s){var p=el("p","meal");p.appendChild(el("span","mk",s.when));p.appendChild(el("span","mv",s.what));box.appendChild(p);});if(P.timesNote)box.appendChild(el("p","note2",P.timesNote));box.appendChild(calBlock(who));}
+      if(P.tips&&P.tips.length){box.appendChild(el("h4",null,"Cravings and energy"));var tl=el("ul","bul");P.tips.forEach(function(s){tl.appendChild(el("li",null,s));});box.appendChild(tl);}
+      if(P.snacks&&P.snacks.length)box.appendChild(el("h4",null,"Snacks"));
+      (P.snacks||[]).forEach(function(s){var p=el("p","meal");p.appendChild(el("span","mk",s.when));p.appendChild(el("span","mv",s.what));box.appendChild(p);});
+      m.appendChild(box);
+    }
+  }
+  var ec=el("p","count");ec.id="eatCount";m.appendChild(ec);
+  function updateEaten(){var n=(eaten[week]||[]).length,t=0;w.meals.forEach(function(d){["breakfast","lunch","dinner"].forEach(function(k){if(d[k])t++;});});ec.textContent="";ec.appendChild(el("b",null,n+" of "+t+" meals eaten"));ec.appendChild(el("span",null,"Tick once eaten"));}
+  updateEaten();
+  var ul=el("ul","days");
+  w.meals.forEach(function(d){
+    var li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
+    var rows=[["Breakfast",d.breakfast],["Lunch",d.lunch],["Dinner",d.dinner]];
+    var extra=[];
+    var WP=who!=="all"&&ppl?ppl[who]:null;
+    if(WP&&WP.weekday&&WP.weekday[d.day]){
+      var wd=WP.weekday[d.day];
+      rows[1]=["Lunch",wd.lunch+(wd.lunch.indexOf("School")===0?"":" (packed)")];
+      extra.push(["School snack",wd.snack]);
+    }
+    if(WP&&WP.breakfast)rows[0]=["Breakfast",WP.breakfast];
+    function mrow(r){
+      var p=el("p","meal"),id=(d.day||"")+"|"+r[0],a=eaten[week]||[];
+      var cb=el("input","eat");cb.type="checkbox";cb.checked=a.indexOf(id)>-1;cb.setAttribute("aria-label","Eaten: "+(d.day||"")+" "+r[0]+" ("+USER+")");
+      p.className="meal"+(cb.checked?" eaten":"");
+      cb.onchange=function(){var a2=eaten[week]||[],i=a2.indexOf(id);if(cb.checked&&i<0)a2.push(id);if(!cb.checked&&i>-1)a2.splice(i,1);eaten[week]=a2;save();p.className="meal"+(cb.checked?" eaten":"");updateEaten();};
+      var mt=el("span","mt");mt.appendChild(el("span","mk",r[0]));mt.appendChild(el("span","mv",r[1]));p.appendChild(cb);p.appendChild(mt);
+      var rb=el("button","rate-btn");rb.type="button";p.appendChild(rb);li.appendChild(p);
+      var sum=el("p","rate-sum"),box=el("div","rate-box");li.appendChild(sum);li.appendChild(box);
+      rateUI(id,(d.day||"")+" "+r[0].toLowerCase(),rb,sum,box,r[1]);
+    }
+    rows.forEach(function(r){if(r[1])mrow(r);});
+    extra.forEach(function(r){mrow(r);});
+    ul.appendChild(li);
+  });
+  m.appendChild(ul);
+  if(w.recipes&&w.recipes.length){
+    var qp=(who!=="all"&&ppl&&ppl[who])?ppl[who]:null;
+    function fq(v,l,isInt){
+      if(isInt)return String(Math.max(1,Math.round(v)));
+      if(/^(g|ml)\b/.test(l)){var s=v<50?5:10;return String(Math.max(5,Math.round(v/s)*s));}
+      var r=Math.max(0.5,Math.round(v*4)/4),wh=Math.floor(r),fr={0:"",0.25:"\u00bc",0.5:"\u00bd",0.75:"\u00be"}[r-wh];
+      return (wh?String(wh):"")+fr;
+    }
+    m.appendChild(el("h2","rh",qp?"Recipes (quantities for "+qp.name+" only)":"Recipes (quantities for the whole household)"));
+    if(qp)m.appendChild(el("p","note2","These amounts are one serve for "+qp.name+" ("+qp.portion+"\u00d7 an average serve). Tap Everyone above for the full household amounts."));
+    var rl=el("ul","recipes");
+    w.recipes.forEach(function(r){
+      var li=el("li","rec");
+      if(typeof r==="string"){var p=el("p"),i=r.indexOf(": ");if(i>0){p.appendChild(el("strong",null,r.slice(0,i+1)));p.appendChild(document.createTextNode(r.slice(i+1)));}else p.textContent=r;li.appendChild(p);rl.appendChild(li);return;}
+      var det=el("details"),sm=el("summary");sm.appendChild(el("strong",null,r.name));
+      var mk=qp?("1 serve for "+qp.name):r.makes;if(mk)sm.appendChild(el("span","mk2"," \u00b7 "+mk));
+      det.appendChild(sm);
+      var ingl=r.ingredients;
+      if(r.items&&r.items.length)ingl=r.items.map(function(it){var v=(qp&&r.units)?it.q*qp.portion/r.units:it.q;return fq(v,it.l,it.i)+" "+it.l;});
+      if(ingl&&ingl.length){det.appendChild(el("h4",null,"Ingredients"));var ul2=el("ul","bul");ingl.forEach(function(x){ul2.appendChild(el("li",null,x));});det.appendChild(ul2);}
+      if(r.pantry&&r.pantry.length){det.appendChild(el("p","note2","Pantry: "+r.pantry.join(", ")+". Oil, salt, pepper and dried spices as needed."));}
+      else det.appendChild(el("p","note2","Oil, salt, pepper and dried spices as needed."));
+      if(r.steps&&r.steps.length){det.appendChild(el("h4",null,"Method"));var ol=el("ol","steps");r.steps.concat((!qp&&r.leftoverStep)?[r.leftoverStep]:[]).forEach(function(x){ol.appendChild(el("li",null,x));});det.appendChild(ol);}
+      if(r.kid)det.appendChild(el("p","kid",(kidName()+"'s version: ")+r.kid));
+      if(!qp)(r.others||[]).forEach(function(x){det.appendChild(el("p","note2",x));});
+      li.appendChild(det);rl.appendChild(li);
+    });
+    m.appendChild(rl);
+  }
+}
+function exCount(ex){var n=0;(ex.days||[]).forEach(function(d){["morning","afternoon","session"].forEach(function(k){if(d[k])n++;});});return n;}
+// Exercise can be one plan for everyone ({"days":[...]}) or one per person ({"<person key>":{"days":[...]}}).
+function pkOf(name){return PMAP[name]||ukey(name);}
+function exFor(wi){var e=PLAN.weeks[wi]&&PLAN.weeks[wi].exercise;if(!e)return null;if(Array.isArray(e.days))return e;var k=pkOf(USER);return e[k]&&Array.isArray(e[k].days)?e[k]:null;}
+function exExtras(){var e=PLAN.exercise||{};if(e.workouts||e.notes||e.videos)return e;return e[pkOf(USER)]||{};}
+function updateExCount(){var c=$("exCount"),ex=exFor(week);if(c&&ex){c.textContent="";c.appendChild(el("b",null,(exTicks[week]||[]).length+" of "+exCount(ex)+" sessions done"));c.appendChild(el("span",null,"This week"));}}
+function renderExercise(){
+  var x=$("exView");x.textContent="";
+  var w=PLAN.weeks[week],ex=exFor(week),pe=exExtras();
+  if(!ex){x.appendChild(el("p","emptyline",w.exercise?"No exercise plan for "+USER+" this week yet.":"No exercise plan is listed for this week."));return;}
+  var cnt=el("p","count");cnt.id="exCount";x.appendChild(cnt);
+  var fd=el("details","exfold"),fs=el("summary",null,ex.focus||"This week's plan"),f=el("div","exfocus"),fw=el("div");
+  if(ex.targets&&ex.targets.length){var u=el("ul","bul");ex.targets.forEach(function(t){u.appendChild(el("li",null,t));});f.appendChild(u);}
+  fd.appendChild(fs);fw.appendChild(f);fd.appendChild(fw);x.appendChild(fd);
+  var done=exTicks[week]||[],ul=el("ul","days");
+  (ex.days||[]).forEach(function(d){
+    var li=el("li","day"),h3=el("h3",null,d.day||"");li.appendChild(h3);markToday(li,h3,d.day);
+    [["morning","Morning"],["afternoon","Afternoon"],["session","Session"]].forEach(function(k){
+      if(!d[k[0]])return;
+      var id=d.day+"-"+k[0],lab=el("label","sess"),inp=el("input");inp.type="checkbox";inp.checked=done.indexOf(id)>-1;
+      inp.onchange=function(){var a=exTicks[week]||[],i=a.indexOf(id);if(inp.checked&&i<0)a.push(id);if(!inp.checked&&i>-1)a.splice(i,1);exTicks[week]=a;save();updateExCount();};
+      var t=el("span","stxt");t.appendChild(el("span","sk",k[1]));t.appendChild(document.createTextNode(d[k[0]]));
+      lab.appendChild(inp);lab.appendChild(el("span","box"));lab.appendChild(t);li.appendChild(lab);
+    });
+    ul.appendChild(li);
+  });
+  x.appendChild(ul);
+  if(pe.workouts&&pe.workouts.length){
+    x.appendChild(el("h2","rh","Workouts"));
+    pe.workouts.forEach(function(wo){
+      var d=el("details"),s=el("summary",null,wo.name||"Workout");
+      if(wo.time)s.appendChild(el("span",null,wo.time));
+      d.appendChild(s);var o=el("ol","bul steps");
+      (wo.items||[]).forEach(function(i){
+        var li=el("li",null,i),k=i.indexOf(": ");
+        if(k>0){
+          var nm=i.slice(0,k).replace(/\s*\(.*?\)/g,"").trim(),vd=pe.videos||{};
+          if(Object.prototype.hasOwnProperty.call(vd,nm)){
+            li.appendChild(document.createTextNode(" "));
+            if(/^https?:\/\//.test(vd[nm])){var a=el("a","vlink","Demo");a.href=vd[nm];a.target="_blank";a.rel="noopener noreferrer";li.appendChild(a);li.appendChild(document.createTextNode(" \u00b7 "));}
+            var y=el("a","vlink","YouTube");y.href="https://www.youtube.com/results?search_query="+encodeURIComponent(nm+" exercise form");y.target="_blank";y.rel="noopener noreferrer";li.appendChild(y);
+          }
+        }
+        o.appendChild(li);
+      });
+      d.appendChild(o);x.appendChild(d);
+    });
+  }
+  if(pe.notes&&pe.notes.length){
+    x.appendChild(el("h2","rh","Good to know"));
+    var nb=el("div","exfocus"),nu=el("ul","bul");
+    pe.notes.forEach(function(n){nu.appendChild(el("li",null,n));});
+    nb.appendChild(nu);x.appendChild(nb);
+  }
+  updateExCount();
+}
+function toggle(id,on,li){
+  var a=ticks[week]||[],i=a.indexOf(id);
+  if(on&&i<0)a.push(id);if(!on&&i>-1)a.splice(i,1);
+  ticks[week]=a;var k=week+"|"+id;if(on){if(ME)BY[k]={who:ME.person,at:Date.now()};}else delete BY[k];refreshBylines();
+  save();li.className=(on?"done ":"")+(li.className.indexOf("home")>-1?"home":"");updateSummary();
+}
+function toggleHome(name){
+  var k=query(name).toLowerCase(),i=have.indexOf(k),y=window.scrollY;
+  if(i<0)have.push(k);else have.splice(i,1);
+  save();renderTabs();renderList();window.scrollTo(0,y);
+}
+function updateSummary(){
+  var done=ticks[week]||[],n=0,c=0,h=0,left=0,all=0;
+  sections(week).forEach(function(s,si){s[1].forEach(function(it,idx){
+    if(isHome(it[0])){h++;return;}
+    n++;all+=it[1];
+    if(done.indexOf(si+"-"+idx)>-1)c++;else left+=it[1];
+  });});
+  $("left").textContent=money(left)+" left";
+  $("meta").textContent=c+" of "+n+" ticked"+(h?" \u00b7 "+h+" at home":"")+" \u00b7 total "+money(all);
+  $("bar").style.width=(n?c/n*100:0)+"%";
+  $("allDone").style.display=(n>0&&c===n)?"block":"none";
+}
+function leftText(){
+  var done=ticks[week]||[],out=[(PLAN.weeks[week].name||"Week "+(week+1))+" shopping list"];
+  sections(week).forEach(function(s,si){
+    var lines=[];s[1].forEach(function(it,idx){if(!isHome(it[0])&&done.indexOf(si+"-"+idx)<0)lines.push("- "+it[0]);});
+    if(lines.length){out.push("");out.push(s[0]);out=out.concat(lines);}
+  });
+  return out.join("\n");
+}
+function flash(btn,msg,orig){btn.textContent=msg;setTimeout(function(){btn.textContent=orig;},1800);}
+function show(){
+  var m=/^#week-(\d+)(-meals|-exercise|-ratings)?$/.exec(location.hash),n=m?+m[1]:1;
+  week=(n>=1&&n<=PLAN.weeks.length)?n-1:0;view=(m&&m[2])?m[2].slice(1):"shop";var so=PLAN.weeks[week].kind==="stockup";if(view==="ratings"&&!ADMINV())view="shop";if(so&&view!=="ratings")view="shop";$("vRates").hidden=!ADMINV();
+  $("whoRow").hidden=!(ADMINV()&&(view==="meals"||view==="exercise"));
+  try{localStorage.setItem("coles-plan-place",location.hash);}catch(e){}
+  renderTabs();
+  $("shopView").hidden=view!=="shop";$("meals").hidden=view!=="meals";$("exView").hidden=view!=="exercise";$("ratesView").hidden=view!=="ratings";$("vRates").setAttribute("aria-pressed",view==="ratings");
+  $("vShop").setAttribute("aria-pressed",view==="shop");$("vMeals").setAttribute("aria-pressed",view==="meals");$("vEx").setAttribute("aria-pressed",view==="exercise");
+  if(view==="shop")renderList();else if(view==="meals")renderMeals();else if(view==="ratings")renderRatings();else renderExercise();
+}
+$("vShop").onclick=function(){window.scrollTo(0,0);go(week,"shop");};
+// Stock-up weeks have no meals or exercise, so those buttons jump to the next normal week.
+function planWeek(w){for(var i=w;i<PLAN.weeks.length;i++)if(PLAN.weeks[i].kind!=="stockup")return i;for(i=w;i>=0;i--)if(PLAN.weeks[i].kind!=="stockup")return i;return w;}
+function goTop(w,v){scrollToday=(v==="meals"||v==="exercise");window.scrollTo(0,0);go(w,v);}
+$("vMeals").onclick=function(){goTop(planWeek(week),"meals");};
+$("vEx").onclick=function(){goTop(planWeek(week),"exercise");};
+$("vRates").onclick=function(){window.scrollTo(0,0);go(week,"ratings");};
+$("hide").onclick=function(){
+  hideDone=!hideDone;this.setAttribute("aria-pressed",hideDone);
+  $("lists").className=hideDone?"hide-done":"";
+};
+$("copy").onclick=function(){
+  var b=this,txt=leftText();
+  function fallback(){
+    var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();var ok=false;
+    try{ok=document.execCommand("copy");}catch(e){}
+    document.body.removeChild(ta);flash(b,ok?"Copied":"Copy not available","Copy list");
+  }
+  try{navigator.clipboard.writeText(txt).then(function(){flash(b,"Copied","Copy list");},fallback);}catch(e){fallback();}
+};
+function twoTap(id,label,armedLabel,fn){
+  var b=$(id),armed=false,t;
+  b.onclick=function(){
+    if(!armed){armed=true;b.textContent=armedLabel;t=setTimeout(function(){armed=false;b.textContent=label;},2500);return;}
+    clearTimeout(t);armed=false;b.textContent=label;fn();
+  };
+}
+twoTap("clear","Clear ticks","Tap again to clear",function(){ticks[week]=[];save();renderList();});
+twoTap("resetall","Reset all","Tap again to reset everyone",function(){
+  if(!(ME&&ME.admin))return;
+  USERS.forEach(function(u){try{localStorage.removeItem(BASE+"-"+ukey(u));localStorage.removeItem(BASEX+"-"+ukey(u));localStorage.removeItem(BASEE+"-"+ukey(u));}catch(e){}});
+  try{localStorage.removeItem(BASE);localStorage.removeItem(BASEX);}catch(e){}
+  ticks={};exTicks={};eaten={};have=[];saveLocal();api("POST","api/reset").then(function(){setSync("Reset on server");pull();}).catch(function(){setSync("Offline: reset on this device only");});show();
+});
+$("user").onchange=function(){
+  try{localStorage.setItem("coles-plan-user",this.value);localStorage.setItem("coles-plan-person",PMAP[this.value]);}catch(e){}
+  if(PLAN){loadUser();show();pull();}
+};
+window.addEventListener("hashchange",function(){if(PLAN)show();});
+(function boot(){
+  if(!location.hash){var pl=lsGet("coles-plan-place");if(pl&&/^#week-\d+/.test(pl))history.replaceState(null,"",pl);}
+  if(/-(meals|exercise)$/.test(location.hash))scrollToday=true;
+  try{have=JSON.parse(localStorage.getItem(HK))||[];}catch(e){have=[];}
+  defaultPlan=JSON.parse($("plan-data").textContent);
+  if(!PLAN_URL){usePlan(defaultPlan);return;}
+  function getPlan(u){return fetch(u,{cache:"no-cache"}).then(function(r){if(r.redirected&&/\/login/.test(r.url)){toLogin();throw {};}return r;});}
+  getPlan(PLAN_URL).then(function(r){return r.status===404?getPlan("plan.example.json"):r;}).then(function(r){if(!r.ok)throw {};return r.text();}).then(function(t){
+    var p;try{p=JSON.parse(t);}catch(e){throw {msg:"plan.json is not valid JSON ("+e.message+"). Showing the built-in plan."};}
+    var v=validate(p);if(v)throw {msg:"plan.json problem: "+v+" Showing the built-in plan."};
+    usePlan(p);
+  }).catch(function(e){usePlan(defaultPlan);if(e&&e.msg)showErr(e.msg);});
+})();
+</script>
+<script>
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}
+function setMe(d){document.getElementById("me").textContent="Logged in as "+d.user+(d.admin?" (admin)":"");document.getElementById("avatar").textContent=d.user.charAt(0);}
+if(ME&&ME.user)setMe(ME);
+document.addEventListener("click",function(e){document.querySelectorAll("details.acctmenu[open],details.more[open]").forEach(function(dt){if(!dt.contains(e.target))dt.removeAttribute("open");});});
+fetch("/auth/me",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(d){
+  if(!d||!d.user)return;
+  setMe(d);
+  var was=JSON.stringify(ME);ME=d;try{localStorage.setItem("coles-plan-me",JSON.stringify(d));}catch(e){}
+  if(was!==JSON.stringify(d)&&PLAN){loadUser();show();pull();}
+}).catch(function(){});
+// On log out, also drop the offline copy so the lists are not left on the phone.
+document.getElementById("logout").addEventListener("submit",function(e){
+  try{localStorage.removeItem("coles-plan-me");}catch(e){}
+  var f=this;if(!window.caches)return;e.preventDefault();
+  caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));}).catch(function(){}).then(function(){f.submit();});
+});
+</script>
+</body>
+</html>

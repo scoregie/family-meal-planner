@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Shopping">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<title>Log in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--bad:#b3261e;--bad-bg:#fdecea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--bad:#ffb4ab;--bad-bg:#3b1612;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--bad:#ffb4ab;--bad-bg:#3b1612;color-scheme:dark}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1.0625rem;line-height:1.4;
+  padding:calc(1.5rem + env(safe-area-inset-top,0px)) 1rem calc(1.5rem + env(safe-area-inset-bottom,0px))}
+main{width:100%;max-width:22rem}
+.logo{display:block;width:4rem;height:4rem;border-radius:1rem;margin:0 auto 1rem}
+h1{font-size:1.6rem;line-height:1.15;margin:0 0 .25rem;text-align:center}
+.sub{margin:0 0 1.5rem;color:var(--mute);text-align:center;font-size:.95rem}
+form{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:1.25rem}
+label{display:block;font-weight:700;font-size:.95rem;margin:0 0 .35rem}
+input{display:block;width:100%;font:inherit;font-size:1.0625rem;color:var(--ink);background:var(--bg);border:2px solid var(--line);
+  border-radius:.5rem;padding:.65rem .75rem;min-height:3rem;margin:0 0 1rem}
+input:focus{outline:none;border-color:var(--accent)}
+.pw{position:relative}
+.pw input{padding-right:4.5rem}
+.show{position:absolute;right:.35rem;top:.35rem;height:2.3rem;font:inherit;font-size:.85rem;color:var(--mute);background:transparent;border:0;border-radius:.35rem;padding:0 .6rem;cursor:pointer}
+.show:focus-visible{outline:2px solid var(--accent)}
+button[type=submit]{width:100%;font:inherit;font-weight:700;color:var(--on-accent);background:var(--accent);border:0;border-radius:.5rem;min-height:3rem;cursor:pointer;margin-top:.25rem}
+button[type=submit]:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button[type=submit]:disabled{opacity:.6}
+.msg{border-radius:.5rem;padding:.65rem .75rem;margin:0 0 1rem;font-size:.95rem}
+.msg.bad{color:var(--bad);background:var(--bad-bg)}
+.msg.ok{color:var(--ink);background:var(--bg);border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<main>
+  <img class="logo" src="/icon-192.png" alt="">
+  <h1>Shopping lists</h1>
+  <p class="sub">Log in to see the lists.</p>
+  <form method="post" action="/auth/login" id="f">
+    <p class="msg" id="msg" role="alert" hidden></p>
+    <input type="hidden" name="next" id="next" value="/">
+    <label for="u">Username</label>
+    <input id="u" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+    <label for="p">Password</label>
+    <div class="pw">
+      <input id="p" name="password" type="password" autocomplete="current-password" required>
+      <button type="button" class="show" id="show" aria-pressed="false">Show</button>
+    </div>
+    <button type="submit" id="go">Log in</button>
+  </form>
+</main>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search),m=document.getElementById("msg");
+  document.getElementById("next").value=q.get("next")||"/";
+  function say(t,cls){m.textContent=t;m.className="msg "+cls;m.hidden=false;}
+  if(q.get("e")==="locked")say("Too many wrong tries. Wait 15 minutes, then try again.","bad");
+  else if(q.get("e"))say("That username or password is wrong.","bad");
+  else if(q.has("out"))say("You have logged out.","ok");
+  document.getElementById(q.get("e")==="1"?"p":"u").focus();
+  var s=document.getElementById("show"),p=document.getElementById("p");
+  s.addEventListener("click",function(){var on=p.type==="password";p.type=on?"text":"password";s.textContent=on?"Hide":"Show";s.setAttribute("aria-pressed",on);});
+  document.getElementById("f").addEventListener("submit",function(){var b=document.getElementById("go");b.disabled=true;b.textContent="Logging in…";});
+  window.addEventListener("pageshow",function(){var b=document.getElementById("go");b.disabled=false;b.textContent="Log in";});
+})();
+</script>
+</body>
+</html>

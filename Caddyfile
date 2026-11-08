@@ -1,0 +1,56 @@
+# Serves ./site behind a login page.
+# SITE_ADDRESS defaults to ":80" (plain HTTP on your network).
+# Set it to a domain name in .env to get automatic HTTPS instead.
+# Logins live in .env (LOGIN_<NAME>= lines) and are checked by the api container.
+{
+	servers {
+		# Trust X-Forwarded-* from a reverse proxy on your network (e.g. Nginx Proxy Manager),
+		# so the login cookie is marked Secure when people use HTTPS.
+		trusted_proxies static private_ranges
+	}
+}
+
+{$SITE_ADDRESS::80} {
+	encode gzip
+
+	# Login, logout and the login check.
+	handle /auth/* {
+		reverse_proxy api:3000
+	}
+
+	# Files anyone can load: the login page and what it (and the home-screen app) needs.
+	@public path /login /login.html /sw.js /manifest.webmanifest /icon-192.png /icon-512.png /apple-touch-icon.png
+	handle @public {
+		rewrite /login /login.html
+		root * /srv
+		file_server
+	}
+
+	# Everything else needs a login. Not logged in: pages go to /login, /api/ calls get 401.
+	handle {
+		forward_auth api:3000 {
+			uri /auth/check
+		}
+		handle /api/* {
+			reverse_proxy api:3000
+		}
+		handle {
+			root * /srv
+			file_server
+		}
+	}
+
+	@manifest path *.webmanifest
+	header @manifest Content-Type application/manifest+json
+	@plan path /plan.json
+	header @plan Cache-Control "no-cache"
+	@nocache path /sw.js /login /login.html
+	header @nocache Cache-Control "no-cache"
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		X-Robots-Tag "noindex, nofollow"
+	}
+}

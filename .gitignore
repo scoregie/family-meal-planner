@@ -1,0 +1,8 @@
+# Private: logins, your own plan and everything people have ticked or rated
+.env
+data/
+site/plan.json
+plan-prompt.txt
+
+node_modules/
+.DS_Store
