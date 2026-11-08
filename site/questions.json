@@ -57,6 +57,8 @@
           "options": ["I always eat breakfast", "Sometimes", "I usually skip it", "Only coffee"] },
         { "id": "hungry", "label": "When do you get hungriest or have cravings?", "type": "multi",
           "options": ["Mid-morning", "Mid-afternoon", "After dinner", "Late at night", "After training", "When I'm stressed or tired"] },
+        { "id": "guidelines", "label": "Which country's healthy-eating guidelines would you like your meals compared with?", "type": "choice",
+          "options": ["Australia", "New Zealand", "United Kingdom", "Japan", "Korea"], "help": "Shown on the Macros tab. You can switch there too." },
         { "id": "drinks", "label": "What do you usually drink?", "type": "multi",
           "options": ["Water", "Coffee", "Tea", "Milk", "Soft drink", "Energy drinks", "Juice", "Alcohol a few times a week", "Alcohol most days"] }
       ]

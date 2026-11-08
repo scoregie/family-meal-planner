@@ -40,6 +40,7 @@ If the file has a mistake, the app shows a red message saying what is wrong and 
 | `people` | No | Who is in the household and how much they eat. See [People](#people). |
 | `exercise` | No | Workout instructions, tips and video links shared by all weeks. See [Exercise](#exercise). |
 | `macros` | No | Nutrition for each dish, used by the Macros tab. See [Macros](#macros). |
+| `groups` | No | Food groups in each dish, for the healthy-eating guidelines card. See [Food groups](#food-groups). |
 
 ## Weeks
 
@@ -242,3 +243,25 @@ The top-level `exercise` holds things that apply to every week. Like the weekly 
 | `kcal` | Optional, older plans only. Calories, converted to kJ by multiplying by 4.184. |
 
 Each person's numbers are scaled by their `portion`. Snacks are not scaled, because their amounts are already written for that person. Dishes without an entry show "no macros yet", and an admin can fill them in on the Macros tab of **Edit plan**.
+
+## Food groups
+
+`groups` gives the food groups in **one average serve** of each dish or snack, matched by name the same way as `macros`. The Macros tab uses it to compare a person's week with healthy-eating guidelines (Australia, New Zealand, the UK, Japan or Korea, from `site/guidelines.json`). You don't need to write it by hand: `python3 tools/estimate_groups.py site/plan.json --write` works it out from the recipes and snack descriptions.
+
+    "groups": {
+      "Tuna salad": { "veg": 0.9, "grain": 2.2, "protein": 0.8, "fv": 65, "fish": 83, "side": 65, "gc": 33, "mp": 21 }
+    }
+
+| Field | Meaning |
+| --- | --- |
+| `veg`, `fruit`, `grain`, `protein`, `dairy` | Australian serves (75 g vegetables, 150 g fruit, a slice of bread, 65 g cooked red meat, 250 ml milk, and so on). New Zealand uses the same serve sizes. |
+| `fv` | Grams of fruit and vegetables that count towards the UK's 5 a day (potatoes don't count). |
+| `leg` | Grams of beans and lentils (the UK counts them as one portion a day at most). |
+| `red` | Grams of red and processed meat, cooked weight. |
+| `fish`, `oily` | Grams of fish, and of oily fish. |
+| `side` | Grams of vegetables, potatoes and mushrooms (Japan: 70 g is one side-dish serving). |
+| `gc` | Grams of carbohydrate from grain foods (Japan: 40 g is one staple serving). |
+| `mp` | Grams of protein from meat, fish, eggs, soy and legumes (Japan: 6 g is one main-dish serving). |
+| `ca` | Milligrams of calcium from dairy (Japan: 100 mg is one dairy serving). |
+
+Missing fields count as 0. Like macros, each person's numbers are scaled by their `portion`, except snacks.

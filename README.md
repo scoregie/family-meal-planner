@@ -107,6 +107,19 @@ Where the numbers come from:
 
 Weeks start on Monday and use the browser's time zone.
 
+## Healthy-eating guidelines
+
+On the **Macros** tab, pick a person to see how their week compares with official healthy-eating guidelines from **Australia**, **New Zealand**, the **UK**, **Japan** or **Korea**:
+
+- Australia and New Zealand: serves a day of vegetables, fruit, grains, protein foods and dairy, using the person's age and sex from About me.
+- UK: fruit and veg portions (5 a day), red and processed meat, and fish twice a week (one oily).
+- Japan: servings of staple, side and main dishes, dairy and fruit from the Spinning Top, for the person's planned energy.
+- Korea: whether every food group appears every day.
+
+Anything that falls short gets a suggestion, and each country's key messages, serve sizes, limits (salt, saturated fat, sugar, alcohol) and official sources are listed underneath. People can choose their country in About me or on the card.
+
+The numbers come from `site/guidelines.json` (with links to each official source, and notes on any figure still to be confirmed) and from the food groups worked out for each dish by `tools/estimate_groups.py`. They are estimates from the recipes, not exact values, and a doctor's or dietitian's advice comes first.
+
 ## Changing the plan
 
 Everything the page shows (meals, recipes, shopping lists and exercise) comes from `site/plan.json`. Replace that file to change the plan. No restart is needed.

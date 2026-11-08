@@ -1,0 +1,220 @@
+{
+  "about": "Official healthy-eating guidelines used by the Macros tab (and later the assistant) when reviewing the plan and suggesting changes. Targets are per day unless they say otherwise. Every number has a source below. 'check' marks numbers that come from a secondary source and should be confirmed against the official page when it is next reviewed. Health advice from a doctor or dietitian always comes first.",
+  "checked": "2026-11-08",
+  "groups": {
+    "veg":     { "label": "Vegetables and legumes", "short": "Vegetables" },
+    "fruit":   { "label": "Fruit", "short": "Fruit" },
+    "grain":   { "label": "Grain foods (mostly wholegrain)", "short": "Grains" },
+    "protein": { "label": "Lean meat, fish, eggs, tofu, nuts and legumes", "short": "Protein foods" },
+    "dairy":   { "label": "Milk, yoghurt and cheese (or alternatives)", "short": "Dairy" },
+    "side":    { "label": "Side dishes (vegetables, potatoes, mushrooms, seaweed)", "short": "Side dishes" },
+    "main":    { "label": "Main dishes (fish, meat, eggs, soy)", "short": "Main dishes" },
+    "fv":      { "label": "Fruit and vegetables (80 g portions)", "short": "Fruit and veg" }
+  },
+  "ideas": {
+    "veg": ["Add a cup of salad or half a cup of frozen veg to lunch or dinner (each is one serve).", "Swap half the mince in a sauce for grated carrot, zucchini or lentils.", "Snack on carrot, cucumber or capsicum sticks."],
+    "fruit": ["Add a piece of fruit to a snack (an apple, banana or two small mandarins is one serve).", "Top breakfast with berries (frozen are fine)."],
+    "grain": ["Add a slice of wholegrain toast, or half a cup of cooked rice or pasta (each is one serve).", "Choose wholegrain bread, brown rice or oats where you can."],
+    "protein": ["Add two eggs, a small tin of tuna, or a cup of beans or lentils (each is one serve).", "Keep a serve of protein at each meal: it helps you feel full."],
+    "dairy": ["A glass of milk (250 ml), a small tub of yoghurt (200 g) or two slices of cheese (40 g) is one serve.", "Choose reduced-fat milk and yoghurt most of the time (not for children under 2)."],
+    "side": ["Add a vegetable side dish (a small salad, miso soup with vegetables, or boiled greens) to a meal.", "Most meals should have one or two side dishes."],
+    "main": ["Add fish, an egg, tofu or lean meat to a meal."],
+    "fv": ["Add a piece of fruit, a side salad or a bowl of vegetables (80 g each) to reach five a day."],
+    "redmeat": ["Swap one red or processed meat meal a week for fish, chicken, eggs or beans."],
+    "fish": ["Have fish twice a week, one of them oily (salmon, sardines, mackerel or trout)."]
+  },
+  "countries": [
+    {
+      "id": "au",
+      "name": "Australia",
+      "title": "Australian Dietary Guidelines (2013)",
+      "status": "These are from 2013 and are being reviewed by the NHMRC. A draft of the new guidelines is due for public consultation in late 2026.",
+      "unit": "serves",
+      "messages": [
+        "Be physically active, and choose amounts of nutritious food and drinks to meet your energy needs.",
+        "Enjoy a wide variety of nutritious foods from the five food groups every day, and drink plenty of water.",
+        "Limit foods high in saturated fat, added salt and added sugars, and limit alcohol.",
+        "Encourage, support and promote breastfeeding.",
+        "Care for your food: prepare and store it safely."
+      ],
+      "serveSizes": {
+        "veg": "75 g: ½ cup cooked vegetables or legumes, or 1 cup salad",
+        "fruit": "150 g: 1 medium apple or banana, or 2 small apricots or plums",
+        "grain": "1 slice of bread (40 g), ½ cup cooked rice, pasta, noodles or porridge, or 30 g cereal",
+        "protein": "65 g cooked lean red meat, 80 g cooked chicken, 100 g cooked fish, 2 large eggs, 1 cup cooked legumes, 170 g tofu or 30 g nuts",
+        "dairy": "250 ml milk, 200 g yoghurt or 40 g hard cheese"
+      },
+      "groups": ["veg", "fruit", "grain", "protein", "dairy"],
+      "targets": [
+        { "age": [2, 3],     "sex": "any",    "veg": 2.5, "fruit": 1,   "grain": 4,   "protein": 1,   "dairy": 1.5, "check": true },
+        { "age": [4, 8],     "sex": "male",   "veg": 4.5, "fruit": 1.5, "grain": 4,   "protein": 1.5, "dairy": 2,   "check": true },
+        { "age": [4, 8],     "sex": "female", "veg": 4.5, "fruit": 1.5, "grain": 4,   "protein": 1.5, "dairy": 1.5, "check": true },
+        { "age": [9, 11],    "sex": "male",   "veg": 5,   "fruit": 2,   "grain": 5,   "protein": 2.5, "dairy": 2.5, "check": true },
+        { "age": [9, 11],    "sex": "female", "veg": 5,   "fruit": 2,   "grain": 4,   "protein": 2.5, "dairy": 3,   "check": true },
+        { "age": [12, 13],   "sex": "male",   "veg": 5.5, "fruit": 2,   "grain": 6,   "protein": 2.5, "dairy": 3.5, "check": true },
+        { "age": [12, 13],   "sex": "female", "veg": 5,   "fruit": 2,   "grain": 5,   "protein": 2.5, "dairy": 3.5, "check": true },
+        { "age": [14, 18],   "sex": "male",   "veg": 5.5, "fruit": 2,   "grain": 7,   "protein": 2.5, "dairy": 3.5, "check": true },
+        { "age": [14, 18],   "sex": "female", "veg": 5,   "fruit": 2,   "grain": 7,   "protein": 2.5, "dairy": 3.5, "check": true },
+        { "age": [19, 50],   "sex": "male",   "veg": 6,   "fruit": 2,   "grain": 6,   "protein": 3,   "dairy": 2.5 },
+        { "age": [19, 50],   "sex": "female", "veg": 5,   "fruit": 2,   "grain": 6,   "protein": 2.5, "dairy": 2.5 },
+        { "age": [51, 70],   "sex": "male",   "veg": 5.5, "fruit": 2,   "grain": 6,   "protein": 2.5, "dairy": 2.5 },
+        { "age": [51, 70],   "sex": "female", "veg": 5,   "fruit": 2,   "grain": 4,   "protein": 2,   "dairy": 4,   "check": true },
+        { "age": [71, 120],  "sex": "male",   "veg": 5,   "fruit": 2,   "grain": 4.5, "protein": 2.5, "dairy": 3.5, "check": true },
+        { "age": [71, 120],  "sex": "female", "veg": 5,   "fruit": 2,   "grain": 3,   "protein": 2,   "dairy": 4,   "check": true }
+      ],
+      "limits": [
+        "Sodium: a suggested dietary target of no more than 2,000 mg a day (about 5 g of salt).",
+        "Alcohol: for healthy adults, no more than 10 standard drinks a week and no more than 4 on any one day. Less is better."
+      ],
+      "sources": [
+        { "label": "Eat for Health: the Australian Dietary Guidelines", "url": "https://www.eatforhealth.gov.au/guidelines" },
+        { "label": "Recommended number of serves for adults", "url": "https://www.eatforhealth.gov.au/food-essentials/how-much-do-we-need-each-day/recommended-number-serves-adults" },
+        { "label": "Recommended serves for children and adolescents", "url": "https://www.eatforhealth.gov.au/food-essentials/how-much-do-we-need-each-day/recommended-number-serves-children-adolescents-and-toddlers" },
+        { "label": "NHMRC: review of the Australian Dietary Guidelines", "url": "https://www.nhmrc.gov.au/health-advice/nutrition/australian-dietary-guidelines-review/about-the-review" },
+        { "label": "NHMRC: Australian guidelines to reduce health risks from drinking alcohol", "url": "https://www.nhmrc.gov.au/health-advice/alcohol" }
+      ]
+    },
+    {
+      "id": "nz",
+      "name": "New Zealand",
+      "title": "Eating and Activity Guidelines for New Zealand Adults (updated 2020)",
+      "status": "For adults 19 to 64. Serving sizes were updated in 2020 to match Australia's.",
+      "unit": "servings",
+      "messages": [
+        "Enjoy a variety of nutritious foods every day: plenty of vegetables and fruit; grain foods, mostly whole grain and naturally high in fibre; some milk and milk products, mostly low and reduced fat; and some legumes, nuts, seeds, fish and other seafood, eggs, poultry or red meat with the fat removed.",
+        "Choose and prepare foods and drinks with unsaturated fats instead of saturated fats, low in salt (if you use salt, choose iodised), with little or no added sugar, and mostly whole and less processed.",
+        "Make plain water your first choice over other drinks.",
+        "If you drink alcohol, keep it low. Don't drink if you are pregnant.",
+        "Buy, prepare, cook and store food safely.",
+        "Be active most days: at least 2½ hours of moderate or 1¼ hours of vigorous activity a week, plus muscle-strengthening on at least two days. Sit less."
+      ],
+      "serveSizes": {
+        "veg": "75 g: ½ cup cooked vegetables or 1 cup salad",
+        "fruit": "150 g: 1 medium apple or banana",
+        "grain": "1 slice of bread, or ½ cup cooked rice, pasta or porridge"
+      },
+      "groups": ["veg", "fruit", "grain"],
+      "targets": [
+        { "age": [19, 64], "sex": "any", "veg": 5, "fruit": 2, "grain": 6, "check": true, "min": true }
+      ],
+      "note": "New Zealand's guidelines give at least 5 vegetables, 2 fruit and about 6 grain servings a day for adults. They suggest 'some' milk products and 'some' protein foods without one number for everyone, so those are not scored here.",
+      "limits": [
+        "Salt: choose foods low in salt, and use iodised salt if you add it."
+      ],
+      "sources": [
+        { "label": "Ministry of Health: Eating and Activity Guidelines for New Zealand Adults", "url": "https://www.health.govt.nz/publication/eating-and-activity-guidelines-new-zealand-adults" },
+        { "label": "HealthEd: Healthy eating, active living (food and activity guide for adults)", "url": "https://healthed.govt.nz/products/healthy-eating-active-living" }
+      ]
+    },
+    {
+      "id": "uk",
+      "name": "United Kingdom",
+      "title": "The Eatwell Guide (NHS and UK government)",
+      "status": "England, Scotland, Wales and Northern Ireland all use the Eatwell Guide.",
+      "unit": "portions",
+      "messages": [
+        "Eat at least 5 portions of a variety of fruit and vegetables a day.",
+        "Base meals on potatoes, bread, rice, pasta or other starchy carbohydrates, choosing wholegrain where you can.",
+        "Have some dairy or dairy alternatives, choosing lower-fat and lower-sugar options.",
+        "Eat some beans, pulses, fish, eggs, meat and other protein. Aim for 2 portions of fish a week, one of them oily, and eat less red and processed meat.",
+        "Choose unsaturated oils and spreads, and eat them in small amounts.",
+        "Drink 6 to 8 cups or glasses of fluid a day. Keep fruit juice and smoothies to 150 ml a day in total.",
+        "Eat foods high in fat, salt and sugar less often and in small amounts."
+      ],
+      "serveSizes": {
+        "fv": "80 g of fresh, frozen or canned fruit or vegetables (30 g dried fruit). Potatoes don't count. Beans and pulses count as one portion a day at most."
+      },
+      "groups": ["fv"],
+      "targets": [
+        { "age": [11, 120], "sex": "any", "fv": 5, "min": true }
+      ],
+      "checks": {
+        "redMeatMaxG": 70,
+        "fishPerWeek": 2,
+        "oilyFishPerWeek": 1
+      },
+      "limits": [
+        "Salt: no more than 6 g a day for adults and children 11 and over.",
+        "Saturated fat: on average no more than 30 g a day for men and 20 g for women.",
+        "Free sugars: no more than 5% of energy, about 30 g a day for adults.",
+        "Fibre: aim for 30 g a day.",
+        "Red and processed meat: if you eat more than 90 g (cooked) a day, cut down to 70 g or less."
+      ],
+      "sources": [
+        { "label": "NHS: The Eatwell Guide", "url": "https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/the-eatwell-guide/" },
+        { "label": "NHS: 8 tips for healthy eating", "url": "https://www.nhs.uk/live-well/eat-well/how-to-eat-a-balanced-diet/eight-tips-for-healthy-eating/" },
+        { "label": "GOV.UK: The Eatwell Guide", "url": "https://www.gov.uk/government/publications/the-eatwell-guide" },
+        { "label": "SACN: Carbohydrates and health (fibre 30 g, free sugars 5%)", "url": "https://www.gov.uk/government/publications/sacn-carbohydrates-and-health-report" }
+      ]
+    },
+    {
+      "id": "jp",
+      "name": "Japan",
+      "title": "Japanese Food Guide Spinning Top (食事バランスガイド)",
+      "status": "From the Ministry of Health, Labour and Welfare and the Ministry of Agriculture, Forestry and Fisheries. Counts dishes in servings (SV), not food groups.",
+      "unit": "SV",
+      "messages": [
+        "Enjoy your meals.",
+        "Keep a healthy rhythm by having regular meals, including breakfast.",
+        "Keep a healthy weight with good meals and regular exercise.",
+        "Combine a staple food (rice, bread or noodles), a main dish and side dishes for a balanced meal.",
+        "Eat enough grains such as rice.",
+        "Combine vegetables, fruit, milk products, beans and fish in your diet.",
+        "Avoid too much salt and fat.",
+        "Learn your food culture and local dishes.",
+        "Reduce food waste by cooking and storing food well.",
+        "Track your daily food intake to check your diet."
+      ],
+      "serveSizes": {
+        "grain": "1 SV = about 40 g of carbohydrate from rice, bread or noodles (1 rice ball or 1 slice of bread; a medium bowl of rice is 1.5 SV)",
+        "side": "1 SV = about 70 g of vegetables, potatoes, mushrooms or seaweed",
+        "main": "1 SV = about 6 g of protein from fish, meat, eggs or soy foods",
+        "dairy": "1 SV = about 100 mg of calcium (a 200 ml glass of milk is 2 SV)",
+        "fruit": "1 SV = about 100 g of fruit"
+      },
+      "groups": ["grain", "side", "main", "dairy", "fruit"],
+      "bands": [
+        { "kcal": [1400, 2000], "grain": [4, 5], "side": [5, 6], "main": [3, 4], "dairy": [2, 2], "fruit": [2, 2], "check": true },
+        { "kcal": [2000, 2400], "grain": [5, 7], "side": [5, 6], "main": [3, 5], "dairy": [2, 2], "fruit": [2, 2] },
+        { "kcal": [2400, 3000], "grain": [7, 8], "side": [6, 7], "main": [4, 6], "dairy": [2, 3], "fruit": [2, 3], "check": true }
+      ],
+      "bandNote": "The amounts depend on how much energy you need. The basic plan is for about 2,200 kcal (9,200 kJ) a day, give or take 200; the band is picked from this person's planned kilojoules.",
+      "limits": [
+        "Salt: less than 7.5 g a day for men and 6.5 g for women (Dietary Reference Intakes for Japanese, 2025). Less than 6 g for people being treated for high blood pressure."
+      ],
+      "sources": [
+        { "label": "MAFF: Japanese Food Guide Spinning Top (食事バランスガイド)", "url": "https://www.maff.go.jp/j/balance_guide/" },
+        { "label": "MAFF: about the guide and serving sizes", "url": "https://www.maff.go.jp/j/syokuiku/kenzensyokuseikatsu/about_b_guide.html" },
+        { "label": "MAFF: salt targets (DRI 2025)", "url": "https://www.maff.go.jp/j/syokuiku/minna_navi/topics/topics5_04.html" },
+        { "label": "FAO: food-based dietary guidelines, Japan", "url": "https://www.fao.org/nutrition/education/food-dietary-guidelines/regions/japan/en/" }
+      ]
+    },
+    {
+      "id": "kr",
+      "name": "Korea",
+      "title": "Dietary Guidelines for Koreans",
+      "status": "Joint guidelines from the Ministry of Health and Welfare, the Ministry of Agriculture, Food and Rural Affairs and the Ministry of Food and Drug Safety. They give advice rather than serve counts, so this checks that every food group appears each day.",
+      "unit": "days",
+      "messages": [
+        "Eat a variety of foods: rice and other grains, vegetables, fruit, milk and dairy, meat, fish, eggs and beans.",
+        "Don't skip breakfast.",
+        "Don't overeat, and be more physically active.",
+        "Choose foods lower in salt, sugar and fat.",
+        "Drink plain water instead of sugary drinks.",
+        "Avoid alcohol.",
+        "Prepare food safely and only as much as you need.",
+        "Enjoy meals made with local produce.",
+        "Have meals together with your family often."
+      ],
+      "groups": ["grain", "veg", "fruit", "dairy", "protein"],
+      "variety": true,
+      "limits": [
+        "Sodium: the Korean Dietary Reference Intakes (2020) set 2,300 mg a day (about 5.8 g of salt) as the level to stay under to lower the risk of chronic disease."
+      ],
+      "sources": [
+        { "label": "FAO: food-based dietary guidelines, Republic of Korea", "url": "https://www.fao.org/nutrition/education/food-dietary-guidelines/regions/republic-of-korea/en/" },
+        { "label": "Dietary Reference Intakes of sodium for Koreans (Nutrition Research and Practice, 2022)", "url": "https://pubmed.ncbi.nlm.nih.gov/35651840/" }
+      ]
+    }
+  ]
+}

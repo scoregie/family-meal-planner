@@ -293,6 +293,40 @@ li.done .acts .find{color:var(--done)}
 .dk{float:right;font-weight:400;color:var(--mute);font-size:.8rem;font-variant-numeric:tabular-nums}
 .ov{display:block;color:var(--mute);font-size:.82rem;margin-top:.1rem}
 .ov b{color:var(--ink);font-weight:700}
+/* ---- healthy-eating guidelines card (guidelines.js) ---- */
+.gl-seg{display:flex;flex-wrap:wrap;gap:.3rem;margin:0 0 .7rem}
+.gl-seg .btn{min-height:2.2rem;padding:.2rem .7rem;font-size:.82rem;border-radius:1.1rem;border-width:1px}
+.gl-seg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gl-intro{margin:0 0 .6rem;font-size:.9rem}
+.gl-rows{display:grid;gap:.7rem}
+.gl-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem}
+.gl-name{font-weight:700;flex:1 1 7rem}
+.gl-val{font-variant-numeric:tabular-nums;color:var(--mute);font-size:.9rem}
+.gl-val b{color:var(--ink);font-size:1rem}
+.gl-status{font-size:.82rem;flex:0 0 auto;min-width:6.5rem;text-align:right}
+.gl-icon{font-weight:700}
+.meets .gl-icon{color:var(--accent)}
+.below .gl-icon,.above .gl-icon{color:var(--mid)}
+/* The meter: an 8px track, the amount as a filled bar, the target as a tick (a shaded band for a range). */
+.gl-meter{position:relative;height:8px;margin-top:.3rem;background:var(--line);border-radius:4px}
+.gl-meter i{position:absolute;top:0;bottom:0}
+.gl-fill{left:0;background:var(--accent);border-radius:4px}
+.gl-band{background:color-mix(in srgb,var(--ink) 18%,transparent)}
+.gl-tick{width:2px;top:-4px!important;bottom:-4px!important;background:var(--ink);margin-left:-1px;border-radius:1px}
+.gl-checks{list-style:none;margin:.8rem 0 0;padding:0;display:grid;gap:.3rem;font-size:.9rem}
+.gl-ideas{margin:.8rem 0 0;padding:.6rem .8rem;border-radius:.6rem;background:color-mix(in srgb,var(--accent) 10%,var(--card));font-size:.9rem}
+.gl-ideas ul{margin:.3rem 0 0;padding-left:1.1rem}
+.gl-fold{margin:.5rem 0 0;font-size:.88rem}
+.gl-fold summary{cursor:pointer;color:var(--accent);font-weight:700;padding:.3rem 0}
+.gl-fold ul{margin:.2rem 0 .4rem;padding-left:1.1rem}
+.gl-fold li{margin:.15rem 0}
+.gl ul{list-style:disc;background:none;border:0;border-radius:0;overflow:visible}
+.gl li{display:list-item}
+.gl-checks li{list-style:none}
+details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 0 0}
+.gl-fold summary{min-height:2.4rem;display:flex;align-items:center}
+.gl-fold summary::before{content:"▸";margin-right:.45rem;transition:transform .15s}
+.gl-fold[open] summary::before{transform:rotate(90deg)}
 .ask{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;background:var(--card);border:1px solid var(--accent);border-radius:.8rem;padding:.7rem .9rem;margin:0 0 1rem;font-size:.92rem}
 .ask span{flex:1 1 14rem}
 .ask .btn{text-decoration:none}
@@ -343,6 +377,7 @@ li.done .acts .find{color:var(--done)}
   <button type="button" id="vRates" aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Ratings</span></button>
 </nav>
 <script type="application/json" id="plan-data">{"id":"no-plan","title":"Shopping lists","subtitle":"No plan.json was found. Copy site/plan.example.json to site/plan.json, or upload your own plan.","weeks":[{"name":"Week 1","shopping":{"Getting started":[["Add a plan.json to the site folder",0]]}}]}</script>
+<script src="guidelines.js"></script>
 <script>
 // The main app page. Everything it shows comes from plan.json (see docs/plan-format.md).
 //
@@ -1338,6 +1373,20 @@ function macrosOf(dish) {
   return { p: p, c: c, f: f, kj: kj };
 }
 
+// The food groups in one average serve of a dish, from the plan's "groups" block (made by
+// tools/estimate_groups.py), or null. Used by the healthy-eating guidelines card (guidelines.js).
+function groupsOf(dish) {
+  var groups = PLAN.groups || {};
+  if (!PLAN._gk) {
+    PLAN._gk = {};
+    Object.keys(groups).forEach(function (name) {
+      PLAN._gk[macroKey(name)] = groups[name];
+    });
+  }
+  var g = PLAN._gk[macroKey(dish)];
+  return g && typeof g === "object" ? g : null;
+}
+
 // Multiplies macros by a number (such as a portion of 1.2).
 function scaleM(m, factor) {
   return { p: m.p * factor, c: m.c * factor, f: m.f * factor, kj: m.kj * factor };
@@ -1557,6 +1606,7 @@ function mealDays(w, person, who, withSnacks) {
         if (!snack || !snack.what || !snackOn(snack, day.day)) return;
         // Snack amounts are already written for this person, so they are not scaled.
         var row = ["Snack" + (snack.when ? " · " + snack.when : ""), snack.what, macrosOf(snack.what)];
+        row.snack = true;   // already sized for this person, so not scaled by their portion
         if (snack.optional) {
           row.optional = true;
           optional.push(row);
@@ -1597,6 +1647,20 @@ function renderMacros() {
   var days = mealDays(w, person, who, true);
   var card = macroCard(days, person);
   if (card) panel.appendChild(card);
+  // How the week compares with healthy-eating guidelines (for one person, since they depend on age and sex).
+  if (person && window.Guidelines) {
+    panel.appendChild(Guidelines.card({
+      days: days,
+      person: person,
+      who: who,
+      portion: +person.portion > 0 ? +person.portion : 1,
+      groupsOf: groupsOf,
+      profileKey: ukey(person.name),
+      isAdmin: isAdmin(),
+    }));
+  } else if (ppl && window.Guidelines) {
+    panel.appendChild(el("p", "mac-note", "Pick a person to compare their week with healthy-eating guidelines."));
+  }
   if (!days.some(function (x) { return x.known; })) return;
 
   // "Each day" heading with a colour key.
