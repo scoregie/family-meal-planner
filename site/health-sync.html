@@ -20,6 +20,9 @@ code,.k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;
 table.fields{border-collapse:collapse;font-size:.88rem;margin:.4rem 0;width:100%}
 table.fields td{border-top:1px solid var(--line);padding:.3rem .4rem .3rem 0;vertical-align:top}
 .opt{color:var(--mute);font-size:.85rem}
+span.err{color:var(--low)}
+.tips{margin-top:.6rem}
+.tips .bul{margin:.2rem 0 .4rem;padding-left:1.2rem}
 details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.3rem 0}
 </style>
 <script src="appearance.js"></script>
@@ -45,7 +48,32 @@ details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.
 
     <section class="card">
       <h2>2. Make the shortcut</h2>
-      <h3>Quick way: describe it (iOS 27 and later)</h3>
+      <h3>Install it with one tap</h3>
+      <div id="installBox"></div>
+      <div class="tips">
+        <p class="note"><b>The first time it runs</b>, your iPhone asks a few things. To let it send everything:</p>
+        <ul class="bul">
+          <li>When it asks to read Health data, tap <b>Turn On All</b>, then <b>Allow</b>. Missed one? Run it again from the Shortcuts app, or check <b>Settings → Health → Data Access &amp; Devices → Shortcuts</b>.</li>
+          <li>If it says it can’t send a large amount of data, turn on <b>Settings → Apps → Shortcuts → Advanced → Allow Sharing Large Amounts of Data</b>. Move (from an Apple Watch) is lots of small readings.</li>
+          <li>When it asks to connect to this site, tap <b>Always Allow</b>.</li>
+          <li>If this site’s address is a number (like 192.168…), the sync only works on your home Wi-Fi. That suits the automation in step 3, which runs when you plug in at night.</li>
+        </ul>
+      </div>
+
+      <details class="how" id="macFile" hidden>
+      <summary>Make or update the install file (admins, on a Mac)</summary>
+      <p class="note">iPhones only open shortcut files that a Mac signed into iCloud has approved. You do this once, and again if this site’s address changes.</p>
+      <ol class="steps">
+        <li>On the Mac, open this page and click <a id="unsignedLink" href="#" download>Download the shortcut file</a>. It goes to Downloads as <b>Health sync (unsigned).shortcut</b>.</li>
+        <li>Open <b>Terminal</b> (in Applications → Utilities), paste this and press Return:
+          <br><code>cd ~/Downloads &amp;&amp; shortcuts sign --mode anyone --input "Health sync (unsigned).shortcut" --output "Health sync.shortcut"</code>
+          <br><span class="opt">Lines starting “ERROR: Unrecognized attribute string flag” are harmless.</span></li>
+        <li>Upload the new <b>Health sync.shortcut</b> from Downloads: <input type="file" id="signedUpload" accept=".shortcut"></li>
+      </ol>
+      <div id="signedState"></div>
+      </details>
+
+      <h3>Or: describe it (iOS 27 and later)</h3>
       <p class="note">Newer iPhones can build a shortcut from a description. Make your sync key in step 1 first, so it’s filled in below.</p>
       <ol class="steps">
         <li>Tap <b>Copy</b> under the description below.</li>
@@ -232,7 +260,60 @@ function renderDescribe(url) {
   box.appendChild(el("p", "opt", "Your Health app shows Calories, not kilojoules? Change “kJ” to “kcal” after pasting."));
 }
 
+// "Install it with one tap": the button when an admin has uploaded the signed file, and (for
+// admins) how to make it.
+function renderInstall() {
+  var box = $("installBox");
+  box.textContent = "";
+  if (DATA.installFile) {
+    var a = el("a", "btn primary", "Install the Health sync shortcut");
+    a.href = "/api/health/shortcut/signed";
+    box.appendChild(a);
+    var steps = el("ol", "steps");
+    ["On your iPhone, tap the button above, then open the file (tap the download arrow in Safari if it doesn’t open by itself).",
+     "Tap Add Shortcut. Paste your sync key from step 1 when it asks (make one first if you haven’t), and say whether your Health app shows kJ or kcal.",
+     "Open Shortcuts and tap Health sync once to run it. Then check the Last sync line in step 1."].forEach(function (t) { steps.appendChild(el("li", null, t)); });
+    box.appendChild(steps);
+  } else {
+    box.appendChild(el("p", "note", DATA.admin
+      ? "Not set up yet. Make the install file on a Mac (below), and then everyone can install the shortcut with one tap."
+      : "Not available yet: an admin can make the install file. Until then, use one of the ways below."));
+  }
+  var mac = $("macFile");
+  mac.hidden = !DATA.admin;
+  var state = $("signedState");
+  state.textContent = "";
+  if (DATA.admin && DATA.installFile) {
+    state.appendChild(el("p", "opt", "There is an install file" + (typeof DATA.installFile === "number" ? " (uploaded " + when(DATA.installFile) + ")" : "") + ". Uploading a new one replaces it."));
+    var del = el("button", "btn small danger", "Remove the install file");
+    del.type = "button";
+    del.onclick = function () {
+      if (!confirm("Remove the install file? People who already installed the shortcut keep it.")) return;
+      fetch("/api/health/shortcut/signed", { method: "DELETE", headers: { "X-Requested-With": "app" } })
+        .then(function (r) { return r.json(); }).then(function () { load(); });
+    };
+    state.appendChild(del);
+  }
+}
+
+function uploadSigned(file) {
+  if (!file) return;
+  fetch("/api/health/shortcut/signed", { method: "POST", headers: { "X-Requested-With": "app", "Content-Type": "application/octet-stream" }, body: file })
+    .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || "Upload failed."); return d; }); })
+    .then(function () { status("Uploaded. Everyone can now install it with one tap."); load(); })
+    .catch(function (e) { status(e.message, true); })
+    .then(function () { $("signedUpload").value = ""; });
+}
+
 function render() {
+  var link = $("unsignedLink");
+  if (link) link.href = "/api/health/shortcut?origin=" + encodeURIComponent(location.origin);
+  var up = $("signedUpload");
+  if (up && !up.dataset.wired) {
+    up.dataset.wired = "1";
+    up.addEventListener("change", function () { uploadSigned(up.files[0]); });
+  }
+  renderInstall();
   var box = $("keyBox");
   box.textContent = "";
   var url = location.origin + "/auth/health-sync";
@@ -288,6 +369,9 @@ function render() {
   last.textContent = DATA.last
     ? "Last sync: " + when(DATA.last.at) + ", " + DATA.last.kinds.map(function (k) { return NAMES[k] || k; }).join(", ") + " for " + DATA.last.date + ". "
     : "No syncs yet. ";
+  if (DATA.last && DATA.last.skipped && DATA.last.skipped.length) {
+    last.appendChild(el("span", "err", "Couldn’t read: " + DATA.last.skipped.join(", ") + ". "));
+  }
   var again = el("button", "btn small", "Check again");
   again.type = "button";
   again.onclick = load;
