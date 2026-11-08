@@ -132,6 +132,18 @@ Where the numbers come from:
 
 Weeks start on Monday and use the browser's time zone.
 
+### Health sync (Apple Health every day, from an iPhone Shortcut)
+
+Apple Health has no web connection, so the iPhone sends the numbers itself. **Progress → Set up Health sync** walks through it:
+
+1. **Make my sync key:** a personal key for the shortcut (shown once; only a hash is stored). It can only add that person's numbers: it can't read anything or log in. Making a new key or **Turn sync off** stops the old one.
+2. **Make the shortcut** (about 10 minutes, once): Find Health Samples for today's steps, Move (active energy) and weight, plus optionally food energy, protein, carbs and fat; then Get Contents of URL posts them as JSON to `/auth/health-sync` with the header `Authorization: Bearer <key>`.
+3. **Automation:** Shortcuts → Automation → Charger → Is Connected → Run Immediately. The iPhone keeps Health data locked while the phone is locked, so plugging in at night works better than a fixed time. Each run replaces that day's numbers, so extra runs are fine.
+
+The phone has to be able to reach the site when the shortcut runs (on home Wi-Fi, or anywhere if the site is reachable from outside; see HTTPS below). Synced numbers are used after a full Apple Health export for the same day. Wrong keys count towards the same lock-out as wrong passwords, and each key can sync up to 30 times an hour.
+
+**Lose It** has no public connection for other apps, so its food log can't be read directly. If Lose It is set to write food and nutrients into Apple Health, the shortcut's optional food steps bring them across. Otherwise upload Lose It's export on My files.
+
 ## Healthy-eating guidelines
 
 On the **Macros** tab, pick a person to see how their week compares with official healthy-eating guidelines from **Australia**, **New Zealand**, the **UK**, **Japan** or **Korea**:

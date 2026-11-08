@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Health sync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="page.css">
+<style>
+ol.steps{margin:.4rem 0 .2rem;padding-left:1.3rem}
+ol.steps>li{margin:0 0 .75rem}
+ol.steps ul{margin:.3rem 0 0;padding-left:1.1rem}
+ol.steps ul li{margin:.15rem 0}
+code,.k{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;background:var(--bg);border:1px solid var(--line);border-radius:.3rem;padding:.05rem .3rem;word-break:break-all}
+table.fields{border-collapse:collapse;font-size:.88rem;margin:.4rem 0;width:100%}
+table.fields td{border-top:1px solid var(--line);padding:.3rem .4rem .3rem 0;vertical-align:top}
+.opt{color:var(--mute);font-size:.85rem}
+details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.3rem 0}
+</style>
+<script src="appearance.js"></script>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Health sync</h1><p class="sub" id="sub">Send your steps, Move, weight and food from Apple Health to the Progress page every day</p></div>
+    <a class="btn" href="progress.html">← Progress</a>
+  </div>
+  <div id="msg"></div>
+  <div id="app" hidden>
+    <section class="card">
+      <h2>How it works</h2>
+      <p class="note">An Apple Shortcut on your iPhone reads today’s numbers from the Health app and sends them here. An automation runs it for you each night when you plug your phone in. Your iPhone keeps Health data locked while the phone is locked, so plugging in (when you’ve usually just used it) works better than a fixed time.</p>
+      <p class="note">It sends steps, Move (active energy) and today’s weigh-in. If Lose It writes your food log into Apple Health, it can send your food kilojoules, protein, carbs and fat too.</p>
+    </section>
+
+    <section class="card">
+      <h2>1. Your sync key</h2>
+      <div id="keyBox"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Make the shortcut</h2>
+      <p class="note">About 10 minutes, once. On your iPhone, open the <b>Shortcuts</b> app.</p>
+      <ol class="steps">
+        <li>Tap <b>+</b> (top right). Tap the name at the top and call it <b>Health sync</b>.</li>
+        <li><b>Steps.</b> Add these actions (search for each one in the bar at the bottom):
+          <ul>
+            <li><b>Find Health Samples</b>: tap the type and choose <b>Steps</b>. Tap <b>Add Filter</b> if there isn’t one, and set it to <b>Start Date</b> <b>is today</b>.</li>
+            <li><b>Calculate Statistics</b>: <b>Sum</b> of Health Samples.</li>
+            <li><b>Set Variable</b>: name it <b>Steps</b>, set to <b>Statistics</b>.</li>
+          </ul></li>
+        <li><b>Move.</b> The same three actions again, with type <b>Active Energy</b> and the variable named <b>Move</b>.</li>
+        <li><b>Weight.</b> <b>Find Health Samples</b> with type <b>Weight</b>, Start Date is today, <b>Sort by</b> Start Date, <b>Order</b> Latest First, <b>Limit</b> on, 1. Then <b>Set Variable</b> named <b>Weight</b>, set to <b>Health Samples</b>.</li>
+        <li><span class="opt">(Optional, if Lose It writes to Apple Health)</span> <b>Food.</b> Repeat step 2 four times, with types <b>Dietary Energy</b>, <b>Protein</b>, <b>Carbohydrates</b> and <b>Total Fat</b>, and variables named <b>Food</b>, <b>Protein</b>, <b>Carbs</b> and <b>Fat</b>.</li>
+        <li><b>The date.</b> Add <b>Date</b> (it says Current Date), then <b>Format Date</b>: tap Date Format, choose <b>Custom</b>, and type <code>yyyy-MM-dd</code>. Then <b>Set Variable</b> named <b>Day</b>, set to <b>Formatted Date</b>.</li>
+        <li><b>Send it.</b> Add <b>Get Contents of URL</b>. Paste your sync address (from step 1) as the URL, then tap the arrow to show more:
+          <ul>
+            <li><b>Method</b>: POST.</li>
+            <li><b>Headers</b>: Add new header. Key <code>Authorization</code>, value <code>Bearer</code>, a space, then your sync key.</li>
+            <li><b>Request Body</b>: JSON. Add these fields (tap Add new field, pick the kind, type the key, then pick the variable):
+              <table class="fields">
+                <tr><td><code>date</code></td><td>Text</td><td>Day</td></tr>
+                <tr><td><code>steps</code></td><td>Number</td><td>Steps</td></tr>
+                <tr><td><code>active_energy</code></td><td>Number</td><td>Move</td></tr>
+                <tr><td><code>weight</code></td><td>Text</td><td>Weight</td></tr>
+                <tr><td><code>energy_unit</code></td><td>Text</td><td><code>kJ</code> (type it; use <code>kcal</code> if your Health app shows Calories)</td></tr>
+                <tr class="opt"><td><code>food_energy</code></td><td>Number</td><td>Food (optional)</td></tr>
+                <tr class="opt"><td><code>protein</code></td><td>Number</td><td>Protein (optional)</td></tr>
+                <tr class="opt"><td><code>carbs</code></td><td>Number</td><td>Carbs (optional)</td></tr>
+                <tr class="opt"><td><code>fat</code></td><td>Number</td><td>Fat (optional)</td></tr>
+              </table></li>
+          </ul></li>
+        <li><span class="opt">(Optional)</span> Add <b>Get Dictionary Value</b>: key <code>message</code> from Contents of URL, then <b>Show Notification</b> with the Dictionary Value, so you see “Synced steps, Move…”.</li>
+        <li>Tap <b>Done</b>, then tap the shortcut once to run it. Allow it to read Health data and to connect to this site when asked. The Last sync line below shows what arrived (tap Check again).</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>3. Make it run by itself</h2>
+      <ol class="steps">
+        <li>In Shortcuts, tap <b>Automation</b> at the bottom, then <b>+</b> (or New Automation).</li>
+        <li>Choose <b>Charger</b>, tick <b>Is Connected</b>, and choose <b>Run Immediately</b>. Tap Next.</li>
+        <li>Choose your <b>Health sync</b> shortcut.</li>
+      </ol>
+      <p class="note">Each run replaces that day’s numbers with the latest, so running it more than once a day is fine. You can also add a <b>Time of Day</b> automation (say 9 pm) as a backup, or tap the shortcut whenever you like.</p>
+    </section>
+
+    <section class="card">
+      <h2>Lose It</h2>
+      <p class="note">Lose It doesn’t let other apps read your food log directly: it has no public connection for apps like this one. There are two ways to get it here:</p>
+      <ol class="steps">
+        <li><b>Automatic:</b> if your Lose It app can connect to Apple Health (look in Lose It’s settings under apps and devices), turn on writing food and nutrients to Health. Then the optional food steps above send your daily kilojoules, protein, carbs and fat here.</li>
+        <li><b>By hand:</b> export your data from Lose It and upload the file on the <a href="files.html">My files</a> page. The Progress page reads it.</li>
+      </ol>
+    </section>
+  </div>
+</main>
+<div class="status" id="status" role="status" hidden></div>
+<script>
+// The Health sync page: making a personal sync key, and how to set up the iPhone Shortcut.
+"use strict";
+var PERSON = new URLSearchParams(location.search).get("person") || "";
+var DATA = null;
+var NEWKEY = "";
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+function api(method, url, body) {
+  return fetch(url, {
+    method: method,
+    cache: "no-store",
+    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      if (!r.ok) throw new Error(d.error || "The server said " + r.status);
+      return d;
+    });
+  });
+}
+
+function status(text, isError) {
+  var s = $("status");
+  s.textContent = text;
+  s.className = "status" + (isError ? " err" : "");
+  s.hidden = false;
+  clearTimeout(status.timer);
+  status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 3000);
+}
+
+function when(ms) {
+  var d = new Date(ms);
+  return d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
+}
+
+// A line with a value and a Copy button.
+function copyRow(label, value) {
+  var wrap = el("div");
+  wrap.appendChild(el("label", "f", label));
+  var row = el("div", "link");
+  var input = el("input");
+  input.type = "text";
+  input.readOnly = true;
+  input.value = value;
+  input.addEventListener("focus", function () { input.select(); });
+  row.appendChild(input);
+  var copy = el("button", "btn small primary", "Copy");
+  copy.type = "button";
+  copy.addEventListener("click", function () {
+    (navigator.clipboard ? navigator.clipboard.writeText(value) : Promise.reject()).then(function () {
+      status("Copied.");
+    }, function () {
+      input.select();
+      document.execCommand("copy");
+      status("Copied.");
+    });
+  });
+  row.appendChild(copy);
+  wrap.appendChild(row);
+  return wrap;
+}
+
+var NAMES = { steps: "steps", active_energy: "Move", weight: "weight", energy_in: "food", protein_in: "protein", carbs_in: "carbs", fat_in: "fat" };
+
+function render() {
+  var box = $("keyBox");
+  box.textContent = "";
+  var url = location.origin + "/auth/health-sync";
+  box.appendChild(copyRow("Sync address (the URL)", url));
+  if (NEWKEY) {
+    box.appendChild(copyRow("Your sync key", NEWKEY));
+    box.appendChild(el("div", "msg ok", "Copy it into the shortcut now: for safety it’s only shown once. If you lose it, make a new one (the old one stops working)."));
+    var test = el("button", "btn small", "Test the key");
+    test.type = "button";
+    test.onclick = function () {
+      fetch("/auth/health-sync", { method: "POST", headers: { Authorization: "Bearer " + NEWKEY, "Content-Type": "application/json" }, body: JSON.stringify({ test: true }) })
+        .then(function (r) { return r.json(); }).then(function (d) { status(d.message || d.error, !d.ok); })
+        .catch(function () { status("Couldn’t reach the server.", true); });
+    };
+    box.appendChild(test);
+  } else if (DATA.hasKey) {
+    box.appendChild(el("p", "note", "You have a sync key" + (DATA.made ? " (made " + when(DATA.made) + ")" : "") + ". It’s only shown when it’s made. Lost it? Make a new one and paste it into the shortcut."));
+  } else {
+    box.appendChild(el("p", "note", "Make a key for the shortcut. It only lets the shortcut add your numbers: it can’t read anything or log in."));
+  }
+
+  var row = el("div", "row");
+  var make = el("button", "btn" + (DATA.hasKey ? "" : " primary"), DATA.hasKey ? "Make a new key" : "Make my sync key");
+  make.type = "button";
+  make.onclick = function () {
+    if (DATA.hasKey && !confirm("Make a new key? The old one stops working, so you’ll need to paste the new one into the shortcut.")) return;
+    api("POST", "/api/health/key" + (PERSON ? "?person=" + encodeURIComponent(PERSON) : "")).then(function (d) {
+      DATA = d;
+      NEWKEY = d.key;
+      render();
+    }).catch(function (e) { status(e.message, true); });
+  };
+  row.appendChild(make);
+  if (DATA.hasKey) {
+    var off = el("button", "btn danger", "Turn sync off");
+    off.type = "button";
+    off.onclick = function () {
+      if (!confirm("Turn sync off? The shortcut will stop working until you make a new key.")) return;
+      api("DELETE", "/api/health/key" + (PERSON ? "?person=" + encodeURIComponent(PERSON) : "")).then(function (d) {
+        DATA = d;
+        NEWKEY = "";
+        render();
+      }).catch(function (e) { status(e.message, true); });
+    };
+    row.appendChild(off);
+  }
+  box.appendChild(row);
+
+  var last = el("p", "note");
+  last.style.marginTop = ".8rem";
+  last.textContent = DATA.last
+    ? "Last sync: " + when(DATA.last.at) + ", " + DATA.last.kinds.map(function (k) { return NAMES[k] || k; }).join(", ") + " for " + DATA.last.date + ". "
+    : "No syncs yet. ";
+  var again = el("button", "btn small", "Check again");
+  again.type = "button";
+  again.onclick = load;
+  last.appendChild(again);
+  box.appendChild(last);
+}
+
+function load() {
+  return api("GET", "/api/health/key" + (PERSON ? "?person=" + encodeURIComponent(PERSON) : "")).then(function (d) {
+    DATA = d;
+    $("app").hidden = false;
+    render();
+  }).catch(function (e) {
+    $("msg").textContent = "";
+    $("msg").appendChild(el("div", "msg err", e.message));
+  });
+}
+
+load();
+</script>
+</body>
+</html>

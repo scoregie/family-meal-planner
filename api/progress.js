@@ -291,9 +291,16 @@ async function runImport(person) {
 // ---------------------------------------------------------------------------
 
 // Which source to trust for each kind, best first.
+// "apple-shortcut" is the daily sync from an iPhone Shortcut (healthsync.js): the full export
+// wins when both have a day, as it has every source.
 const PREFER = {
-  weight: ['manual', 'apple-health', 'lose-it'],
-  steps: ['apple-health', 'lose-it', 'manual'],
+  weight: ['manual', 'apple-health', 'apple-shortcut', 'lose-it'],
+  steps: ['apple-health', 'apple-shortcut', 'lose-it', 'manual'],
+  active_energy: ['apple-health', 'apple-shortcut'],
+  energy_in: ['lose-it', 'apple-shortcut'],
+  protein_in: ['lose-it', 'apple-shortcut'],
+  carbs_in: ['lose-it', 'apple-shortcut'],
+  fat_in: ['lose-it', 'apple-shortcut'],
 };
 
 // The average of a list of numbers, or null if it is empty.
@@ -475,4 +482,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { handle, summary, readLoseIt, readAppleHealth, mondayOf, csvFields };
+module.exports = { sensible, handle, summary, readLoseIt, readAppleHealth, mondayOf, csvFields };

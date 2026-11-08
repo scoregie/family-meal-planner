@@ -485,6 +485,10 @@ function setSetting(key, value) {
   open().prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value').run(key, String(value));
 }
 
+function deleteSetting(key) {
+  open().prepare('DELETE FROM settings WHERE key = ?').run(key);
+}
+
 // Remembers every dish in a plan (recipes, meals, snacks), with its recipe and macros. Dishes from
 // older plans stay in the table, so they can be found again later.
 function rememberDishes(plan) {
@@ -752,7 +756,7 @@ function setProfileFinished(person, finished) {
 module.exports = {
   setProfileFinished, addSignup, listSignups, getSignup, deleteSignup, countSignups,
   open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, dishKey, DB_FILE,
-  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, sessionsSince, getSetting, setSetting, planKeyFor,
+  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, sessionsSince, getSetting, setSetting, deleteSetting, planKeyFor,
   getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
   getAccount, accountByEmail, accountByLegacy, listAccounts, countAccounts, addAccount, updateAccount, deleteAccount, setAiKey, getAiKey, forgetPerson,
   addInvite, inviteByToken, listInvites, useInvite, deleteInvite, deleteInvitesFor, addReset, resetByToken, useReset,

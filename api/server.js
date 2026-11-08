@@ -19,6 +19,7 @@ const assistant = require('./assistant'); // the Claude assistant and requests f
 const appearance = require('./appearance'); // the household's colours, font, text size and icon
 const accounts = require('./accounts');     // email accounts: registering, invites, password resets, the family
 const plandraft = require('./plandraft');   // getting the family's plan ready, and Claude drafting a whole plan
+const healthsync = require('./healthsync'); // daily numbers from an iPhone Shortcut (Apple Health)
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -522,6 +523,7 @@ async function handleRequest(req, res) {
     // Registering, invites and password resets (no login needed), then login, logout and
     // Caddy's "is this person logged in?" check.
     if (await accounts.handlePublic(req, res, urlPath, url, { readPlan, savePlan, toKey, people })) return;
+    if (healthsync.handlePublic(req, res, urlPath)) return;   // the Shortcut's sync (uses a sync key, not a login)
     if (await auth.handle(req, res, urlPath)) return;
 
     // Everything under /api/ needs a login. `me` is {user, person, admin}.
@@ -541,6 +543,7 @@ async function handleRequest(req, res) {
     if (await accounts.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
     if (await plandraft.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, toKey, people })) return;
+    if (healthsync.handle(req, res, urlPath, url, me, { people })) return;
 
     if (urlPath === '/api/state' && req.method === 'GET') return getState(res, me);
     if (urlPath === '/api/history' && req.method === 'GET') return getHistory(res, url, me);
