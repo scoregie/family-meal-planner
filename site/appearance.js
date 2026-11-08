@@ -191,6 +191,11 @@
       var before = JSON.stringify(read("appearance-house"));
       write("appearance-house", clean(got.house));
       if (JSON.stringify(read("appearance-house")) !== before) apply();
+      if (got.pins) {
+        var beforePins = JSON.stringify(read("pins"));
+        write("pins", got.pins);
+        if (JSON.stringify(got.pins) !== beforePins) window.dispatchEvent(new Event("stores-changed"));
+      }
       if (got.energy) {
         var beforeEnergy = JSON.stringify(read("energy"));
         write("energy", got.energy);
@@ -217,6 +222,9 @@
     DEFAULTS: DEFAULTS,
     stores: stores,
     ENERGY: ENERGY,
+    // Pinned product pages: {item name: {store: url}}.
+    pins: function () { return read("pins"); },
+    setPins: function (p) { write("pins", p || {}); },
     energyUnit: energyUnit,
     energyValue: energyValue,
     energyText: energyText,

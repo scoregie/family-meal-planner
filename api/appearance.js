@@ -2,6 +2,7 @@
 //
 //   GET /api/appearance         the household's colour, font and text size
 //   PUT /api/appearance         admins: save them {colour, font, size}
+//   PUT /api/appearance/pins    {item, store, url}: pin a product page for a shopping item (url "" unpins)
 //   PUT /api/appearance/energy  {energy: "kJ" | "kcal" | "", scope: "me" or "house"}: energy units
 //   PUT /api/appearance/stores  {stores: [...], scope: "me" or "house"}: where you shop (admins
 //                               can also set the household's choice, used by anyone without their own)
@@ -59,6 +60,30 @@ function energy(person) {
 function energyFor(person) {
   const e = energy(person);
   return e.mine || e.house || 'kJ';
+}
+
+// Pinned products: for a shopping item (by its simplified name, like "turkey mince"), the exact
+// product page at a store, so the item's link goes straight there. Shared by the family.
+// {"turkey mince": {"coles": "https://www.coles.com.au/product/..."}}
+const PIN_HOSTS = { coles: 'coles.com.au', woolworths: 'woolworths.com.au', iga: 'igashop.com.au', foodland: 'foodlandsa.com.au', spudshed: 'spudshed.com.au', drakes: 'drakes.com.au' };
+function pins() {
+  try {
+    const p = JSON.parse(db.getSetting('pins') || '{}');
+    return p && typeof p === 'object' && !Array.isArray(p) ? p : {};
+  } catch (e) {
+    return {};
+  }
+}
+// The link if it is an https page on that store's website, else ''.
+function cleanPin(store, link) {
+  try {
+    const u = new URL(String(link || '').trim());
+    const host = PIN_HOSTS[store];
+    if (u.protocol !== 'https:' || !host || !(u.hostname === host || u.hostname.endsWith('.' + host))) return '';
+    return u.href.length <= 600 ? u.href : '';
+  } catch (e) {
+    return '';
+  }
 }
 
 // The icon files, and the size each must be.
@@ -142,18 +167,47 @@ function writeFile(file, bytes) {
 }
 
 async function handle(req, res, urlPath, url, me) {
-  if (!['/api/appearance', '/api/appearance/icon', '/api/appearance/stores', '/api/appearance/energy'].includes(urlPath)) return false;
+  if (!['/api/appearance', '/api/appearance/icon', '/api/appearance/stores', '/api/appearance/energy', '/api/appearance/pins'].includes(urlPath)) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
     send(res, 403, { error: 'bad request' });
     return true;
   }
 
   if (urlPath === '/api/appearance' && req.method === 'GET') {
-    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person), energy: energy(me.person) });
+    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person), energy: energy(me.person), pins: pins() });
     return true;
   }
   if (req.method !== 'PUT') {
     send(res, 404, { error: 'not found' });
+    return true;
+  }
+  if (urlPath === '/api/appearance/pins') {
+    // {item, store, url}: pin a product (url "" removes the pin).
+    const b = await body(req, 3000);
+    const item = String(b.item || '').trim().toLowerCase().slice(0, 120);
+    const store = String(b.store || '');
+    if (!item || !Object.prototype.hasOwnProperty.call(PIN_HOSTS, store) || ['__proto__', 'constructor', 'prototype'].includes(item)) {
+      send(res, 400, { error: 'bad request' });
+      return true;
+    }
+    const all = pins();
+    if (b.url) {
+      const link = cleanPin(store, b.url);
+      if (!link) {
+        send(res, 400, { error: 'That doesn’t look like a product page on ' + PIN_HOSTS[store] + '. Open the product there, copy its address, and paste it here.' });
+        return true;
+      }
+      if (!all[item] && Object.keys(all).length >= 1000) {
+        send(res, 400, { error: 'That’s a lot of pinned products. Remove some first.' });
+        return true;
+      }
+      all[item] = Object.assign({}, all[item], { [store]: link });
+    } else if (all[item]) {
+      delete all[item][store];
+      if (!Object.keys(all[item]).length) delete all[item];
+    }
+    db.setSetting('pins', JSON.stringify(all));
+    send(res, 200, { ok: true, pins: all });
     return true;
   }
   if (urlPath === '/api/appearance/energy') {
