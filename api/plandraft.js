@@ -152,6 +152,7 @@ Food:
 
 Exercise:
 - Fit each adult's goals, time, equipment, current activity and anything they said about injuries or health. Start gently and build over the 4 weeks. Children: play-based, about an hour of activity a day counting school and sport.
+- Workouts (exercise.workouts) describe how to do a session and stay the same every week, so don't put a fixed length or distance in them (no "a 5 km walk takes 55 minutes"). Put each day's amount in that day's session instead ("Workout F: Easy walk, 25 minutes."), building up over the weeks. The app shows the day's amount at the top of the workout.
 
 Health wording (important):
 - Write anything about health as what the person told you, not as fact or instruction: "You said your physio is happy for you to do squats", not "Your physio has cleared squats". Prefer "consider", "may" and "it may be worth checking with" over absolutes like "always", "never" or "must". Put what a doctor, physio or other health professional said, and when to stop and get checked, in exercise.medical for that person. Call it information or considerations, never advice. Their health professional's advice comes first.

@@ -159,6 +159,7 @@ details{background:var(--card);border:1px solid var(--line);border-radius:.8rem;
 summary{padding:.7rem 0;font-weight:700;cursor:pointer;min-height:2.75rem}
 summary span{display:block;font-weight:400;color:var(--mute);font-size:.85rem}
 details[open] .bul{margin-bottom:.8rem}
+.today{margin:.2rem 0 .5rem;padding:.5rem .7rem;border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--card));border-radius:6px}
 .vlink{color:var(--accent);font-weight:700;font-size:.85rem;white-space:nowrap;padding:.3rem .1rem}
 
 /* ---- calendar ---- */
@@ -2589,7 +2590,7 @@ function renderExercise() {
   if (todays.length) {
     panel.appendChild(el("h2", "rh", "Today’s workouts"));
     todays.forEach(function (workout) {
-      var fold = workoutFold(workout, extras.videos || {});
+      var fold = workoutFold(workout, extras.videos || {}, todayLines(workout, day));
       fold.open = true;
       panel.appendChild(fold);
     });
@@ -2660,11 +2661,37 @@ function sessionRow(day, slot, done) {
 
 // One workout as a fold-out list of exercises. An exercise written as "Goblet squat (3 × 10): ..."
 // whose name is in `videos` gets a Demo link and a YouTube search link.
-function workoutFold(workout, videos) {
+// What today's sessions say about a workout, without its name: "Easy walk, 25 minutes." from
+// "Workout F: Easy walk, 25 minutes.". The day's amount wins over the workout's general one.
+function todayLines(workout, exDay) {
+  var key = workoutKey(workout);
+  var esc = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  var has = new RegExp("\\b" + esc + "\\b", "i");
+  var lead = new RegExp("^\\s*(optional:\\s*)?" + esc + "\\s*[:,-]?\\s*", "i");
+  var name = String(workout.name || "").toLowerCase();
+  var out = [];
+  EXSLOTS.forEach(function (slot) {
+    var text = exDay && exDay[slot[0]];
+    if (!text || !has.test(text)) return;
+    var optional = /^\s*optional:/i.test(text);
+    var rest = String(text).replace(lead, "").trim();
+    if (!rest || name.indexOf(rest.toLowerCase()) >= 0) return;
+    out.push((optional ? "Optional: " : "") + rest.charAt(0).toUpperCase() + rest.slice(1));
+  });
+  return out;
+}
+
+function workoutFold(workout, videos, today) {
   var fold = el("details");
   var summary = el("summary", null, workout.name || "Workout");
-  if (workout.time) summary.appendChild(el("span", null, workout.time));
+  if (workout.time && !(today && today.length)) summary.appendChild(el("span", null, workout.time));
   fold.appendChild(summary);
+  (today || []).forEach(function (line) {
+    var p = el("p", "today");
+    p.appendChild(el("b", null, "Today: "));
+    p.appendChild(document.createTextNode(line));
+    fold.appendChild(p);
+  });
   var list = el("ol", "bul steps");
   (workout.items || []).forEach(function (text) {
     var item = el("li", null, text);
