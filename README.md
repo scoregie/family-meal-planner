@@ -84,7 +84,7 @@ Everything the page shows (meals, recipes, shopping lists and exercise) comes fr
 
 **Ask an AI to write it.** Fill in the [brackets] in `plan-prompt.example.txt`, send it to Claude (or another AI) with your current `plan.json` attached as the format example, and save the JSON it gives you as `site/plan.json`. Keep a copy of the old one first.
 
-**Or edit it by hand.** Each week looks like this:
+**Or edit it by hand.** [docs/plan-format.md](docs/plan-format.md) explains every field in plain English. The scripts in [tools/](tools/README.md) can estimate macros and check the shopping lists cover the recipes. Each week looks like this:
 
     {
       "name": "Week 1",
