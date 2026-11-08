@@ -1,7 +1,7 @@
 {
  "id": "example-plan",
  "title": "Example meal and exercise plan",
- "subtitle": "An example plan for three people (Alex, Sam and Riley). Do the stock-up shop first, then the weekly fresh shop. Prices are rough estimates for Coles in Australia.",
+ "subtitle": "An example plan for three people (Alex, Sam and Riley). Weeks 1 and 3 include a 2-week stock-up of pantry and freezer items. Prices are rough estimates for Coles in Australia.",
  "weeks": [
   {
    "name": "Stock-up 1",
@@ -1141,8 +1141,10 @@
     "Thoracic twist": "https://au.physitrack.com/home-exercise-video/thoracic-rotation-in-side-lying"
    },
    "notes": [
+    "If a session feels too hard, do less rather than skipping it. Consistency matters more than effort."
+   ],
+   "medical": [
     "This is an example plan. Ask a doctor or physio before starting a new exercise plan, especially with any injury or health condition.",
-    "If a session feels too hard, do less rather than skipping it. Consistency matters more than effort.",
     "Stop and get checked if you have chest pain, dizziness, or sharp or shooting pain."
    ]
   },
@@ -1201,6 +1203,11 @@
     {
      "when": "Afternoon, before training",
      "what": "2 boiled eggs and an apple"
+    },
+    {
+     "when": "After strength training",
+     "what": "250 ml glass of milk",
+     "exercise": "strength"
     }
    ]
   },

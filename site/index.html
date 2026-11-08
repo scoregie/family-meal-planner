@@ -331,6 +331,27 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 .ask{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;background:var(--card);border:1px solid var(--accent);border-radius:.8rem;padding:.7rem .9rem;margin:0 0 1rem;font-size:.92rem}
 .ask span{flex:1 1 14rem}
 .ask .btn{text-decoration:none}
+/* shopping: which part of the list, and the stock-up tag */
+.partseg{display:flex;gap:.35rem;overflow-x:auto;scrollbar-width:none;margin:0 0 .75rem}
+.partseg .btn{flex:none;min-height:2.3rem;padding:.25rem .8rem;font-size:.85rem;border-radius:1.2rem;border-width:1px}
+.stocktag{display:inline-block;margin-left:.4rem;font-size:.7rem;font-weight:700;color:var(--mute);border:1px solid var(--line);border-radius:1rem;padding:0 .45rem;vertical-align:.1rem}
+/* one day at a time */
+.daynav{margin:0 0 .75rem}
+.daynav-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.5rem}
+.daynav .arrow{width:3rem;min-height:3rem;font-size:1.6rem;line-height:1;padding:0;display:grid;place-items:center;background:var(--card)}
+.daynav-title{text-align:center}
+.daynav-title h2{margin:0;font-size:1.3rem}
+.daynav-title>span{display:block;font-size:.8rem;color:var(--mute)}
+.daychips{display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem;margin-top:.55rem}
+.daychips button{font:inherit;font-size:.82rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:.5rem;min-height:2.3rem;cursor:pointer;padding:0}
+.daychips button.is-today{border-color:var(--accent);font-weight:700}
+.daychips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.daycard{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.7rem 1rem;margin:0 0 .9rem;list-style:none}
+.restday{color:var(--mute);margin:.3rem 0}
+.advice{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem;margin:0 0 .9rem}
+.advice h3{margin:0 0 .3rem;font-size:1.02rem}
+.advice .bul{margin:.2rem 0}
+.advice.medical{border-color:var(--mid);box-shadow:inset 4px 0 0 var(--mid)}
 </style>
 <script src="appearance.js"></script>
 </head>
@@ -352,6 +373,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
   <div class="ask" id="ask" hidden><span>Help shape your meals and exercise: answer a few questions about you.</span> <a class="btn primary" href="profile.html">Start</a> <button class="btn" type="button" id="askLater">Later</button></div>
   <div class="who" id="whoRow" hidden><label for="user">Ticks for</label><select id="user"></select><span class="me-name" id="meName" hidden></span></div>
   <div id="shopView">
+  <div class="seg partseg" id="shopPart" role="group" aria-label="Which part of the list" hidden></div>
   <div class="sum">
     <div class="sum-top"><span class="left" id="left"></span><span class="meta" id="meta"></span></div>
     <div class="bar"><i id="bar"></i></div>
@@ -507,21 +529,86 @@ function isHome(name) {
   return have.indexOf(query(name).toLowerCase()) > -1;
 }
 
-// A week's shopping sections as a list of [section name, items].
-function sections(weekIndex) {
-  var shopping = PLAN.weeks[weekIndex].shopping;
-  return Object.keys(shopping).map(function (name) {
-    return [name, shopping[name]];
-  });
+// The stock-up week (pantry and freezer, bought every 2 weeks) that is shopped with a meal week:
+// the stock-up just before it. -1 if there isn't one.
+function stockFor(weekIndex) {
+  var before = PLAN.weeks[weekIndex - 1];
+  return before && before.kind === "stockup" && PLAN.weeks[weekIndex].kind !== "stockup" ? weekIndex - 1 : -1;
 }
 
-// A week's total, leaving out anything marked "At home".
+// Which part of the list is shown when a week includes a stock-up: "all", "week" or "stock".
+var shopPart = lsGet("coles-plan-shop-part") || "all";
+
+// The aisles the list is grouped by, in the order most people walk a supermarket.
+var CATS = [
+  ["fresh", "Fruit and veg"],
+  ["protein", "Meat, fish and eggs"],
+  ["dairy", "Dairy and fridge"],
+  ["bakery", "Bread and wraps"],
+  ["frozen", "Frozen"],
+  ["pantry", "Pantry"],
+  ["other", "Other"],
+];
+
+// The aisle for an item, from its name and the plan section it is in.
+function catOf(name, section) {
+  var n = name.toLowerCase();
+  var s = section.toLowerCase();
+  if (/freez|frozen/.test(s) || /^frozen\b/.test(n)) return "frozen";
+  if (/\beggs?\b/.test(n) && !/noodle/.test(n)) return "protein";
+  if (/meat|fish|seafood|poultry|protein/.test(s)) return "protein";
+  if (/fruit|veg|produce/.test(s)) return "fresh";
+  if (/\b(bread|wraps?|rolls?|pita|tortillas?|bagels?|crumpets?)\b/.test(n) && !/crumbs/.test(n)) return "bakery";
+  if (/dairy|fridge|chill/.test(s)) return "dairy";
+  if (/pantry|cupboard|top-up/.test(s)) return "pantry";
+  return "other";
+}
+
+// Every item on a week's list: {name, price, src (the plan week it comes from), id ("section-item",
+// how its tick is saved), cat, stock (true for stock-up items)}. `part` picks all, the week only,
+// or the stock-up only.
+function shopItems(weekIndex, part) {
+  var sources = [];
+  var stock = stockFor(weekIndex);
+  if (part !== "stock" || stock < 0) sources.push(weekIndex);
+  if (stock > -1 && part !== "week") sources.push(stock);
+  var out = [];
+  sources.forEach(function (src) {
+    var shopping = PLAN.weeks[src].shopping;
+    Object.keys(shopping).forEach(function (section, sectionIndex) {
+      shopping[section].forEach(function (item, itemIndex) {
+        out.push({
+          name: item[0],
+          price: item[1],
+          src: src,
+          id: sectionIndex + "-" + itemIndex,
+          cat: catOf(item[0], section),
+          stock: PLAN.weeks[src].kind === "stockup",
+        });
+      });
+    });
+  });
+  return out;
+}
+
+// The items shown now, grouped by aisle: [[aisle name, items], ...], leaving out empty aisles.
+function grouped(items) {
+  return CATS.map(function (cat) {
+    var inCat = items.filter(function (it) { return it.cat === cat[0]; });
+    inCat.sort(function (a, b) { return a.name.localeCompare(b.name); });
+    return [cat[1], inCat];
+  }).filter(function (g) { return g[1].length; });
+}
+
+function isTicked(it) {
+  return (ticks[it.src] || []).indexOf(it.id) > -1;
+}
+
+// A week's total (with its stock-up), leaving out anything marked "At home".
 function total(weekIndex) {
   var sum = 0;
-  sections(weekIndex).forEach(function (section) {
-    section[1].forEach(function (item) {
-      if (!isHome(item[0])) sum += item[1];
-    });
+  shopItems(weekIndex, "all").forEach(function (it) {
+    if (!isHome(it.name)) sum += it.price;
   });
   return sum;
 }
@@ -856,11 +943,13 @@ function go(weekIndex, toView) {
   location.hash = "week-" + (weekIndex + 1) + (toView === "shop" ? "" : "-" + toView);
 }
 
-// Draws the row of week tabs, each with its rough cost, and scrolls the chosen one into view.
+// Draws the row of week tabs (stock-up weeks are folded into the week after them), each with
+// its rough cost including any stock-up, and scrolls the chosen one into view.
 function renderTabs() {
   var row = $("tabs");
   row.textContent = "";
   PLAN.weeks.forEach(function (wk, i) {
+    if (wk.kind === "stockup") return;   // shopped with the week after it
     var tab = el("button", "tab");
     tab.type = "button";
     tab.setAttribute("role", "tab");
@@ -883,28 +972,45 @@ function renderTabs() {
 
 // ---------- the shopping list ----------
 
-// Draws the shopping list for the current week: a section per heading, each item with a
-// tick box, its price, links to search the chosen stores, an "At home?" button and who ticked it.
+// Draws the shopping list for the current week, grouped by aisle. Weeks that start a fortnight
+// include the 2-week stock-up (pantry and freezer), and the buttons above the list show it all,
+// just this week's fresh food, or just the stock-up. Each item has a tick box, its price, links
+// to search the chosen stores, an "At home?" button and who ticked it.
 function renderList() {
   var box = $("lists");
   box.textContent = "";
   box.className = hideDone ? "hide-done" : "";
-  var done = ticks[week] || [];
 
-  sections(week).forEach(function (section, sectionIndex) {
-    var items = section[1];
+  var partBox = $("shopPart");
+  partBox.textContent = "";
+  var hasStock = stockFor(week) > -1;
+  partBox.hidden = !hasStock;
+  if (hasStock) {
+    [["all", "Everything"], ["week", "This week"], ["stock", "2-week stock-up"]].forEach(function (option) {
+      var b = el("button", "btn", option[1]);
+      b.type = "button";
+      b.setAttribute("aria-pressed", shopPart === option[0]);
+      b.onclick = function () {
+        shopPart = option[0];
+        try { localStorage.setItem("coles-plan-shop-part", shopPart); } catch (e) {}
+        renderList();
+      };
+      partBox.appendChild(b);
+    });
+  }
+
+  grouped(shopItems(week, hasStock ? shopPart : "all")).forEach(function (group) {
     var sectionEl = el("section");
-    var heading = el("h2", null, section[0]);
+    var heading = el("h2", null, group[0]);
     var subtotal = 0;
-    items.forEach(function (item) {
-      if (!isHome(item[0])) subtotal += item[1];
+    group[1].forEach(function (it) {
+      if (!isHome(it.name)) subtotal += it.price;
     });
     heading.appendChild(el("small", null, money(subtotal)));
     sectionEl.appendChild(heading);
-
     var list = el("ul");
-    items.forEach(function (item, itemIndex) {
-      list.appendChild(shopItem(item, sectionIndex + "-" + itemIndex, done));
+    group[1].forEach(function (it) {
+      list.appendChild(shopItem(it, hasStock && shopPart === "all"));
     });
     sectionEl.appendChild(list);
     box.appendChild(sectionEl);
@@ -913,22 +1019,25 @@ function renderList() {
   updateSummary();
 }
 
-// One shopping item. `id` is its position ("section-item"), which is how ticks are saved.
-function shopItem(item, id, done) {
-  var name = item[0];
+// One shopping item. Its tick is saved under the plan week it comes from and its position
+// there ("section-item"). `tagStock` adds a small "Stock-up" tag to stock-up items.
+function shopItem(it, tagStock) {
+  var name = it.name;
   var home = isHome(name);
-  var ticked = done.indexOf(id) > -1;
+  var ticked = isTicked(it);
   var row = el("li", (ticked ? "done " : "") + (home ? "home" : ""));
 
   var label = el("label", "row");
   var box = el("input");
   box.type = "checkbox";
   box.checked = ticked;
-  box.onchange = function () { toggle(id, box.checked, row); };
+  box.onchange = function () { toggle(it, box.checked, row); };
   label.appendChild(box);
   label.appendChild(el("span", "box"));   // the drawn tick box
-  label.appendChild(el("span", "name", name));
-  label.appendChild(el("span", "price", money(item[1])));
+  var nameEl = el("span", "name", name);
+  if (tagStock && it.stock) nameEl.appendChild(el("span", "stocktag", "Stock-up"));
+  label.appendChild(nameEl);
+  label.appendChild(el("span", "price", money(it.price)));
 
   var links = storeLinks(name);
 
@@ -939,7 +1048,7 @@ function shopItem(item, id, done) {
   homeButton.onclick = function () { toggleHome(name); };
 
   var byline = el("span", "byline");   // "Ticked by Sam · Sat 8 Nov, 5:02 pm"
-  byline.dataset.k = week + "|" + id;
+  byline.dataset.k = it.src + "|" + it.id;
 
   var actions = el("div", "acts");
   if (links.length > 1) actions.appendChild(el("span", "findlab", "Search"));
@@ -964,10 +1073,9 @@ function byText(key) {
 
 // Updates every "Ticked by" line without redrawing the list.
 function refreshBylines() {
-  var done = ticks[week] || [];
   document.querySelectorAll("#lists .byline").forEach(function (line) {
-    var id = line.dataset.k.split("|")[1];
-    line.textContent = done.indexOf(id) > -1 ? byText(line.dataset.k) : "";
+    var parts = line.dataset.k.split("|");
+    line.textContent = (ticks[parts[0]] || []).indexOf(parts[1]) > -1 ? byText(line.dataset.k) : "";
   });
 }
 
@@ -1584,11 +1692,6 @@ function personSeg(ppl, who, rerender) {
   return seg;
 }
 
-// True if a snack is eaten on `day`: when its "days" list includes it, or every day without a list.
-function snackOn(snack, day) {
-  day = String(day || "").slice(0, 3);
-  return !Array.isArray(snack.days) || snack.days.indexOf(day) > -1;
-}
 
 // Each day's meals for one person (or everyone), with macros scaled to their portion.
 // With `withSnacks`, the person's snacks are added too. Snacks marked "optional" (like
@@ -1616,7 +1719,7 @@ function mealDays(w, person, who, withSnacks) {
 
     if (withSnacks && person && Array.isArray(person.snacks)) {
       person.snacks.forEach(function (snack) {
-        if (!snack || !snack.what || !snackOn(snack, day.day)) return;
+        if (!snack || !snack.what || !snackOn(snack, day.day, who, PLAN.weeks.indexOf(w))) return;
         // Snack amounts are already written for this person, so they are not scaled.
         var row = ["Snack" + (snack.when ? " · " + snack.when : ""), snack.what, macrosOf(snack.what)];
         row.snack = true;   // already sized for this person, so not scaled by their portion
@@ -1724,67 +1827,6 @@ function renderMacros() {
 
 // The Meals view: the person picker, that person's guide (times, tips, snacks), each day's
 // meals with "eaten" ticks and Rate buttons, then the recipes.
-function renderMeals() {
-  var panel = $("meals");
-  panel.textContent = "";
-  var w = PLAN.weeks[week];
-  var ppl = PLAN.people || null;
-  if (!w.meals || !w.meals.length) {
-    panel.appendChild(el("p", "emptyline", "No meals are listed for this week."));
-    return;
-  }
-  var who = pickWho(ppl);
-  if (ppl) {
-    panel.appendChild(personSeg(ppl, who, renderMeals));
-    if (who !== "all") panel.appendChild(personGuide(ppl[who], who));
-  }
-  var person = who !== "all" && ppl ? ppl[who] : null;
-  var days = mealDays(w, person, who);
-
-  var count = el("p", "count");
-  count.id = "eatCount";
-  panel.appendChild(count);
-  // "3 of 21 meals eaten". The total counts the shared meals in the plan.
-  function updateEaten() {
-    var eatenCount = (eaten[week] || []).length;
-    var mealCount = 0;
-    w.meals.forEach(function (day) {
-      ["breakfast", "lunch", "dinner"].forEach(function (meal) {
-        if (day[meal]) mealCount++;
-      });
-    });
-    count.textContent = "";
-    count.appendChild(el("b", null, eatenCount + " of " + mealCount + " meals eaten"));
-    count.appendChild(el("span", null, "Tick once eaten"));
-  }
-  updateEaten();
-
-  var list = el("ul", "days");
-  days.forEach(function (dayInfo) {
-    var day = dayInfo.d;
-    var card = el("li", "day");
-    var heading = el("h3", null, day.day || "");
-    card.appendChild(heading);
-    markToday(card, heading, day.day);
-    dayInfo.rows.forEach(function (row) {
-      mealRow(card, day, row, person, ppl, updateEaten);
-    });
-    list.appendChild(card);
-  });
-  panel.appendChild(list);
-
-  if (w.recipes && w.recipes.length) {
-    var forPerson = (who !== "all" && ppl && ppl[who]) ? ppl[who] : null;
-    panel.appendChild(el("h2", "rh", forPerson ? "Recipes (quantities for " + forPerson.name + " only)" : "Recipes (quantities for the whole household)"));
-    if (forPerson) panel.appendChild(el("p", "note2", "These amounts are one serve for " + forPerson.name + " (" + forPerson.portion + "× an average serve). Tap Everyone above for the full household amounts."));
-    var recipes = el("ul", "recipes");
-    w.recipes.forEach(function (r) {
-      recipes.appendChild(recipeItem(r, forPerson));
-    });
-    panel.appendChild(recipes);
-  }
-}
-
 // The box at the top of the Meals view for one person: portion, guide, suggested eating times
 // (with "Add to calendar"), tips and snacks.
 function personGuide(person, personKey) {
@@ -1868,6 +1910,264 @@ function mealRow(card, day, row, person, ppl, updateEaten) {
   card.appendChild(summary);
   card.appendChild(rateBox);
   rateUI(id, (day.day || "") + " " + row[0].toLowerCase(), rateButton, summary, rateBox, row[1]);
+}
+
+// ---------- one day at a time (Meals and Exercise) ----------
+
+var FULLDAY = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
+var dayName = TODAY;   // the day shown in Meals and Exercise ("Mon"); starts on today
+
+function short(day) {
+  return String(day || "").slice(0, 3);
+}
+
+// The meal weeks (not stock-ups), in order.
+function mealWeeks() {
+  var out = [];
+  PLAN.weeks.forEach(function (w, i) { if (w.kind !== "stockup") out.push(i); });
+  return out;
+}
+
+// The day header: ‹ arrow, the day's name, › arrow, then a row of day buttons. Going past the
+// last day moves to the next week (and back from the first day to the week before), wrapping
+// around the plan. `days` is the week's list of {day: "Mon", ...}.
+function dayNav(days, rerender) {
+  var names = days.map(function (d) { return short(d.day); });
+  var at = Math.max(0, names.indexOf(dayName));
+  var weeks = mealWeeks();
+  var wAt = weeks.indexOf(week);
+
+  function step(dir) {
+    var next = at + dir;
+    if (next >= 0 && next < names.length) {
+      dayName = names[next];
+      rerender();
+      return;
+    }
+    var nw = weeks[(wAt + dir + weeks.length) % weeks.length];
+    var other = (PLAN.weeks[nw][view === "exercise" ? "exercise" : "meals"] && nw !== week) ? nw : week;
+    var otherDays = view === "exercise" ? ((exFor(other) || {}).days || days) : (PLAN.weeks[other].meals || days);
+    dayName = short((dir > 0 ? otherDays[0] : otherDays[otherDays.length - 1]).day);
+    if (other === week) rerender();
+    else go(other, view);
+  }
+
+  var wrap = el("div", "daynav");
+  var top = el("div", "daynav-top");
+  var prev = el("button", "btn arrow", "‹");
+  prev.type = "button";
+  prev.setAttribute("aria-label", "Previous day");
+  prev.onclick = function () { step(-1); };
+  var title = el("div", "daynav-title");
+  var h = el("h2", null, FULLDAY[names[at]] || names[at] || "");
+  if (names[at] === TODAY) h.appendChild(el("span", "today-tag", "Today"));
+  title.appendChild(h);
+  title.appendChild(el("span", null, PLAN.weeks[week].name || "Week " + (week + 1)));
+  var next = el("button", "btn arrow", "›");
+  next.type = "button";
+  next.setAttribute("aria-label", "Next day");
+  next.onclick = function () { step(1); };
+  top.appendChild(prev);
+  top.appendChild(title);
+  top.appendChild(next);
+  wrap.appendChild(top);
+
+  var chips = el("div", "daychips");
+  names.forEach(function (n, i) {
+    var b = el("button", null, n.slice(0, 2));
+    b.type = "button";
+    b.setAttribute("aria-label", FULLDAY[n] || n);
+    b.setAttribute("aria-pressed", i === at);
+    if (n === TODAY) b.className = "is-today";
+    b.onclick = function () { dayName = n; rerender(); };
+    chips.appendChild(b);
+  });
+  wrap.appendChild(chips);
+  return { el: wrap, index: at, step: step };
+}
+
+// Lets a swipe left or right on `target` move to the next or previous day.
+function swipeDays(target, step) {
+  var x0 = null, y0 = null;
+  target.addEventListener("touchstart", function (e) {
+    x0 = e.touches[0].clientX;
+    y0 = e.touches[0].clientY;
+  }, { passive: true });
+  target.addEventListener("touchend", function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    var dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+  });
+}
+
+// A titled box of advice lines (strings), or null if there are none.
+function adviceBox(title, lines, cls) {
+  lines = lines.filter(Boolean);
+  if (!lines.length) return null;
+  var box = el("section", "advice" + (cls ? " " + cls : ""));
+  box.appendChild(el("h3", null, title));
+  var list = el("ul", "bul");
+  lines.forEach(function (t) { list.appendChild(el("li", null, t)); });
+  box.appendChild(list);
+  return box;
+}
+
+// ---------- exercise for a person and day ----------
+
+// A person's exercise plan for a week (by plan key), or null. One plan for everyone
+// ({"days": [...]}) or one per person ({"<person key>": {"days": [...]}}).
+function exPlanFor(weekIndex, personKey) {
+  var e = PLAN.weeks[weekIndex] && PLAN.weeks[weekIndex].exercise;
+  if (!e) return null;
+  if (Array.isArray(e.days)) return e;
+  return e[personKey] && Array.isArray(e[personKey].days) ? e[personKey] : null;
+}
+
+// The day's sessions from a person's exercise plan: {day, cardio, strength, ...}, {} for a day
+// with nothing on, or null when they have no exercise plan that week.
+function exDayOf(weekIndex, personKey, day) {
+  var plan = exPlanFor(weekIndex, personKey);
+  if (!plan) return null;
+  return plan.days.filter(function (d) { return short(d.day) === short(day); })[0] || {};
+}
+
+// True if a day has a strength (weights) session.
+function isWeightsDay(exDay) {
+  if (!exDay) return false;
+  if (exDay.strength) return true;
+  return EXSLOTS.some(function (slot) {
+    return exDay[slot[0]] && /strength|weights|resistance/i.test(exDay[slot[0]]) && !/^optional/i.test(exDay[slot[0]]);
+  });
+}
+
+// True if any session is planned on a day.
+function isActiveDay(exDay) {
+  return !!exDay && EXSLOTS.some(function (slot) { return exDay[slot[0]] && !/^optional|^rest/i.test(exDay[slot[0]]); });
+}
+
+// True if a snack is eaten on `day`: its "days" list includes the day (or it has no list), and
+// its "exercise" fits that day's exercise: "strength" (weights days only), "rest" (days without
+// weights), "active" (days with any session) or "inactive". Without an exercise plan for the
+// person, the exercise rule is ignored.
+function snackOn(snack, day, personKey, weekIndex) {
+  day = short(day);
+  if (Array.isArray(snack.days) && snack.days.indexOf(day) < 0) return false;
+  if (!snack.exercise || !personKey || weekIndex == null) return true;
+  var exDay = exDayOf(weekIndex, personKey, day);
+  if (!exDay) return true;
+  if (snack.exercise === "strength") return isWeightsDay(exDay);
+  if (snack.exercise === "rest") return !isWeightsDay(exDay);
+  if (snack.exercise === "active") return isActiveDay(exDay);
+  if (snack.exercise === "inactive") return !isActiveDay(exDay);
+  return true;
+}
+
+// The sessions on a day as text: "Strength: Strength A …".
+function sessionLines(exDay) {
+  var out = [];
+  EXSLOTS.forEach(function (slot) {
+    if (exDay && exDay[slot[0]]) out.push(slot[1] + ": " + exDay[slot[0]]);
+  });
+  return out;
+}
+
+// ---------- meals ----------
+
+// The Meals view: the person picker, then one day: its meals and that person's snacks to tick,
+// that day's advice, the recipes for the day, and the person's eating guide and times.
+function renderMeals() {
+  var panel = $("meals");
+  panel.textContent = "";
+  var w = PLAN.weeks[week];
+  var ppl = PLAN.people || null;
+  if (!w.meals || !w.meals.length) {
+    panel.appendChild(el("p", "emptyline", "No meals are listed for this week."));
+    return;
+  }
+  var who = pickWho(ppl);
+  if (ppl) panel.appendChild(personSeg(ppl, who, renderMeals));
+  var person = who !== "all" && ppl ? ppl[who] : null;
+
+  var nav = dayNav(w.meals, renderMeals);
+  panel.appendChild(nav.el);
+  var dayInfo = mealDays(w, person, who, true)[nav.index];
+  var day = dayInfo.d;
+
+  var card = el("section", "day daycard");
+  var count = el("p", "count");
+  card.appendChild(count);
+  var ids = dayInfo.rows.map(function (row) { return (day.day || "") + "|" + row[0]; });
+  function updateEaten() {
+    var done = (eaten[week] || []).filter(function (id) { return ids.indexOf(id) > -1; }).length;
+    count.textContent = "";
+    count.appendChild(el("b", null, done + " of " + ids.length + " eaten"));
+    count.appendChild(el("span", null, "Tick once eaten"));
+  }
+  dayInfo.rows.forEach(function (row) {
+    mealRow(card, day, row, person, ppl, updateEaten);
+  });
+  updateEaten();
+  panel.appendChild(card);
+  swipeDays(card, nav.step);
+
+  // The day's advice: training today and what that means for snacks, the plan's note for the
+  // day, and a tip (a different one each day).
+  var lines = [];
+  if (day.note) lines.push(day.note);
+  if (person) {
+    var exDay = exDayOf(week, who, day.day);
+    if (exDay) {
+      var sessions = sessionLines(exDay);
+      lines.push(sessions.length ? "Exercise today: " + sessions.join("; ") : "No exercise planned today: a rest day.");
+      var tied = (person.snacks || []).filter(function (s) { return s && s.exercise === "strength"; });
+      if (tied.length) {
+        lines.push(isWeightsDay(exDay)
+          ? "Strength day: " + tied.map(function (s) { return s.what; }).join(", ") + " is in today’s snacks, after training."
+          : "No weights today, so " + tied.map(function (s) { return s.what.replace(/^\d+\s*ml\s+/, ""); }).join(", ") + " is left out.");
+      }
+    }
+    if (person.tips && person.tips.length) lines.push("Tip: " + person.tips[nav.index % person.tips.length]);
+  } else if (ppl) {
+    lines.push("Pick a person above to see their snacks and advice for the day.");
+  }
+  var advice = adviceBox("Advice for " + (FULLDAY[short(day.day)] || day.day), lines);
+  if (advice) panel.appendChild(advice);
+
+  // Recipes for the dishes on this day, then the rest of the week's in a fold.
+  if (w.recipes && w.recipes.length) {
+    var forPerson = person;
+    var dishes = dayInfo.rows.map(function (row) { return String(row[1]).replace(/ \(packed\)$/, ""); });
+    var today = w.recipes.filter(function (r) { return dishes.indexOf(r.name) > -1; });
+    var rest = w.recipes.filter(function (r) { return dishes.indexOf(r.name) < 0; });
+    var qty = forPerson ? " (amounts for " + forPerson.name + ")" : " (amounts for everyone)";
+    if (today.length) {
+      panel.appendChild(el("h2", "rh", "Today’s recipes" + qty));
+      var list = el("ul", "recipes");
+      today.forEach(function (r) { list.appendChild(recipeItem(r, forPerson)); });
+      panel.appendChild(list);
+    }
+    if (rest.length) {
+      var fold = el("details", "exfold");
+      fold.appendChild(el("summary", null, (today.length ? "The rest of this week’s recipes" : "This week’s recipes") + qty));
+      var inner = el("div");
+      var more = el("ul", "recipes");
+      rest.forEach(function (r) { more.appendChild(recipeItem(r, forPerson)); });
+      inner.appendChild(more);
+      fold.appendChild(inner);
+      panel.appendChild(fold);
+    }
+  }
+
+  if (person) {
+    var guide = el("details", "exfold");
+    guide.appendChild(el("summary", null, person.name + "’s guide, eating times and calendar"));
+    var g = el("div");
+    g.appendChild(personGuide(person, who));
+    guide.appendChild(g);
+    panel.appendChild(guide);
+  }
 }
 
 // ---------- recipe amounts ----------
@@ -2012,24 +2312,19 @@ function pkOf(name) {
   return PMAP[name] || ukey(name);
 }
 
-// This person's exercise plan for a week, or null. Exercise can be one plan for everyone
-// ({"days": [...]}) or one per person ({"<person key>": {"days": [...]}}).
+// This person's exercise plan for a week, or null.
 function exFor(weekIndex) {
-  var e = PLAN.weeks[weekIndex] && PLAN.weeks[weekIndex].exercise;
-  if (!e) return null;
-  if (Array.isArray(e.days)) return e;
-  var key = pkOf(USER);
-  return e[key] && Array.isArray(e[key].days) ? e[key] : null;
+  return exPlanFor(weekIndex, pkOf(USER));
 }
 
-// The plan-wide exercise details (workouts, notes, videos), shared or for this person.
+// The plan-wide exercise details (workouts, notes, medical advice, videos), shared or for this person.
 function exExtras() {
   var e = PLAN.exercise || {};
-  if (e.workouts || e.notes || e.videos) return e;
+  if (e.workouts || e.notes || e.medical || e.videos) return e;
   return e[pkOf(USER)] || {};
 }
 
-// Updates "3 of 11 sessions done".
+// Updates "3 of 11 sessions done this week".
 function updateExCount() {
   var count = $("exCount");
   var ex = exFor(week);
@@ -2039,8 +2334,23 @@ function updateExCount() {
   count.appendChild(el("span", null, "This week"));
 }
 
-// The Exercise view: the week's focus and targets, each day's sessions to tick, the workouts
-// (with demo video links) and general notes.
+// The short name a workout goes by in the day plan: "Strength A" from "Strength A: Squat, press…".
+function workoutKey(workout) {
+  return String(workout.name || "").split(":")[0].trim().toLowerCase();
+}
+
+// The workouts a day's sessions mention, in the order they are mentioned.
+function workoutsFor(exDay, workouts) {
+  var text = sessionLines(exDay).join(" ").toLowerCase();
+  return workouts.filter(function (wk) {
+    var key = workoutKey(wk);
+    return key && new RegExp("\\b" + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b").test(text);
+  });
+}
+
+// The Exercise view: one day's sessions to tick, the workouts for that day (open, to follow
+// mid-workout), the week's focus, all the workouts, general notes, and a separate box of
+// medical and doctor's advice.
 function renderExercise() {
   var panel = $("exView");
   panel.textContent = "";
@@ -2055,47 +2365,68 @@ function renderExercise() {
   count.id = "exCount";
   panel.appendChild(count);
 
-  // The week's focus, which opens to show its targets.
-  var fold = el("details", "exfold");
-  var inner = el("div");
-  var focus = el("div", "exfocus");
-  if (ex.targets && ex.targets.length) {
-    var targets = el("ul", "bul");
-    ex.targets.forEach(function (t) { targets.appendChild(el("li", null, t)); });
-    focus.appendChild(targets);
-  }
-  fold.appendChild(el("summary", null, ex.focus || "This week's plan"));
-  inner.appendChild(focus);
-  fold.appendChild(inner);
-  panel.appendChild(fold);
-
+  var days = ex.days || [];
+  var nav = dayNav(days, renderExercise);
+  panel.appendChild(nav.el);
+  var day = days[nav.index] || {};
   var done = exTicks[week] || [];
-  var list = el("ul", "days");
-  (ex.days || []).forEach(function (day) {
-    var card = el("li", "day");
-    var heading = el("h3", null, day.day || "");
-    card.appendChild(heading);
-    markToday(card, heading, day.day);
-    EXSLOTS.forEach(function (slot) {
-      if (day[slot[0]]) card.appendChild(sessionRow(day, slot, done));
-    });
-    list.appendChild(card);
-  });
-  panel.appendChild(list);
 
-  if (extras.workouts && extras.workouts.length) {
-    panel.appendChild(el("h2", "rh", "Workouts"));
-    extras.workouts.forEach(function (workout) {
-      panel.appendChild(workoutFold(workout, extras.videos || {}));
+  var card = el("section", "day daycard");
+  var any = false;
+  EXSLOTS.forEach(function (slot) {
+    if (day[slot[0]]) {
+      card.appendChild(sessionRow(day, slot, done));
+      any = true;
+    }
+  });
+  if (!any) card.appendChild(el("p", "restday", "Rest day. Nothing planned: a gentle walk is fine if you feel like it."));
+  panel.appendChild(card);
+  swipeDays(card, nav.step);
+
+  var workouts = extras.workouts || [];
+  var todays = workoutsFor(day, workouts);
+  if (todays.length) {
+    panel.appendChild(el("h2", "rh", "Today’s workouts"));
+    todays.forEach(function (workout) {
+      var fold = workoutFold(workout, extras.videos || {});
+      fold.open = true;
+      panel.appendChild(fold);
     });
   }
-  if (extras.notes && extras.notes.length) {
-    panel.appendChild(el("h2", "rh", "Good to know"));
-    var noteBox = el("div", "exfocus");
-    var notes = el("ul", "bul");
-    extras.notes.forEach(function (n) { notes.appendChild(el("li", null, n)); });
-    noteBox.appendChild(notes);
-    panel.appendChild(noteBox);
+
+  // The week's focus, which opens to show its targets.
+  if (ex.focus || (ex.targets && ex.targets.length)) {
+    var fold = el("details", "exfold");
+    var inner = el("div");
+    var focus = el("div", "exfocus");
+    if (ex.targets && ex.targets.length) {
+      var targets = el("ul", "bul");
+      ex.targets.forEach(function (t) { targets.appendChild(el("li", null, t)); });
+      focus.appendChild(targets);
+    }
+    fold.appendChild(el("summary", null, ex.focus || "This week's plan"));
+    inner.appendChild(focus);
+    fold.appendChild(inner);
+    panel.appendChild(fold);
+  }
+
+  var others = workouts.filter(function (wk) { return todays.indexOf(wk) < 0; });
+  if (others.length) {
+    var all = el("details", "exfold");
+    all.appendChild(el("summary", null, todays.length ? "Other workouts" : "Workouts"));
+    var allInner = el("div");
+    others.forEach(function (workout) { allInner.appendChild(workoutFold(workout, extras.videos || {})); });
+    all.appendChild(allInner);
+    panel.appendChild(all);
+  }
+
+  var notes = adviceBox("Good to know", extras.notes || []);
+  if (notes) panel.appendChild(notes);
+
+  var medical = adviceBox("Medical and doctor’s advice", extras.medical || [], "medical");
+  if (medical) {
+    medical.appendChild(el("p", "note2", "Advice from your doctor, physio or other health professional always comes first. If something here doesn’t match what they told you, follow them."));
+    panel.appendChild(medical);
   }
   updateExCount();
 }
@@ -2164,13 +2495,13 @@ function workoutFold(workout, videos) {
 // ---------- shopping ticks and "At home" ----------
 
 // Ticks or unticks a shopping item, and records who ticked it.
-function toggle(id, on, row) {
-  var list = ticks[week] || [];
-  var at = list.indexOf(id);
-  if (on && at < 0) list.push(id);
+function toggle(it, on, row) {
+  var list = ticks[it.src] || [];
+  var at = list.indexOf(it.id);
+  if (on && at < 0) list.push(it.id);
   if (!on && at > -1) list.splice(at, 1);
-  ticks[week] = list;
-  var key = week + "|" + id;
+  ticks[it.src] = list;
+  var key = it.src + "|" + it.id;
   if (on) {
     if (ME) BY[key] = { who: ME.person, at: Date.now() };
   } else {
@@ -2195,22 +2526,24 @@ function toggleHome(name) {
   window.scrollTo(0, y);
 }
 
+// The items on the list as it is shown now (all, this week, or the stock-up).
+function shownItems() {
+  return shopItems(week, stockFor(week) > -1 ? shopPart : "all");
+}
+
 // Updates the summary above the list: "$120.00 left", "3 of 25 ticked", the progress bar,
 // and the "All done" message.
 function updateSummary() {
-  var done = ticks[week] || [];
   var count = 0, tickedCount = 0, homeCount = 0, left = 0, all = 0;
-  sections(week).forEach(function (section, sectionIndex) {
-    section[1].forEach(function (item, itemIndex) {
-      if (isHome(item[0])) {
-        homeCount++;
-        return;
-      }
-      count++;
-      all += item[1];
-      if (done.indexOf(sectionIndex + "-" + itemIndex) > -1) tickedCount++;
-      else left += item[1];
-    });
+  shownItems().forEach(function (it) {
+    if (isHome(it.name)) {
+      homeCount++;
+      return;
+    }
+    count++;
+    all += it.price;
+    if (isTicked(it)) tickedCount++;
+    else left += it.price;
   });
   $("left").textContent = money(left) + " left";
   $("meta").textContent = tickedCount + " of " + count + " ticked" + (homeCount ? " · " + homeCount + " at home" : "") + " · total " + money(all);
@@ -2218,18 +2551,15 @@ function updateSummary() {
   $("allDone").style.display = (count > 0 && tickedCount === count) ? "block" : "none";
 }
 
-// The items still to buy as plain text, for "Copy list".
+// The items still to buy as plain text, grouped by aisle, for "Copy list".
 function leftText() {
-  var done = ticks[week] || [];
   var out = [(PLAN.weeks[week].name || "Week " + (week + 1)) + " shopping list"];
-  sections(week).forEach(function (section, sectionIndex) {
-    var lines = [];
-    section[1].forEach(function (item, itemIndex) {
-      if (!isHome(item[0]) && done.indexOf(sectionIndex + "-" + itemIndex) < 0) lines.push("- " + item[0]);
-    });
+  grouped(shownItems()).forEach(function (group) {
+    var lines = group[1].filter(function (it) { return !isHome(it.name) && !isTicked(it); })
+      .map(function (it) { return "- " + it.name; });
     if (lines.length) {
       out.push("");
-      out.push(section[0]);
+      out.push(group[0]);
       out = out.concat(lines);
     }
   });
@@ -2250,10 +2580,9 @@ function show() {
   var n = match ? +match[1] : 1;
   week = (n >= 1 && n <= PLAN.weeks.length) ? n - 1 : 0;
   view = (match && match[2]) ? match[2].slice(1) : "shop";
-  // Ratings are for admins only, and stock-up weeks only have a shopping list.
-  var stockUp = PLAN.weeks[week].kind === "stockup";
+  // Ratings are for admins only. Stock-up weeks are shown as part of the week after them.
   if (view === "ratings" && !isAdmin()) view = "shop";
-  if (stockUp && view !== "ratings") view = "shop";
+  if (PLAN.weeks[week].kind === "stockup") week = planWeek(week);
   $("vRates").hidden = !isAdmin();
   $("whoRow").hidden = !(isAdmin() && (view === "meals" || view === "exercise"));
   try { localStorage.setItem("coles-plan-place", location.hash); } catch (e) {}   // reopen here next time
@@ -2362,7 +2691,10 @@ function twoTap(id, label, armedLabel, action) {
 }
 
 twoTap("clear", "Clear ticks", "Tap again to clear", function () {
-  ticks[week] = [];
+  // Clears the ticks on the list as shown (this week, its stock-up, or both).
+  shownItems().forEach(function (it) {
+    ticks[it.src] = (ticks[it.src] || []).filter(function (id) { return id !== it.id; });
+  });
   save();
   renderList();
 });

@@ -44,7 +44,7 @@ If the file has a mistake, the app shows a red message saying what is wrong and 
 
 ## Weeks
 
-Each entry in `weeks` is one tab along the top of the page.
+Each meal week is one tab along the top of the page. A stock-up week has no tab of its own: its items are added to the list of the week straight after it (see `kind`).
 
     {
       "name": "Week 1",
@@ -58,7 +58,7 @@ Each entry in `weeks` is one tab along the top of the page.
 | Field | Needed? | What it does |
 | --- | --- | --- |
 | `name` | Yes | The label on the tab, such as `"Week 1"` or `"Stock-up 1"`. |
-| `kind` | No | Set to `"stockup"` for a shopping-only week (pantry and freezer items bought once a fortnight). It has no meals. |
+| `kind` | No | Set to `"stockup"` for a shopping-only week (pantry and freezer items bought once a fortnight). It has no meals. Its items show on the shopping list of the week right after it, tagged "Stock-up", with buttons to show everything, just that week's items, or just the stock-up. |
 | `cost` | No | The week's total, shown on the tab. The admin editor works it out for you when you save. |
 | `shopping` | Yes | The shopping list. |
 | `meals` | No | What everyone eats each day. |
@@ -74,6 +74,7 @@ Each entry in `weeks` is one tab along the top of the page.
       "Meat and fish": [ ["Turkey mince 500 g × 2", 13] ]
     }
 
+- **The app groups the list by aisle**, whatever your section names: Fruit and veg; Meat, fish and eggs; Dairy and fridge; Bread and wraps; Frozen; Pantry. It goes by the section name first (a section with "freezer", "meat", "fruit", "dairy" or "pantry" in its name), and by the item name for eggs, bread and wraps. Anything it can't place goes under Other.
 - **Ticks follow the item name.** If you rename an item, its tick is cleared. If you only change the price, the tick stays.
 - "At home" marks are remembered by item name, even across plans.
 
@@ -90,6 +91,9 @@ Each entry in `weeks` is one tab along the top of the page.
 | `day` | Short day name: `Mon`, `Tue`, `Wed`, `Thu`, `Fri`, `Sat` or `Sun`. |
 | `breakfast`, `lunch`, `dinner` | The dish names. Use the same name as the recipe and the `macros` entry so they match up. |
 | `people` | Optional. A different meal for one person that day, keyed by their person key (see [People](#people)). |
+| `note` | Optional. Advice for that day, shown under the day's meals (for example "Cook a double batch of chilli tonight for tomorrow's lunch."). |
+
+The Meals tab shows one day at a time. Under the meals it shows advice for the day: the `note`, the person's exercise that day (and which snacks that changes), and one of their `tips`.
 
 Example of a different dinner for one person:
 
@@ -175,7 +179,7 @@ For example, 230 g of yoghurt for Alex (portion 1.1) with `units` 2.3 is 230 × 
 | `name` | The name shown in the app. |
 | `portion` | How much this person eats compared with an average serve. `1.0` is average, `1.2` is 20% more. |
 | `guide` | A paragraph of advice shown on the Meals tab for this person. |
-| `snacks` | A list of snacks, each with `when` and `what`. Add `days` (a list of short day names) if it is not every day, and `"optional": true` for "if hungry" snacks, which are left out of the Macros totals. |
+| `snacks` | A list of snacks, each with `when` and `what`. Add `days` (a list of short day names) if it is not every day, and `"optional": true` for "if hungry" snacks, which are left out of the Macros totals. Add `exercise` to tie a snack to that day's exercise: `"strength"` (only on days with a strength session, like a glass of milk after weights), `"rest"` (only on days without one), `"active"` (days with any session) or `"inactive"`. |
 | `times` | Suggested eating or exercise times, each with `when` and `what`. These can be added to a phone calendar. A `when` like `"6:30 to 7:30 am (Mon to Fri)"` repeats on weekdays only. |
 | `timesNote` | A note shown under the times. |
 | `tips` | A list of tips, shown under "Cravings and energy". |
@@ -216,14 +220,18 @@ The top-level `exercise` holds things that apply to every week. Like the weekly 
     "exercise": {
       "workouts": [ { "name": "Strength A", "time": "About 50 minutes", "items": ["Warm-up (5 minutes): easy walk", "Goblet squat (3 × 10): feet shoulder-width apart"] } ],
       "videos": { "Goblet squat": "https://example.com/goblet-squat" },
-      "notes": ["Ask a doctor or physio before starting a new plan."]
+      "notes": ["If a session feels too hard, do less rather than skipping it."],
+      "medical": ["Your physio has cleared squats and lunges. Avoid running and jumping for now."]
     }
 
 | Field | What it does |
 | --- | --- |
 | `workouts` | Each workout's `name`, rough `time`, and `items` (the exercises, one per line). |
 | `videos` | Exercise name → link to a demo video. A workout item written as `"Goblet squat (3 × 10): ..."` gets a **Demo** link when the text before the colon (without the brackets) matches a name here, plus a YouTube search link. |
-| `notes` | General tips shown at the bottom of the Exercise tab. |
+| `notes` | General tips, shown as "Good to know" near the bottom of the Exercise tab. |
+| `medical` | Advice from a doctor, physio or other health professional, and when to stop and get checked. Shown in its own "Medical and doctor's advice" box at the bottom of the Exercise tab. |
+
+The Exercise tab shows one day at a time. A workout shows open under the day when that day's session mentions its name (the part before the colon, such as "Strength A"), so it's easy to follow mid-workout.
 
 ## Macros
 
