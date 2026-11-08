@@ -1,25 +1,52 @@
 # Family Health Planner
 
-A small self-hosted web app for a household's weekly shopping lists, meal plan and exercise plan. It works well on phones and can be added to the home screen like an app.
+A self-hosted web app that plans a household's food, shopping and exercise together, for everyone in the family at once. Each person answers some questions about themselves, Claude (Anthropic's AI) drafts a 4-week plan that fits all of them, an adult approves it, and then the whole family uses it day to day from their phones.
 
-- **Shopping lists** for each week, shared by everyone. Tick items off, mark things you already have "At home", search each item at Coles, and see who ticked what and when.
-- **Meal plan** with recipes that scale to each person's portion. Everyone ticks the meals they have eaten and can **rate each meal out of 10** with a note about what they did not like.
-- **Exercise plan**, either one plan for everyone or a separate plan for each person, with sessions to tick off.
-- **Ratings summary** for admins: every dish with everyone's scores and notes, lowest first, so you can see which meals to change.
-- **Calendar**: add a person's suggested eating times to Apple Calendar, Google Calendar or Outlook as repeating events.
-- **Logins** for each person with a proper login page. People stay logged in on their devices. Admins can see everyone's ticks, ratings and notes, and other people only see their own.
-- Works offline once installed (over HTTPS), and syncs when back online.
+It runs on your own server (two small Docker containers; a Proxmox container with 512 MB of RAM is enough), so the family's health details stay with you. It installs on a phone's home screen like an app and works offline.
 
-Everything the app shows comes from one file, `site/plan.json`, which you can write by hand or ask an AI to write for you (see below).
+## What it does
+
+**Getting started**
+
+- **About me:** each person answers questions about their goals, health, food likes and dislikes, budget, week, exercise and any support needs (for example ADHD or autism-friendly routines). Adults can answer for kids.
+- **Plan setup:** when everyone is finished, an admin taps **Draft our plan**. Claude writes 4 weeks of meals, snacks, recipes, priced shopping lists and an exercise plan for each person, all in the background. The admin reviews it, then approves or discards it, and can rebuild it any time answers change.
+
+**Every day**
+
+- **Shopping:** one list per week, shared by the family, grouped by supermarket aisle. Pantry and freezer "stock-up" items fold into the week they're bought with. Tick things off (everyone sees who ticked what), mark things you already have **At home**, and use **Shop mode** to go through the list one item at a time while you walk the shop. Each item links to your chosen stores (Coles, Woolworths, IGA and others), and **Pin product** makes a link go straight to the exact product you buy.
+- **Meals:** one day at a time, starting today, swipe or tap between days. Each person sees their own meals and snacks (snacks can follow their exercise, like a bigger snack on strength days), recipes scaled to their portion, and that day's considerations. Tick what you ate and rate meals out of 10, so admins can see which dishes to change.
+- **Exercise:** each person's own plan, one day at a time, with the workouts for that day, tips, and the medical considerations they told the app about (written as reported, for example "you said your physio is happy for you to…").
+- **Macros and guidelines:** each person's week compared with official healthy-eating guidelines (Australia, New Zealand, UK, Japan or Korea).
+- **Ask Claude:** a chat that can see the plan. Ask it to swap a dinner, make a week cheaper or ease off an exercise day. Claude can only **suggest** changes; an admin approves them first.
+
+**Tracking progress**
+
+- **Progress dashboard:** weekly charts of weight, food energy and protein, steps, workouts and meals ticked, in kilojoules or Calories.
+- **Health sync:** an iPhone Shortcut sends each day's Apple Health numbers (steps, Move, weight, and food from Lose It if it writes to Apple Health) automatically.
+- **Files:** upload Lose It and Apple Health exports, blood tests and photos. Each person sees only their own; admins can see everyone's.
+- **Calendar:** add suggested eating times to Apple, Google or Outlook calendars as reminders.
+
+**The family's accounts**
+
+- Logins by email, or a username for kids. Sign-ups wait for an admin to approve them. Roles: owner, admins and members. Meal ticks, ratings, answers and progress are private to each person and the admins.
+- **Settings:** light or dark, colours, fonts, text size, kJ or Calories, the stores you shop at, the app icon, and an optional personal Claude API key.
+- **Backups:** every plan change is backed up, and a script can send encrypted offsite backups to a private GitHub repository.
+
+**Things to know**
+
+- It's a planning tool, not medical advice. Health notes are written as what people reported, and a GP, dietitian or physio comes first.
+- Prices are estimates. Coles and Woolworths don't let other apps add to a cart, so the app links to each item instead.
+- Claude features need an Anthropic API key (you pay Anthropic for what you use). Everything else works without one.
 
 Built with [Claude Code](https://claude.com/claude-code).
 
 ## How it is built
 
-Two small Docker containers. The only npm package is Anthropic's SDK for the optional Claude assistant (installed when the container starts):
+Two small Docker containers. The only npm package is Anthropic's SDK for the optional Claude features (installed when the container starts):
 
 - **Caddy** serves the page (`site/`) and checks every request is logged in.
-- **A tiny Node server** (`api/`) handles logins, saves ticks and ratings to one file (`data/state.json`) and makes calendar files.
+- **A small Node server** (`api/`) handles logins, ticks, ratings, uploads, progress and the Claude features. This fortnight's ticks are in `data/state.json`; everything else (accounts, history, answers, measurements, chats, settings) is in a SQLite database, `data/app.db`, built into Node.
+- The plan itself is one file, `site/plan.json`, which Plan setup writes for you (or you can write it by hand, see below).
 
 ## Quick start
 
@@ -97,6 +124,15 @@ Admins have **Plan setup** in the account menu (and a banner on the main page wh
 
 **Rebuild our plan** on the same page does it again whenever answers change, for example after a new person joins.
 
+## Shopping
+
+- Each meal week has one list. The 2-week **stock-up** (pantry and freezer) is shown with the week it's bought in; **Everything / This week / 2-week stock-up** filters the list.
+- Items are grouped by aisle: fruit and veg, meat and eggs, dairy, bread, frozen, pantry.
+- Ticks are shared, and each shows who ticked it and when. **At home** takes an item off the total in every week.
+- **Shop mode** shows one item at a time in aisle order with big **Got it**, **Skip** and **At home** buttons, then offers to go back through anything skipped. It keeps the screen awake where the browser allows.
+- **Pin product:** open the product you buy on the store's website, copy its address and paste it in. The item's link then goes straight to that product instead of a search. Pins are shared by the family and only accept https pages on that store's own website.
+- **Copy list** copies what's left as text, grouped by aisle.
+
 ## Uploading files
 
 Everyone gets a **My files** page in the account menu (top right) for things that help with the plan: Lose It exports, Apple Health exports, blood tests, photos and anything else. Each person only sees their own files. Admins can see, add and delete everyone's.
@@ -169,7 +205,7 @@ Claude can **suggest** a change to the plan, but it can't make one:
 
 Admins can also chat about anyone's plan and apply their own suggestions straight away.
 
-Coles has no way for other apps to add to a cart or list, so Claude points people to **Copy list** and the **Search Coles** links on the shopping list instead.
+Coles and Woolworths have no way for other apps to add to a cart or list, so Claude points people to **Copy list**, **Shop mode** and the store links on the shopping list instead.
 
 **Setting it up:** either each person adds their own key in **Settings → Your Claude key**, or an admin sets one key for the whole family: get an API key from [console.anthropic.com](https://console.anthropic.com), add it to `.env` and restart:
 
@@ -199,6 +235,7 @@ If Anthropic's safety checks decline a request, it is automatically retried on a
 - **App icon (admins):** pick a picture (or type up to two letters or an emoji) and a background colour. The icon is drawn in the browser and saved as `site/icon-512.png`, `site/icon-192.png` and `site/apple-touch-icon.png`. Old icons are kept in `data/icon-backups/`, and **Back to the original icon** restores the first one. On iPhone, remove the app from the home screen and add it again to see a new icon.
 
 - **Where you shop:** everyone picks their supermarkets (Coles, Woolworths, Aldi, IGA, Foodland, Spudshed, Drakes, or a mix), and admins pick the household's default. The shopping list shows a search link for each. Coles and Woolworths open their own search; IGA, Foodland, Spudshed and Drakes run their online shops store by store, so their links search the store's website; Aldi has no online shop. Plan prices are Coles estimates.
+- **Kilojoules or Calories:** each person chooses how food and exercise energy is shown; admins set the household default.
 - **Your Claude key:** anyone with an email login can paste their own Claude API key, so Ask Claude uses it for their chats (they pay for their own messages and the daily limit doesn't apply). The key is checked with Anthropic, then stored encrypted with a random key in `data/encryption-key`, and never sent back to the browser in full. Claude.ai subscriptions can't be used by other apps, so it has to be an API key.
 
 The eight colours are checked for contrast in both light and dark mode, and text sizes scale with the phone's own text-size setting.
@@ -287,4 +324,4 @@ Back up `.env` (logins), `site/plan.json` (your plan) and `data/` (ticks, rating
 ## Notes
 
 - The page loads a font from Google Fonts and falls back to a system font without it.
-- Prices are rough estimates for Coles in Australia. The "Search Coles" links open a search for each item.
+- Prices are rough estimates for Coles in Australia. The store links open a search for each item, or the pinned product.
