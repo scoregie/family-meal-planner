@@ -96,6 +96,15 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
     </div>
   </section>
 
+  <section class="card" id="energyCard">
+    <h2>Kilojoules or Calories</h2>
+    <p class="note">How energy is shown on the Macros tab and the Progress page, and in Ask Claude’s answers. Australian food labels use kilojoules; 1 Calorie (kcal) is about 4.2 kJ.</p>
+    <fieldset class="choices" id="myEnergy"><legend>For you</legend></fieldset>
+    <div id="houseEnergyBox" hidden>
+      <fieldset class="choices" id="houseEnergy" style="margin-top:.8rem"><legend>The household’s (admins): used by anyone who hasn’t picked their own</legend></fieldset>
+    </div>
+  </section>
+
   <section class="card" id="claudeCard" hidden>
     <h2>Your Claude key</h2>
     <p class="note">Ask Claude normally uses the family’s key (if an admin has set one up). You can use your own instead: then you pay Anthropic for your own messages and the daily limit doesn’t apply. Make a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">console.anthropic.com</a> (Claude.ai subscriptions can’t be used by other apps, so it needs an API key).</p>
@@ -416,6 +425,41 @@ function renderStores() {
   }
 }
 
+// ---------- Kilojoules or Calories ----------
+// Choices are saved straight away. "Same as the household" clears your own choice.
+function energyBoxes(boxId, current, scope, options) {
+  var box = $(boxId);
+  box.querySelectorAll("label").forEach(function (l) { l.remove(); });
+  options.forEach(function (o) {
+    var label = el("label", "choice");
+    var input = el("input");
+    input.type = "radio";
+    input.name = boxId;
+    input.value = o[0];
+    input.checked = current === o[0];
+    input.addEventListener("change", function () {
+      api("PUT", "/api/appearance/energy", { energy: o[0], scope: scope }).then(function (got) {
+        A.setEnergy(got.energy);
+        renderEnergy();
+        status("Saved.");
+      }).catch(function (e) { status(e.message, true); });
+    });
+    label.appendChild(input);
+    label.appendChild(el("span", null, o[1]));
+    box.appendChild(label);
+  });
+}
+
+function renderEnergy() {
+  var c = A.energyChoices();
+  var houseName = A.ENERGY[c.house || "kJ"].name;
+  energyBoxes("myEnergy", c.mine, "me", [["", "Same as the household (" + houseName + ")"], ["kJ", A.ENERGY.kJ.name], ["kcal", A.ENERGY.kcal.name]]);
+  if (IS_ADMIN) {
+    $("houseEnergyBox").hidden = false;
+    energyBoxes("houseEnergy", c.house || "kJ", "house", [["kJ", A.ENERGY.kJ.name], ["kcal", A.ENERGY.kcal.name]]);
+  }
+}
+
 // ---------- Your own Claude key ----------
 function renderKey(account) {
   $("claudeCard").hidden = false;
@@ -481,6 +525,7 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (
 loadAllFonts();
 renderMine();
 renderStores();
+renderEnergy();
 loadAccount();
 A.refresh().then(function (got) {
   if (!got) {
@@ -490,6 +535,7 @@ A.refresh().then(function (got) {
   HOUSE = A.clean(got.house);
   IS_ADMIN = got.admin;
   renderStores();
+  renderEnergy();
   ICON.colour = HOUSE.colour || "green";
   renderMine();
   if (IS_ADMIN) {

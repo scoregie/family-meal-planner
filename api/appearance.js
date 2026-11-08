@@ -2,6 +2,7 @@
 //
 //   GET /api/appearance         the household's colour, font and text size
 //   PUT /api/appearance         admins: save them {colour, font, size}
+//   PUT /api/appearance/energy  {energy: "kJ" | "kcal" | "", scope: "me" or "house"}: energy units
 //   PUT /api/appearance/stores  {stores: [...], scope: "me" or "house"}: where you shop (admins
 //                               can also set the household's choice, used by anyone without their own)
 //   PUT /api/appearance/icon    admins: a new icon, drawn in the browser {icon512, icon192, icon180}
@@ -46,6 +47,18 @@ function stores(person) {
 function storesFor(person) {
   const s = stores(person);
   return s.mine.length ? s.mine : s.house.length ? s.house : ['coles'];
+}
+
+// Energy units: "kJ" (kilojoules) or "kcal" (Calories). Each person's choice, else the
+// household's, else kilojoules. The plan and database always use kJ; this only changes what's shown.
+const ENERGY = ['kJ', 'kcal'];
+function energy(person) {
+  const read = key => (ENERGY.includes(db.getSetting(key)) ? db.getSetting(key) : '');
+  return { house: read('energy'), mine: read('energy:' + person) };
+}
+function energyFor(person) {
+  const e = energy(person);
+  return e.mine || e.house || 'kJ';
 }
 
 // The icon files, and the size each must be.
@@ -129,18 +142,31 @@ function writeFile(file, bytes) {
 }
 
 async function handle(req, res, urlPath, url, me) {
-  if (urlPath !== '/api/appearance' && urlPath !== '/api/appearance/icon' && urlPath !== '/api/appearance/stores') return false;
+  if (!['/api/appearance', '/api/appearance/icon', '/api/appearance/stores', '/api/appearance/energy'].includes(urlPath)) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
     send(res, 403, { error: 'bad request' });
     return true;
   }
 
   if (urlPath === '/api/appearance' && req.method === 'GET') {
-    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person) });
+    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person), energy: energy(me.person) });
     return true;
   }
   if (req.method !== 'PUT') {
     send(res, 404, { error: 'not found' });
+    return true;
+  }
+  if (urlPath === '/api/appearance/energy') {
+    const b = await body(req, 2000);
+    const value = ENERGY.includes(b.energy) ? b.energy : '';   // '' = use the household's
+    const key = b.scope === 'house' ? 'energy' : 'energy:' + me.person;
+    if (b.scope === 'house' && !me.admin) {
+      send(res, 403, { error: 'Only an admin can change the household’s units.' });
+      return true;
+    }
+    if (value) db.setSetting(key, value);
+    else db.deleteSetting(key);
+    send(res, 200, { ok: true, energy: energy(me.person) });
     return true;
   }
   if (urlPath === '/api/appearance/stores') {
@@ -210,4 +236,4 @@ async function handle(req, res, urlPath, url, me) {
   return true;
 }
 
-module.exports = { handle, CHOICES, STORES, storesFor };
+module.exports = { handle, CHOICES, STORES, storesFor, energyFor };

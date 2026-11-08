@@ -523,8 +523,12 @@ function renderCharts(d) {
   if (d.goalWeight) weightSpec.key = [{ cls: "dash", text: "Goal " + fmt(d.goalWeight, 1) + " kg (from About me)" }];
   charts.appendChild(chartCard(weightSpec));
 
-  var energy = food("energy_in", "plan_kj");
-  charts.appendChild(chartCard({ title: "Energy eaten (kJ a day)", kind: "bar", unit: "kJ", points: energy, key: estKey(energy),
+  // Energy is stored in kJ; shown in kJ or kcal, as chosen in Settings.
+  var unit = window.Appearance ? Appearance.energyUnit() : "kJ";
+  var energy = food("energy_in", "plan_kj").map(function (p) {
+    return Object.assign({}, p, { value: p.value == null || !window.Appearance ? p.value : Math.round(Appearance.energyValue(p.value)) });
+  });
+  charts.appendChild(chartCard({ title: "Energy eaten (" + unit + " a day)", kind: "bar", unit: unit, points: energy, key: estKey(energy),
     note: "Average per day logged. From Lose It, or estimated from the meals you ticked." }));
   var protein = food("protein_in", "plan_protein");
   charts.appendChild(chartCard({ title: "Protein (grams a day)", kind: "bar", unit: "g", points: protein, key: estKey(protein),
@@ -552,7 +556,8 @@ function addDays(date, days) {
 function renderTable(d) {
   var table = $("table");
   table.textContent = "";
-  var cols = [["weight", "Weight (kg)", 1], ["energy_in", "kJ a day (Lose It)", 0], ["plan_kj", "kJ a day (ticked)", 0],
+  var unit = window.Appearance ? Appearance.energyUnit() : "kJ";
+  var cols = [["weight", "Weight (kg)", 1], ["energy_in", unit + " a day (Lose It)", 0, true], ["plan_kj", unit + " a day (ticked)", 0, true],
     ["protein_in", "Protein g (Lose It)", 0], ["plan_protein", "Protein g (ticked)", 0], ["steps", "Steps a day", 0],
     ["workout_minutes", "Workout min", 0], ["sessions", "Sessions ticked", 0], ["meals", "Meals ticked", 0], ["score", "Meal score", 1]];
   var head = el("tr");
@@ -565,7 +570,11 @@ function renderTable(d) {
   d.weeks.slice().reverse().forEach(function (w) {
     var row = el("tr");
     row.appendChild(el("td", null, weekName(w.week)));
-    cols.forEach(function (c) { row.appendChild(el("td", null, fmt(w[c[0]], c[2]))); });
+    cols.forEach(function (c) {
+      var v = w[c[0]];
+      if (c[3] && v != null && window.Appearance) v = Appearance.energyValue(v);   // energy columns
+      row.appendChild(el("td", null, fmt(v, c[2])));
+    });
     tbody.appendChild(row);
   });
   table.appendChild(tbody);
@@ -603,6 +612,9 @@ function renderSources(d) {
     "Exercise sessions and meals: your ticks in this app. " +
     (parts.length ? "Files read: " + parts.join("; ") + "." : "No Lose It or Apple Health files have been read yet. Upload them on the My files page.");
 }
+
+// Redraw in the new unit when kJ or kcal is changed in Settings.
+window.addEventListener("units-changed", function () { if (DATA) render(DATA); });
 
 function render(d) {
   DATA = d;

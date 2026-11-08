@@ -71,6 +71,25 @@
     return mine.length ? mine : house.length ? house : DEFAULT_STORES;
   }
 
+  // Energy units: kilojoules or Calories. The plan stores kJ; this only changes what's shown.
+  var ENERGY = { kJ: { name: "Kilojoules (kJ)", short: "kJ" }, kcal: { name: "Calories (kcal)", short: "kcal" } };
+  function energyChoices() {
+    var e = read("energy");
+    return { mine: ENERGY[e.mine] ? e.mine : "", house: ENERGY[e.house] ? e.house : "" };
+  }
+  function energyUnit() {
+    var c = energyChoices();
+    return c.mine || c.house || "kJ";
+  }
+  // A kJ amount as a number in the chosen unit.
+  function energyValue(kj) {
+    return energyUnit() === "kcal" ? kj / 4.184 : kj;
+  }
+  // A kJ amount as text in the chosen unit: "1,234 kJ" or "295 kcal".
+  function energyText(kj) {
+    return Math.round(energyValue(kj)).toLocaleString("en-AU") + " " + energyUnit();
+  }
+
   var DEFAULTS = { colour: "green", font: "atkinson", size: "normal", theme: "auto" };
 
   function read(key) {
@@ -172,6 +191,11 @@
       var before = JSON.stringify(read("appearance-house"));
       write("appearance-house", clean(got.house));
       if (JSON.stringify(read("appearance-house")) !== before) apply();
+      if (got.energy) {
+        var beforeEnergy = JSON.stringify(read("energy"));
+        write("energy", got.energy);
+        if (JSON.stringify(got.energy) !== beforeEnergy) window.dispatchEvent(new Event("units-changed"));
+      }
       if (got.stores) {
         var beforeStores = JSON.stringify(read("stores"));
         write("stores", got.stores);
@@ -192,6 +216,12 @@
     STORES: STORES,
     DEFAULTS: DEFAULTS,
     stores: stores,
+    ENERGY: ENERGY,
+    energyUnit: energyUnit,
+    energyValue: energyValue,
+    energyText: energyText,
+    energyChoices: energyChoices,
+    setEnergy: function (choices) { write("energy", choices); window.dispatchEvent(new Event("units-changed")); },
     storeChoices: function () { var s = read("stores"); return { mine: cleanStores(s.mine), house: cleanStores(s.house) }; },
     setStores: function (choices) { write("stores", { mine: cleanStores(choices.mine), house: cleanStores(choices.house) }); window.dispatchEvent(new Event("stores-changed")); },
     current: current,
