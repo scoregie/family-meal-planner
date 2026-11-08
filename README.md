@@ -112,7 +112,7 @@ Any email provider's SMTP settings work (for Gmail, make an "app password" in yo
 
 ## About me questions
 
-Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to. At the bottom, **I'm finished** tells the admins their answers are ready for the family's plan (they can still change them afterwards).
+Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to. The Health section asks about medicines that can affect food or exercise (blood thinners, diabetes medicines and injections, blood pressure and heart medicines, statins, thyroid medicine, steroids, ADHD stimulants, MAOIs, supplements). These only add things to check with a doctor or pharmacist to the plan; for an MAOI the built-in builder also leaves out high-tyramine foods. At the bottom, **I'm finished** tells the admins their answers are ready for the family's plan (they can still change them afterwards).
 
 ## Plan setup: drafting the family's plan
 

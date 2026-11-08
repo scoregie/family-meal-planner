@@ -29,11 +29,15 @@
     {
       "id": "health",
       "title": "Health",
+      "warn": "This plan is general information, not medical advice. Check your meals and exercise with your GP, dietitian or pharmacist before you start, especially if you take medicines, are pregnant, or have a health condition.",
       "questions": [
         { "id": "conditions", "label": "Do any of these apply to you?", "type": "multi",
           "options": ["Type 1 diabetes", "Type 2 diabetes or pre-diabetes", "High blood pressure", "High cholesterol", "Heart condition", "Kidney condition", "Coeliac disease", "Irritable bowel (IBS)", "Reflux", "Pregnant or breastfeeding", "None of these"] },
         { "id": "conditions_other", "label": "Any other health conditions?", "type": "long" },
-        { "id": "medicines", "label": "Medicines or supplements that affect what you can eat", "type": "long", "placeholder": "e.g. warfarin (keep leafy greens steady), iron tablets" },
+        { "id": "medicine_types", "label": "Do you take any of these medicines?", "type": "multi",
+          "options": ["Blood thinner (like warfarin)", "Insulin, or diabetes tablets that can cause low blood sugar", "Weight-loss or diabetes injection (like Ozempic or Mounjaro)", "Blood pressure or heart medicine", "Fluid tablets (diuretics)", "Cholesterol medicine (statin)", "Thyroid medicine", "Steroid tablets (like prednisolone)", "ADHD stimulant medicine", "An MAOI antidepressant", "Iron or calcium supplements", "Other medicines", "None of these"],
+          "help": "Some medicines change what to eat or how to exercise. This only adds things for you to check with your doctor or pharmacist. Never change your medicines because of this plan." },
+        { "id": "medicines", "label": "Which medicines or supplements, and anything you were told about food with them", "type": "long", "placeholder": "e.g. warfarin: keep leafy greens steady. Iron tablets." },
         { "id": "injuries", "label": "Injuries or pain that affect exercise", "type": "long", "placeholder": "e.g. sore left knee on stairs" },
         { "id": "gp", "label": "Has a doctor or dietitian given you advice about food or exercise?", "type": "long", "help": "Their advice comes first. The plan works around it." }
       ]

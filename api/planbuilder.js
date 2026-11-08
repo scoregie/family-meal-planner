@@ -72,6 +72,55 @@ const money = n => Math.round(n * 100) / 100;
 // People: rules and portions from About me
 // ---------------------------------------------------------------------------
 
+// Medicines people said they take (About me). Each adds considerations, written as things to
+// check with their doctor or pharmacist; none of it changes their medicine.
+const MAOI_FOODS = ['soy sauce', 'fish sauce', 'teriyaki', 'vegemite', 'pesto', 'curry paste'];
+const MEDS = {
+  'Blood thinner (like warfarin)': {
+    food: 'You said you take a blood thinner. If it’s warfarin, it may help to keep the amount of leafy greens (spinach, broccoli, lettuce) about the same from week to week rather than avoiding them. Your doctor or pharmacist can say what applies to your medicine.',
+    exercise: 'You said you take a blood thinner. Consider lower-risk activities over ones with falls or knocks, and checking with your doctor about any bruising or bleeding.',
+  },
+  'Insulin, or diabetes tablets that can cause low blood sugar': {
+    food: 'You said your diabetes medicine can cause low blood sugar. It may be worth checking with your diabetes team before changing how much you eat, and not skipping meals or snacks.',
+    exercise: 'You said your diabetes medicine can cause low blood sugar. Consider checking your levels before and after exercise, keeping fast-acting carbs with you, and asking your diabetes team how to adjust around sessions.',
+  },
+  'Weight-loss or diabetes injection (like Ozempic or Mounjaro)': {
+    food: 'You said you use a weight-loss or diabetes injection. You may feel full sooner: smaller portions are fine, and it may help to eat the protein and vegetables first. Tell your doctor if you can’t keep food or fluids down.',
+    exercise: 'You said you use a weight-loss or diabetes injection. Strength sessions may help keep muscle while you lose weight. Consider drinking water around exercise, and easing off if you feel faint.',
+  },
+  'Blood pressure or heart medicine': {
+    food: 'You said you take blood pressure or heart medicine. Some of these don’t mix with grapefruit or with salt substitutes (which can contain potassium), so it may be worth asking your pharmacist.',
+    exercise: 'You said you take blood pressure or heart medicine. Some of these keep your heart rate lower, so go by how hard it feels (you should be able to talk) rather than heart rate. Stand up slowly after floor exercises if you feel dizzy.',
+  },
+  'Fluid tablets (diuretics)': {
+    food: 'You said you take fluid tablets. It may be worth asking your doctor how much to drink, and whether salt or potassium matter for your tablets.',
+    exercise: 'You said you take fluid tablets. Consider asking your doctor how much to drink around exercise, and taking extra care in hot weather.',
+  },
+  'Cholesterol medicine (statin)': {
+    food: 'You said you take a statin. Some statins don’t mix with grapefruit, so it may be worth asking your pharmacist.',
+    exercise: 'You said you take a statin. If you get unusual muscle pain or weakness that isn’t normal soreness, consider stopping and telling your doctor.',
+  },
+  'Thyroid medicine': {
+    food: 'You said you take thyroid medicine. It’s often taken on an empty stomach, away from calcium, iron, soy and coffee. Your pharmacist can say how to time it with breakfast.',
+  },
+  'Steroid tablets (like prednisolone)': {
+    food: 'You said you take steroid tablets. They can raise appetite and blood sugar. It may help to keep filling snacks like fruit, yoghurt and vegetables handy, and to ask your doctor about calcium and vitamin D.',
+    exercise: 'You said you take steroid tablets. Strength exercise may help your bones and muscles. Consider asking your doctor if there’s anything to avoid.',
+  },
+  'ADHD stimulant medicine': {
+    food: 'You said you take ADHD stimulant medicine. It can lower appetite in the day, so it may help to eat a good breakfast before it starts working and to have a bigger snack or supper when it wears off.',
+  },
+  'An MAOI antidepressant': {
+    food: 'You said you take an MAOI. Foods high in tyramine can raise blood pressure with these, so this plan leaves out soy sauce, fish sauce, Vegemite, pesto and curry paste. Aged cheese, cured meats and leftovers kept too long can also be high: ask your doctor or pharmacist which foods to avoid.',
+  },
+  'Iron or calcium supplements': {
+    food: 'You said you take iron or calcium. They’re often taken apart from each other, and iron is often taken away from tea, coffee and dairy. Your pharmacist can say what applies to you.',
+  },
+  'Other medicines': {
+    food: 'You said you take other medicines. It may be worth asking your pharmacist whether any foods or drinks affect them.',
+  },
+};
+
 const ALLERGY = { Peanuts: 'peanut', 'Tree nuts': 'treenut', Milk: 'milk', Eggs: 'egg', 'Wheat or gluten': 'gluten', Soy: 'soy', Fish: 'fish', Shellfish: 'shellfish', Sesame: 'sesame', Lactose: 'lactose' };
 const ALLERGY_WORDS = { peanut: 'peanuts', treenut: 'tree nuts', milk: 'milk', egg: 'eggs', gluten: 'gluten', soy: 'soy', fish: 'fish', shellfish: 'shellfish', sesame: 'sesame', lactose: 'lactose' };
 
@@ -93,12 +142,15 @@ function rulesFor(p) {
     sensory: new Set(list(a.sensory)),
     support: new Set(list(a.support_needs)),
     conditions: new Set(list(a.conditions)),
+    meds: new Set(list(a.medicine_types).filter(m => m !== 'None of these')),
     packed: /Yes|Some/.test(String(a.packed_lunch || '')),
     budget: num(a.budget),
     notes: [],
   };
   for (const x of list(a.allergies)) if (ALLERGY[x]) r.hard.add(ALLERGY[x]);
   if (r.conditions.has('Coeliac disease')) r.hard.add('gluten');
+  // MAOIs: foods high in tyramine can raise blood pressure, so leave out the obvious ones.
+  if (r.meds.has('An MAOI antidepressant')) r.avoidWords.push(...MAOI_FOODS);
   r.avoidWords.push(...words(a.allergies_other));
   for (const d of list(a.diet)) {
     if (d === 'Vegetarian') ['meat', 'fish', 'shellfish'].forEach(t => r.diet.add(t));
@@ -267,6 +319,8 @@ function exerciseFor(p, r) {
     'Pregnant or breastfeeding': 'You said you’re pregnant or breastfeeding. Consider checking with your midwife or GP before new exercise. This plan keeps to walking and gentle strength.',
   };
   for (const c of r.conditions) if (C[c]) medical.push(C[c]);
+  for (const m of r.meds) if (MEDS[m] && MEDS[m].exercise) medical.push(MEDS[m].exercise);
+  if (r.meds.size) medical.push('Because you take medicines, consider checking this exercise plan with your GP before you start.');
   if (gentle) medical.push('You mentioned low energy or chronic pain. On harder days, consider a shorter session or just a walk. Any movement counts.');
 
   const notes = [
@@ -700,6 +754,7 @@ function guideFor(r, p) {
   if (r.help.has('Cooking a batch on a good day')) tips.push('Dinners that freeze well (chilli, bolognese, curries, soups) can be doubled on a good day.');
   const safe = String((p.answers || {}).safe_foods || '').trim();
   if (safe) tips.push('Your safe foods (' + safe.slice(0, 120) + ') are always fine on a hard day.');
+  for (const m of r.meds) if (MEDS[m] && MEDS[m].food) tips.push(MEDS[m].food);
   if (r.conditions.has('Coeliac disease')) tips.push('You said you have coeliac disease: check every label for gluten, including sauces and stock.');
   if (r.conditions.has('Reflux')) tips.push('You mentioned reflux: smaller dinners earlier in the evening may help.');
   if (r.conditions.has('Irritable bowel (IBS)')) tips.push('You mentioned IBS: if some foods (like onion, garlic or beans) bother you, add them to “Foods you won’t eat” in About me and rebuild the plan.');

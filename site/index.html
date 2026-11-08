@@ -2010,6 +2010,9 @@ function renderMacros() {
 
 // The Meals view: the person picker, that person's guide (times, tips, snacks), each day's
 // meals with "eaten" ticks and Rate buttons, then the recipes.
+// Shown under each person's meal guide and exercise plan.
+var CHECK_WITH_GP = "Please check this meal and exercise plan with your GP, dietitian or physio before you start, especially if you take medicines, are pregnant or have a health condition. It’s general information, not medical advice.";
+
 // The box at the top of the Meals view for one person: portion, guide, suggested eating times
 // (with "Add to calendar"), tips and snacks.
 function personGuide(person, personKey) {
@@ -2032,13 +2035,14 @@ function personGuide(person, personKey) {
     box.appendChild(calBlock(personKey));
   }
   if (person.tips && person.tips.length) {
-    box.appendChild(el("h4", null, "Cravings and energy"));
+    box.appendChild(el("h4", null, "Tips and things to check"));
     var tips = el("ul", "bul");
     person.tips.forEach(function (tip) { tips.appendChild(el("li", null, tip)); });
     box.appendChild(tips);
   }
   if (person.snacks && person.snacks.length) box.appendChild(el("h4", null, "Snacks"));
   (person.snacks || []).forEach(function (snack) { box.appendChild(line(snack.when, snack.what)); });
+  box.appendChild(el("p", "note2", CHECK_WITH_GP));
   return box;
 }
 
@@ -2625,6 +2629,7 @@ function renderExercise() {
     medical.lastChild.appendChild(el("p", "note2", "This is general information, not medical advice. What your doctor, physio or other health professional tells you comes first. If anything here doesn’t match what they said, follow them."));
     panel.appendChild(medical);
   }
+  panel.appendChild(el("p", "note2", CHECK_WITH_GP));
   updateExCount();
 }
 
