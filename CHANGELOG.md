@@ -3,6 +3,18 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.0.4 (2026-11-09)
+
+- Health sync: **install the shortcut with one tap.** An admin downloads the shortcut file from the
+  Health sync page, signs it on a Mac (`shortcuts sign`, one Terminal command) and uploads it. Then
+  everyone gets an Install button, and the shortcut asks for their sync key and kJ or kcal when it's added.
+- Health sync: first-run tips (Turn On All for Health data, Allow Sharing Large Amounts of Data,
+  Always Allow, and home Wi-Fi when the address is a number).
+- Health sync: if a number arrives but can't be read, the notification and the page say which one and
+  what came, instead of skipping it quietly.
+- Progress: an **Apple Health sync** card at the top, with the last sync on one line and Show/Hide
+  for the details and settings link.
+
 ## v1.0.3 (2026-11-08)
 
 - Health sync: a quick way to make the iPhone shortcut on iOS 27 and later. Copy the ready-made

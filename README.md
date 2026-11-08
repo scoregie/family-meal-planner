@@ -208,7 +208,7 @@ Weeks start on Monday and use the browser's time zone.
 
 ### Connecting Apple Health (every day, from an iPhone Shortcut)
 
-Apple Health has no web connection, so the iPhone sends the numbers itself with a Shortcut. It sends the day's **steps**, **Move** (active energy) and **weight**, and, if Lose It (or another food app) writes to Apple Health, **food energy, protein, carbs and fat**. The same steps are in the app under **Progress → Set up Health sync**, with copy buttons for your address and key.
+Apple Health has no web connection, so the iPhone sends the numbers itself with a Shortcut. It sends the day's **steps**, **Move** (active energy) and **weight**, and, if Lose It (or another food app) writes to Apple Health, **food energy, protein, carbs and fat**. The same steps are in the app under **Progress → Apple Health sync**, with copy buttons for your address and key.
 
 The phone has to be able to reach the site when the shortcut runs: on home Wi-Fi, or anywhere if the site is reachable from outside (see [HTTPS and access away from home](#https-and-access-away-from-home)). Menu names can differ a little between iOS versions.
 
@@ -216,7 +216,17 @@ The phone has to be able to reach the site when the shortcut runs: on home Wi-Fi
 
 On the Health sync page, tap **Make my sync key**. Copy the key and the sync address (`https://<your site>/auth/health-sync`). The key is shown once; only a hash of it is stored. It can only add numbers for you: it can't read anything or log in. Making a new key, or **Turn sync off**, stops the old one.
 
-**2. Make the shortcut** (about 10 minutes, once)
+**2a. Install it with one tap** (easiest)
+
+An admin makes an install file once, on a Mac signed into iCloud (iPhones only open shortcut files a Mac has signed):
+
+1. On the Mac, open **Health sync → Make or update the install file** and click **Download the shortcut file**.
+2. In Terminal: `cd ~/Downloads && shortcuts sign --mode anyone --input "Health sync (unsigned).shortcut" --output "Health sync.shortcut"`
+3. Upload **Health sync.shortcut** on the same page.
+
+Then everyone taps **Install the Health sync shortcut** on their iPhone, taps **Add Shortcut**, and pastes their sync key. On the first run, tap **Turn On All** for Health data and **Always Allow** to connect. If it says it can't send a large amount of data, turn on Settings → Apps → Shortcuts → Advanced → **Allow Sharing Large Amounts of Data**. The file holds the site's address, so make it again if that changes. On iOS 27 and later you can also paste a ready-made description into the Shortcuts app instead (on the same page).
+
+**2b. Or make the shortcut by hand** (about 10 minutes, once)
 
 Open the **Shortcuts** app, tap **+**, and name the shortcut **Health sync**. Add these actions (search for each one in the bar at the bottom):
 

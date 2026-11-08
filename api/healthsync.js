@@ -12,12 +12,18 @@
 //   GET    /api/health/key?person=      logged in: whether there is a key, and the last sync
 //   POST   /api/health/key?person=      make a new key (shown once; replaces the old one)
 //   DELETE /api/health/key?person=      turn sync off
+//   GET    /api/health/shortcut?origin= the Health sync shortcut file, unsigned (see shortcutfile.js)
+//   GET    /api/health/shortcut/signed  the signed file, to install (POST uploads it, DELETE removes it: admins)
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const db = require('./db');
 const auth = require('./auth');
 const { sensible } = require('./progress');
+const shortcutfile = require('./shortcutfile');
 
 const KJ_PER_KCAL = 4.184;
+const NAMES = { steps: 'steps', active_energy: 'Move', weight: 'weight', energy_in: 'food', protein_in: 'protein', carbs_in: 'carbs', fat_in: 'fat' };
 const PER_HOUR = 30;              // syncs per key per hour
 const recentSyncs = new Map();    // key hash -> [times]
 
@@ -89,24 +95,29 @@ async function sync(req, res) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return send(res, 400, { error: 'The date should look like 2026-11-08. In Format Date, choose Custom and type yyyy-MM-dd.' });
 
   const rows = [];
-  const add = (kind, value, unit, day) => {
+  const skipped = [];   // values that came but couldn't be used, like 'Move ("abc")', so the person can see why
+  const add = (kind, value, unit, raw, day) => {
     if (value !== null && sensible(kind, value, day || date)) rows.push({ date: day || date, kind, value: Math.round(value * 100) / 100, unit });
+    else if (raw !== undefined && raw !== null && String(raw).trim() !== '') skipped.push(NAMES[kind] + ' ("' + String(raw).slice(0, 40) + '")');
   };
   const toKj = (v, raw) => (v === null ? null : isKcal(b.energy_unit, raw) ? v * KJ_PER_KCAL : v);
-  add('steps', num(b.steps), 'steps');
-  add('active_energy', toKj(num(b.active_energy), b.active_energy), 'kJ');
+  add('steps', num(b.steps), 'steps', b.steps);
+  add('active_energy', toKj(num(b.active_energy), b.active_energy), 'kJ', b.active_energy);
   const weightDate = /^\d{4}-\d{2}-\d{2}$/.test(String(b.weight_date || '')) ? b.weight_date : date;
-  add('weight', num(b.weight), 'kg', weightDate);
-  add('energy_in', toKj(num(b.food_energy), b.food_energy), 'kJ');
-  add('protein_in', num(b.protein), 'g');
-  add('carbs_in', num(b.carbs), 'g');
-  add('fat_in', num(b.fat), 'g');
-  if (!rows.length) return send(res, 200, { ok: true, saved: [], message: 'Nothing to save yet for ' + date + '.' });
+  add('weight', num(b.weight), 'kg', b.weight, weightDate);
+  add('energy_in', toKj(num(b.food_energy), b.food_energy), 'kJ', b.food_energy);
+  add('protein_in', num(b.protein), 'g', b.protein);
+  add('carbs_in', num(b.carbs), 'g', b.carbs);
+  add('fat_in', num(b.fat), 'g', b.fat);
+  const notSaved = skipped.length ? ' Couldn’t read: ' + skipped.join(', ') + '.' : '';
+  if (!rows.length) {
+    db.setSetting('healthsync-last:' + person, JSON.stringify({ at: Date.now(), date, kinds: [], skipped }));
+    return send(res, 200, { ok: true, saved: [], skipped, message: 'Nothing to save yet for ' + date + '.' + notSaved });
+  }
 
   db.saveMeasurements(person, 'apple-shortcut', rows);
-  db.setSetting('healthsync-last:' + person, JSON.stringify({ at: Date.now(), date, kinds: rows.map(r => r.kind) }));
-  const names = { steps: 'steps', active_energy: 'Move', weight: 'weight', energy_in: 'food', protein_in: 'protein', carbs_in: 'carbs', fat_in: 'fat' };
-  return send(res, 200, { ok: true, saved: rows.map(r => r.kind), message: 'Synced ' + rows.map(r => names[r.kind]).join(', ') + ' for ' + date + '.' });
+  db.setSetting('healthsync-last:' + person, JSON.stringify({ at: Date.now(), date, kinds: rows.map(r => r.kind), skipped }));
+  return send(res, 200, { ok: true, saved: rows.map(r => r.kind), skipped, message: 'Synced ' + rows.map(r => NAMES[r.kind]).join(', ') + ' for ' + date + '.' + notSaved });
 }
 
 function handlePublic(req, res, urlPath) {
@@ -123,7 +134,71 @@ function handlePublic(req, res, urlPath) {
 // Managing the key (logged in)
 // ---------------------------------------------------------------------------
 
+// The shortcut file to sign on a Mac, with this server's sync address in it. ?origin= is the
+// address the page was opened at (what the iPhone will use), checked to be a plain web origin.
+function shortcutFile(req, res, url) {
+  const origin = String(url.searchParams.get('origin') || '');
+  if (!/^https?:\/\/[a-z0-9.-]+(:\d+)?$/i.test(origin)) return send(res, 400, { error: 'bad origin' });
+  res.writeHead(200, {
+    'Content-Type': 'application/octet-stream',
+    'Content-Disposition': 'attachment; filename="Health sync (unsigned).shortcut"',
+    'Cache-Control': 'no-store',
+  });
+  res.end(shortcutfile.build(origin + '/auth/health-sync'));
+}
+
+// The signed shortcut (made on a Mac from the file above), uploaded by an admin, for everyone to
+// install with one tap. Kept in the data folder, next to the database.
+const SIGNED = path.join(process.env.DATA_DIR || '/data', 'health-sync.shortcut');
+
+function readRaw(req, limit) {
+  return new Promise((resolve, reject) => {
+    const parts = [];
+    let size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > limit) { reject(new Error('too big')); req.destroy(); return; }
+      parts.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(parts)));
+    req.on('error', reject);
+  });
+}
+
+async function signedFile(req, res, me) {
+  if (req.method === 'GET') {
+    if (!fs.existsSync(SIGNED)) return send(res, 404, { error: 'No install file yet.' });
+    res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment; filename="Health sync.shortcut"', 'Cache-Control': 'no-store' });
+    return res.end(fs.readFileSync(SIGNED));
+  }
+  if (req.headers['x-requested-with'] !== 'app') return send(res, 403, { error: 'bad request' });
+  if (!me.admin) return send(res, 403, { error: 'Only an admin can change the install file.' });
+  if (req.method === 'DELETE') {
+    fs.rmSync(SIGNED, { force: true });
+    return send(res, 200, { ok: true, signed: false });
+  }
+  if (req.method !== 'POST') return send(res, 405, { error: 'not allowed' });
+  let file;
+  try { file = await readRaw(req, 2e6); } catch (e) { return send(res, 413, { error: 'That file is too big for a shortcut.' }); }
+  // Signed shortcuts are Apple Encrypted Archives, which start with "AEA1".
+  if (file.subarray(0, 4).toString('latin1') !== 'AEA1') {
+    return send(res, 400, { error: 'That isn’t a signed shortcut. Upload the “Health sync.shortcut” file the shortcuts sign command made, not the unsigned one.' });
+  }
+  fs.writeFileSync(SIGNED + '.tmp', file);
+  fs.renameSync(SIGNED + '.tmp', SIGNED);
+  db.setSetting('healthsync-signed-at', Date.now());
+  return send(res, 200, { ok: true, signed: true, signedAt: Date.now() });
+}
+
 function handle(req, res, urlPath, url, me, ctx) {
+  if (urlPath === '/api/health/shortcut' && req.method === 'GET') {
+    shortcutFile(req, res, url);
+    return true;
+  }
+  if (urlPath === '/api/health/shortcut/signed') {
+    signedFile(req, res, me).catch(() => send(res, 500, { error: 'Something went wrong with the install file.' }));
+    return true;
+  }
   if (urlPath !== '/api/health/key') return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
     send(res, 403, { error: 'bad request' });
@@ -140,9 +215,10 @@ function handle(req, res, urlPath, url, me, ctx) {
   }
   const oldHash = db.getSetting('healthsync-person:' + person);
   const last = (() => { try { return JSON.parse(db.getSetting('healthsync-last:' + person)); } catch (e) { return null; } })();
+  const install = { installFile: fs.existsSync(SIGNED) ? Number(db.getSetting('healthsync-signed-at')) || true : null, admin: !!me.admin };
 
   if (req.method === 'GET') {
-    send(res, 200, { person, hasKey: !!oldHash, made: Number(db.getSetting('healthsync-made:' + person)) || null, last });
+    send(res, 200, { person, hasKey: !!oldHash, made: Number(db.getSetting('healthsync-made:' + person)) || null, last, ...install });
   } else if (req.method === 'POST') {
     if (oldHash) db.deleteSetting('healthsync:' + oldHash);
     const key = 'fhp_' + crypto.randomBytes(24).toString('base64url');
@@ -150,12 +226,12 @@ function handle(req, res, urlPath, url, me, ctx) {
     db.setSetting('healthsync:' + hash, person);
     db.setSetting('healthsync-person:' + person, hash);
     db.setSetting('healthsync-made:' + person, Date.now());
-    send(res, 200, { person, key, hasKey: true, made: Date.now(), last });
+    send(res, 200, { person, key, hasKey: true, made: Date.now(), last, ...install });
   } else if (req.method === 'DELETE') {
     if (oldHash) db.deleteSetting('healthsync:' + oldHash);
     db.deleteSetting('healthsync-person:' + person);
     db.deleteSetting('healthsync-made:' + person);
-    send(res, 200, { person, hasKey: false, last });
+    send(res, 200, { person, hasKey: false, last, ...install });
   } else {
     send(res, 405, { error: 'not allowed' });
   }
