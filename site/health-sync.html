@@ -45,7 +45,20 @@ details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.
 
     <section class="card">
       <h2>2. Make the shortcut</h2>
-      <p class="note">About 10 minutes, once. On your iPhone, open the <b>Shortcuts</b> app.</p>
+      <h3>Quick way: describe it (iOS 27 and later)</h3>
+      <p class="note">Newer iPhones can build a shortcut from a description. Make your sync key in step 1 first, so it’s filled in below.</p>
+      <ol class="steps">
+        <li>Tap <b>Copy</b> under the description below.</li>
+        <li>Open the <b>Shortcuts</b> app and tap <b>+</b>. Where it asks what you want your shortcut to do, paste the description and send it.</li>
+        <li>Check what it made: it should read Steps, Active Energy, Weight and the food amounts from Health, then <b>Get Contents of URL</b> with your sync address. Save it as <b>Health sync</b>.</li>
+        <li>Tap the shortcut once to run it. Allow it to read Health data and to connect when asked. The <b>Last sync</b> line in step 1 shows what arrived (tap Check again). If a number is missing, ask the Shortcuts app to fix it (for example “also send my weight”), or use the step-by-step way below.</li>
+      </ol>
+      <div id="describeBox"></div>
+      <p class="opt">Your iPhone sends the description to Apple Intelligence to build the shortcut, and it includes your sync key. The key can only add numbers here: it can’t read anything or log in. You can make a new key at any time.</p>
+
+      <details class="how">
+      <summary>Step by step instead (about 10 minutes)</summary>
+      <p class="note">On your iPhone, open the <b>Shortcuts</b> app. On iOS 27 and later, tapping <b>+</b> asks what you want the shortcut to do: look for the option to build it yourself, or type each action’s name below into the search and tap it.</p>
       <ol class="steps">
         <li>Tap <b>+</b> (top right). Tap the name at the top and call it <b>Health sync</b>.</li>
         <li><b>Steps.</b> Add these actions (search for each one in the bar at the bottom):
@@ -78,6 +91,7 @@ details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.
         <li><span class="opt">(Optional)</span> Add <b>Get Dictionary Value</b>: key <code>message</code> from Contents of URL, then <b>Show Notification</b> with the Dictionary Value, so you see “Synced steps, Move…”.</li>
         <li>Tap <b>Done</b>, then tap the shortcut once to run it. Allow it to read Health data and to connect to this site when asked. The Last sync line below shows what arrived (tap Check again).</li>
       </ol>
+      </details>
     </section>
 
     <section class="card">
@@ -176,6 +190,48 @@ function copyRow(label, value) {
 
 var NAMES = { steps: "steps", active_energy: "Move", weight: "weight", energy_in: "food", protein_in: "protein", carbs_in: "carbs", fat_in: "fat" };
 
+// The description to paste into the Shortcuts app ("Describe a Shortcut" in iOS 27).
+function describeText(url, key) {
+  return "Make a shortcut called Health sync that sends today's Apple Health numbers to my server.\n" +
+    "1. Find Health samples where the type is Steps and the start date is today, and calculate the sum. Save it as Steps.\n" +
+    "2. Do the same for Active Energy and save it as Move.\n" +
+    "3. Find the latest Weight sample from today (sort by start date, latest first, limit 1) and save it as Weight.\n" +
+    "4. Do the same as step 1 for Dietary Energy, Protein, Carbohydrates and Total Fat, saved as Food, Protein, Carbs and Fat.\n" +
+    "5. Format the current date as yyyy-MM-dd and save it as Day.\n" +
+    "6. Use Get Contents of URL to POST to " + url + " with the header Authorization set to \"Bearer " + key + "\" and a JSON request body with these fields: date = Day, steps = Steps, active_energy = Move, weight = Weight, energy_unit = \"kJ\", food_energy = Food, protein = Protein, carbs = Carbs, fat = Fat.\n" +
+    "7. Show a notification with the message value from the response.";
+}
+
+function renderDescribe(url) {
+  var box = $("describeBox");
+  if (!box) return;
+  box.textContent = "";
+  var text = describeText(url, NEWKEY || "PASTE-YOUR-SYNC-KEY-HERE");
+  var area = el("textarea");
+  area.readOnly = true;
+  area.rows = 9;
+  area.value = text;
+  area.style.cssText = "width:100%;font:inherit;font-size:.85rem;padding:.5rem;border:1px solid var(--line);border-radius:.5rem;background:var(--bg);color:var(--ink)";
+  area.addEventListener("focus", function () { area.select(); });
+  box.appendChild(area);
+  if (!NEWKEY) box.appendChild(el("p", "opt", DATA && DATA.hasKey
+    ? "Your key is only shown when it’s made. Make a new key in step 1 to fill it in here, or replace PASTE-YOUR-SYNC-KEY-HERE with the key you saved."
+    : "Make your sync key in step 1 and it will be filled in here."));
+  var copy = el("button", "btn small primary", "Copy");
+  copy.type = "button";
+  copy.addEventListener("click", function () {
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
+      status("Copied.");
+    }, function () {
+      area.select();
+      document.execCommand("copy");
+      status("Copied.");
+    });
+  });
+  box.appendChild(copy);
+  box.appendChild(el("p", "opt", "Your Health app shows Calories, not kilojoules? Change “kJ” to “kcal” after pasting."));
+}
+
 function render() {
   var box = $("keyBox");
   box.textContent = "";
@@ -224,6 +280,8 @@ function render() {
     row.appendChild(off);
   }
   box.appendChild(row);
+
+  renderDescribe(url);
 
   var last = el("p", "note");
   last.style.marginTop = ".8rem";
