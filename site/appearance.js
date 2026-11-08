@@ -84,7 +84,7 @@
   // Light-mode colours mixed toward white (and dark toward the dark page) for soft backgrounds.
   function vars(c, mode) {
     var accent = mode === "dark" ? c.dark : c.light;
-    var card = mode === "dark" ? "#16211d" : "#fff";
+    var card = mode === "dark" ? "#1c1c1f" : "#fff";
     var soft = "color-mix(in srgb," + accent + " " + (mode === "dark" ? 22 : 13) + "%," + card + ")";
     return "--accent:" + accent + ";--mark:" + accent + ";--on-accent:" + (mode === "dark" ? "#0b1210" : "#fff") +
       ";--chip:" + soft + ";--mine:" + soft + ";--drop:" + soft + ";";
@@ -127,7 +127,7 @@
     // The colour of the phone's status bar.
     var dark = look.theme === "dark" || (look.theme === "auto" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
     document.querySelectorAll('meta[name="theme-color"]').forEach(function (meta) {
-      meta.setAttribute("content", dark ? "#0e1613" : "#f1f5f3");
+      meta.setAttribute("content", dark ? "#121214" : "#f5f5f4");
     });
   }
 

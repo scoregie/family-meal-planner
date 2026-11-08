@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Shopping">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<meta name="apple-mobile-web-app-title" content="Family Health">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <meta name="robots" content="noindex, nofollow">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -17,9 +17,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--bad:#b3261e;--bad-bg:#fdecea}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--bad:#ffb4ab;--bad-bg:#3b1612;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--bad:#ffb4ab;--bad-bg:#3b1612;color-scheme:dark}
+:root{--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--bad:#b3261e;--bad-bg:#fdecea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--bad:#ffb4ab;--bad-bg:#3b1612;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--bad:#ffb4ab;--bad-bg:#3b1612;color-scheme:dark}
 html{background:var(--bg);-webkit-text-size-adjust:100%}
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--ink);
@@ -49,9 +49,9 @@ button[type=submit]:disabled{opacity:.6}
 </head>
 <body>
 <main>
-  <img class="logo" src="/icon-192.png" alt="">
-  <h1>Shopping lists</h1>
-  <p class="sub">Log in to see the lists.</p>
+  <img class="logo" src="/logo.svg" alt="">
+  <h1>Family Health Planner</h1>
+  <p class="sub">Meals, shopping, exercise and progress for the whole family.</p>
   <form method="post" action="/auth/login" id="f">
     <p class="msg" id="msg" role="alert" hidden></p>
     <input type="hidden" name="next" id="next" value="/">

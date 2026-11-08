@@ -1,4 +1,4 @@
-# Family meal planner
+# Family Health Planner
 
 A small self-hosted web app for a household's weekly shopping lists, meal plan and exercise plan. It works well on phones and can be added to the home screen like an app.
 

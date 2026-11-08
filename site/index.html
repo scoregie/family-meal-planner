@@ -6,22 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Shopping">
+<meta name="apple-mobile-web-app-title" content="Family Health">
 <meta name="format-detection" content="telephone=no">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>4-week shopping lists</title>
+<title>Family Health Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--m-p:#2a78d6;--m-c:#eb6834;--m-f:#1baf7a;--low:#b3261e;--mid:#8a5a00;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--done:#8e9d97;
+:root{--m-p:#2a78d6;--m-c:#eb6834;--m-f:#1baf7a;--low:#b3261e;--mid:#8a5a00;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--done:#8f8f94;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}}
-:root[data-theme="dark"]{--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--done:#6b7d75;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--done:#6e6e73;color-scheme:dark}}
+:root[data-theme="dark"]{--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--done:#6e6e73;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;background:var(--bg)}
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1.0625rem;line-height:1.4;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior-y:none}
@@ -337,7 +337,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 <main>
   <header class="top">
     <div class="topbar">
-      <h1 id="title">Shopping lists</h1>
+      <h1 id="title">Family Health Planner</h1>
       <span id="sync" class="sync" role="status"></span>
       <details class="acctmenu" id="acct">
         <summary aria-label="Account and log out"><span class="avatar" id="avatar" aria-hidden="true"></span></summary>
@@ -377,7 +377,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
   <button type="button" id="vEx" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg><span>Exercise</span></button>
   <button type="button" id="vRates" aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Ratings</span></button>
 </nav>
-<script type="application/json" id="plan-data">{"id":"no-plan","title":"Shopping lists","subtitle":"No plan.json was found. Copy site/plan.example.json to site/plan.json, or upload your own plan.","weeks":[{"name":"Week 1","shopping":{"Getting started":[["Add a plan.json to the site folder",0]]}}]}</script>
+<script type="application/json" id="plan-data">{"id":"no-plan","title":"Family Health Planner","subtitle":"No plan.json was found. Copy site/plan.example.json to site/plan.json, or upload your own plan.","weeks":[{"name":"Week 1","shopping":{"Getting started":[["Add a plan.json to the site folder",0]]}}]}</script>
 <script src="guidelines.js"></script>
 <script>
 // The main app page. Everything it shows comes from plan.json (see docs/plan-format.md).
@@ -827,9 +827,9 @@ function usePlan(p) {
   EX_BASE = "coles-plan-ex-v1-" + id;
   EATEN_BASE = "coles-plan-eaten-v1-" + id;
   loadUser();
-  $("title").textContent = p.title || "Shopping lists";
+  // The app's name stays at the top; the plan's own title shows in the browser tab after it.
   $("sub").textContent = p.subtitle || "";
-  document.title = p.title || "Shopping lists";
+  document.title = p.title ? p.title + " · Family Health Planner" : "Family Health Planner";
   show();
   pull();
 }

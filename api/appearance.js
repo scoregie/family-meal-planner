@@ -91,7 +91,8 @@ function backUpIcons() {
       if (fs.existsSync(from)) fs.copyFileSync(from, path.join(dir, file));
     }
   }
-  const old = fs.readdirSync(ICON_BACKUPS).filter(d => d !== 'original').sort();
+  // Only the dated backups are tidied away; 'original' and anything named by hand are kept.
+  const old = fs.readdirSync(ICON_BACKUPS).filter(d => /^\d{4}-\d\d-\d\dT[\d-]+Z$/.test(d)).sort();
   old.slice(0, Math.max(0, old.length - KEEP_BACKUPS)).forEach(d => fs.rmSync(path.join(ICON_BACKUPS, d), { recursive: true, force: true }));
 }
 
