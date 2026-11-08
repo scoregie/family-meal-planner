@@ -71,7 +71,9 @@ function cleanAnswers(answers) {
     } else if (q.type === 'choice') {
       if (q.options.includes(value)) out[id] = value;
     } else if (q.type === 'multi') {
-      const picked = Array.isArray(value) ? q.options.filter(o => value.includes(o)) : [];
+      // An answer saved before the question allowed several choices is a single string.
+      const list = typeof value === 'string' ? [value] : value;
+      const picked = Array.isArray(list) ? q.options.filter(o => list.includes(o)) : [];
       if (picked.length) out[id] = picked;
     }
   }

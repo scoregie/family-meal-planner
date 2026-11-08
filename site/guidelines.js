@@ -334,7 +334,11 @@ var Guidelines = (function () {
       var answers = got[1];
       var saved = null;
       try { saved = localStorage.getItem("coles-plan-guide-" + o.who); } catch (e) {}
-      var fromAnswers = data.countries.filter(function (c) { return c.name === answers.guidelines; })[0];
+      // The About me answer can list several countries (or be one name, from before). The first one is shown.
+      var chosen = [].concat(answers.guidelines || []);
+      var fromAnswers = chosen.map(function (name) {
+        return data.countries.filter(function (c) { return c.name === name; })[0];
+      }).filter(Boolean)[0];
       fill(box, o, saved || (fromAnswers && fromAnswers.id) || "au", answers);
     }).catch(function (e) {
       box.textContent = "";

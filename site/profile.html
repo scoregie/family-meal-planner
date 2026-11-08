@@ -29,6 +29,8 @@ h1{font-size:1.5rem;margin:0 0 .2rem}
 .pseg .btn{border-radius:1.2rem;border-width:1px;min-height:2.3rem}
 .pseg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .intro{color:var(--mute);font-size:.9rem;margin:0 0 1rem}
+.remind{background:var(--bg);border:1px solid var(--line);border-radius:.6rem;padding:.6rem .8rem;margin:-.4rem 0 1rem}
+.remind p{margin:.2rem 0 .5rem}
 .progress{font-size:.9rem;margin:0 0 1rem;font-variant-numeric:tabular-nums}
 .progress .bar{height:.4rem;background:var(--line);border-radius:1rem;overflow:hidden;margin-top:.3rem}
 .progress .bar i{display:block;height:100%;background:var(--accent);transition:width .2s}
@@ -180,6 +182,7 @@ function setAnswer(id, value) {
   if (value === "" || value === null || (Array.isArray(value) && !value.length)) delete ANSWERS[id];
   else ANSWERS[id] = value;
   saveSoon();
+  if (id === "reminders") updateReminders();
 }
 
 // Makes the input for one question: chips for choices, a number box, or a text box.
@@ -202,6 +205,8 @@ function questionField(q) {
       input.name = inputId;
       input.value = option;
       var current = ANSWERS[q.id];
+      // An answer saved before a question allowed several choices is a single string.
+      if (q.type === "multi" && typeof current === "string") current = [current];
       input.checked = q.type === "multi" ? Array.isArray(current) && current.indexOf(option) > -1 : current === option;
       input.onchange = function () {
         if (q.type === "choice") {
@@ -274,12 +279,60 @@ function render() {
   QUESTIONS.sections.forEach(function (section) {
     var card = el("section", "card");
     card.appendChild(el("h2", null, section.title));
+    if (section.intro) card.appendChild(el("p", "intro", section.intro));
     section.questions.forEach(function (q) {
       card.appendChild(questionField(q));
+      if (q.id === "reminders") card.appendChild(reminderBox());
     });
     form.appendChild(card);
   });
   updateProgress();
+  updateReminders();
+}
+
+// ---------- Reminders (for people who said reminders would help) ----------
+var reminderEl = null;
+function reminderBox() {
+  reminderEl = el("div", "remind");
+  reminderEl.hidden = true;
+  return reminderEl;
+}
+
+// The plan's key for this person ("adult1"), from their name, to find their eating times.
+var PLAN_PEOPLE = null;
+function planKeyFor(person) {
+  var people = (PLAN_PEOPLE || {});
+  return Object.keys(people).filter(function (k) {
+    return people[k] && people[k].name && String(people[k].name).toLowerCase().replace(/[^a-z0-9]+/g, "-") === person;
+  })[0] || null;
+}
+
+function updateReminders() {
+  if (!reminderEl) return;
+  var answer = ANSWERS.reminders || "";
+  var wantsEating = /remind me to eat/.test(answer);
+  var wantsExercise = /exercise/.test(answer);
+  reminderEl.hidden = !wantsEating && !wantsExercise;
+  if (reminderEl.hidden) return;
+  reminderEl.textContent = "";
+  var plan = PLAN_PEOPLE ? Promise.resolve() : fetch("plan.json", { cache: "no-cache" }).then(function (r) { return r.json(); }).then(function (p) { PLAN_PEOPLE = p.people || {}; });
+  plan.then(function () {
+    var key = planKeyFor(PERSON);
+    if (!wantsEating || !key) return null;
+    return fetch("/api/calendar/" + key + ".json", { cache: "no-store" }).then(function (r) { return r.ok ? key : null; });
+  }).then(function (key) {
+    reminderEl.textContent = "";
+    if (wantsEating && key) {
+      reminderEl.appendChild(el("p", null, "Add your eating times to your phone’s calendar, with a reminder 10 minutes before each one:"));
+      var a = el("a", "btn primary", "Add eating reminders to my calendar");
+      a.href = "/api/calendar/" + key + ".ics";
+      reminderEl.appendChild(a);
+      reminderEl.appendChild(el("p", "help", "On iPhone, tap Add All. For Google Calendar, use the Meals tab (pick yourself, then the Google links under your eating times)."));
+    } else if (wantsEating) {
+      reminderEl.appendChild(el("p", null, "Your plan doesn’t have eating times yet. Once an admin adds them (or Claude suggests some), you can add reminders here."));
+    }
+    if (wantsExercise) reminderEl.appendChild(el("p", "help", "Exercise reminders are coming with the new Exercise tab."));
+  }).catch(function () { reminderEl.hidden = true; });
 }
 
 // Loads one person's answers and draws the page.
