@@ -66,10 +66,31 @@ Open `http://<server-ip>/` and create the family's first account (you'll be the 
 ### Running it in a Proxmox container
 
 1. Download a **Debian 12** template (Node > local storage > CT Templates).
-2. Create a CT with 1 core, 512 MB RAM and a 4 GB disk on your LAN.
+2. Create a CT on your LAN with **2 cores, 2 GB RAM (plus 512 MB swap) and a 16 GB disk**. See the sizes below.
 3. Before starting it, open the CT > Options > Features and tick **Nesting** and **keyctl** (needed for Docker in an unprivileged container).
 4. Start it, then install Docker and git: `apt update && apt install -y curl git && curl -fsSL https://get.docker.com | sh`
 5. Follow the quick start above.
+
+**How big?** Day to day the app is tiny (both containers together use about 30 to 50 MB of memory when idle), but some jobs need room:
+
+| | Minimum | Recommended | Why |
+|---|---|---|---|
+| CPU | 1 core | 2 cores | Updates, Docker image pulls and reading big health exports go faster. |
+| RAM | 1 GB | 2 GB, plus 512 MB swap | Uploading an Apple Health export (often hundreds of MB) and building plans, alongside Debian and Docker themselves. |
+| Disk | 8 GB | 16 GB or more | Debian and Docker (about 2 GB), the app's images (about 350 MB), and `data/`: uploads, health exports and plan backups grow over time. |
+
+Add more disk if the family uploads lots of photos or yearly health exports. A local **Ollama** AI needs far more (a modern GPU, or 16 GB+ of RAM for small models), so run it on a separate, more powerful machine and point `OLLAMA_URL` at it rather than putting it in this container.
+
+### Updating
+
+Changes are published as [releases](https://github.com/scoregie/family-meal-planner/releases), each with notes on what changed (also in [CHANGELOG.md](CHANGELOG.md)). To update, back up first (see Backups below), then in the app folder:
+
+    git fetch --tags
+    git checkout v1.0.0        # the release you want; or `git pull` to follow the latest code
+    docker compose up -d
+    docker compose restart api
+
+Your `.env`, `site/plan.json` and `data/` aren't in git, so updating doesn't touch them. The database updates itself the first time the new version starts.
 
 ## People, logins and admins
 
