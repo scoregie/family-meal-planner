@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1613">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>About me</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--low:#b3261e;--bg:#f1f5f3;--card:#fff;--ink:#16211d;--mute:#5a6963;--line:#d6dfdb;--accent:#0e6b57;--on-accent:#fff;--chip:#e3f1ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--bg:#0e1613;--card:#16211d;--ink:#e9f0ed;--mute:#9db0a8;--line:#2a3a34;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.4}
+main{max-width:40rem;margin:0 auto;padding:1.25rem 1rem calc(4rem + env(safe-area-inset-bottom,0px))}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:0 0 .8rem}
+.sub{color:var(--mute);margin:0;font-size:.95rem}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.5rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pseg{display:flex;gap:.35rem;flex-wrap:wrap;margin:0 0 1rem}
+.pseg .btn{border-radius:1.2rem;border-width:1px;min-height:2.3rem}
+.pseg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.intro{color:var(--mute);font-size:.9rem;margin:0 0 1rem}
+.progress{font-size:.9rem;margin:0 0 1rem;font-variant-numeric:tabular-nums}
+.progress .bar{height:.4rem;background:var(--line);border-radius:1rem;overflow:hidden;margin-top:.3rem}
+.progress .bar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem}
+section.card h2{font-size:1.1rem;margin:0 0 .4rem}
+.q{margin:.9rem 0 0;border:0;padding:0;min-width:0}
+.q:first-of-type{margin-top:.2rem}
+.q legend,.q>label{display:block;font-weight:700;font-size:.95rem;margin:0 0 .35rem;padding:0}
+.q .help{display:block;color:var(--mute);font-size:.82rem;font-weight:400;margin:.1rem 0 0}
+.chips{display:flex;flex-wrap:wrap;gap:.35rem}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;width:1px;height:1px}
+.chip span{display:inline-flex;align-items:center;min-height:2.3rem;padding:.3rem .75rem;border:1px solid var(--line);border-radius:1.2rem;font-size:.9rem;cursor:pointer;user-select:none}
+.chip input:checked+span{background:var(--chip);border-color:var(--accent);font-weight:700}
+.chip input:checked+span::before{content:"✓ ";margin-right:.15rem}
+.chip input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+input[type=number],input[type=password],textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .6rem}
+input[type=number]{width:8rem}
+input[type=password]{width:100%;max-width:20rem}
+textarea{width:100%;min-height:4.2rem;resize:vertical}
+.unit{margin-left:.4rem;color:var(--mute)}
+.status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.status.err{background:var(--low);color:#fff}
+.msg{border-radius:.6rem;padding:.6rem .8rem;margin:.6rem 0 0;font-size:.9rem}
+.msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
+.msg.ok{background:color-mix(in srgb,var(--accent) 14%,var(--card));border:1px solid var(--accent)}
+.pw label{display:block;font-size:.9rem;margin:.6rem 0 .2rem}
+.privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>About me</h1><p class="sub" id="sub">Loading…</p></div>
+    <a class="btn" href="./">← Back to the app</a>
+  </div>
+  <div id="pmsg"></div>
+  <div id="app" hidden>
+    <div class="pseg" id="people" hidden role="group" aria-label="Whose answers"></div>
+    <p class="intro" id="intro"></p>
+    <div class="progress" id="progress"></div>
+    <form id="form" novalidate></form>
+    <section class="card pw" id="pwCard" hidden>
+      <h2>Change your password</h2>
+      <form id="pwForm">
+        <label for="pwCur">Current password</label><input type="password" id="pwCur" autocomplete="current-password" required>
+        <label for="pwNew">New password (at least 8 characters)</label><input type="password" id="pwNew" autocomplete="new-password" minlength="8" required>
+        <p><button class="btn primary" type="submit">Change password</button></p>
+        <div id="pwMsg" role="status"></div>
+      </form>
+    </section>
+    <p class="privacy">Only you and the plan’s admins can see these answers. Health advice from your doctor always comes first.</p>
+  </div>
+</main>
+<div class="status" id="status" role="status" hidden></div>
+<script>
+// The "About me" page. It shows the questions from questions.json, fills in the saved answers
+// (GET /api/profile), and saves each change a moment after you stop typing (PUT /api/profile).
+"use strict";
+var ME = null;          // who is logged in: {user, person, admin}
+var PERSON = null;      // whose answers are shown (admins can switch)
+var QUESTIONS = null;   // the contents of questions.json
+var ANSWERS = {};       // {question id: answer}
+var saveTimer = 0;      // waits a moment after a change, so typing doesn't save on every key
+
+// Shortcut for document.getElementById.
+function $(id) {
+  return document.getElementById(id);
+}
+
+// Makes a new element, with an optional class name and text.
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+// Calls the server and returns its JSON answer, or throws an error with the server's message.
+function api(method, url, body) {
+  var options = {
+    method: method,
+    cache: "no-store",
+    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  };
+  return fetch(url, options).then(function (response) {
+    return response.json().catch(function () { return {}; }).then(function (data) {
+      if (!response.ok) throw new Error(data.error || ("Request failed (" + response.status + ")"));
+      return data;
+    });
+  });
+}
+
+// Shows a little message at the bottom ("Saved"), which fades after a few seconds.
+function status(text, isError) {
+  var s = $("status");
+  s.textContent = text;
+  s.className = "status" + (isError ? " err" : "");
+  s.hidden = false;
+  clearTimeout(status.timer);
+  status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 1800);
+}
+
+// True if a question has an answer.
+function answered(id) {
+  var v = ANSWERS[id];
+  return v !== undefined && v !== "" && !(Array.isArray(v) && !v.length);
+}
+
+// Updates "12 of 40 answered" and its bar.
+function updateProgress() {
+  var total = 0, done = 0;
+  QUESTIONS.sections.forEach(function (section) {
+    section.questions.forEach(function (q) {
+      total++;
+      if (answered(q.id)) done++;
+    });
+  });
+  var box = $("progress");
+  box.textContent = done + " of " + total + " answered";
+  var bar = el("div", "bar");
+  var fill = el("i");
+  fill.style.width = (total ? done / total * 100 : 0) + "%";
+  bar.appendChild(fill);
+  box.appendChild(bar);
+}
+
+// Saves the answers in 0.8 seconds (unless something else changes first).
+function saveSoon() {
+  updateProgress();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 800);
+}
+
+// Sends the answers to the server.
+function saveNow() {
+  clearTimeout(saveTimer);
+  saveTimer = 0;
+  return api("PUT", "/api/profile?person=" + encodeURIComponent(PERSON), { answers: ANSWERS })
+    .then(function () { status("Saved"); })
+    .catch(function (e) { status("Not saved: " + e.message, true); });
+}
+
+// Changes one answer. An empty answer is removed.
+function setAnswer(id, value) {
+  if (value === "" || value === null || (Array.isArray(value) && !value.length)) delete ANSWERS[id];
+  else ANSWERS[id] = value;
+  saveSoon();
+}
+
+// Makes the input for one question: chips for choices, a number box, or a text box.
+function questionField(q) {
+  var inputId = "q-" + q.id;
+  var wrap;
+  var help = q.help ? el("span", "help", q.help) : null;
+
+  if (q.type === "choice" || q.type === "multi") {
+    // A group of chips. "choice" allows one (tap again to clear); "multi" allows several.
+    wrap = el("fieldset", "q");
+    var legend = el("legend", null, q.label);
+    if (help) legend.appendChild(help);
+    wrap.appendChild(legend);
+    var chips = el("div", "chips");
+    q.options.forEach(function (option) {
+      var label = el("label", "chip");
+      var input = el("input");
+      input.type = "checkbox";
+      input.name = inputId;
+      input.value = option;
+      var current = ANSWERS[q.id];
+      input.checked = q.type === "multi" ? Array.isArray(current) && current.indexOf(option) > -1 : current === option;
+      input.onchange = function () {
+        if (q.type === "choice") {
+          // Only one can be picked, so untick the others.
+          chips.querySelectorAll("input").forEach(function (other) {
+            if (other !== input) other.checked = false;
+          });
+          setAnswer(q.id, input.checked ? option : "");
+        } else {
+          var picked = [].filter.call(chips.querySelectorAll("input"), function (x) { return x.checked; })
+            .map(function (x) { return x.value; });
+          setAnswer(q.id, picked);
+        }
+      };
+      label.appendChild(input);
+      label.appendChild(el("span", null, option));
+      chips.appendChild(label);
+    });
+    wrap.appendChild(chips);
+    return wrap;
+  }
+
+  wrap = el("div", "q");
+  var title = el("label", null, q.label);
+  title.htmlFor = inputId;
+  if (help) title.appendChild(help);
+  wrap.appendChild(title);
+
+  if (q.type === "number") {
+    var number = el("input");
+    number.type = "number";
+    number.id = inputId;
+    number.inputMode = "decimal";
+    if (q.min != null) number.min = q.min;
+    if (q.max != null) number.max = q.max;
+    number.step = q.step || 1;
+    number.value = ANSWERS[q.id] != null ? ANSWERS[q.id] : "";
+    number.oninput = function () {
+      setAnswer(q.id, number.value === "" ? "" : Number(number.value));
+    };
+    // Money goes before the number, other units after it.
+    if (q.unit === "$") {
+      var money = el("span", null, "$ ");
+      wrap.appendChild(money);
+      wrap.appendChild(number);
+    } else {
+      wrap.appendChild(number);
+      if (q.unit) wrap.appendChild(el("span", "unit", q.unit));
+    }
+    return wrap;
+  }
+
+  var text = el("textarea");
+  text.id = inputId;
+  text.maxLength = 2000;
+  text.rows = q.type === "long" ? 3 : 1;
+  if (q.placeholder) text.placeholder = q.placeholder;
+  text.value = ANSWERS[q.id] || "";
+  text.oninput = function () {
+    setAnswer(q.id, text.value);
+  };
+  wrap.appendChild(text);
+  return wrap;
+}
+
+// Draws every section of questions.
+function render() {
+  var form = $("form");
+  form.textContent = "";
+  QUESTIONS.sections.forEach(function (section) {
+    var card = el("section", "card");
+    card.appendChild(el("h2", null, section.title));
+    section.questions.forEach(function (q) {
+      card.appendChild(questionField(q));
+    });
+    form.appendChild(card);
+  });
+  updateProgress();
+}
+
+// Loads one person's answers and draws the page.
+function load(names) {
+  return api("GET", "/api/profile?person=" + encodeURIComponent(PERSON)).then(function (data) {
+    ANSWERS = data.answers || {};
+    var name = names[PERSON] || PERSON;
+    $("sub").textContent = PERSON === ME.person ? "Your answers" : name + "’s answers";
+    $("pwCard").hidden = !data.canChangePassword;
+    render();
+  });
+}
+
+// Admins: buttons to switch whose answers are shown.
+function renderPicker(list, names) {
+  var picker = $("people");
+  picker.textContent = "";
+  picker.hidden = list.length < 2;
+  list.forEach(function (person) {
+    var b = el("button", "btn", (names[person] || person) + (person === ME.person ? " (me)" : ""));
+    b.type = "button";
+    b.setAttribute("aria-pressed", person === PERSON);
+    b.onclick = function () {
+      var before = saveTimer ? saveNow() : Promise.resolve();   // don't lose unsaved typing
+      before.then(function () {
+        PERSON = person;
+        renderPicker(list, names);
+        return load(names);
+      });
+    };
+    picker.appendChild(b);
+  });
+}
+
+// "Change your password".
+$("pwForm").onsubmit = function (e) {
+  e.preventDefault();
+  var box = $("pwMsg");
+  box.textContent = "";
+  api("POST", "/api/password", { current: $("pwCur").value, password: $("pwNew").value }).then(function () {
+    $("pwCur").value = "";
+    $("pwNew").value = "";
+    box.appendChild(el("div", "msg ok", "Password changed. Other devices will need to log in again."));
+  }).catch(function (err) {
+    box.appendChild(el("div", "msg err", err.message));
+  });
+};
+
+// Save straight away if the page is closed while a save is waiting.
+window.addEventListener("pagehide", function () {
+  if (saveTimer) saveNow();
+});
+
+// Start: who is logged in, the questions, and (for admins) everyone's names.
+fetch("/auth/me", { cache: "no-store" }).then(function (response) {
+  return response.ok ? response.json() : null;
+}).then(function (me) {
+  if (!me) {
+    location.href = "/login?next=" + encodeURIComponent("/profile.html");
+    return;
+  }
+  ME = me;
+  var asked = new URLSearchParams(location.search).get("person");
+  PERSON = (me.admin && asked) || me.person;
+  var questions = fetch("questions.json", { cache: "no-cache" }).then(function (r) { return r.json(); });
+  var people = me.admin ? api("GET", "/api/people") : Promise.resolve(null);
+  return Promise.all([questions, people]).then(function (got) {
+    QUESTIONS = got[0];
+    $("intro").textContent = QUESTIONS.intro;
+    var names = {};
+    var list = [me.person];
+    if (got[1]) {
+      list = got[1].people.map(function (p) { return p.person; });
+      got[1].people.forEach(function (p) { names[p.person] = p.name; });
+      renderPicker(list, names);
+    }
+    return load(names).then(function () { $("app").hidden = false; });
+  });
+}).catch(function (e) {
+  $("sub").textContent = "";
+  $("pmsg").appendChild(el("div", "msg err", "Could not load the questions: " + e.message));
+});
+</script>
+</body>
+</html>

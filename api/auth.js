@@ -24,7 +24,8 @@ const RENEW_AFTER = ONE_DAY;
 // Settings for scrypt, a deliberately slow way to hash passwords so guessing them takes ages.
 const SCRYPT = { N: 16384, r: 8, p: 1 };
 
-// Every login from .env: {alex: "scrypt.<salt>.<hash>", ...}
+// Every login from .env: {alex: "scrypt.<salt>.<hash>", ...}. Logins added from the app's
+// People tab are kept in the database instead (see loginFromDb below).
 const USERS = {};
 for (const [name, value] of Object.entries(process.env)) {
   const match = name.match(/^LOGIN_([A-Za-z0-9_]+)$/);
@@ -40,11 +41,30 @@ const ADMINS = String(process.env.ADMIN_USERS || '')
   .map(x => x.trim().toLowerCase())
   .filter(Boolean);
 
-// Describes a login: {user, admin, person}. Each login ticks as a person in the app,
-// set with PERSON_<USERNAME>=alex in .env (by default, the username itself).
+// A login added from the app ({username, hash, person, admin}), or undefined.
+// The database is loaded only when needed, so a problem with it never stops .env logins working.
+function loginFromDb(user) {
+  if (USERS[user]) return undefined;   // .env logins always win
+  try {
+    return require('./db').getLogin(user);
+  } catch (e) {
+    return undefined;
+  }
+}
+
+// The stored password hash for a username, from .env or the database, or undefined.
+function hashFor(user) {
+  if (USERS[user]) return USERS[user];
+  const row = loginFromDb(user);
+  return row ? row.hash : undefined;
+}
+
+// Describes a login: {user, admin, person}. Each login ticks as a person in the app, set with
+// PERSON_<USERNAME>=alex in .env (by default, the username itself), or chosen when it was added.
 function who(user) {
-  const person = String(process.env['PERSON_' + user.toUpperCase()] || user).trim().toLowerCase();
-  return { user, admin: ADMINS.includes(user), person };
+  const row = loginFromDb(user);
+  const person = String(process.env['PERSON_' + user.toUpperCase()] || (row && row.person) || user).trim().toLowerCase();
+  return { user, admin: ADMINS.includes(user) || !!(row && row.admin), person };
 }
 
 // The secret key that signs login cookies. It is made once at random and kept in
@@ -92,13 +112,14 @@ const DUMMY = hash(crypto.randomBytes(12).toString('hex'));
 // Returns the username if the username and password are right, otherwise null.
 function checkLogin(user, password) {
   user = String(user || '').trim().toLowerCase();
-  const passwordOk = verify(password, USERS[user] || DUMMY);
-  return passwordOk && USERS[user] ? user : null;
+  const stored = hashFor(user);
+  const passwordOk = verify(password, stored || DUMMY);
+  return passwordOk && stored ? user : null;
 }
 
 // The signature for a cookie: an HMAC of the text, keyed with SECRET and the person's password hash.
 function sign(text, user) {
-  return crypto.createHmac('sha256', SECRET).update(text + '|' + USERS[user]).digest('base64url');
+  return crypto.createHmac('sha256', SECRET).update(text + '|' + hashFor(user)).digest('base64url');
 }
 
 // Makes the cookie value for a login: "<user>.<expiry time>.<signature>".
@@ -110,7 +131,7 @@ function makeToken(user) {
 // Checks a cookie value. Returns {user, admin, person, exp} if it is genuine and not expired, or null.
 function readToken(token) {
   const parts = String(token || '').split('.');
-  if (parts.length !== 3 || !USERS[parts[0]]) return null;
+  if (parts.length !== 3 || !hashFor(parts[0])) return null;
   const [user, expires, signature] = parts;
   const want = Buffer.from(sign(user + '.' + expires, user));
   const got = Buffer.from(signature);
@@ -277,4 +298,19 @@ async function handle(req, res, urlPath) {
   return false;
 }
 
-module.exports = { handle, session, refresh, hash, users: () => Object.keys(USERS) };
+// True if a username is already taken (in .env or the database).
+function exists(user) {
+  return !!hashFor(String(user || '').toLowerCase());
+}
+
+// True if a login comes from .env (its password can only be changed there).
+function isEnvLogin(user) {
+  return !!USERS[user];
+}
+
+module.exports = {
+  handle, session, refresh, hash, verify, exists, isEnvLogin,
+  describe: who,                                   // {user, admin, person} for a username
+  loginCookie: (req, user) => cookieFor(req, user), // a fresh login cookie, e.g. after a password change
+  users: () => Object.keys(USERS),                 // the .env usernames
+};

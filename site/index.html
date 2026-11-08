@@ -293,6 +293,9 @@ li.done .acts .find{color:var(--done)}
 .dk{float:right;font-weight:400;color:var(--mute);font-size:.8rem;font-variant-numeric:tabular-nums}
 .ov{display:block;color:var(--mute);font-size:.82rem;margin-top:.1rem}
 .ov b{color:var(--ink);font-weight:700}
+.ask{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;background:var(--card);border:1px solid var(--accent);border-radius:.8rem;padding:.7rem .9rem;margin:0 0 1rem;font-size:.92rem}
+.ask span{flex:1 1 14rem}
+.ask .btn{text-decoration:none}
 </style>
 </head>
 <body>
@@ -303,12 +306,13 @@ li.done .acts .find{color:var(--done)}
       <span id="sync" class="sync" role="status"></span>
       <details class="acctmenu" id="acct">
         <summary aria-label="Account and log out"><span class="avatar" id="avatar" aria-hidden="true"></span></summary>
-        <div class="menu"><p id="me"></p><a class="btn" href="files.html" style="text-decoration:none">My files</a><a class="btn" id="adminLink" href="admin.html" hidden style="text-decoration:none">Edit plan</a><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
+        <div class="menu"><p id="me"></p><a class="btn" href="profile.html" style="text-decoration:none">About me</a><a class="btn" href="files.html" style="text-decoration:none">My files</a><a class="btn" id="adminLink" href="admin.html" hidden style="text-decoration:none">Edit plan</a><form method="post" action="/auth/logout" id="logout"><button class="btn" type="submit">Log out</button></form></div>
       </details>
     </div>
     <div class="tabs" role="tablist" aria-label="Weeks" id="tabs"></div>
   </header>
   <p class="err" id="err" hidden></p>
+  <div class="ask" id="ask" hidden><span>Help shape your meals and exercise: answer a few questions about you.</span> <a class="btn primary" href="profile.html">Start</a> <button class="btn" type="button" id="askLater">Later</button></div>
   <div class="who" id="whoRow" hidden><label for="user">Ticks for</label><select id="user"></select><span class="me-name" id="meName" hidden></span></div>
   <div id="shopView">
   <div class="sum">
@@ -2419,7 +2423,25 @@ fetch("/auth/me", { cache: "no-store" }).then(function (response) {
     show();
     pull();
   }
+  askAboutMe(d);
 }).catch(function () {});
+
+// Asks people who haven't answered the About me questions to do so, until they tap "Later".
+function askAboutMe(d) {
+  var key = "coles-plan-ask-later-" + d.person;
+  try { if (localStorage.getItem(key)) return; } catch (e) {}
+  fetch("/api/profile", { cache: "no-store" }).then(function (response) {
+    return response.ok ? response.json() : null;
+  }).then(function (profile) {
+    if (!profile || profile.answers) return;
+    var box = document.getElementById("ask");
+    box.hidden = false;
+    document.getElementById("askLater").onclick = function () {
+      box.hidden = true;
+      try { localStorage.setItem(key, "1"); } catch (e) {}
+    };
+  }).catch(function () {});
+}
 
 // On log out, also drop the offline copy so the lists are not left on the phone.
 document.getElementById("logout").addEventListener("submit", function (e) {

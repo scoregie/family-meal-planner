@@ -8,6 +8,7 @@
 //   profiles      each person's answers to the "getting started" questions
 //   requests      changes people have asked an admin to make
 //   settings      app-wide settings such as colours and fonts
+//   logins        logins added from the app (logins in .env still work too)
 //
 // To look inside it yourself:  sqlite3 data/app.db ".tables"   (or any SQLite viewer)
 const path = require('path');
@@ -85,6 +86,17 @@ const MIGRATIONS = [
   CREATE TABLE settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL           -- as JSON
+  );
+  `,
+  // 2: logins added from the People tab of Edit plan
+  `
+  CREATE TABLE logins (
+    username   TEXT PRIMARY KEY,  -- lower case, like "sam"
+    hash       TEXT NOT NULL,     -- the password, scrambled with scrypt (never the password itself)
+    person     TEXT NOT NULL,     -- the person key they tick as
+    admin      INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    created_by TEXT
   );
   `,
 ];
@@ -292,4 +304,45 @@ function dishes() {
   }));
 }
 
-module.exports = { open, transaction, syncMeals, rememberDishes, history, dishes, dishKey, DB_FILE };
+// ---------- logins ----------
+
+// One login added from the app: {username, hash, person, admin}, or undefined.
+function getLogin(username) {
+  return open().prepare('SELECT username, hash, person, admin FROM logins WHERE username = ?').get(username);
+}
+
+// Every login added from the app (without the password hashes).
+function listLogins() {
+  return open().prepare('SELECT username, person, admin, created_at, created_by FROM logins ORDER BY username').all();
+}
+
+// Adds a login. `hash` is already scrambled (auth.hash).
+function addLogin(username, hash, person, admin, createdBy) {
+  open().prepare('INSERT INTO logins (username, hash, person, admin, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(username, hash, person, admin ? 1 : 0, Date.now(), createdBy || null);
+}
+
+// Changes a login's password. Returns true if there was such a login.
+function setPassword(username, hash) {
+  return open().prepare('UPDATE logins SET hash = ? WHERE username = ?').run(hash, username).changes > 0;
+}
+
+// ---------- profiles (the getting-started answers) ----------
+
+// A person's answers ({question id: answer}) and when they were saved, or null.
+function getProfile(person) {
+  const row = open().prepare('SELECT answers, updated_at FROM profiles WHERE person = ?').get(person);
+  return row ? { answers: JSON.parse(row.answers), updated_at: row.updated_at } : null;
+}
+
+// Saves a person's answers, replacing what was there.
+function saveProfile(person, answers) {
+  open().prepare(`INSERT INTO profiles (person, answers, updated_at) VALUES (?, ?, ?)
+    ON CONFLICT (person) DO UPDATE SET answers = excluded.answers, updated_at = excluded.updated_at`)
+    .run(person, JSON.stringify(answers), Date.now());
+}
+
+module.exports = {
+  open, transaction, syncMeals, rememberDishes, history, dishes, dishKey, DB_FILE,
+  getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
+};

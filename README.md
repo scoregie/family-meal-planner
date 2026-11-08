@@ -66,6 +66,12 @@ People in the app (whose ticks and ratings are whose) come from the `"people"` b
 - 10 wrong passwords from one address locks logins from that address for 15 minutes.
 - The login cookie is signed with a random key in `data/session-secret`. Deleting it logs everyone out.
 
+## Adding people and the About me questions
+
+Admins can add someone from **Edit plan → People**: their name, a username, a starting password, their portion and whether they are an admin. They can log in straight away, and they are added to the plan with a backup kept first. Logins added this way are stored in `data/app.db`. Logins in `.env` keep working as before.
+
+Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to. People with a login added from the app can change their password on the same page.
+
 ## Uploading files
 
 Everyone gets a **My files** page in the account menu (top right) for things that help with the plan: Lose It exports, Apple Health exports, blood tests, photos and anything else. Each person only sees their own files. Admins can see, add and delete everyone's.
