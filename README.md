@@ -153,6 +153,16 @@ If Anthropic's safety checks decline a request, it is automatically retried on a
 
 **Privacy:** to answer, Claude is sent the plan details it asks for and, for the person the chat is about, their About me answers, meal history and progress. Nothing is sent until someone types a message. Chats are kept in `data/app.db` so people can come back to them; people can delete their own chats. Anthropic's API doesn't use this data for training. Claude can make mistakes, and a doctor's advice always comes first.
 
+## Settings: colours, fonts, text size and the app icon
+
+**Settings** (in the account menu) changes how the app looks:
+
+- **On this device:** anyone can pick light or dark, a colour, a font and a text size just for themselves. These are saved in their browser.
+- **For everyone (admins):** the household's colour, font and text size, used by anyone who hasn't chosen their own. Saved in `data/app.db`.
+- **App icon (admins):** pick a picture (or type up to two letters or an emoji) and a background colour. The icon is drawn in the browser and saved as `site/icon-512.png`, `site/icon-192.png` and `site/apple-touch-icon.png`. Old icons are kept in `data/icon-backups/`, and **Back to the original icon** restores the first one. On iPhone, remove the app from the home screen and add it again to see a new icon.
+
+The eight colours are checked for contrast in both light and dark mode, and text sizes scale with the phone's own text-size setting.
+
 ## Changing the plan
 
 Everything the page shows (meals, recipes, shopping lists and exercise) comes from `site/plan.json`. Replace that file to change the plan. No restart is needed.

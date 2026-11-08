@@ -19,7 +19,7 @@
 	}
 
 	# Files anyone can load: the login page and what it (and the home-screen app) needs.
-	@public path /login /login.html /sw.js /manifest.webmanifest /icon-192.png /icon-512.png /apple-touch-icon.png
+	@public path /login /login.html /sw.js /appearance.js /manifest.webmanifest /icon-192.png /icon-512.png /apple-touch-icon.png
 	handle @public {
 		rewrite /login /login.html
 		root * /srv
