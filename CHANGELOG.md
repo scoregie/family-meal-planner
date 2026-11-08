@@ -3,6 +3,14 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.0.2 (2026-11-08)
+
+- Exercise: each of today's workouts now starts with **Today:** and that day's amount from the plan
+  (for example "Today: Easy walk, 25 minutes."), so the general workout steps no longer seem to
+  disagree with the day. The workout's general time is hidden when today's amount is shown.
+- AI plans: workouts describe how to do a session; lengths and distances go in each day's session
+  and build up over the weeks.
+
 ## v1.0.1 (2026-11-08)
 
 - The project is now open source under the MIT licence (see LICENSE).
