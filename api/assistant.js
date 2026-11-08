@@ -22,6 +22,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./db');
 const planchange = require('./planchange');
+const secrets = require('./secrets');
 const progress = require('./progress');
 
 const MODEL = process.env.ASSISTANT_MODEL || 'claude-opus-5-5';
@@ -45,16 +46,51 @@ try {
 } catch (e) {
   sdkProblem = 'The Anthropic SDK is not installed. Restart the app with docker compose up -d (it installs on start, and needs the internet once).';
 }
-let client = null;
+let householdClient = null;
+const ownClients = new Map();   // account id -> {key, client}, for people who added their own API key
 
-// Whether the assistant can be used, and if not, why.
-function setup() {
+// The person's own API key (decrypted), if they saved one in Settings.
+function ownKey(me) {
+  if (!me || !me.accountId) return null;
+  const sealed = db.getAiKey(me.accountId);
+  return sealed ? secrets.decrypt(sealed) : null;
+}
+
+// Whether the assistant can be used by this person, and with whose key. Their own key (from
+// Settings) is used first; otherwise the household's ANTHROPIC_API_KEY from .env.
+// Returns {enabled, own, client} or {enabled: false, reason}.
+function setup(me) {
   if (!Anthropic) return { enabled: false, reason: sdkProblem };
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
-    return { enabled: false, reason: 'An admin needs to add ANTHROPIC_API_KEY to the .env file on the server (see the README), then restart the app.' };
+  const key = ownKey(me);
+  if (key) {
+    let cached = ownClients.get(me.accountId);
+    if (!cached || cached.key !== key) {
+      cached = { key, client: new Anthropic({ apiKey: key }) };
+      ownClients.set(me.accountId, cached);
+    }
+    return { enabled: true, own: true, client: cached.client };
   }
-  if (!client) client = new Anthropic();
-  return { enabled: true };
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
+    return { enabled: false, reason: 'Add your own Claude API key in Settings, or ask an admin to add one for the whole family (ANTHROPIC_API_KEY in .env on the server; see the README).' };
+  }
+  if (!householdClient) householdClient = new Anthropic();
+  return { enabled: true, own: false, client: householdClient };
+}
+
+// Checks a pasted API key really works (a free request that just looks up the model).
+// Resolves to '' if it does, or a message saying what's wrong.
+async function checkKey(apiKey) {
+  if (!Anthropic) return sdkProblem;
+  try {
+    await new Anthropic({ apiKey, maxRetries: 0 }).models.retrieve(MODEL, null, { timeout: 15000 });
+    return '';
+  } catch (err) {
+    if (err instanceof Anthropic.AuthenticationError) return 'Anthropic didn’t accept that key. Check you copied all of it.';
+    if (err instanceof Anthropic.PermissionDeniedError) return 'That key can’t use ' + MODEL + '. Check the key’s workspace in the Anthropic console.';
+    if (err instanceof Anthropic.NotFoundError) return 'That key can’t use ' + MODEL + '.';
+    if (err instanceof Anthropic.APIError) return 'Anthropic said: ' + String(err.message || '').slice(0, 200);
+    return 'Couldn’t reach Anthropic to check the key. Try again in a moment.';
+  }
 }
 
 function send(res, code, obj) {
@@ -98,7 +134,7 @@ function system() {
   if (systemPrompt) return systemPrompt;
   let docs = '';
   try { docs = fs.readFileSync(DOCS_FILE, 'utf8'); } catch (e) { /* the tools still work without it */ }
-  systemPrompt = `You are the assistant inside a family's self-hosted meal and exercise planner. The family is in Australia and shops at Coles. People use the app on their phones to see their shopping list, meals, recipes, macros, exercise and progress.
+  systemPrompt = `You are the assistant inside a family's self-hosted meal and exercise planner. The family is in Australia. The first message says which supermarkets this person uses; plan prices are estimates from Coles. People use the app on their phones to see their shopping list, meals, recipes, macros, exercise and progress.
 
 What you can do:
 - Answer questions about the plan, recipes, shopping, macros, food groups, exercise and progress, using the tools to look things up. Look before you answer; don't guess what is in the plan.
@@ -116,7 +152,7 @@ Health:
 - Always respect allergies, intolerances and foods people won't eat (from About me and the plan). Be careful with children's portions; don't put children on weight-loss diets.
 - Don't suggest very low energy intakes, crash diets or supplements.
 
-Coles: you can't add things to a Coles cart or list; Coles has no way for other apps to do that. Point people to the shopping list's "Copy list" button and the "Search Coles" links next to each item.
+Supermarkets: you can't add things to a supermarket cart or list; none of them let other apps do that. Point people to the shopping list's "Copy list" button and the store search links next to each item (they choose their stores in Settings). Prices at other stores differ from the plan's Coles estimates; say so when cost matters.
 
 Style: plain Australian English, short paragraphs, metric units and kilojoules (kJ). Be warm and practical. Use short lists when they help. No tables wider than three columns: people read this on phones.
 
@@ -346,13 +382,19 @@ function runTool(name, input, chat, ctx) {
 // A conversation turn, streamed to the page as "server-sent events"
 // ---------------------------------------------------------------------------
 
-// The first message of a chat says who is asking, about whom, and the date.
+// The supermarkets a person chose in Settings, by name: "Coles, Aldi".
+function shopsAt(person) {
+  const names = { coles: 'Coles', woolworths: 'Woolworths', aldi: 'Aldi', iga: 'IGA', foodland: 'Foodland (SA)', spudshed: 'Spudshed (WA)', drakes: 'Drakes' };
+  return require('./appearance').storesFor(person).map(k => names[k] || k).join(', ');
+}
+
+// The first message of a chat says who is asking, about whom, where they shop, and the date.
 function opening(me, person, names, text) {
   const asker = names[me.person] || me.person;
   const about = names[person] || person;
   return '<context>Today is ' + new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) +
     '. You are talking with ' + asker + (me.admin ? ' (an admin)' : '') + ', about ' + (person === me.person ? 'their own plan' : about + '’s plan') +
-    '.</context>\n\n' + text;
+    '. They shop at: ' + shopsAt(person) + '.</context>\n\n' + text;
 }
 
 async function chatTurn(req, res, me, ctx) {
@@ -360,8 +402,9 @@ async function chatTurn(req, res, me, ctx) {
   const text = String(b.text || '').trim().slice(0, MAX_TEXT);
   if (!text) return send(res, 400, { error: 'Type a message first.' });
 
-  const ready = setup();
+  const ready = setup(me);
   if (!ready.enabled) return send(res, 503, { error: ready.reason });
+  const client = ready.client;
 
   // Which chat, and whose plan it is about (people can only ask about themselves; admins about anyone).
   let chat;
@@ -376,8 +419,9 @@ async function chatTurn(req, res, me, ctx) {
   }
   chat.admin = me.admin;
 
+  // The daily limit protects the household's key. People using their own key pay for it themselves.
   const used = db.usage(me.user, today());
-  if (used.messages >= DAILY_LIMIT) return send(res, 429, { error: 'That’s the limit of ' + DAILY_LIMIT + ' messages for today. It resets tomorrow.' });
+  if (!ready.own && used.messages >= DAILY_LIMIT) return send(res, 429, { error: 'That’s the limit of ' + DAILY_LIMIT + ' messages for today. It resets tomorrow.' });
 
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' });
   const event = (type, data) => res.write('event: ' + type + '\ndata: ' + JSON.stringify(data) + '\n\n');
@@ -574,11 +618,11 @@ async function handle(req, res, urlPath, url, me, ctx) {
   }
 
   if (urlPath === '/api/assistant' && req.method === 'GET') {
-    const ready = setup();
+    const ready = setup(me);
     const person = String(url.searchParams.get('person') || me.person || '').toLowerCase();
     const canSee = person === me.person || me.admin;
     send(res, 200, {
-      enabled: ready.enabled, reason: ready.reason || null, model: MODEL,
+      enabled: ready.enabled, reason: ready.reason || null, model: MODEL, ownKey: !!ready.own,
       limit: DAILY_LIMIT, used: db.usage(me.user, today()).messages,
       chats: canSee && ctx.people().includes(person) ? db.listChats(person, 30).filter(c => me.admin || c.user === me.user) : [],
     });
@@ -622,4 +666,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { handle, setup, TOOLS, runTool, forDisplay };
+module.exports = { handle, setup, checkKey, TOOLS, runTool, forDisplay };

@@ -27,6 +27,8 @@
 //   POST /api/account/email        {email, password}: add or change your email
 //   POST /api/account/logout-everywhere
 //   POST /api/account/delete       {password, history}: delete your account (and, if asked, your history)
+//   PUT  /api/account/ai-key       {key}: save your own Claude API key (checked, then stored encrypted)
+//   DELETE /api/account/ai-key     remove it
 //   GET  /api/family               admins: everyone's logins, and invites waiting to be used
 //   POST /api/family/invite        admins: {name, email?, role, person?, portion?} -> {link}
 //   DELETE /api/family/invite?id=  admins: cancel an invite
@@ -37,6 +39,7 @@ const crypto = require('crypto');
 const auth = require('./auth');
 const db = require('./db');
 const mailer = require('./mailer');
+const secrets = require('./secrets');
 
 const DAY = 864e5;
 const INVITE_DAYS = 7;
@@ -266,6 +269,30 @@ async function deleteMine(req, res, me) {
   return send(res, 200, { ok: true }, auth.logoutCookie(req));
 }
 
+// The last 4 characters of someone's saved API key ("…4f2a"), so they can tell which key it is.
+// The whole key is never sent back to the browser.
+function aiKeyHint(me) {
+  if (!me.accountId) return null;
+  const key = secrets.decrypt(db.getAiKey(me.accountId));
+  return key ? '…' + key.slice(-4) : null;
+}
+
+async function aiKey(req, res, me) {
+  if (!me.accountId) return send(res, 400, { error: 'Add your email on the Account page first.' });
+  if (req.method === 'DELETE') {
+    db.setAiKey(me.accountId, null);
+    return send(res, 200, { ok: true });
+  }
+  if (req.method !== 'PUT') return send(res, 404, { error: 'not found' });
+  const b = await body(req);
+  const key = String(b.key || '').trim();
+  if (!/^sk-ant-[A-Za-z0-9_-]{20,300}$/.test(key)) return send(res, 400, { error: 'That doesn’t look like a Claude API key. They start with “sk-ant-”.' });
+  const problem = await require('./assistant').checkKey(key);
+  if (problem) return send(res, 400, { error: problem });
+  db.setAiKey(me.accountId, secrets.encrypt(key));
+  return send(res, 200, { ok: true, hint: '…' + key.slice(-4) });
+}
+
 // ---------------------------------------------------------------------------
 // The family (admins)
 // ---------------------------------------------------------------------------
@@ -381,7 +408,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     send(res, 200, {
       email: account ? account.email : null, role: me.role, person: me.person, name: nameOf(me.person, ctx),
       needsEmail: !!me.needsEmail, username: me.needsEmail ? me.user : account && account.legacy_user,
-      hasAiKey: !!(account && account.has_ai_key), mail: mailer.configured(),
+      hasAiKey: !!(account && account.has_ai_key), aiKeyHint: aiKeyHint(me), mail: mailer.configured(),
     });
     return true;
   }
@@ -395,6 +422,10 @@ async function handle(req, res, urlPath, url, me, ctx) {
       db.updateAccount(me.accountId, { logOutEverywhere: true });
       send(res, 200, { ok: true }, auth.loginCookie(req, me.subject));
     }
+    return true;
+  }
+  if (urlPath === '/api/account/ai-key') {
+    await aiKey(req, res, me);
     return true;
   }
   if (urlPath === '/api/account/delete' && req.method === 'POST') {

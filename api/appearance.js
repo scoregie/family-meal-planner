@@ -2,6 +2,8 @@
 //
 //   GET /api/appearance         the household's colour, font and text size
 //   PUT /api/appearance         admins: save them {colour, font, size}
+//   PUT /api/appearance/stores  {stores: [...], scope: "me" or "house"}: where you shop (admins
+//                               can also set the household's choice, used by anyone without their own)
 //   PUT /api/appearance/icon    admins: a new icon, drawn in the browser {icon512, icon192, icon180}
 //                               (each a "data:image/png;base64,..." picture), or {reset: true}
 //                               to go back to the icon the app came with
@@ -22,6 +24,29 @@ const CHOICES = {
   font: ['atkinson', 'lexend', 'nunito', 'literata', 'system'],
   size: ['small', 'normal', 'large', 'larger', 'largest'],
 };
+
+// Grocery stores (the same list as site/appearance.js).
+const STORES = ['coles', 'woolworths', 'aldi', 'iga', 'foodland', 'spudshed', 'drakes'];
+
+function readStores(key) {
+  try {
+    const list = JSON.parse(db.getSetting(key) || '[]');
+    return Array.isArray(list) ? list.filter(s => STORES.includes(s)) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// {house: [...], mine: [...]} for a person.
+function stores(person) {
+  return { house: readStores('stores'), mine: readStores('stores:' + person) };
+}
+
+// The stores a person shops at (their own choice, else the household's, else Coles), for the assistant.
+function storesFor(person) {
+  const s = stores(person);
+  return s.mine.length ? s.mine : s.house.length ? s.house : ['coles'];
+}
 
 // The icon files, and the size each must be.
 const ICONS = { icon512: ['icon-512.png', 512], icon192: ['icon-192.png', 192], icon180: ['apple-touch-icon.png', 180] };
@@ -104,18 +129,33 @@ function writeFile(file, bytes) {
 }
 
 async function handle(req, res, urlPath, url, me) {
-  if (urlPath !== '/api/appearance' && urlPath !== '/api/appearance/icon') return false;
+  if (urlPath !== '/api/appearance' && urlPath !== '/api/appearance/icon' && urlPath !== '/api/appearance/stores') return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
     send(res, 403, { error: 'bad request' });
     return true;
   }
 
   if (urlPath === '/api/appearance' && req.method === 'GET') {
-    send(res, 200, { house: house(), admin: !!me.admin });
+    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person) });
     return true;
   }
   if (req.method !== 'PUT') {
     send(res, 404, { error: 'not found' });
+    return true;
+  }
+  if (urlPath === '/api/appearance/stores') {
+    const b = await body(req, 2000);
+    const list = Array.isArray(b.stores) ? [...new Set(b.stores.filter(s => STORES.includes(s)))] : [];
+    if (b.scope === 'house') {
+      if (!me.admin) {
+        send(res, 403, { error: 'Only an admin can change the household’s stores.' });
+        return true;
+      }
+      db.setSetting('stores', JSON.stringify(list));
+    } else {
+      db.setSetting('stores:' + me.person, JSON.stringify(list));
+    }
+    send(res, 200, { ok: true, stores: stores(me.person) });
     return true;
   }
   if (!me.admin) {
@@ -170,4 +210,4 @@ async function handle(req, res, urlPath, url, me) {
   return true;
 }
 
-module.exports = { handle, CHOICES };
+module.exports = { handle, CHOICES, STORES, storesFor };

@@ -147,7 +147,7 @@ Admins can also chat about anyone's plan and apply their own suggestions straigh
 
 Coles has no way for other apps to add to a cart or list, so Claude points people to **Copy list** and the **Search Coles** links on the shopping list instead.
 
-**Setting it up:** get an API key from [console.anthropic.com](https://console.anthropic.com), add it to `.env` and restart:
+**Setting it up:** either each person adds their own key in **Settings → Your Claude key**, or an admin sets one key for the whole family: get an API key from [console.anthropic.com](https://console.anthropic.com), add it to `.env` and restart:
 
     ANTHROPIC_API_KEY=sk-ant-...
     docker compose up -d
@@ -173,6 +173,9 @@ If Anthropic's safety checks decline a request, it is automatically retried on a
 - **On this device:** anyone can pick light or dark, a colour, a font and a text size just for themselves. These are saved in their browser.
 - **For everyone (admins):** the household's colour, font and text size, used by anyone who hasn't chosen their own. Saved in `data/app.db`.
 - **App icon (admins):** pick a picture (or type up to two letters or an emoji) and a background colour. The icon is drawn in the browser and saved as `site/icon-512.png`, `site/icon-192.png` and `site/apple-touch-icon.png`. Old icons are kept in `data/icon-backups/`, and **Back to the original icon** restores the first one. On iPhone, remove the app from the home screen and add it again to see a new icon.
+
+- **Where you shop:** everyone picks their supermarkets (Coles, Woolworths, Aldi, IGA, Foodland, Spudshed, Drakes, or a mix), and admins pick the household's default. The shopping list shows a search link for each. Coles and Woolworths open their own search; IGA, Foodland, Spudshed and Drakes run their online shops store by store, so their links search the store's website; Aldi has no online shop. Plan prices are Coles estimates.
+- **Your Claude key:** anyone with an email login can paste their own Claude API key, so Ask Claude uses it for their chats (they pay for their own messages and the daily limit doesn't apply). The key is checked with Anthropic, then stored encrypted with a random key in `data/encryption-key`, and never sent back to the browser in full. Claude.ai subscriptions can't be used by other apps, so it has to be an API key.
 
 The eight colours are checked for contrast in both light and dark mode, and text sizes scale with the phone's own text-size setting.
 

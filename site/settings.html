@@ -55,6 +55,8 @@ section.card{background:var(--card);border:1px solid var(--line);border-radius:.
 .home figure{margin:0;text-align:center;color:#fff;font-size:.7rem}
 .home canvas{display:block;border-radius:22%;box-shadow:0 2px 6px rgba(0,0,0,.3);margin:0 auto .25rem}
 .emoji .choice span{font-size:1.4rem;min-width:2.8rem;justify-content:center;padding:.2rem .4rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+input[type=password]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem}
 input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem;width:6rem}
 .msg{border-radius:.6rem;padding:.6rem .8rem;margin:0 0 .8rem;font-size:.9rem}
 .msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
@@ -82,6 +84,31 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
       <div class="demo"><span class="tick"><i>✓</i> Eaten</span><span class="btn primary">Copy list</span><span class="btn">Search Coles</span></div>
     </div>
     <div class="row"><button class="btn" id="resetMine" type="button">Use the household’s look</button></div>
+  </section>
+
+  <section class="card" id="storesCard">
+    <h2>Where you shop</h2>
+    <p class="note">Pick one or more. The shopping list shows a search link for each, and Ask Claude knows where you shop. Plan prices are Coles estimates, so other stores will differ a little.</p>
+    <fieldset class="choices" id="myStores"><legend>Your stores</legend></fieldset>
+    <p class="note" id="storesHint"></p>
+    <div id="houseStoresBox" hidden>
+      <fieldset class="choices" id="houseStores" style="margin-top:.8rem"><legend>The household’s stores (admins): used by anyone who hasn’t picked their own</legend></fieldset>
+    </div>
+  </section>
+
+  <section class="card" id="claudeCard" hidden>
+    <h2>Your Claude key</h2>
+    <p class="note">Ask Claude normally uses the family’s key (if an admin has set one up). You can use your own instead: then you pay Anthropic for your own messages and the daily limit doesn’t apply. Make a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">console.anthropic.com</a> (Claude.ai subscriptions can’t be used by other apps, so it needs an API key).</p>
+    <p id="keyState" class="note"></p>
+    <form id="keyForm">
+      <label class="sr" for="aiKey">Your Claude API key</label>
+      <input type="password" id="aiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" style="width:100%;max-width:26rem">
+      <div class="row">
+        <button class="btn primary" type="submit" id="keySave">Save key</button>
+        <button class="btn" type="button" id="keyRemove" hidden>Remove my key</button>
+      </div>
+    </form>
+    <p class="note">The key is checked with Anthropic, then stored encrypted on your family’s server. It’s never shown again in full, and only used for your own chats.</p>
   </section>
 
   <section class="card" id="houseCard" hidden>
@@ -346,6 +373,89 @@ function saveIcon() {
   }).catch(function (e) { status(e.message, true); }).then(function () { $("saveIcon").disabled = false; });
 }
 
+// ---------- Stores ----------
+// Ticks for each store. Saved straight away.
+function storeBoxes(boxId, picked, scope) {
+  var box = $(boxId);
+  box.querySelectorAll("label").forEach(function (l) { l.remove(); });
+  Object.keys(A.STORES).forEach(function (k) {
+    var store = A.STORES[k];
+    var label = el("label", "choice");
+    var input = el("input");
+    input.type = "checkbox";
+    input.value = k;
+    input.checked = picked.indexOf(k) >= 0;
+    input.addEventListener("change", function () {
+      var list = Array.prototype.slice.call(box.querySelectorAll("input:checked")).map(function (i) { return i.value; });
+      api("PUT", "/api/appearance/stores", { stores: list, scope: scope }).then(function (got) {
+        A.setStores(got.stores);
+        renderStores();
+        status("Saved.");
+      }).catch(function (e) { status(e.message, true); });
+    });
+    var span = el("span");
+    span.appendChild(document.createTextNode(store.name));
+    if (store.note) span.appendChild(el("small", null, store.note));
+    span.style.flexDirection = "column";
+    span.style.alignItems = "flex-start";
+    span.style.gap = "0";
+    label.appendChild(input);
+    label.appendChild(span);
+    box.appendChild(label);
+  });
+}
+
+function renderStores() {
+  var c = A.storeChoices();
+  storeBoxes("myStores", c.mine, "me");
+  var names = A.stores().map(function (k) { return A.STORES[k].name; }).join(", ");
+  $("storesHint").textContent = c.mine.length ? "" : "You haven’t picked any, so you get the household’s: " + names + ".";
+  if (IS_ADMIN) {
+    $("houseStoresBox").hidden = false;
+    storeBoxes("houseStores", c.house.length ? c.house : ["coles"], "house");
+  }
+}
+
+// ---------- Your own Claude key ----------
+function renderKey(account) {
+  $("claudeCard").hidden = false;
+  if (account.needsEmail) {
+    $("keyState").textContent = "Add your email on the Account page first, then you can save your own key here.";
+    $("keyForm").hidden = true;
+    return;
+  }
+  $("keyForm").hidden = false;
+  $("keyState").textContent = account.hasAiKey ? "Using your own key (" + (account.aiKeyHint || "saved") + "). Paste a new one to replace it." : "You’re not using your own key.";
+  $("keyRemove").hidden = !account.hasAiKey;
+}
+
+function loadAccount() {
+  return api("GET", "/api/account").then(renderKey).catch(function () { /* card stays hidden */ });
+}
+
+$("keyForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var key = $("aiKey").value.trim();
+  if (!key) return;
+  $("keySave").disabled = true;
+  $("keySave").textContent = "Checking with Anthropic…";
+  api("PUT", "/api/account/ai-key", { key: key }).then(function () {
+    $("aiKey").value = "";
+    status("Key saved. Ask Claude will use it for your chats.");
+    return loadAccount();
+  }).catch(function (err) { status(err.message, true); }).then(function () {
+    $("keySave").disabled = false;
+    $("keySave").textContent = "Save key";
+  });
+});
+$("keyRemove").addEventListener("click", function () {
+  if (!confirm("Remove your key? Ask Claude will go back to the family’s key, if there is one.")) return;
+  api("DELETE", "/api/account/ai-key").then(function () {
+    status("Removed.");
+    return loadAccount();
+  }).catch(function (err) { status(err.message, true); });
+});
+
 $("resetMine").addEventListener("click", function () {
   A.setMine({});
   renderMine();
@@ -370,6 +480,8 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (
 
 loadAllFonts();
 renderMine();
+renderStores();
+loadAccount();
 A.refresh().then(function (got) {
   if (!got) {
     if (!navigator.onLine) $("msg").appendChild(el("div", "msg err", "You’re offline, so only this device’s settings can be changed."));
@@ -377,6 +489,7 @@ A.refresh().then(function (got) {
   }
   HOUSE = A.clean(got.house);
   IS_ADMIN = got.admin;
+  renderStores();
   ICON.colour = HOUSE.colour || "green";
   renderMine();
   if (IS_ADMIN) {

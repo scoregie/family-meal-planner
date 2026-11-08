@@ -42,6 +42,35 @@
 
   var THEMES = { auto: "Match my device", light: "Light", dark: "Dark" };
 
+  // Grocery stores. Coles and Woolworths have a search page we can link to directly. The others run
+  // their online shops store by store with no shared search address, so their links search the
+  // store's website instead. Aldi has no online shop, so it has no link.
+  function siteSearch(site) {
+    return function (q) { return "https://www.google.com/search?q=" + encodeURIComponent("site:" + site + " " + q); };
+  }
+  var STORES = {
+    coles: { name: "Coles", short: "Coles", search: function (q) { return "https://www.coles.com.au/search/products?q=" + encodeURIComponent(q); } },
+    woolworths: { name: "Woolworths", short: "Woolies", search: function (q) { return "https://www.woolworths.com.au/shop/search/products?searchTerm=" + encodeURIComponent(q); } },
+    aldi: { name: "Aldi", short: "Aldi", search: null, note: "In store only" },
+    iga: { name: "IGA", short: "IGA", search: siteSearch("igashop.com.au"), note: "Searches IGA’s website" },
+    foodland: { name: "Foodland (SA)", short: "Foodland", search: siteSearch("foodlandsa.com.au"), note: "Searches Foodland’s website" },
+    spudshed: { name: "Spudshed (WA)", short: "Spudshed", search: siteSearch("spudshed.com.au"), note: "Searches Spudshed’s website" },
+    drakes: { name: "Drakes", short: "Drakes", search: siteSearch("drakes.com.au"), note: "Searches Drakes’ website" },
+  };
+  var DEFAULT_STORES = ["coles"];
+
+  function cleanStores(list) {
+    return Array.isArray(list) ? list.filter(function (k, i) { return STORES[k] && list.indexOf(k) === i; }) : [];
+  }
+
+  // The stores to show: this person's choice, else the household's, else Coles.
+  function stores() {
+    var saved = read("stores");
+    var mine = cleanStores(saved.mine);
+    var house = cleanStores(saved.house);
+    return mine.length ? mine : house.length ? house : DEFAULT_STORES;
+  }
+
   var DEFAULTS = { colour: "green", font: "atkinson", size: "normal", theme: "auto" };
 
   function read(key) {
@@ -143,6 +172,12 @@
       var before = JSON.stringify(read("appearance-house"));
       write("appearance-house", clean(got.house));
       if (JSON.stringify(read("appearance-house")) !== before) apply();
+      if (got.stores) {
+        var beforeStores = JSON.stringify(read("stores"));
+        write("stores", got.stores);
+        // Pages that show store links (the shopping list) redraw when the choice changes.
+        if (JSON.stringify(got.stores) !== beforeStores) window.dispatchEvent(new Event("stores-changed"));
+      }
       return got;
     }).catch(function () { /* offline: keep the remembered look */ });
   }
@@ -154,7 +189,11 @@
     FONTS: FONTS,
     SIZES: SIZES,
     THEMES: THEMES,
+    STORES: STORES,
     DEFAULTS: DEFAULTS,
+    stores: stores,
+    storeChoices: function () { var s = read("stores"); return { mine: cleanStores(s.mine), house: cleanStores(s.house) }; },
+    setStores: function (choices) { write("stores", { mine: cleanStores(choices.mine), house: cleanStores(choices.house) }); window.dispatchEvent(new Event("stores-changed")); },
     current: current,
     clean: clean,
     house: function () { return clean(read("appearance-house")); },
