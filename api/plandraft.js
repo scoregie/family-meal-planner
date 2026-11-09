@@ -95,6 +95,7 @@ function household(ctx) {
         finished: !!(profile && profile.finished_at),
         updated: profile ? profile.updated_at : null,
         answers,
+        avoid: (() => { try { return JSON.parse(db.getSetting('exercise-avoid:' + person) || '[]'); } catch (e) { return []; } })(),
       };
     });
 }

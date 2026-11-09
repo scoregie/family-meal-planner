@@ -20,6 +20,7 @@ const appearance = require('./appearance'); // the household's colours, font, te
 const accounts = require('./accounts');     // email accounts: registering, invites, password resets, the family
 const plandraft = require('./plandraft');   // getting the family's plan ready, and Claude drafting a whole plan
 const healthsync = require('./healthsync'); // daily numbers from an iPhone Shortcut (Apple Health)
+const exercises = require('./exercises');   // the exercise library: browse, leave out, swap
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -549,6 +550,7 @@ async function handleRequest(req, res) {
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
     if (await plandraft.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, toKey, people })) return;
     if (healthsync.handle(req, res, urlPath, url, me, { people })) return;
+    if (await exercises.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
 
     if (urlPath === '/api/state' && req.method === 'GET') return getState(res, me);
     if (urlPath === '/api/history' && req.method === 'GET') return getHistory(res, url, me);

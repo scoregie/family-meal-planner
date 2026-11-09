@@ -1,0 +1,1128 @@
+{
+ "about": "Exercises the built-in plan builder uses, in our own plain words. type: warmup, squat, lunge, hinge, push, pull, core, calf, balance, arms, mobility. equipment: none (bodyweight, may need a chair, wall, step or rail), bands, dumbbells or gym. level: 1 easier to 3 harder. flags: chair (done sitting, for people who can't stand to exercise), floor (gets down on the floor), supine (lies on the back), prone (lies face down), seated (can be done sitting), and the body parts it loads most (knees, back, shoulders, wrists, balance), used to leave exercises out for people who mention them.",
+ "exercises": [
+  {
+   "id": "sit-to-stand",
+   "name": "Sit to stand",
+   "type": "squat",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Sit on a firm chair, feet flat. Lean forward a little and stand up without using your hands if you can, then sit back down slowly.",
+   "flags": []
+  },
+  {
+   "id": "squat-to-a-chair",
+   "name": "Squat to a chair",
+   "type": "squat",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Stand in front of a chair. Push your hips back and lower until you just touch the seat, then stand up tall.",
+   "flags": []
+  },
+  {
+   "id": "wall-sit",
+   "name": "Wall sit",
+   "type": "squat",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 20 to 30 seconds",
+   "how": "Back flat against a wall, slide down until your knees are bent (as low as is comfortable) and hold.",
+   "flags": [
+    "knees"
+   ]
+  },
+  {
+   "id": "bodyweight-squat",
+   "name": "Bodyweight squat",
+   "type": "squat",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 12",
+   "how": "Feet shoulder-width apart. Sit your hips back and down, chest up, then stand.",
+   "flags": [
+    "knees"
+   ]
+  },
+  {
+   "id": "pause-squat",
+   "name": "Pause squat",
+   "type": "squat",
+   "equipment": "none",
+   "level": 3,
+   "dose": "3 × 8",
+   "how": "A bodyweight squat with a 3-second hold at the bottom before standing.",
+   "flags": [
+    "knees"
+   ]
+  },
+  {
+   "id": "band-squat",
+   "name": "Band squat",
+   "type": "squat",
+   "equipment": "bands",
+   "level": 2,
+   "dose": "3 × 12",
+   "how": "Stand on the band, hold the ends at your shoulders, squat down and stand up against the band.",
+   "flags": [
+    "knees"
+   ]
+  },
+  {
+   "id": "goblet-squat",
+   "name": "Goblet squat",
+   "type": "squat",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Hold one dumbbell upright at your chest. Squat down with elbows inside your knees, then stand.",
+   "flags": [
+    "knees"
+   ]
+  },
+  {
+   "id": "dumbbell-squat",
+   "name": "Dumbbell squat",
+   "type": "squat",
+   "equipment": "dumbbells",
+   "level": 3,
+   "dose": "3 × 10",
+   "how": "A dumbbell in each hand by your sides. Squat down, chest up, then stand.",
+   "flags": [
+    "knees",
+    "back"
+   ]
+  },
+  {
+   "id": "leg-press",
+   "name": "Leg press",
+   "type": "squat",
+   "equipment": "gym",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "On the leg press machine, feet hip-width on the plate. Lower until your knees are at about a right angle, then press away. Don't lock your knees.",
+   "flags": [
+    "knees"
+   ]
+  },
+  {
+   "id": "barbell-back-squat",
+   "name": "Barbell back squat",
+   "type": "squat",
+   "equipment": "gym",
+   "level": 3,
+   "dose": "3 × 6 to 8",
+   "how": "Bar across your upper back in a rack. Squat to a depth you can control, then stand. Learn it with a trainer first.",
+   "flags": [
+    "knees",
+    "back"
+   ]
+  },
+  {
+   "id": "seated-leg-extension-no-weight",
+   "name": "Seated leg extension (no weight)",
+   "type": "squat",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 12 each leg",
+   "how": "Sit tall in a chair. Straighten one knee until your leg is level, hold for 2 seconds, lower slowly.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "seated-band-leg-press",
+   "name": "Seated band leg press",
+   "type": "squat",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 12 each leg",
+   "how": "Sit tall, loop the band around one foot and hold the ends. Push your foot out until your leg is straight, then bend back slowly.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "step-up",
+   "name": "Step-up",
+   "type": "lunge",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 8 each leg",
+   "how": "Step onto the bottom stair with one foot, holding the rail, and stand up tall. Step down slowly.",
+   "flags": [
+    "balance",
+    "knees"
+   ]
+  },
+  {
+   "id": "split-squat",
+   "name": "Split squat",
+   "type": "lunge",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 8 each leg",
+   "how": "One foot forward, one back. Lower your back knee towards the floor, then push up. Hold a chair for balance if needed.",
+   "flags": [
+    "knees",
+    "balance"
+   ]
+  },
+  {
+   "id": "reverse-lunge",
+   "name": "Reverse lunge",
+   "type": "lunge",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 8 each leg",
+   "how": "Step one foot back and lower until both knees are bent, then step back to standing.",
+   "flags": [
+    "knees",
+    "balance"
+   ]
+  },
+  {
+   "id": "walking-lunge",
+   "name": "Walking lunge",
+   "type": "lunge",
+   "equipment": "none",
+   "level": 3,
+   "dose": "3 × 10 each leg",
+   "how": "Step forward into a lunge, then bring the back foot through into the next one.",
+   "flags": [
+    "knees",
+    "balance"
+   ]
+  },
+  {
+   "id": "band-split-squat",
+   "name": "Band split squat",
+   "type": "lunge",
+   "equipment": "bands",
+   "level": 2,
+   "dose": "3 × 8 each leg",
+   "how": "Stand on the band with your front foot, hold the ends at your shoulders, then do a split squat.",
+   "flags": [
+    "knees",
+    "balance"
+   ]
+  },
+  {
+   "id": "dumbbell-step-up",
+   "name": "Dumbbell step-up",
+   "type": "lunge",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 8 each leg",
+   "how": "A dumbbell in each hand, step up onto a sturdy step or low bench and stand tall. Step down slowly.",
+   "flags": [
+    "balance",
+    "knees"
+   ]
+  },
+  {
+   "id": "dumbbell-reverse-lunge",
+   "name": "Dumbbell reverse lunge",
+   "type": "lunge",
+   "equipment": "dumbbells",
+   "level": 3,
+   "dose": "3 × 8 each leg",
+   "how": "A dumbbell in each hand, step back into a lunge and return.",
+   "flags": [
+    "knees",
+    "balance"
+   ]
+  },
+  {
+   "id": "bulgarian-split-squat",
+   "name": "Bulgarian split squat",
+   "type": "lunge",
+   "equipment": "dumbbells",
+   "level": 3,
+   "dose": "3 × 8 each leg",
+   "how": "Back foot up on a bench or chair behind you. Lower straight down on the front leg, then push up.",
+   "flags": [
+    "knees",
+    "balance"
+   ]
+  },
+  {
+   "id": "seated-marching",
+   "name": "Seated marching",
+   "type": "lunge",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 20 (10 each leg)",
+   "how": "Sit tall near the front of a chair. Lift one knee up, lower it, then the other.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "glute-bridge",
+   "name": "Glute bridge",
+   "type": "hinge",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 12",
+   "how": "Lie on your back, knees bent, feet flat. Squeeze your bottom and lift your hips, then lower slowly.",
+   "flags": [
+    "floor",
+    "supine"
+   ]
+  },
+  {
+   "id": "hip-hinge-to-a-wall",
+   "name": "Hip hinge to a wall",
+   "type": "hinge",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Stand a foot from a wall, facing away. Push your hips back to touch the wall with a flat back, then stand tall.",
+   "flags": []
+  },
+  {
+   "id": "single-leg-glute-bridge",
+   "name": "Single-leg glute bridge",
+   "type": "hinge",
+   "equipment": "none",
+   "level": 3,
+   "dose": "3 × 8 each leg",
+   "how": "A glute bridge with one foot lifted off the floor.",
+   "flags": [
+    "floor",
+    "supine"
+   ]
+  },
+  {
+   "id": "good-morning-bodyweight",
+   "name": "Good morning (bodyweight)",
+   "type": "hinge",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 12",
+   "how": "Hands across your chest, soft knees. Hinge forward at the hips with a flat back, then stand tall.",
+   "flags": [
+    "back"
+   ]
+  },
+  {
+   "id": "band-glute-bridge",
+   "name": "Band glute bridge",
+   "type": "hinge",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 12",
+   "how": "Band just above your knees. Lift your hips while pushing your knees gently out against the band.",
+   "flags": [
+    "floor",
+    "supine"
+   ]
+  },
+  {
+   "id": "band-good-morning",
+   "name": "Band good morning",
+   "type": "hinge",
+   "equipment": "bands",
+   "level": 2,
+   "dose": "3 × 12",
+   "how": "Stand on the band, loop it behind your neck and shoulders. Hinge forward with a flat back, then stand.",
+   "flags": [
+    "back"
+   ]
+  },
+  {
+   "id": "band-pull-through",
+   "name": "Band pull-through",
+   "type": "hinge",
+   "equipment": "bands",
+   "level": 2,
+   "dose": "3 × 12",
+   "how": "Band anchored low behind you, held between your legs. Hinge back, then drive your hips forward to stand tall.",
+   "flags": []
+  },
+  {
+   "id": "romanian-deadlift",
+   "name": "Romanian deadlift",
+   "type": "hinge",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Dumbbells in front of your thighs, soft knees. Slide them down your legs as you hinge at the hips with a flat back, then stand.",
+   "flags": [
+    "back"
+   ]
+  },
+  {
+   "id": "dumbbell-hip-thrust",
+   "name": "Dumbbell hip thrust",
+   "type": "hinge",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Upper back against a couch or bench, a dumbbell across your hips. Lift your hips until your body is flat, then lower.",
+   "flags": [
+    "floor"
+   ]
+  },
+  {
+   "id": "single-leg-romanian-deadlift",
+   "name": "Single-leg Romanian deadlift",
+   "type": "hinge",
+   "equipment": "dumbbells",
+   "level": 3,
+   "dose": "3 × 8 each leg",
+   "how": "A dumbbell in one hand. Hinge forward on the opposite leg as your free leg goes back, then stand. Hold a wall if needed.",
+   "flags": [
+    "back",
+    "balance"
+   ]
+  },
+  {
+   "id": "trap-bar-or-barbell-deadlift",
+   "name": "Trap bar or barbell deadlift",
+   "type": "hinge",
+   "equipment": "gym",
+   "level": 3,
+   "dose": "3 × 5",
+   "how": "Lift the bar from the floor with a flat back and push through your feet. Learn it with a trainer first.",
+   "flags": [
+    "back"
+   ]
+  },
+  {
+   "id": "cable-pull-through",
+   "name": "Cable pull-through",
+   "type": "hinge",
+   "equipment": "gym",
+   "level": 2,
+   "dose": "3 × 12",
+   "how": "Rope on a low cable behind you. Hinge back, then drive your hips forward to stand tall.",
+   "flags": []
+  },
+  {
+   "id": "seated-forward-lean",
+   "name": "Seated forward lean",
+   "type": "hinge",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Sit tall, arms crossed. Lean forward from your hips with a long back, then sit up tall again.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "wall-push-up",
+   "name": "Wall push-up",
+   "type": "push",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Hands on the wall at shoulder height. Lower your chest towards the wall, then push back.",
+   "flags": []
+  },
+  {
+   "id": "incline-push-up",
+   "name": "Incline push-up",
+   "type": "push",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 8 to 10",
+   "how": "Hands on a kitchen bench or sturdy table. Lower your chest to the edge, then push up.",
+   "flags": [
+    "wrists"
+   ]
+  },
+  {
+   "id": "knee-push-up",
+   "name": "Knee push-up",
+   "type": "push",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 8",
+   "how": "On your hands and knees, body straight from knees to head. Lower your chest, then push up.",
+   "flags": [
+    "floor",
+    "wrists"
+   ]
+  },
+  {
+   "id": "push-up",
+   "name": "Push-up",
+   "type": "push",
+   "equipment": "none",
+   "level": 3,
+   "dose": "3 × 6 to 10",
+   "how": "Hands under your shoulders, body straight. Lower your chest to the floor, then push up.",
+   "flags": [
+    "floor",
+    "wrists",
+    "shoulders"
+   ]
+  },
+  {
+   "id": "band-chest-press",
+   "name": "Band chest press",
+   "type": "push",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Band around your back, ends in your hands. Push forward until your arms are straight, then return slowly.",
+   "flags": []
+  },
+  {
+   "id": "band-overhead-press",
+   "name": "Band overhead press",
+   "type": "push",
+   "equipment": "bands",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Stand on the band, hands at your shoulders. Press up overhead, then lower.",
+   "flags": [
+    "shoulders"
+   ]
+  },
+  {
+   "id": "dumbbell-floor-press",
+   "name": "Dumbbell floor press",
+   "type": "push",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Lie on your back, a dumbbell in each hand. Press up until your arms are straight, lower until your elbows touch the floor.",
+   "flags": [
+    "floor",
+    "supine"
+   ]
+  },
+  {
+   "id": "dumbbell-bench-press",
+   "name": "Dumbbell bench press",
+   "type": "push",
+   "equipment": "dumbbells",
+   "level": 3,
+   "dose": "3 × 8 to 10",
+   "how": "Lie on a bench, press the dumbbells up over your chest, lower slowly.",
+   "flags": [
+    "supine",
+    "shoulders"
+   ]
+  },
+  {
+   "id": "seated-dumbbell-shoulder-press",
+   "name": "Seated dumbbell shoulder press",
+   "type": "push",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Sit tall, dumbbells at your shoulders. Press up overhead, then lower.",
+   "flags": [
+    "shoulders",
+    "seated"
+   ]
+  },
+  {
+   "id": "chest-press-machine",
+   "name": "Chest press machine",
+   "type": "push",
+   "equipment": "gym",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Adjust the seat so the handles are at chest height. Push out, then return slowly.",
+   "flags": []
+  },
+  {
+   "id": "shoulder-press-machine",
+   "name": "Shoulder press machine",
+   "type": "push",
+   "equipment": "gym",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Sit tall, press the handles overhead, lower with control.",
+   "flags": [
+    "shoulders"
+   ]
+  },
+  {
+   "id": "seated-wall-or-band-press",
+   "name": "Seated wall or band press",
+   "type": "push",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Sit tall with the band around the chair back. Push forward until your arms are straight, then return.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "seated-arm-raises",
+   "name": "Seated arm raises",
+   "type": "push",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Sit tall, arms by your sides. Raise them forward to shoulder height, then lower slowly. Hold water bottles for a little more.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "doorway-row",
+   "name": "Doorway row",
+   "type": "pull",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Hold both sides of a sturdy door frame, lean back with straight arms, then pull your chest towards it.",
+   "flags": [
+    "shoulders"
+   ]
+  },
+  {
+   "id": "towel-row",
+   "name": "Towel row",
+   "type": "pull",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Loop a towel around a sturdy post or rail, lean back a little and pull yourself in.",
+   "flags": []
+  },
+  {
+   "id": "prone-y-raise",
+   "name": "Prone Y raise",
+   "type": "pull",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Lie face down, arms overhead in a Y. Lift your arms and chest a little, hold 2 seconds, lower.",
+   "flags": [
+    "floor",
+    "prone",
+    "back"
+   ]
+  },
+  {
+   "id": "band-row",
+   "name": "Band row",
+   "type": "pull",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 12",
+   "how": "Band around something sturdy at chest height. Pull your elbows back, squeezing your shoulder blades.",
+   "flags": []
+  },
+  {
+   "id": "band-pull-apart",
+   "name": "Band pull-apart",
+   "type": "pull",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 12",
+   "how": "Arms straight out in front holding the band. Pull it apart until it touches your chest.",
+   "flags": [
+    "seated"
+   ]
+  },
+  {
+   "id": "band-lat-pulldown",
+   "name": "Band lat pulldown",
+   "type": "pull",
+   "equipment": "bands",
+   "level": 2,
+   "dose": "3 × 12",
+   "how": "Band anchored high (over a door). Pull your elbows down to your sides.",
+   "flags": [
+    "seated"
+   ]
+  },
+  {
+   "id": "one-arm-dumbbell-row",
+   "name": "One-arm dumbbell row",
+   "type": "pull",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 10 each side",
+   "how": "One hand and knee on a bench or chair. Pull the dumbbell to your hip, then lower.",
+   "flags": []
+  },
+  {
+   "id": "bent-over-dumbbell-row",
+   "name": "Bent-over dumbbell row",
+   "type": "pull",
+   "equipment": "dumbbells",
+   "level": 3,
+   "dose": "3 × 10",
+   "how": "Hinge forward with a flat back, a dumbbell in each hand. Row them to your hips.",
+   "flags": [
+    "back"
+   ]
+  },
+  {
+   "id": "seated-dumbbell-row",
+   "name": "Seated dumbbell row",
+   "type": "pull",
+   "equipment": "dumbbells",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Sit near the front of a chair and lean forward a little. Pull both dumbbells back to your hips.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "lat-pulldown-machine",
+   "name": "Lat pulldown machine",
+   "type": "pull",
+   "equipment": "gym",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Sit with your thighs under the pads. Pull the bar to your upper chest, then let it up slowly.",
+   "flags": [
+    "seated"
+   ]
+  },
+  {
+   "id": "seated-cable-row",
+   "name": "Seated cable row",
+   "type": "pull",
+   "equipment": "gym",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Sit tall, pull the handle to your belly, squeeze your shoulder blades, return slowly.",
+   "flags": []
+  },
+  {
+   "id": "assisted-pull-up",
+   "name": "Assisted pull-up",
+   "type": "pull",
+   "equipment": "gym",
+   "level": 3,
+   "dose": "3 × 6 to 8",
+   "how": "On the assisted pull-up machine, pull up until your chin is over the bar, lower slowly.",
+   "flags": [
+    "shoulders"
+   ]
+  },
+  {
+   "id": "dead-bug",
+   "name": "Dead bug",
+   "type": "core",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 8 each side",
+   "how": "Lie on your back, arms up, knees bent over your hips. Slowly lower one arm and the opposite leg, then swap.",
+   "flags": [
+    "floor",
+    "supine"
+   ]
+  },
+  {
+   "id": "bird-dog",
+   "name": "Bird dog",
+   "type": "core",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 8 each side",
+   "how": "On hands and knees, reach one arm forward and the opposite leg back. Hold 2 seconds, swap.",
+   "flags": [
+    "floor",
+    "wrists"
+   ]
+  },
+  {
+   "id": "plank-on-knees",
+   "name": "Plank on knees",
+   "type": "core",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 20 seconds",
+   "how": "Forearms and knees on the floor, body straight from knees to head.",
+   "flags": [
+    "floor"
+   ]
+  },
+  {
+   "id": "plank",
+   "name": "Plank",
+   "type": "core",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 20 to 40 seconds",
+   "how": "Forearms and toes on the floor, body straight. Breathe normally.",
+   "flags": [
+    "floor"
+   ]
+  },
+  {
+   "id": "side-plank-on-knees",
+   "name": "Side plank on knees",
+   "type": "core",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 20 seconds each side",
+   "how": "On one forearm and your knees, lift your hips into a straight line.",
+   "flags": [
+    "floor",
+    "shoulders"
+   ]
+  },
+  {
+   "id": "side-plank",
+   "name": "Side plank",
+   "type": "core",
+   "equipment": "none",
+   "level": 3,
+   "dose": "3 × 20 to 30 seconds each side",
+   "how": "On one forearm and the sides of your feet, lift your hips into a straight line.",
+   "flags": [
+    "floor",
+    "shoulders"
+   ]
+  },
+  {
+   "id": "standing-march-with-brace",
+   "name": "Standing march with brace",
+   "type": "core",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 20 (10 each leg)",
+   "how": "Stand tall, tighten your tummy and slowly lift each knee in turn without leaning.",
+   "flags": []
+  },
+  {
+   "id": "wall-plank",
+   "name": "Wall plank",
+   "type": "core",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 20 to 30 seconds",
+   "how": "Forearms on a wall, walk your feet back until your body is a straight slope. Hold.",
+   "flags": []
+  },
+  {
+   "id": "band-anti-rotation-press",
+   "name": "Band anti-rotation press",
+   "type": "core",
+   "equipment": "bands",
+   "level": 2,
+   "dose": "3 × 10 each side",
+   "how": "Band anchored at chest height to your side. Hold it at your chest and press straight out without letting it turn you.",
+   "flags": []
+  },
+  {
+   "id": "suitcase-carry",
+   "name": "Suitcase carry",
+   "type": "core",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 30 metres each side",
+   "how": "Walk tall holding one dumbbell by your side, without leaning.",
+   "flags": []
+  },
+  {
+   "id": "farmer-s-carry",
+   "name": "Farmer's carry",
+   "type": "core",
+   "equipment": "dumbbells",
+   "level": 1,
+   "dose": "3 × 30 metres",
+   "how": "Walk tall with a dumbbell (or full shopping bag) in each hand.",
+   "flags": []
+  },
+  {
+   "id": "cable-woodchop",
+   "name": "Cable woodchop",
+   "type": "core",
+   "equipment": "gym",
+   "level": 2,
+   "dose": "3 × 10 each side",
+   "how": "Cable high on one side. Pull it down and across your body, turning through your upper back.",
+   "flags": [
+    "back"
+   ]
+  },
+  {
+   "id": "seated-tummy-brace",
+   "name": "Seated tummy brace",
+   "type": "core",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10 (5-second holds)",
+   "how": "Sit tall, feet flat. Tighten your tummy as if bracing for a cough, hold 5 seconds while breathing, relax.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "seated-side-bend",
+   "name": "Seated side bend",
+   "type": "core",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10 each side",
+   "how": "Sit tall, one hand behind your head. Lean slowly to the other side and come back up.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "calf-raise",
+   "name": "Calf raise",
+   "type": "calf",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 15",
+   "how": "Hold a bench or wall. Rise up onto your toes, then lower slowly.",
+   "flags": []
+  },
+  {
+   "id": "single-leg-calf-raise",
+   "name": "Single-leg calf raise",
+   "type": "calf",
+   "equipment": "none",
+   "level": 3,
+   "dose": "3 × 10 each leg",
+   "how": "Holding a wall, rise up onto the toes of one foot, then lower slowly.",
+   "flags": [
+    "balance"
+   ]
+  },
+  {
+   "id": "seated-calf-raise",
+   "name": "Seated calf raise",
+   "type": "calf",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 20",
+   "how": "Sit tall, feet flat. Lift your heels as high as you can, then lower.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "single-leg-stand",
+   "name": "Single-leg stand",
+   "type": "balance",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 20 seconds each leg",
+   "how": "Stand near a bench, lift one foot and balance. Touch the bench if you need to.",
+   "flags": []
+  },
+  {
+   "id": "heel-to-toe-walk",
+   "name": "Heel-to-toe walk",
+   "type": "balance",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 × 10 steps",
+   "how": "Walk along a hallway placing one heel right in front of the other toes. Keep a wall close.",
+   "flags": []
+  },
+  {
+   "id": "clock-reach",
+   "name": "Clock reach",
+   "type": "balance",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 5 each leg",
+   "how": "Balance on one leg and reach the other foot to the front, side and back like a clock face.",
+   "flags": [
+    "balance"
+   ]
+  },
+  {
+   "id": "band-biceps-curl",
+   "name": "Band biceps curl",
+   "type": "arms",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "2 × 12",
+   "how": "Stand on the band, curl your hands up to your shoulders, lower slowly.",
+   "flags": [
+    "seated"
+   ]
+  },
+  {
+   "id": "dumbbell-biceps-curl",
+   "name": "Dumbbell biceps curl",
+   "type": "arms",
+   "equipment": "dumbbells",
+   "level": 1,
+   "dose": "2 × 12",
+   "how": "Curl the dumbbells up to your shoulders, elbows by your sides, lower slowly.",
+   "flags": [
+    "seated"
+   ]
+  },
+  {
+   "id": "chair-dip",
+   "name": "Chair dip",
+   "type": "arms",
+   "equipment": "none",
+   "level": 3,
+   "dose": "2 × 8",
+   "how": "Hands on the front of a sturdy chair, feet out. Bend your elbows to lower, then push up.",
+   "flags": [
+    "shoulders",
+    "wrists"
+   ]
+  },
+  {
+   "id": "band-triceps-press-down",
+   "name": "Band triceps press-down",
+   "type": "arms",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "2 × 12",
+   "how": "Band anchored high. Elbows by your sides, push your hands down until your arms are straight.",
+   "flags": [
+    "seated"
+   ]
+  },
+  {
+   "id": "dumbbell-overhead-triceps-extension",
+   "name": "Dumbbell overhead triceps extension",
+   "type": "arms",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "2 × 10",
+   "how": "Hold one dumbbell overhead with both hands, lower it behind your head, then straighten.",
+   "flags": [
+    "shoulders",
+    "seated"
+   ]
+  },
+  {
+   "id": "march-on-the-spot",
+   "name": "March on the spot",
+   "type": "warmup",
+   "equipment": "none",
+   "level": 1,
+   "dose": "5 minutes",
+   "how": "Easy marching, swinging your arms. Build up to a brisk pace.",
+   "flags": []
+  },
+  {
+   "id": "arm-circles-and-leg-swings",
+   "name": "Arm circles and leg swings",
+   "type": "warmup",
+   "equipment": "none",
+   "level": 1,
+   "dose": "2 minutes",
+   "how": "Small then bigger arm circles both ways, then easy leg swings holding a wall.",
+   "flags": []
+  },
+  {
+   "id": "seated-warm-up",
+   "name": "Seated warm-up",
+   "type": "warmup",
+   "equipment": "none",
+   "level": 1,
+   "dose": "5 minutes",
+   "how": "Seated marching, arm circles and shoulder rolls, building up gently.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "cat-cow",
+   "name": "Cat-cow",
+   "type": "mobility",
+   "equipment": "none",
+   "level": 1,
+   "dose": "8 slow rounds",
+   "how": "On hands and knees, round your back up, then let it dip gently. Move with your breathing.",
+   "flags": [
+    "floor",
+    "wrists"
+   ]
+  },
+  {
+   "id": "hip-flexor-stretch",
+   "name": "Hip flexor stretch",
+   "type": "mobility",
+   "equipment": "none",
+   "level": 1,
+   "dose": "30 seconds each side",
+   "how": "Kneel on one knee (on a cushion), tuck your tailbone under and lean gently forward.",
+   "flags": [
+    "floor",
+    "knees"
+   ]
+  },
+  {
+   "id": "hamstring-stretch",
+   "name": "Hamstring stretch",
+   "type": "mobility",
+   "equipment": "none",
+   "level": 1,
+   "dose": "30 seconds each leg",
+   "how": "Heel on a low step, leg straight. Lean forward from the hips until you feel a gentle stretch.",
+   "flags": []
+  },
+  {
+   "id": "chest-stretch-in-a-doorway",
+   "name": "Chest stretch in a doorway",
+   "type": "mobility",
+   "equipment": "none",
+   "level": 1,
+   "dose": "30 seconds",
+   "how": "Forearms on the door frame, step through gently until you feel a stretch across your chest.",
+   "flags": [
+    "shoulders"
+   ]
+  },
+  {
+   "id": "calf-stretch",
+   "name": "Calf stretch",
+   "type": "mobility",
+   "equipment": "none",
+   "level": 1,
+   "dose": "30 seconds each leg",
+   "how": "Hands on a wall, one leg back with the heel down. Lean in gently.",
+   "flags": []
+  },
+  {
+   "id": "seated-stretches",
+   "name": "Seated stretches",
+   "type": "mobility",
+   "equipment": "none",
+   "level": 1,
+   "dose": "3 minutes",
+   "how": "Seated: neck turns, reach overhead, gentle twist each way, and ankle circles.",
+   "flags": [
+    "seated",
+    "chair"
+   ]
+  },
+  {
+   "id": "child-s-pose",
+   "name": "Child's pose",
+   "type": "mobility",
+   "equipment": "none",
+   "level": 1,
+   "dose": "30 to 60 seconds",
+   "how": "Kneel, sit back towards your heels and reach your arms forward on the floor. Breathe slowly.",
+   "flags": [
+    "floor",
+    "knees"
+   ]
+  }
+ ]
+}

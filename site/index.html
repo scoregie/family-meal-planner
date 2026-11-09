@@ -416,6 +416,14 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 .tstats b{display:block;font-size:1.2rem;font-variant-numeric:tabular-nums}
 .tstats span{color:var(--mute);font-size:.78rem}
 .tcard .note2{margin:.3rem 0}
+.swapbtn{font:inherit;font-size:.78rem;color:var(--accent);background:none;border:1px solid var(--line);border-radius:1rem;padding:.1rem .6rem;margin-left:.4rem;min-height:1.9rem;cursor:pointer;vertical-align:baseline}
+.swaplist{display:grid;gap:.4rem;max-height:50vh;overflow-y:auto;margin:.4rem 0}
+.swapopt{font:inherit;text-align:left;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:.6rem;padding:.5rem .7rem;cursor:pointer;display:flex;flex-direction:column;gap:.1rem}
+.swapopt span{color:var(--mute);font-size:.8rem}
+.swapopt small{font-size:.82rem}
+.swapopt:disabled{opacity:.5}
+.swapavoid{display:flex;gap:.5rem;align-items:flex-start;font-size:.88rem;margin:.5rem 0}
+.swapavoid input{width:1.2rem;height:1.2rem;accent-color:var(--accent);flex:none}
 .mtoggle{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin:0 0 .75rem}
 .mtoggle .btn{min-height:2.4rem;padding:.3rem .6rem;font-size:.9rem}
 </style>
@@ -505,6 +513,15 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
     </div>
   </div>
 </div>
+<dialog class="pindlg" id="swapDlg" aria-labelledby="swapTitle">
+  <h2 id="swapTitle">Swap an exercise</h2>
+  <p class="pinfor">Instead of <b id="swapName"></b>, do:</p>
+  <div class="swaplist" id="swapList"></div>
+  <label class="swapavoid"><input type="checkbox" id="swapAvoid" checked><span>Leave <b id="swapAvoidName"></b> out of my future plans</span></label>
+  <p class="pinmsg" id="swapMsg" role="status"></p>
+  <p class="note2">All of these suit what you said in About me. Browse them all in More → Exercise library.</p>
+  <div class="pinacts"><button class="btn" type="button" onclick="document.getElementById('swapDlg').close()">Cancel</button></div>
+</dialog>
 <dialog class="pindlg" id="pinDlg" aria-labelledby="pinTitle">
   <h2 id="pinTitle">Pin a product</h2>
   <p class="pinfor">For <b id="pinName"></b></p>
@@ -2639,6 +2656,7 @@ function renderExercise() {
 
   var workouts = extras.workouts || [];
   var todays = workoutsFor(day, workouts);
+  loadExlib();
   if (todays.length) {
     panel.appendChild(el("h2", "rh", "Today’s workouts"));
     todays.forEach(function (workout) {
@@ -2745,8 +2763,10 @@ function workoutFold(workout, videos, today) {
     fold.appendChild(p);
   });
   var list = el("ol", "bul steps");
-  (workout.items || []).forEach(function (text) {
+  (workout.items || []).forEach(function (text, index) {
     var item = el("li", null, text);
+    var swap = swapButton(workout, index, text);
+    if (swap) item.appendChild(swap);
     var colon = text.indexOf(": ");
     if (colon > 0) {
       var name = text.slice(0, colon).replace(/\s*\(.*?\)/g, "").trim();
@@ -2771,6 +2791,114 @@ function workoutFold(workout, videos, today) {
   });
   fold.appendChild(list);
   return fold;
+}
+
+// ---------- swapping an exercise ----------
+
+var EXLIB = null;        // the exercise library for this person: {exercises, fits, avoid, person}
+var exlibLoading = false;
+
+// Loads the library once (for the person whose plan is shown), then redraws the Exercise view
+// so the Swap buttons appear.
+function loadExlib() {
+  var person = ukey(USER);
+  if (exlibLoading || (EXLIB && EXLIB.person === person)) return;
+  exlibLoading = true;
+  fetch("/api/exercises?person=" + encodeURIComponent(person), { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      exlibLoading = false;
+      if (!d) return;
+      d.person = person;
+      EXLIB = d;
+      if (view === "exercise") {
+        var y = window.scrollY;
+        renderExercise();
+        window.scrollTo(0, y);
+      }
+    })
+    .catch(function () { exlibLoading = false; });
+}
+
+// The library exercise a workout line is about, or null (the same matching as the server's).
+function exMatch(text) {
+  if (!EXLIB) return null;
+  var name = String(text).replace(/^(warm-up|cool-down)\s*:\s*/i, "").split(/\s*[(:]/)[0].trim().toLowerCase();
+  if (!name) return null;
+  var all = EXLIB.exercises;
+  for (var i = 0; i < all.length; i++) if (all[i].name.toLowerCase() === name) return all[i];
+  for (i = 0; i < all.length; i++) {
+    var n = all[i].name.toLowerCase();
+    if (name.indexOf(n) === 0 || n.indexOf(name) === 0) return all[i];
+  }
+  return null;
+}
+
+// Exercises that could replace `ex`: the same kind (squats and lunges count as one), that suit the
+// person and aren't left out, easiest first.
+function exAlternatives(ex) {
+  var legs = { squat: 1, lunge: 1 };
+  return EXLIB.exercises.filter(function (e) {
+    return e.id !== ex.id && (e.type === ex.type || (legs[e.type] && legs[ex.type]))
+      && EXLIB.fits.indexOf(e.id) > -1 && EXLIB.avoid.indexOf(e.id) < 0;
+  }).sort(function (a, b) { return a.level - b.level || (a.name < b.name ? -1 : 1); });
+}
+
+// A small "Swap" button for a workout line that matches the library, or null. Shared workouts
+// (one set for everyone) can only be changed by admins.
+function swapButton(workout, index, text) {
+  var shared = PLAN.exercise && Array.isArray(PLAN.exercise.workouts);
+  if (shared && !isAdmin()) return null;
+  var ex = exMatch(text);
+  if (!ex || !exAlternatives(ex).length) return null;
+  var b = el("button", "swapbtn", "Swap");
+  b.type = "button";
+  b.setAttribute("aria-label", "Swap " + ex.name + " for another exercise");
+  b.onclick = function () { openSwap(workout, index, ex); };
+  return b;
+}
+
+var LEVELS = ["", "Easier", "Medium", "Harder"];
+var EQUIPS = { none: "No equipment", bands: "Bands", dumbbells: "Dumbbells", gym: "Gym" };
+
+// The swap box: the other exercises to choose from, and whether to leave this one out of future plans.
+function openSwap(workout, index, ex) {
+  var dlg = $("swapDlg");
+  $("swapName").textContent = ex.name;
+  $("swapAvoidName").textContent = ex.name;
+  $("swapAvoid").checked = true;
+  $("swapMsg").textContent = "";
+  var list = $("swapList");
+  list.textContent = "";
+  exAlternatives(ex).forEach(function (e) {
+    var b = el("button", "swapopt");
+    b.type = "button";
+    b.appendChild(el("b", null, e.name));
+    b.appendChild(el("span", null, e.dose + " · " + EQUIPS[e.equipment] + " · " + LEVELS[e.level]));
+    b.appendChild(el("small", null, e.how));
+    b.onclick = function () {
+      list.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
+      $("swapMsg").textContent = "Saving…";
+      fetch("/api/exercises/swap?person=" + encodeURIComponent(ukey(USER)), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
+        body: JSON.stringify({ workout: workout.name, item: index, to: e.id, avoid: $("swapAvoid").checked }),
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) throw new Error(d.error || "Couldn’t swap it. Try again.");
+        });
+      }).then(function () {
+        $("swapMsg").textContent = "Swapped. Reloading…";
+        location.reload();
+      }).catch(function (err) {
+        list.querySelectorAll("button").forEach(function (x) { x.disabled = false; });
+        $("swapMsg").textContent = (err && err.message) || "Couldn’t swap it. Try again.";
+      });
+    };
+    list.appendChild(b);
+  });
+  if (dlg.showModal) dlg.showModal();
+  else dlg.setAttribute("open", "");
 }
 
 // ---------- shopping ticks and "At home" ----------
