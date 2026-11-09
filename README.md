@@ -13,10 +13,12 @@ It runs on your own server (two small Docker containers, for example in a Proxmo
 
 **Every day**
 
+- **Today:** the front page. Today's meals and snacks to tick (with the energy eaten so far), today's exercise to tick, the newest numbers from the phone (steps, active energy, food logged), and what's left to buy this week. Each card opens the full page. Along the bottom: **Today, Meals, Shopping, Exercise** and **More** (About me, Progress, Ask AI, the exercise library, Settings, Account, My files, and for admins Family, Plan setup, Edit plan and meal ratings).
 - **Shopping:** one list per week, shared by the family, grouped by supermarket aisle. Pantry and freezer "stock-up" items fold into the week they're bought with. Tick things off (everyone sees who ticked what), mark things you already have **At home**, and use **Shop mode** to go through the list one item at a time while you walk the shop. Each item links to your chosen stores (Coles, Woolworths, IGA and others), and **Pin product** makes a link go straight to the exact product you buy.
 - **Meals:** one day at a time, starting today, swipe or tap between days. Each person sees their own meals and snacks (snacks can follow their exercise, like a bigger snack on strength days), recipes scaled to their portion, and that day's considerations. Tick what you ate and rate meals out of 10, so admins can see which dishes to change.
-- **Exercise:** each person's own plan, one day at a time, with the workouts for that day, tips, and the medical considerations they told the app about (written as reported, for example "you said your physio is happy for you to…").
-- **Macros and guidelines:** each person's week compared with official healthy-eating guidelines (Australia, New Zealand, UK, Japan or Korea).
+- **Exercise:** each person's own plan, one day at a time, with the workouts for that day, tips, and the medical considerations they told the app about (written as reported, for example "you said your physio is happy for you to…"). **Swap** next to an exercise changes it for another of the same kind that suits you, and can leave the old one out of future plans.
+- **Exercise library:** 94 exercises (bodyweight, bands, dumbbells, gym and seated), each with plain how-to steps, a level, and what it loads (knees, back, shoulders, wrists, floor work). Browse and search it from More.
+- **Macros and guidelines** (Meals → Macros): each person's week compared with official healthy-eating guidelines (Australia, New Zealand, UK, Japan or Korea).
 - **Ask AI:** a chat that can see the plan, using the family's AI or your own key. Ask it to swap a dinner, make a week cheaper or ease off an exercise day. It can only **suggest** changes; an admin approves them first.
 
 **Tracking progress**
@@ -36,7 +38,7 @@ It runs on your own server (two small Docker containers, for example in a Proxmo
 
 - It's a planning tool, not medical advice. Health notes are written as what people reported, and a GP, dietitian or physio comes first.
 - Prices are estimates. Coles and Woolworths don't let other apps add to a cart, so the app links to each item instead.
-- AI features need an API key from the AI company you choose (you pay them for what you use), or a local Ollama server. Everything else, including drafting a plan with the built-in builder, works without one.
+- AI features need an API key from the AI company you choose (you pay them for what you use), or a local Ollama server. Everything else, including drafting a plan with the built-in builder, works without one. If you have Claude Code on the server, it can draft the plan on your Claude subscription instead (see [Drafting the plan with Claude Code](#drafting-the-plan-with-claude-code)).
 
 Built with [Claude Code](https://claude.com/claude-code).
 
@@ -63,7 +65,7 @@ Then start it:
 
     docker compose up -d
 
-Open `http://<server-ip>/` and create the family's first account (you'll be the owner), then invite everyone else from **Family** in the account menu. Logs: `docker compose logs -f`.
+Open `http://<server-ip>/` and create the family's first account (you'll be the owner), then invite everyone else from **Family** in More. Logs: `docker compose logs -f`.
 
 ### Running it in a Proxmox container
 
@@ -99,11 +101,11 @@ Your `.env`, `site/plan.json` and `data/` aren't in git, so updating doesn't tou
 Everyone logs in with their **email address (or, for kids, a username) and a password**. One family uses each server.
 
 1. **The first account:** open the site on a new server and you're asked to create the first account. That person is the family's **owner**.
-2. **Inviting people:** the owner and admins open **Family** (account menu) and make an invite: a name, an optional email, a portion size and (for the owner) whether they're an admin. They get a link to send by text or any messaging app. The person opens it, chooses a password and is logged in. Links work for 7 days and only once. New people are added to the plan's `"people"` block automatically (with a backup of the plan first).
+2. **Inviting people:** the owner and admins open **Family** (More) and make an invite: a name, an optional email, a portion size and (for the owner) whether they're an admin. They get a link to send by text or any messaging app. The person opens it, chooses a password and is logged in. Links work for 7 days and only once. New people are added to the plan's `"people"` block automatically (with a backup of the plan first).
 3. **Signing up:** anyone can tap **Sign up** on the login page and enter their name, email and a password. They can't log in until an admin approves them under **Waiting for approval** on the Family page (or declines it), so someone who finds the address can't let themselves in. If email is set up, admins get an email about each sign-up, and the person gets one when they're approved. An invite link skips the wait.
-4. **Kids without an email:** on **Plan setup** (account menu, admins), **Add someone without an email** adds a child to the plan. Tick **Give them a login** to choose a username and password for them; they log in with the username. Usernames must be different from everyone else's, and so must names in the family (answers, ticks and logins are matched by name). Without a login, an admin answers About me for them.
+4. **Kids without an email:** on **Plan setup** (More, admins), **Add someone without an email** adds a child to the plan. Tick **Give them a login** to choose a username and password for them; they log in with the username. Usernames must be different from everyone else's, and so must names in the family (answers, ticks and logins are matched by name). Without a login, an admin answers About me for them.
 5. **Forgotten passwords:** an admin taps **Reset link** next to the person on the Family page and sends them the link (it works for 24 hours). If email is set up (below), **Forgot your password?** on the login page emails a link instead.
-6. **Your own account:** **Account** (account menu) changes your email or password, logs you out on your other devices, or deletes your account (and, if you choose, your history: About me answers, weigh-ins, ratings, exercise and chats).
+6. **Your own account:** **Account** (More) changes your email or password, logs you out on your other devices, or deletes your account (and, if you choose, your history: About me answers, weigh-ins, ratings, exercise and chats).
 
 **Roles:**
 
@@ -135,11 +137,11 @@ Any email provider's SMTP settings work (for Gmail, make an "app password" in yo
 
 ## About me questions
 
-Everyone has an **About me** page in the account menu, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to. The Health section asks about medicines that can affect food or exercise (blood thinners, diabetes medicines and injections, blood pressure and heart medicines, statins, thyroid medicine, steroids, ADHD stimulants, MAOIs, supplements). These only add things to check with a doctor or pharmacist to the plan; for an MAOI the built-in builder also leaves out high-tyramine foods. At the bottom, **I'm finished** tells the admins their answers are ready for the family's plan (they can still change them afterwards).
+Everyone has an **About me** page in More, with questions about their goals, health, food, week, exercise and budget (the questions are in `site/questions.json`, so you can change them). Answers save as you type. Only the person and admins can see them. Until someone has answered, the app shows a small prompt asking them to. The Health section asks about medicines that can affect food or exercise (blood thinners, diabetes medicines and injections, blood pressure and heart medicines, statins, thyroid medicine, steroids, ADHD stimulants, MAOIs, supplements). These only add things to check with a doctor or pharmacist to the plan; for an MAOI the built-in builder also leaves out high-tyramine foods. At the bottom, **I'm finished** tells the admins their answers are ready for the family's plan (they can still change them afterwards).
 
 ## Plan setup: drafting the family's plan
 
-Admins have **Plan setup** in the account menu (and a banner on the main page while the example plan is in use):
+Admins have **Plan setup** in More (and a banner on the main page while the example plan is in use):
 
 1. **Everyone's About me answers:** who is in the plan and who has finished. Admins can answer for people without a login, and add children.
 2. **Choose your AI:** Claude, OpenAI, Google Gemini or a local Ollama model (any the server has a key or address for, see [Choosing an AI](#choosing-an-ai)), and which model. Or **No AI**, which uses the built-in plan builder and turns off Ask AI for people without their own key.
@@ -150,6 +152,19 @@ Admins have **Plan setup** in the account menu (and a banner on the main page wh
 
 Everyone should check their meals and exercise with their GP, dietitian or physio before starting, especially if they have a health condition, are pregnant, or take medicines. Plan setup, About me and the plan itself all say so.
 
+### Drafting the plan with Claude Code
+
+Chat subscriptions (Claude Pro or Max) can't be plugged into the app, but if you run [Claude Code](https://claude.com/claude-code) on the server you can ask it to write the plan, using your subscription instead of an API key. The result goes through the same checks as an AI draft and waits on Plan setup for you to approve.
+
+1. Get everyone's About me answers in, as usual.
+2. In the project folder, start Claude Code and ask: *"Draft our family plan with Claude Code"* (CLAUDE.md tells it the steps). Or by hand:
+   - `tools/claude-code-plan.sh prompt "any note for the plan"` writes `data/claude-code/prompt.md`: the same instructions, format guide, example and About me answers the app's AI would get.
+   - Claude Code writes the plan to `data/claude-code/plan.json`.
+   - `tools/claude-code-plan.sh submit` sends it to the app.
+3. Open **Plan setup**, review the draft and approve or discard it.
+
+`data/claude-code/` holds everyone's health answers, so it stays in `data/` (which git ignores). Delete it when you're done if you like. Ask AI in the app still needs an API key; the built-in builder works without anything.
+
 ### The built-in plan builder (no AI)
 
 The builder follows rules instead of an AI. From everyone's About me answers it:
@@ -157,7 +172,7 @@ The builder follows rules instead of an AI. From everyone's About me answers it:
 - leaves out allergens, and anything that doesn't fit a person's diet (vegetarian, vegan, gluten free, halal and so on) or that they said they won't eat, and gives someone their own dinner on nights the family dinner doesn't suit them;
 - prefers dishes that match their liked cuisines, cooking time, kitchen equipment, spice level, textures and budget, with leftovers for lunches where they can;
 - sizes each person's portions from their age, height, weight, activity and goal (Mifflin-St Jeor), adds snacks tied to their exercise days, and builds shopping lists in whole packs that carry over what's left;
-- writes a simple exercise plan that builds over 4 weeks for the equipment they have, gentler where they asked, with play-based activity for kids;
+- writes an exercise plan that builds over 4 weeks: strength workouts picked from the exercise library (`api/exercises.json`) for the equipment they have, leaving out exercises that load anything they mentioned in their injuries (knees, back, shoulders, wrists, balance), lying on the back or front when pregnant, standing work for wheelchair users, and anything they chose to leave out; easier workouts for weeks 1 and 2 and harder ones for weeks 3 and 4, gentler where they asked, with play-based activity for kids;
 - notes what people said about their health, injuries and medicines as considerations to check with their GP or pharmacist. It doesn't give medical advice.
 
 Its meals come from `api/library.json`: 59 meals and 16 snacks, with recipes written for this project. Nutrition for each ingredient comes from **USDA FoodData Central** (U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov. SR Legacy data, public domain under CC0 1.0), with the food's id noted for each one; a few Australian products that aren't in it use typical label values, marked "label". Prices are rough Coles estimates. To change the library, edit `tools/build_library.py`, download SR Legacy (CSV) from [fdc.nal.usda.gov](https://fdc.nal.usda.gov/download-datasets) and run `python3 tools/build_library.py <the unzipped folder>`.
@@ -173,7 +188,7 @@ Its meals come from `api/library.json`: 59 meals and 16 snacks, with recipes wri
 
 ## Uploading files
 
-Everyone gets a **My files** page in the account menu (top right) for things that help with the plan: Lose It exports, Apple Health exports, blood tests, photos and anything else. Each person only sees their own files. Admins can see, add and delete everyone's.
+Everyone gets a **My files** page in More for things that help with the plan: Lose It exports, Apple Health exports, blood tests, photos and anything else. Each person only sees their own files. Admins can see, add and delete everyone's.
 
 Files are stored in plain folders on the server, one per person and then one per type, with the upload date at the front of the name:
 
@@ -281,7 +296,7 @@ The numbers come from `site/guidelines.json` (with links to each official source
 
 ## Ask AI (the assistant)
 
-**Ask AI** (in the account menu) is a chat with the family's chosen AI (or the person's own, see Settings) that can see the plan. Anyone can use it to work out adjustments: swap a dinner they don't like, make a week cheaper, add vegetables, plan packed lunches, ease off an exercise day, or ask how they're tracking against the healthy-eating guidelines.
+**Ask AI** (in More) is a chat with the family's chosen AI (or the person's own, see Settings) that can see the plan. Anyone can use it to work out adjustments: swap a dinner they don't like, make a week cheaper, add vegetables, plan packed lunches, ease off an exercise day, or ask how they're tracking against the healthy-eating guidelines.
 
 The AI can **suggest** a change to the plan, but it can't make one:
 
@@ -327,7 +342,7 @@ With Claude, if Anthropic's safety checks decline a request, it is automatically
 
 ## Settings: colours, fonts, text size and the app icon
 
-**Settings** (in the account menu) changes how the app looks:
+**Settings** (in More) changes how the app looks:
 
 - **On this device:** anyone can pick light or dark, a colour, a font and a text size just for themselves. These are saved in their browser.
 - **For everyone (admins):** the household's colour, font and text size, used by anyone who hasn't chosen their own. Saved in `data/app.db`.
@@ -343,7 +358,7 @@ The eight colours are checked for contrast in both light and dark mode, and text
 
 Everything the page shows (meals, recipes, shopping lists and exercise) comes from `site/plan.json`. Replace that file to change the plan. No restart is needed.
 
-**Edit it in the app.** Admins get an **Edit plan** link in the account menu (top right). It edits meals (including a different meal for one person on a day), macros for each dish, and shopping items and prices, and has a raw JSON editor for everything else. Each save keeps the previous plan in `data/plan-backups/` (the last 30), and you can restore one from the Backups tab. Shopping ticks stay with an item as long as its name does not change. After updating to this version, run `docker compose up -d` once so the api container can write to `site/`.
+**Edit it in the app.** Admins get an **Edit plan** link in More. It edits meals (including a different meal for one person on a day), macros for each dish, and shopping items and prices, and has a raw JSON editor for everything else. Each save keeps the previous plan in `data/plan-backups/` (the last 30), and you can restore one from the Backups tab. Shopping ticks stay with an item as long as its name does not change. After updating to this version, run `docker compose up -d` once so the api container can write to `site/`.
 
 **Ask an AI to write it.** Fill in the [brackets] in `plan-prompt.example.txt`, send it to Claude (or another AI) with your current `plan.json` attached as the format example, and save the JSON it gives you as `site/plan.json`. Keep a copy of the old one first.
 

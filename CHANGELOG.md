@@ -3,6 +3,27 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.1.0 (2026-11-09)
+
+- **Today page:** the app now opens on a summary of the day: today's meals and snacks to tick, with
+  the energy eaten so far; today's exercise to tick; the newest steps, active energy and food from
+  Health sync; and what's left to buy this week. Each card opens the full page.
+- **New bottom bar:** Today, Meals, Shopping, Exercise and **More**. More replaces the long account
+  menu, with the pages grouped under "You" and "Family" (admins). Tapping your initial (top right)
+  opens it too. Macros moved into Meals (a Day plan / Macros switch), and meal ratings into More.
+- **Settings:** each section folds away and opens with a tap.
+- **Exercise library:** 94 exercises for bodyweight, bands, dumbbells, the gym and seated
+  exercise, with plain how-to steps, a level and what each one loads. Browse it from More, and
+  choose any to leave out of your plans.
+- **Built-in plan builder:** strength workouts are now picked from the library for each person:
+  their equipment, injuries they mentioned (knees, back, shoulders, wrists, balance), pregnancy,
+  wheelchair use and what they've left out. Weeks 3 and 4 get a harder pair of workouts.
+- **Swap** next to an exercise on the Exercise tab changes it for another of the same kind that
+  suits you, and can leave the old one out of future plans.
+- **Draft the plan with Claude Code:** `tools/claude-code-plan.sh` lets a Claude Code session on
+  the server write the family's plan on a Claude subscription instead of an API key. The draft
+  waits on Plan setup to approve, like any other.
+
 ## v1.0.4 (2026-11-09)
 
 - Health sync: **install the shortcut with one tap.** An admin downloads the shortcut file from the

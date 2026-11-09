@@ -3208,7 +3208,7 @@ function renderToday() {
   }
 
   // From the phone (Health sync or an export): only for your own numbers, or an admin's pick.
-  var person4 = ME && ME.person ? (isAdmin() ? key : ME.person) : "";
+  var person4 = ME && ME.person ? (isAdmin() ? ukey(USER) : ME.person) : "";
   if (person4) {
     var phone = todayCard("From the phone", "", "Progress", "progress.html" + (person4 !== ME.person ? "?person=" + encodeURIComponent(person4) : ""));
     var drawPhone = function () {
