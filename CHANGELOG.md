@@ -3,6 +3,11 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.1.1 (2026-11-10)
+
+- Today: no Shopping card while the plan has no shopping list yet (for example after clearing the
+  plan to start again), and "1 item left" instead of "1 items left".
+
 ## v1.1.0 (2026-11-09)
 
 - **Today page:** the app now opens on a summary of the day: today's meals and snacks to tick, with

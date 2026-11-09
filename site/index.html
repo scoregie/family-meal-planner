@@ -3258,16 +3258,17 @@ function renderToday() {
   }
 
   // Shopping: what is left this week.
-  var count = 0, ticked = 0, left = 0;
+  var count = 0, ticked = 0, left = 0, all = 0;
   shopItems(week, "all").forEach(function (it) {
     if (isHome(it.name)) return;
     count++;
+    all += it.price;
     if (isTicked(it)) ticked++;
     else left += it.price;
   });
-  if (count) {
+  if (count && all > 0) {   // a plan with no real list yet (only a $0 note) gets no card
     var shop = todayCard("Shopping", ticked + " of " + count + " ticked", "Shopping list", function () { goTop(week, "shop"); });
-    shop.body.appendChild(el("p", "tline", ticked === count ? "Everything is ticked off this week." : (count - ticked) + " items left · about " + money(left)));
+    shop.body.appendChild(el("p", "tline", ticked === count ? "Everything is ticked off this week." : (count - ticked) + (count - ticked === 1 ? " item" : " items") + " left · about " + money(left)));
     var bar = el("div", "bar");
     var fill = el("i");
     fill.style.width = (ticked / count * 100) + "%";
