@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Exercise library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--low:#b3261e;--mid:#8a5a00;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--chip:#e3f1ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.45}
+main{max-width:46rem;margin:0 auto;padding:1.25rem 1rem calc(3rem + env(safe-area-inset-bottom,0px))}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:0 0 .8rem}
+.sub{color:var(--mute);margin:0;font-size:.95rem}
+.note{color:var(--mute);font-size:.85rem;margin:.3rem 0}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.5rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.chips{display:flex;gap:.35rem;overflow-x:auto;scrollbar-width:none;margin:0 -1rem .6rem;padding:.1rem 1rem}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;font:inherit;font-size:.85rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:1.2rem;padding:.25rem .8rem;min-height:2.3rem;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.bar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:0 0 .7rem}
+input[type=search],select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;min-height:2.6rem}
+input[type=search]{flex:1;min-width:10rem}
+.toggle{display:flex;align-items:center;gap:.4rem;font-size:.9rem;min-height:2.6rem;cursor:pointer}
+.toggle input{width:1.2rem;height:1.2rem;accent-color:var(--accent)}
+.count{color:var(--mute);font-size:.85rem;margin:0 0 .5rem}
+.ex{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.75rem 1rem;margin:0 0 .6rem}
+.ex.off{opacity:.65}
+.ex h2{font-size:1.02rem;margin:0;display:flex;justify-content:space-between;gap:.5rem;align-items:baseline}
+.ex h2 small{font-weight:400;color:var(--mute);font-size:.8rem;white-space:nowrap}
+.meta{display:flex;flex-wrap:wrap;gap:.3rem;margin:.35rem 0}
+.tag{font-size:.75rem;border-radius:1rem;padding:.08rem .5rem;background:var(--chip)}
+.tag.warn{background:transparent;border:1px solid var(--mid);color:var(--ink)}
+.ex p{margin:.25rem 0;font-size:.93rem}
+.ex .acts{display:flex;justify-content:flex-end;margin-top:.3rem}
+.ex .acts .btn{font-size:.82rem;min-height:2.3rem;padding:.25rem .7rem}
+.msg{border-radius:.6rem;padding:.6rem .8rem;margin:0 0 .8rem;font-size:.9rem;background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+<script src="appearance.js"></script>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Exercise library</h1><p class="sub">The exercises the app’s plan builder chooses from</p></div>
+    <a class="btn" id="back" href="./">← Back</a>
+  </div>
+  <div id="msg"></div>
+  <p class="note">Each one says what it needs and what it loads most. When you build a plan without AI, workouts are picked from here to suit your equipment and what you said in About me. To change an exercise in your plan, tap <b>Swap</b> next to it on the Exercise tab.</p>
+  <div class="bar" id="whoBar" hidden><label for="who">For</label><select id="who"></select></div>
+  <div class="chips" id="types" role="group" aria-label="Kind of exercise"></div>
+  <div class="bar">
+    <label class="sr" for="q">Search</label>
+    <input type="search" id="q" placeholder="Search, like squat or band" autocomplete="off">
+    <label class="toggle"><input type="checkbox" id="fitOnly" checked> Only ones that suit me</label>
+  </div>
+  <p class="count" id="count"></p>
+  <div id="list"></div>
+  <p class="note">This is general information, not medical advice. If you have an injury, a health condition or are pregnant, consider checking with your GP or physio which exercises suit you, and stop anything that causes pain.</p>
+</main>
+<script>
+var TYPES = [["all", "All"], ["legs", "Legs"], ["push", "Push"], ["pull", "Pull"], ["core", "Core"], ["balance", "Balance and calves"], ["arms", "Arms"], ["stretch", "Warm-ups and stretches"]];
+var GROUP = { squat: "legs", lunge: "legs", hinge: "legs", push: "push", pull: "pull", core: "core", calf: "balance", balance: "balance", arms: "arms", warmup: "stretch", mobility: "stretch" };
+var EQUIP = { none: "No equipment", bands: "Bands", dumbbells: "Dumbbells", gym: "Gym" };
+var LEVEL = ["", "Easier", "Medium", "Harder"];
+var FLAG = {
+  floor: "Gets down on the floor", supine: "Lies on your back", prone: "Lies face down",
+  knees: "Loads the knees", back: "Loads the back", shoulders: "Loads the shoulders",
+  wrists: "Weight on the wrists", balance: "Needs balance", chair: "Done sitting",
+};
+var DATA = null, PERSON = "", TYPE = "all";
+try { TYPE = localStorage.getItem("exlib-type") || "all"; } catch (e) {}
+
+function $(id) { return document.getElementById(id); }
+function el(tag, cls, txt) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (txt != null) n.textContent = txt;
+  return n;
+}
+function api(method, url, body) {
+  var o = { method: method, headers: { "X-Requested-With": "app" }, cache: "no-store" };
+  if (body) { o.headers["Content-Type"] = "application/json"; o.body = JSON.stringify(body); }
+  return fetch(url, o).then(function (r) {
+    if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent("/exercises.html"); throw new Error("login needed"); }
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      if (!r.ok) throw new Error(d.error || "Something went wrong");
+      return d;
+    });
+  });
+}
+function showErr(text) {
+  $("msg").textContent = "";
+  if (text) $("msg").appendChild(el("div", "msg", text));
+}
+
+function drawTypes() {
+  var row = $("types");
+  row.textContent = "";
+  TYPES.forEach(function (t) {
+    var b = el("button", null, t[1]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", TYPE === t[0]);
+    b.onclick = function () {
+      TYPE = t[0];
+      try { localStorage.setItem("exlib-type", TYPE); } catch (e) {}
+      drawTypes();
+      draw();
+    };
+    row.appendChild(b);
+  });
+}
+
+function draw() {
+  var list = $("list");
+  list.textContent = "";
+  if (!DATA) return;
+  var q = $("q").value.trim().toLowerCase();
+  var fitOnly = $("fitOnly").checked;
+  var fits = {};
+  DATA.fits.forEach(function (id) { fits[id] = true; });
+  var shown = DATA.exercises.filter(function (e) {
+    if (TYPE !== "all" && GROUP[e.type] !== TYPE) return false;
+    if (fitOnly && !fits[e.id]) return false;
+    if (q && (e.name + " " + e.how + " " + EQUIP[e.equipment]).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+  $("count").textContent = shown.length + (shown.length === 1 ? " exercise" : " exercises") + (DATA.avoid.length ? " · " + DATA.avoid.length + " left out of your plans" : "");
+  shown.forEach(function (e) {
+    var off = DATA.avoid.indexOf(e.id) > -1;
+    var card = el("article", "ex" + (off ? " off" : ""));
+    var h = el("h2", null, e.name);
+    h.appendChild(el("small", null, e.dose));
+    card.appendChild(h);
+    var meta = el("div", "meta");
+    meta.appendChild(el("span", "tag", EQUIP[e.equipment]));
+    meta.appendChild(el("span", "tag", LEVEL[e.level]));
+    e.flags.forEach(function (f) { if (FLAG[f]) meta.appendChild(el("span", "tag" + (f === "chair" ? "" : " warn"), FLAG[f])); });
+    card.appendChild(meta);
+    card.appendChild(el("p", null, e.how));
+    if (!fitOnly || off) {
+      if (!fits[e.id]) card.appendChild(el("p", "note", "Not picked for you: it needs equipment you didn’t list, or loads something you mentioned in About me."));
+    }
+    var acts = el("div", "acts");
+    var b = el("button", "btn", off ? "Left out of my plans · undo" : "Leave out of my plans");
+    b.type = "button";
+    b.onclick = function () {
+      b.disabled = true;
+      api("PUT", "/api/exercises/avoid?person=" + encodeURIComponent(PERSON), { id: e.id, avoid: !off })
+        .then(function (d) { DATA.avoid = d.avoid; draw(); })
+        .catch(function (err) { b.disabled = false; showErr(err.message); });
+    };
+    acts.appendChild(b);
+    card.appendChild(acts);
+    list.appendChild(card);
+  });
+  if (!shown.length) list.appendChild(el("p", "note", fitOnly ? "Nothing here suits you. Untick “Only ones that suit me” to see them all." : "Nothing matches."));
+}
+
+function load() {
+  return api("GET", "/api/exercises?person=" + encodeURIComponent(PERSON)).then(function (d) {
+    DATA = d;
+    showErr("");
+    draw();
+  });
+}
+
+$("q").oninput = draw;
+$("fitOnly").onchange = draw;
+$("who").onchange = function () { PERSON = this.value; load().catch(function (e) { showErr(e.message); }); };
+drawTypes();
+// Back to More, in the week the app was last on.
+try {
+  var place = /^#week-(\d+)/.exec(localStorage.getItem("coles-plan-place") || "");
+  $("back").href = "./#week-" + (place ? place[1] : "1") + "-more";
+} catch (e) {}
+
+fetch("/auth/me", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
+  if (!me) { location.href = "/login?next=" + encodeURIComponent("/exercises.html"); return; }
+  PERSON = new URLSearchParams(location.search).get("person") || me.person;
+  if (!me.admin) PERSON = me.person;
+  var people = me.admin ? api("GET", "/api/people") : Promise.resolve(null);
+  return people.then(function (got) {
+    if (got && got.people && got.people.length > 1) {
+      got.people.forEach(function (p) {
+        var o = el("option", null, p.name);
+        o.value = p.person;
+        o.selected = p.person === PERSON;
+        $("who").appendChild(o);
+      });
+      $("whoBar").hidden = false;
+    }
+    return load();
+  });
+}).catch(function (e) { showErr("Could not load the library: " + e.message); });
+</script>
+</body>
+</html>

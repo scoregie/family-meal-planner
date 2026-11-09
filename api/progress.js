@@ -405,11 +405,23 @@ function summary(person, weeks, tz, ctx) {
     .map(([date, v]) => ({ date, weight: v.value, source: v.source }))
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 
+  // The newest day (today, else yesterday) with phone numbers, for the Today page.
+  let latest = null;
+  for (const date of [today, addDays(today, -1)]) {
+    const day = { date };
+    for (const kind of ['steps', 'active_energy', 'energy_in']) {
+      const v = byKind[kind] && byKind[kind].get(date);
+      if (v) day[kind] = round(v.value, 0);
+    }
+    if (Object.keys(day).length > 1) { latest = day; break; }
+  }
+
   const profile = db.getProfile(person);
   const answers = (profile && profile.answers) || {};
   return {
     person,
     today,
+    latest,
     weeks: out,
     weighIns,
     manual: manual.sort((a, b) => (a.date < b.date ? 1 : -1)),

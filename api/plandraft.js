@@ -8,6 +8,9 @@
 //   GET  /api/plan/ai/models?provider=   admins: the models the family's key for it can use
 //   POST /api/plan/draft     admins: start a draft {how: "ai" | "builtin", note}. With AI it runs
 //                            in the background and takes several minutes; built-in takes a moment.
+//   GET  /api/plan/handoff?note=   admins: the exact prompt the AI would get {system, user}, so a
+//                            Claude Code session can write the plan (tools/claude-code-plan.sh)
+//   POST /api/plan/handoff   admins: {plan} written that way, checked and saved as a draft
 //
 // A finished draft is saved as a request (like Ask AI's suggestions) that replaces the plan's
 // weeks, people, exercise, macros and food groups. Nothing changes until an admin approves it,
@@ -95,6 +98,7 @@ function household(ctx) {
         finished: !!(profile && profile.finished_at),
         updated: profile ? profile.updated_at : null,
         answers,
+        avoid: (() => { try { return JSON.parse(db.getSetting('exercise-avoid:' + person) || '[]'); } catch (e) { return []; } })(),
       };
     });
 }
@@ -269,7 +273,7 @@ async function runDraft(me, ready, ctx, note) {
 
 // Reads, checks and saves an AI-written plan as a draft for an admin to approve.
 async function finishDraft(me, ctx, people, known, text, who) {
-    job.stage = 'Checking the plan';
+    if (job) job.stage = 'Checking the plan';
     let plan;
     try {
       plan = parsePlan(text);
@@ -287,7 +291,22 @@ async function finishDraft(me, ctx, people, known, text, who) {
       plan.people[p.key].name = p.name;
     }
     saveDraft(me, ctx, people, plan, forAdmin, 'New 4-week plan for the family (' + who + ')');
-    job = null;
+    if (who !== 'Claude Code') job = null;
+}
+
+// Reads a whole plan sent by tools/claude-code-plan.sh (up to 3 MB).
+function readBig(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > 3e6) { reject(new Error('too big')); req.destroy(); return; }
+      chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', reject);
+  });
 }
 
 // Saves a whole new plan as one request that sets each top-level part of the plan, replacing any
@@ -323,7 +342,7 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
 // ---------------------------------------------------------------------------
 
 async function handle(req, res, urlPath, url, me, ctx) {
-  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models'].includes(urlPath)) return false;
+  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;
   if (!me.admin) {
     send(res, 403, { error: 'Only an admin can set up the family’s plan.' });
     return true;
@@ -358,7 +377,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     return true;
   }
 
-  if (req.method === 'GET') {
+  if (urlPath === '/api/plan/setup' && req.method === 'GET') {
     const ready = assistant.setup(me);
     const pending = pendingDraft();
     send(res, 200, {
@@ -371,6 +390,26 @@ async function handle(req, res, urlPath, url, me, ctx) {
       draft: pending ? draftPreview(pending) : null,
       isExample: !(ctx.readPlan() || {}).people || /^example/i.test(String((ctx.readPlan() || {}).id || '')),
     });
+    return true;
+  }
+
+  // Claude Code (on the user's own subscription) writes the plan instead of the app's AI.
+  if (urlPath === '/api/plan/handoff' && req.method === 'GET') {
+    const people = household(ctx);
+    if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
+    send(res, 200, { system: systemText(), user: userText(ctx, people, String(url.searchParams.get('note') || '').slice(0, 2000)) });
+    return true;
+  }
+  if (urlPath === '/api/plan/handoff' && req.method === 'POST') {
+    let text;
+    try { text = await readBig(req); } catch (e) { send(res, 400, { error: 'The plan is too big (over 3 MB).' }); return true; }
+    const people = household(ctx);
+    try {
+      await finishDraft(me, ctx, people, new Set(people.map(p => p.key)), text, 'Claude Code');
+      send(res, 200, { ok: true });
+    } catch (e) {
+      send(res, 400, { error: String(e.message || e).replace(/ Try again\.$/, '') });
+    }
     return true;
   }
 

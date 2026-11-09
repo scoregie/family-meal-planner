@@ -13,6 +13,7 @@
 //
 // The result goes through the same review and approval as a plan drafted by AI (plandraft.js).
 const LIB = require('./library.json');
+const EXERCISES = require('./exercises.json').exercises;
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_NAMES = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
@@ -289,7 +290,7 @@ function arrange(dishes) {
 // Exercise
 // ---------------------------------------------------------------------------
 
-function exerciseFor(p, r) {
+function exerciseFor(p, r, rnd) {
   const a = p.answers || {};
   const equipment = new Set(list(a.equipment));
   const gentle = ['Low energy or chronic fatigue', 'Chronic pain'].some(x => r.support.has(x));
@@ -357,15 +358,125 @@ function exerciseFor(p, r) {
       targets: [s + ' strength session' + (s > 1 ? 's' : ''), c + ' × ' + cardio.toLowerCase() + ' ' + mins + ' minutes', 'A few more steps each day than last week'],
       days: DAYS.map(day => {
         const o = { day };
-        if (sDays.includes(day)) o.strength = 'Strength ' + (ab++ % 2 ? 'B' : 'A');
+        if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
         if (cDays.includes(day)) o.cardio = cardio + ' ' + mins + ' minutes';
         if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
         return o;
       }),
     });
   }
-  const workouts = LIB.workouts[pregnant && level !== 'seated' ? 'none' : level];
-  return { weeks, top: { workouts, notes, medical } };
+  const made = strengthWorkouts(p, r, { level, gentle, pregnant, seated, injuries: injuries + ' ' + gp }, rnd || Math.random);
+  if (made.note) notes.push(made.note);
+  return { weeks, top: { workouts: made.workouts, notes, medical } };
+}
+
+// Words in someone's injuries (or what their doctor said) -> exercise flags to leave out.
+const INJURY_FLAGS = [
+  [/knee|acl|menisc|patell/, 'knees', 'knees'],
+  [/back|spine|spinal|disc|sciatica|lumbar/, 'back', 'back'],
+  [/shoulder|rotator/, 'shoulders', 'shoulders'],
+  [/wrist|carpal|thumb|hand/, 'wrists', 'wrists or hands'],
+  [/balance|fall|dizz|vertigo/, 'balance', 'balance'],
+];
+
+// Which exercises suit someone: {usable(e), why: [body parts mentioned]}. `o` has seated,
+// pregnant and injuries (their injuries and what their doctor said).
+function exerciseRules(p, o) {
+  // What they can use: bodyweight always; bands and dumbbells if they have them; all of it at a gym.
+  const equip = new Set(list((p.answers || {}).equipment));
+  const gym = equip.has('Gym membership');
+  const have = new Set(['none']);
+  if (gym || equip.has('Resistance bands')) have.add('bands');
+  if (gym || equip.has('Dumbbells')) have.add('dumbbells');
+  if (gym) have.add('gym');
+
+  const skip = new Set();
+  const why = [];
+  const text = String(o.injuries || '').toLowerCase();
+  for (const [re, flag, words] of INJURY_FLAGS) if (re.test(text)) { skip.add(flag); why.push(words); }
+  if (o.pregnant) ['supine', 'prone', 'impact'].forEach(f => skip.add(f));
+  const disliked = new Set(Array.isArray(p.avoid) ? p.avoid : []);
+  const usable = e => have.has(e.equipment) && !disliked.has(e.id)
+    && !e.flags.some(f => skip.has(f)) && (!o.seated || e.flags.includes('seated'));
+  return { usable, why };
+}
+
+// The ids of the exercises that suit a person ({answers, avoid}), for swapping one in their plan.
+// Sitting-only ones are left out unless they exercise seated.
+function exerciseFits(p) {
+  const r = rulesFor(p);
+  const a = p.answers || {};
+  const o = {
+    seated: r.support.has('Use a wheelchair or mobility aid'),
+    pregnant: r.conditions.has('Pregnant or breastfeeding'),
+    injuries: String(a.injuries || '') + ' ' + String(a.gp || ''),
+  };
+  const { usable } = exerciseRules(p, o);
+  return EXERCISES.filter(e => usable(e) && (o.seated || !e.flags.includes('chair'))).map(e => e.id);
+}
+
+// Two strength workouts (A and B) for weeks 1 and 2, and a harder pair for weeks 3 and 4, picked
+// from exercises.json to suit the person's equipment, injuries, pregnancy, mobility and dislikes.
+// Returns {workouts, note}.
+function strengthWorkouts(p, r, o, rnd) {
+  const { usable, why } = exerciseRules(p, o);
+  const best = o.level === 'seated' ? 'none' : o.level;
+  const caps = (o.gentle || o.pregnant || o.seated || r.teen) ? [1, 2] : [2, 3];
+  const used = new Set();
+
+  // The best exercise of a type for a level cap: close to the cap, the person's own equipment
+  // first, something not used yet, with a little randomness so plans differ. One level harder
+  // is allowed when nothing else fits. Sitting-only exercises are for people who exercise seated,
+  // or a last resort (`chair`).
+  function choose(type, cap, chair) {
+    const pool = EXERCISES.filter(e => e.type === type && e.level <= cap + 1 && usable(e)
+      && (o.seated || chair || !e.flags.includes('chair')));
+    if (!pool.length) return null;
+    let top = null, topScore = -Infinity;
+    for (const e of pool) {
+      const score = (e.level > cap ? -3 : e.level) + (e.equipment === best ? 1.5 : 0) - (used.has(e.id) ? 3 : 0) + rnd() * 1.2;
+      if (score > topScore) { top = e; topScore = score; }
+    }
+    used.add(top.id);
+    return top;
+  }
+  const FALLBACK = { lunge: 'squat', calf: 'balance' };
+  const pickFor = (type, cap) => choose(type, cap) || (FALLBACK[type] && choose(FALLBACK[type], cap)) || choose(type, cap, true);
+  const line = (e, twoSets) => e.name + ' (' + (twoSets ? e.dose.replace(/^3 ×/, '2 ×') : e.dose) + '): ' + e.how;
+  const byId = id => EXERCISES.find(e => e.id === id);
+
+  const warm = o.seated ? [byId('seated-warm-up')] : [byId('march-on-the-spot'), byId('arm-circles-and-leg-swings')];
+  const coolPool = EXERCISES.filter(e => e.type === 'mobility' && usable(e) && !e.flags.includes('floor'));
+  const cool = o.seated ? [byId('seated-stretches')] : coolPool.slice(0, 3);
+  const SLOTS = {
+    A: ['squat', 'push', 'hinge', 'pull', 'core'],
+    B: ['lunge', 'pull', 'push', 'hinge', o.seated ? 'arms' : 'calf', 'core'],
+  };
+  const workouts = [];
+  [0, 1].forEach(block => {
+    const cap = caps[block];
+    ['A', 'B'].forEach(letter => {
+      const picked = [];
+      for (const type of SLOTS[letter]) {
+        const e = pickFor(type, cap);
+        if (e) picked.push(e);
+      }
+      const minutes = Math.round((8 + picked.length * 5 + (o.seated ? 3 : 5)) / 5) * 5;
+      workouts.push({
+        name: 'Strength ' + (block + 1) + letter + ': ' + picked.slice(0, 3).map(e => e.name.toLowerCase()).join(', ') + ' (weeks ' + (block ? '3 and 4' : '1 and 2') + ')',
+        time: 'About ' + minutes + ' minutes',
+        items: [].concat(
+          warm.filter(Boolean).map(e => 'Warm-up: ' + line(e)),
+          picked.map(e => line(e, block === 0 && o.gentle)),
+          cool.filter(Boolean).map(e => 'Cool-down: ' + line(e)),
+        ),
+      });
+    });
+  });
+  const note = why.length
+    ? 'You mentioned your ' + why.join(' and ') + ', so the exercises that put the most load there are left out. Swap anything that still doesn’t feel right from the Exercise library.'
+    : '';
+  return { workouts, note };
 }
 
 // ---------------------------------------------------------------------------
@@ -475,7 +586,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   const exercise = {};
   const topExercise = {};
   people.forEach((p, i) => {
-    const ex = exerciseFor(p, rules[i]);
+    const ex = exerciseFor(p, rules[i], rnd);
     exercise[p.key] = ex.weeks;
     topExercise[p.key] = ex.top;
   });
@@ -808,4 +919,4 @@ function shoppingFor(needs) {
   return { weekly: bought.map(toList), stock: stockBought.map(toList) };
 }
 
-module.exports = { build, rulesFor, portionFor, allowed };
+module.exports = { build, rulesFor, portionFor, allowed, exerciseFits, EXERCISES };
