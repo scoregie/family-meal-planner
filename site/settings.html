@@ -29,7 +29,7 @@ h3{font-size:1rem;margin:1rem 0 .4rem}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
 .btn:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-section.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .9rem}
 /* Choices are radio buttons styled as tiles */
 .choices{display:flex;flex-wrap:wrap;gap:.45rem;border:0;margin:0;padding:0}
 .choices legend{font-weight:700;margin:0 0 .4rem;padding:0}
@@ -63,19 +63,27 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
 .status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2);max-width:90vw}
 .status.err{background:var(--low);color:#fff}
 [hidden]{display:none!important}
+details.fold>summary{list-style:none;cursor:pointer;position:relative;padding-right:2rem;min-height:2.6rem;display:flex;flex-direction:column;justify-content:center}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::after{content:"›";position:absolute;right:.2rem;top:50%;transform:translateY(-50%);font-size:1.5rem;color:var(--mute);transition:transform .15s}
+details.fold[open]>summary::after{transform:translateY(-50%) rotate(90deg)}
+details.fold>summary h2{margin:0}
+details.fold>summary .hint{color:var(--mute);font-size:.85rem}
+details.fold[open]>summary{margin-bottom:.6rem}
+details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offset:4px;border-radius:.3rem}
 </style>
 <script src="appearance.js"></script>
 </head>
 <body>
 <main>
   <div class="top">
-    <div><h1>Settings</h1><p class="sub">How the app looks</p></div>
+    <div><h1>Settings</h1><p class="sub">Tap a section to open it</p></div>
     <a class="btn" href="./">← Back to the app</a>
   </div>
   <div id="msg"></div>
 
-  <section class="card">
-    <h2>On this device</h2>
+  <details class="card fold">
+    <summary><h2>On this device</h2><span class="hint">Colours, text size and theme for you</span></summary>
     <p class="note">Only changes how the app looks for you, on this phone or computer. Leave a choice on “Household” to use what the admins picked.</p>
     <div id="mine"></div>
     <div class="preview" aria-hidden="true">
@@ -84,29 +92,29 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
       <div class="demo"><span class="tick"><i>✓</i> Eaten</span><span class="btn primary">Copy list</span><span class="btn">Search Coles</span></div>
     </div>
     <div class="row"><button class="btn" id="resetMine" type="button">Use the household’s look</button></div>
-  </section>
+  </details>
 
-  <section class="card" id="storesCard">
-    <h2>Where you shop</h2>
+  <details class="card fold" id="storesCard">
+    <summary><h2>Where you shop</h2><span class="hint">Coles, Woolworths and the others</span></summary>
     <p class="note">Pick one or more. The shopping list shows a search link for each, and Ask AI knows where you shop. Plan prices are Coles estimates, so other stores will differ a little.</p>
     <fieldset class="choices" id="myStores"><legend>Your stores</legend></fieldset>
     <p class="note" id="storesHint"></p>
     <div id="houseStoresBox" hidden>
       <fieldset class="choices" id="houseStores" style="margin-top:.8rem"><legend>The household’s stores (admins): used by anyone who hasn’t picked their own</legend></fieldset>
     </div>
-  </section>
+  </details>
 
-  <section class="card" id="energyCard">
-    <h2>Kilojoules or Calories</h2>
-    <p class="note">How energy is shown on the Macros tab and the Progress page, and in Ask AI’s answers. Australian food labels use kilojoules; 1 Calorie (kcal) is about 4.2 kJ.</p>
+  <details class="card fold" id="energyCard">
+    <summary><h2>Kilojoules or Calories</h2><span class="hint">How energy is shown</span></summary>
+    <p class="note">How energy is shown in Meals (Macros), on Today and the Progress page, and in Ask AI’s answers. Australian food labels use kilojoules; 1 Calorie (kcal) is about 4.2 kJ.</p>
     <fieldset class="choices" id="myEnergy"><legend>For you</legend></fieldset>
     <div id="houseEnergyBox" hidden>
       <fieldset class="choices" id="houseEnergy" style="margin-top:.8rem"><legend>The household’s (admins): used by anyone who hasn’t picked their own</legend></fieldset>
     </div>
-  </section>
+  </details>
 
-  <section class="card" id="claudeCard" hidden>
-    <h2>Your AI key</h2>
+  <details class="card fold" id="claudeCard" hidden>
+    <summary><h2>Your AI key</h2><span class="hint">Use your own Claude, OpenAI or Gemini key</span></summary>
     <p class="note">Ask AI normally uses the family’s AI (an admin chooses it on Plan setup). You can use your own instead, from Claude, OpenAI or Google Gemini: then you pay for your own messages and the daily limit doesn’t apply. Chat subscriptions (Claude Pro, ChatGPT Plus, Gemini Advanced) can’t be used by other apps, so it needs an API key.</p>
     <p id="keyState" class="note"></p>
     <form id="keyForm">
@@ -128,17 +136,17 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
       </div>
     </form>
     <p class="note">The key is checked with the company, then stored encrypted on your family’s server. It’s never shown again in full, and only used for your own chats and any plan you draft.</p>
-  </section>
+  </details>
 
-  <section class="card" id="houseCard" hidden>
-    <h2>For everyone <span class="badge">Admins</span></h2>
+  <details class="card fold" id="houseCard" hidden>
+    <summary><h2>For everyone <span class="badge">Admins</span></h2><span class="hint">The household’s look</span></summary>
     <p class="note">The look everyone gets unless they choose their own above.</p>
     <div id="house"></div>
     <div class="row"><button class="btn primary" id="saveHouse" type="button">Save for everyone</button></div>
-  </section>
+  </details>
 
-  <section class="card" id="iconCard" hidden>
-    <h2>App icon <span class="badge">Admins</span></h2>
+  <details class="card fold" id="iconCard" hidden>
+    <summary><h2>App icon <span class="badge">Admins</span></h2><span class="hint">The home-screen picture</span></summary>
     <p class="note">The picture on phones’ home screens and in browser tabs. The old icon is kept in data/icon-backups on the server.</p>
     <div class="iconmaker">
       <div class="home" aria-label="Preview of the icon on a home screen">
@@ -157,7 +165,7 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
       <button class="btn" id="resetIcon" type="button">Back to the original icon</button>
     </div>
     <p class="note">On iPhone, the home-screen icon only changes after you remove the app from the home screen and add it again (Share → Add to Home Screen).</p>
-  </section>
+  </details>
 </main>
 <div class="status" id="status" role="status" hidden></div>
 <script>
@@ -618,6 +626,12 @@ A.refresh().then(function (got) {
     drawIcon();
   }
 });
+
+// A link like settings.html#claudeCard opens that section.
+(function () {
+  var target = location.hash && document.getElementById(location.hash.slice(1));
+  if (target && target.tagName === "DETAILS") target.open = true;
+})();
 </script>
 </body>
 </html>
