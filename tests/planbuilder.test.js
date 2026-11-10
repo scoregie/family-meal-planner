@@ -376,6 +376,28 @@ test('food already in the kitchen is left off the shopping lists, and meals that
   assert.ok(withList > withoutList, withList + ' rice dinners with the list, ' + withoutList + ' without');
 });
 
+test('dinners the family rated well come back more often, and ones they rated poorly less often', () => {
+  const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
+  // How many times each dinner turns up over several plans: {name: count}.
+  const tally = rated => {
+    const seen = {};
+    for (let seed = 1; seed <= 8; seed++) {
+      const plan = pb.build(people, { seed, rated }).plan;
+      for (const m of plan.weeks.flatMap(w => w.meals || [])) seen[m.dinner] = (seen[m.dinner] || 0) + 1;
+    }
+    return seen;
+  };
+  const count = (name, rated) => tally(rated)[name] || 0;
+  // Without ratings: the dinner that turns up most becomes the one they disliked, and one that
+  // turns up least becomes the one they loved.
+  const before = tally({});
+  const names = LIB.dishes.filter(d => d.meal === 'dinner').map(d => d.name).sort((x, y) => (before[x] || 0) - (before[y] || 0));
+  const loved = names[0], disliked = names[names.length - 1];
+  const rated = { [loved.toLowerCase()]: 9.5, [disliked.toLowerCase()]: 2 };
+  assert.ok(count(loved, rated) > count(loved, {}), loved + ' didn’t come back more often');
+  assert.ok(count(disliked, rated) < count(disliked, {}), disliked + ' didn’t come back less often');
+});
+
 test('vegetable sides are only added as sides, never as an ordinary or school snack', () => {
   const sides = new Set(LIB.snacks.filter(s => s.kind === 'side').map(s => s.what));
   assert.ok(sides.size >= 3, 'the library has vegetable sides');

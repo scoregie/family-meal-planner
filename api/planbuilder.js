@@ -15,6 +15,8 @@
 //     Things that keep (pantry, freezer, cheese) carry over between weeks so nothing is bought twice.
 //   - Food the family already has (the kitchen list on Plan setup, opts.pantry) is used first:
 //     dishes that use it score higher, and what it covers is left off the shopping lists.
+//   - Meals the family has rated (opts.rated, their average scores out of 10) come back more often
+//     if they scored well and less often if they scored poorly.
 //   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
 //     (opts.country), and recipe words change to the local ones ("capsicum" to "pepper").
 //   - Exercise builds gently over the 4 weeks from each person's time, equipment and health notes.
@@ -421,6 +423,10 @@ function score(d, eaters, house, rnd) {
     if (r.help.has('Cooking a batch on a good day') && d.batch) s += 1.5;
     if (r.sensory.has('Strong smells') && (d.tags || []).includes('fish')) s -= 2;
   }
+  // What the family thought of this dish last time: an average of 8 out of 10 adds about 1.5,
+  // and 3 out of 10 takes about 2.5 off. Dishes nobody has rated are left alone.
+  const rated = house.rated && house.rated[d.name.toLowerCase()];
+  if (typeof rated === 'number') s += (rated - 6) * 0.8;
   // Food already in the kitchen: dishes that use it score higher, and it costs nothing to use,
   // so its price comes off what the dish costs.
   const owned = house.ownedNow ? d.per.filter(x => house.ownedNow.has(x[0])) : [];
@@ -730,6 +736,8 @@ function build(people, opts) {
   };
   if (house.cookLimit === Infinity) house.cookLimit = null;
   // Food already in the kitchen (the list on Plan setup), as amounts of library ingredients.
+  // The family's average rating of each dish they've scored: {"lower-case dish name": 0 to 10}.
+  house.rated = (opts && opts.rated) || {};
   const kitchen = kitchenStock(opts && opts.pantry);
   house.stock = kitchen.stock;
   const repeat = rules.some(r => r.help.has('Eating the same meals often (fewer decisions)') || r.sensory.has('A brand or recipe changing'));

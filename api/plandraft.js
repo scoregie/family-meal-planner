@@ -54,6 +54,16 @@ function kitchenList() {
   }
 }
 
+// What the family thought of meals they've rated: {"lower-case dish name": average score out of
+// 10}. Averages across everyone, so no one person's ratings are shown. Empty if nothing is rated.
+function dishRatings() {
+  const rated = {};
+  try {
+    for (const d of db.dishes()) if (d && d.name && d.avg_score != null) rated[d.name.toLowerCase()] = d.avg_score;
+  } catch (e) { /* ratings are a nice-to-have */ }
+  return rated;
+}
+
 // The one draft that can run at a time. Kept in memory: a restart loses a draft in progress.
 // {state: "running" | "failed", by, started, chars, stage, error}
 let job = null;
@@ -226,6 +236,12 @@ function userText(ctx, people, note) {
     lines.push('', 'Food the family already has at home. Use it up first (fresh food in week 1, pantry and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists:',
       '<kitchen>' + kitchen.join('\n') + '</kitchen>');
   }
+  // Meals from earlier plans that the family rated well or poorly (averages out of 10).
+  const rated = Object.entries(dishRatings());
+  const liked = rated.filter(([, score]) => score >= 7.5).map(([name]) => name).slice(0, 15);
+  const disliked = rated.filter(([, score]) => score <= 4.5).map(([name]) => name).slice(0, 15);
+  if (liked.length) lines.push('', 'Meals the family rated highly in earlier plans (bring some back, or ones like them): ' + liked.join('; ') + '.');
+  if (disliked.length) lines.push('', 'Meals they rated poorly (leave these out, and ones like them): ' + disliked.join('; ') + '.');
   if (note) lines.push('', 'A note from the admin who asked for this plan:', '<note>' + note + '</note>');
   lines.push('', 'Write the whole plan now, as one JSON object.');
   return lines.join('\n');
@@ -498,7 +514,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       const people = household(ctx);
       if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
       try {
-        const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale, pantry: kitchenList() });
+        const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale, pantry: kitchenList(), rated: dishRatings() });
         saveDraft(me, ctx, people, built.plan, built.notesForAdmin, 'New 4-week plan for the family (built-in, no AI)');
         job = null;
         send(res, 200, { ok: true, done: true });

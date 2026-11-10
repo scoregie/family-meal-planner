@@ -15,6 +15,9 @@ already in the kitchen.
   anything it couldn't match. An AI-written plan gets the same list. It is a starting point, not
   a stocktake, and it isn't updated as you cook.
 
+- **Meal ratings now shape the next plan.** Dinners the family scored well come back more often
+  and ones they scored poorly less often, in the built-in builder and in the instructions an AI
+  gets. It uses the average across everyone, so no one person's ratings are shown.
 - **New About me question: "How much should the plan change what you eat?"** Some people use the
   app to eat healthier, others for the planning and shopping. Three answers:
   - *Reach the healthy-eating guidelines from week 1* (also used if the question isn't answered);
