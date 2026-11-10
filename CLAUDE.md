@@ -7,6 +7,8 @@ explains the code for beginners. The README covers the rest.
 The owner wants the code readable by someone with minimal coding experience: every file starts with
 a plain note saying what it does, and every new function gets a one-line plain comment above it.
 
+Run `tools/test.sh` before opening a PR, and add a test when fixing a bug (see `tests/README.md`).
+
 ## "Draft our family plan with Claude Code"
 
 The family may have no AI API key, so a Claude Code session can write the 4-week plan instead:

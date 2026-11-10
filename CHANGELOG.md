@@ -3,6 +3,23 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.4.2 (2026-11-10)
+
+Automated tests, and a fix they found. Restart the api after updating
+(`docker restart shopping-list-api`).
+
+- **Fixed: wheat or gluten allergies.** The built-in plan builder couldn't make a plan for a family
+  with a wheat or gluten allergy (or coeliac disease), because every breakfast and lunch in its
+  library had gluten. It now has 6 gluten-free breakfasts and 6 gluten-free lunches, which also
+  give more choice for milk, egg and dairy-free families. If a meal ever can't be matched to
+  everyone, the plan says "your own choice" for it instead of failing.
+- **Automated tests:** `tools/test.sh` runs 34 checks in a few seconds, covering logins and the
+  wrong-password limit, safe redirects, the plan builder (allergies, diets, children's portions,
+  injuries, pregnancy, every country's prices), Apple Health imports, and the wording rules for
+  health text. GitHub runs them on every pull request. See `tests/README.md`.
+- **Wording:** three health notes no longer say "never" or "always", and About me says "What they
+  told you comes first" for a doctor's guidance.
+
 ## v1.4.1 (2026-11-10)
 
 Fixes from a full code review. After updating, restart both containers
