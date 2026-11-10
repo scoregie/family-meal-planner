@@ -53,6 +53,9 @@ Plans now listen to what people said and logged, and help fussy eaters one small
   its whole allowance thinking and never write the plan, and the app then said the plan was
   "too long". It now thinks less before writing, has more room, and says what happened if it
   runs out. While it works, Plan setup shows "Thinking it through" and when it was last heard from.
+- **Plans are written by the model you chose.** Drafts used to run on the server's fixed model
+  whatever was picked. They now use the model chosen for the key (Settings for your own key),
+  so a cheaper one can be picked.
 - **Cancel a draft.** While an AI is writing, "Cancel this draft" stops it. Nothing is saved.
 
 ## v1.7.0 (2026-11-10)

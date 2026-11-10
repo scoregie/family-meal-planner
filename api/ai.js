@@ -299,9 +299,19 @@ async function chat(ready, { system, messages, tools, maxTokens, json, onText, s
   return { content, stop_reason: stop, usage };
 }
 
+// What a Claude model accepts when it writes a whole plan. Newer models choose how much to think
+// ("adaptive") and can write up to 128,000 tokens; older ones (like Haiku 4.5) are sent no
+// thinking settings and have a smaller limit. Returns {adaptive, maxTokens}.
+function claudeFor(model) {
+  const id = String(model || '');
+  const newer = /^claude-(fable|mythos)-|^claude-opus-(4-[6-9]|[5-9])|^claude-sonnet-(4-[6-9]|[5-9])|^claude-haiku-[5-9]/.test(id);
+  if (newer) return { adaptive: true, maxTokens: 128000 };
+  return { adaptive: false, maxTokens: /^claude-(haiku|sonnet|opus)-4-5|^claude-sonnet-4-/.test(id) ? 64000 : 32000 };
+}
+
 // Most output tokens to ask for in one reply, by provider (a whole plan is about 30,000 tokens).
 function maxOutput(provider) {
   return { openai: 64000, gemini: 60000, ollama: 32000 }[provider] || 32000;
 }
 
-module.exports = { PROVIDERS, DEFAULT_CLAUDE, familyKeys, familyChoice, setFamilyChoice, ownChoice, saveOwn, resolve, models, checkKey, chat, explain, maxOutput, AIError };
+module.exports = { PROVIDERS, DEFAULT_CLAUDE, familyKeys, familyChoice, setFamilyChoice, ownChoice, saveOwn, resolve, models, checkKey, chat, explain, maxOutput, claudeFor, AIError };

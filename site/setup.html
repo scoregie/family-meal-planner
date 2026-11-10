@@ -373,7 +373,7 @@ function renderDraft() {
   var more = el("details");
   more.appendChild(el("summary", "note", "What happens?"));
   more.appendChild(el("p", "note", useAI
-    ? name + " writes the meals, snacks, recipes, shopping lists and exercise for everyone, using their About me answers, what they logged and rated, the kitchen list and the stores you shop at. It uses " + (DATA.claude.own ? "your own " + name + " key" : "the family’s " + name + " key") + ": one long request, so it costs more than a chat. You can cancel while it is writing."
+    ? name + " writes the meals, snacks, recipes, shopping lists and exercise for everyone, using their About me answers, what they logged and rated, the kitchen list and the stores you shop at. It uses " + (DATA.claude.own ? "your own " + name + " key" : "the family’s " + name + " key") + (DATA.claude.model ? " and the model " + DATA.claude.model + (DATA.claude.own ? " (change it in Settings for a cheaper one)" : "") : "") + ": one long request, so it costs more than a chat. You can cancel while it is writing."
     : "The plan builder picks meals from its recipe library to fit everyone’s answers (allergies, diets, foods they won’t eat, cooking time, budget and portions), adds up the shopping lists, and builds a gentle exercise plan."));
   if (!DATA.isExample) more.appendChild(el("p", "note", "Approving a new plan replaces the current one (it’s backed up first) and everyone’s ticks start fresh."));
   box.appendChild(more);

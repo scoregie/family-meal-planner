@@ -317,6 +317,24 @@ function fixCosts(plan) {
 // how hard it thinks first.
 const CLAUDE_DRAFT = { maxTokens: 128000, effort: 'medium' };
 
+// The model and thinking settings for a Claude draft. The model is the one chosen for the key
+// in use (Settings for your own key, Plan setup for the family's), so a cheaper model can be
+// picked there. Thinking and the plan share one allowance of tokens: at "high" effort Claude
+// once spent all of it thinking and wrote nothing, so effort is "medium" and the allowance is
+// the largest the model gives. A whole plan is about 30,000 tokens.
+function claudeRequest(model) {
+  const can = ai.claudeFor(model);
+  if (!can.adaptive) return { model, max_tokens: can.maxTokens };
+  return {
+    model,
+    max_tokens: Math.min(CLAUDE_DRAFT.maxTokens, can.maxTokens),
+    // "summarized" sends a running summary of the thinking. The app doesn't show it, but each
+    // piece arriving is how Plan setup knows Claude is still working (see job.heard).
+    thinking: { type: 'adaptive', display: 'summarized' },
+    output_config: { effort: CLAUDE_DRAFT.effort },
+  };
+}
+
 // What to tell the admin when Claude ran out of tokens. `written` is how many characters of the
 // plan had arrived: none means it used the whole allowance thinking, before writing anything.
 function cutOffMessage(written) {
@@ -360,15 +378,7 @@ async function runDraft(me, ready, ctx, note) {
     for (const p of people) attached.push(...planextras.resultBlocks(p.name, p.results.files));
     const client = ready.client;
     const stream = client.beta.messages.stream({
-      model: MODEL,
-      // Thinking and the plan share one allowance of tokens. At "high" effort Claude once spent
-      // all of it thinking (16 minutes) and wrote nothing, so effort is "medium" and the
-      // allowance is the largest the API gives. A whole plan is about 30,000 tokens.
-      max_tokens: CLAUDE_DRAFT.maxTokens,
-      // "summarized" sends a running summary of the thinking. The app doesn't show it, but each
-      // piece arriving is how Plan setup knows Claude is still working (see job.heard below).
-      thinking: { type: 'adaptive', display: 'summarized' },
-      output_config: { effort: CLAUDE_DRAFT.effort },
+      ...claudeRequest(ready.model || MODEL),
       system: [{ type: 'text', text: systemText(), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: [...attached, { type: 'text', text: userText(ctx, people, note, 'attached') }] }],
     });
@@ -646,4 +656,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { handle, household, CLAUDE_DRAFT, cutOffMessage };
+module.exports = { handle, household, CLAUDE_DRAFT, cutOffMessage, claudeRequest };

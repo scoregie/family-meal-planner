@@ -188,6 +188,10 @@ test('drafting: Claude is left room to write after thinking, and running out is 
   // "high" effort once used a 100,000-token allowance on thinking alone and wrote no plan.
   assert.notEqual(draft.CLAUDE_DRAFT.effort, 'high');
   assert.ok(draft.CLAUDE_DRAFT.maxTokens >= 128000);
+  // The draft runs on the model chosen for the key, with settings that model accepts.
+  assert.deepEqual(draft.claudeRequest('claude-sonnet-5-5'), { model: 'claude-sonnet-5-5', max_tokens: 128000, thinking: { type: 'adaptive', display: 'summarized' }, output_config: { effort: 'medium' } });
+  assert.equal(draft.claudeRequest('claude-haiku-5-5').model, 'claude-haiku-5-5');
+  assert.deepEqual(draft.claudeRequest('claude-haiku-4-5'), { model: 'claude-haiku-4-5', max_tokens: 64000 });
   assert.match(draft.cutOffMessage(0), /thinking the plan through/);
   assert.match(draft.cutOffMessage(50000), /too long and got cut off/);
 });
