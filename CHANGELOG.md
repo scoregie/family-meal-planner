@@ -3,6 +3,14 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.4.4 (2026-11-10)
+
+A fix for plans built without AI. Restart the api after updating (`docker restart shopping-list-api`).
+
+- **Fixed: "Australian classics".** Choosing it in "Kinds of food you'd like more of" did nothing in
+  the built-in plan builder, because its dishes are labelled "Australian". It now favours them as
+  intended. A new test checks that every cuisine choice matches dishes in the library.
+
 ## v1.4.3 (2026-11-10)
 
 Two new About me choices. No restart needed.

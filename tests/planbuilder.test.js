@@ -173,3 +173,17 @@ test('the builder also works without require(), as in the phone app', () => {
   assert.equal(plan.currency, 'GBP');
   assert.ok(plan.weeks.length >= 4);
 });
+
+test('every cuisine choice in About me matches dishes in the library (French has none yet)', () => {
+  // Looks through every section of the About me questions for the one called "cuisines".
+  const find = node => Array.isArray(node) ? node.map(find).find(Boolean)
+    : node && typeof node === 'object' ? (node.id === 'cuisines' ? node : find(Object.values(node))) : null;
+  const options = find(require('../site/questions.json')).options;
+  const inLibrary = new Set(LIB.dishes.map(d => d.cuisine));
+  const noDishesYet = ['French'];
+  for (const option of options) {
+    if (noDishesYet.includes(option)) continue;
+    const [cuisine] = pb.rulesFor({ key: 'p', name: 'P', answers: { cuisines: [option] } }).cuisines;
+    assert.ok(inLibrary.has(cuisine), `"${option}" matches no dishes in the library`);
+  }
+});
