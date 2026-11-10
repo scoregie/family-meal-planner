@@ -19,6 +19,7 @@ const assistant = require('./assistant'); // the Claude assistant and requests f
 const appearance = require('./appearance'); // the household's colours, font, text size and icon
 const accounts = require('./accounts');     // email accounts: registering, invites, password resets, the family
 const plandraft = require('./plandraft');   // getting the family's plan ready, and Claude drafting a whole plan
+const planextras = require('./planextras'); // meal feedback, logged health numbers and small steps, for the plan writer
 const healthsync = require('./healthsync'); // daily numbers from an iPhone Shortcut (Apple Health)
 const exercises = require('./exercises');   // the exercise library: browse, leave out, swap
 const libraryUpdates = require('./libraryupdates'); // new meals and exercises every 2 weeks
@@ -546,6 +547,7 @@ async function handleRequest(req, res) {
     if (await accounts.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
     if (await plandraft.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, toKey, people })) return;
+    if (await planextras.handle(req, res, urlPath, url, me, { people })) return;
     if (healthsync.handle(req, res, urlPath, url, me, { people })) return;
     if (await exercises.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await libraryUpdates.handle(req, res, urlPath, url, me, { readPlan, toKey, people })) return;

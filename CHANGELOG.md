@@ -3,6 +3,31 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.8.0 (2026-11-10)
+
+Plans now listen to what people said and logged, and help fussy eaters one small step at a time.
+
+- **Feedback is used when a plan is made.** Each person's own meal scores now count for them: a
+  dinner someone scored low turns up less often, one they scored high more often. An AI-written
+  plan also reads the "What didn't you like?" notes. The built-in builder can't read written
+  notes, so it passes them to the admin with the draft to check against the new plan.
+- **Logged and uploaded health numbers are used.** Until now a new plan only read About me. It
+  now also uses the numbers from Health sync, Apple Health and Lose It: the latest logged weight
+  replaces the About me weight for serve sizes (the plan says so), average steps can lift the
+  activity level, and an AI-written plan also gets weight change, active energy, food logged and
+  workouts. Files uploaded as PDFs or photos (like blood tests) still aren't read.
+- **Small steps for people who aren't keen on vegetables or fruit.** Their plan has one new food
+  to try each week, a short step on from a food they already like (chips, then oven wedges, then
+  sweet potato wedges). The Meals page shows it with "Tried it", "Liked it" and "Not this time".
+  Liked foods count as likes in the next plan, and the steps carry on from there. Allergies and
+  diets are respected, and it is left out for anyone who chose to keep to what they eat now.
+- **"Likely left over this week"** on the Shopping page: fresh food the week's meals don't use up
+  (a third of a pack or more), so it can be used, frozen or bought smaller.
+- **Plan setup is clearer about AI keys.** "Choose your AI" is the AI the whole family shares,
+  which needs a key in the server's `.env`. If you have your own key in Settings, it now says
+  that your own key is used for plans you draft, where it used to just say "not set up".
+- A failed AI draft is now written to the server's log as well as shown on Plan setup.
+
 ## v1.7.0 (2026-11-10)
 
 Each person chooses how much the plan changes what they eat, and plans can start from the food

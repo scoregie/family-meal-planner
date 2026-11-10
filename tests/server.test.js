@@ -103,6 +103,25 @@ test('the kitchen list is saved, read back, and given to an AI-written plan', as
   assert.match(handoff.json.user, /<kitchen>rice 2 kg\n6 eggs\ndragon fruit<\/kitchen>/);
 });
 
+test('small steps: how a new food went is saved and read back', async () => {
+  const put = await server.request('PUT', '/api/steps?person=alex-smith', { food: 'Sweet potato wedges', result: 'liked' });
+  assert.equal(put.status, 200, put.text);
+  const got = await server.request('GET', '/api/steps?person=alex-smith');
+  assert.deepEqual(got.json.tried, { 'Sweet potato wedges': 'liked' });
+  const bad = await server.request('PUT', '/api/steps?person=alex-smith', { food: 'Peas', result: 'hated' });
+  assert.equal(bad.status, 400);
+  assert.equal((await server.request('GET', '/api/steps?person=nobody')).status, 404);
+});
+
+test('logged health numbers and small steps reach the instructions for an AI-written plan', async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const weight = await server.request('POST', '/api/measurements?person=alex-smith', { weight: 91.5, date: today });
+  assert.equal(weight.status, 200, weight.text);
+  const handoff = await server.request('GET', '/api/plan/handoff');
+  assert.match(handoff.json.user, /latest weight 91\.5 kg on /);
+  assert.match(handoff.json.user, /Sweet potato wedges \(liked\)/);
+});
+
 test('a tick on the shopping list is saved for everyone', async () => {
   const put = await server.request('PUT', '/api/shared', { ticks: { 0: ['milk'] } });
   assert.equal(put.status, 200, put.text);

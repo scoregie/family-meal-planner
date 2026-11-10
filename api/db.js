@@ -401,6 +401,26 @@ function ratingsSince(person, sinceMs) {
   return open().prepare('SELECT updated_at, score FROM meal_log WHERE person = ? AND score IS NOT NULL AND updated_at >= ?').all(person, sinceMs);
 }
 
+// What one person thought of the meals they rated or left a note on, newest first:
+// [{dish, score (their average out of 10, or null), notes: ["what they didn't like", ...]}].
+function mealFeedback(person) {
+  const rows = open().prepare(`
+    SELECT dish, score, note FROM meal_log
+    WHERE person = ? AND dish IS NOT NULL AND (score IS NOT NULL OR (note IS NOT NULL AND note != ''))
+    ORDER BY updated_at DESC LIMIT 500`).all(person);
+  const byDish = new Map();
+  for (const r of rows) {
+    const key = r.dish.toLowerCase();
+    if (!byDish.has(key)) byDish.set(key, { dish: r.dish, scores: [], notes: [] });
+    if (r.score != null) byDish.get(key).scores.push(r.score);
+    if (r.note) byDish.get(key).notes.push(r.note);
+  }
+  return [...byDish.values()].map(d => ({
+    dish: d.dish, notes: d.notes,
+    score: d.scores.length ? Math.round(d.scores.reduce((n, x) => n + x, 0) / d.scores.length * 10) / 10 : null,
+  }));
+}
+
 // Exercise sessions ticked since a time.
 function sessionsSince(person, sinceMs) {
   return open().prepare('SELECT done_at, slot, session FROM exercise_log WHERE person = ? AND done_at >= ?').all(person, sinceMs);
@@ -786,7 +806,7 @@ function setProfileFinished(person, finished) {
 module.exports = {
   setProfileFinished, addSignup, listSignups, getSignup, deleteSignup, countSignups,
   open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, dishKey, DB_FILE,
-  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, sessionsSince, getSetting, setSetting, deleteSetting, planKeyFor,
+  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, mealFeedback, sessionsSince, getSetting, setSetting, deleteSetting, planKeyFor,
   getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
   getAccount, accountByEmail, accountByLegacy, listAccounts, countAccounts, addAccount, updateAccount, deleteAccount, setAiKey, getAiKey, forgetPerson,
   addInvite, inviteByToken, listInvites, useInvite, deleteInvite, deleteInvitesFor, addReset, resetByToken, useReset,

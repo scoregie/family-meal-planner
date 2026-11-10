@@ -1271,6 +1271,17 @@ function renderList() {
     sectionEl.appendChild(list);
     box.appendChild(sectionEl);
   });
+  // "Use it up": fresh food the plan expects to be left at the end of this week.
+  var useUp = PLAN.weeks[week] && PLAN.weeks[week].useUp;
+  if (Array.isArray(useUp) && useUp.length && shopPart !== "stock") {
+    var left = el("section");
+    left.appendChild(el("h2", null, "Likely left over this week"));
+    left.appendChild(el("p", "note2", "The week’s meals don’t use all of these. Use them in a lunch or a snack, freeze what freezes (meat, bread), or buy a smaller pack if your shop has one."));
+    var leftList = el("ul", "bul");
+    useUp.forEach(function (text) { leftList.appendChild(el("li", null, String(text).charAt(0).toUpperCase() + String(text).slice(1))); });
+    left.appendChild(leftList);
+    box.appendChild(left);
+  }
   refreshBylines();
   updateSummary();
 }
@@ -2120,8 +2131,68 @@ function personGuide(person, personKey) {
   }
   if (person.snacks && person.snacks.length) box.appendChild(el("h4", null, "Snacks"));
   (person.snacks || []).forEach(function (snack) { box.appendChild(line(snack.when, snack.what)); });
+  var steps = smallStepsBlock(person);
+  if (steps) box.appendChild(steps);
   box.appendChild(el("p", "note2", CHECK_WITH_GP));
   return box;
+}
+
+// ---------- small steps (a new food to try each week) ----------
+
+var stepsTried = {};   // person's login key -> {food: "tried" | "liked" | "not yet"}, once loaded
+
+// "Small steps" for one person: this week's new food to try (a short step on from a food they
+// already like), with buttons to say how it went. The answer is saved on the server, and the next
+// plan carries on from there. Returns null if their plan has no steps.
+function smallStepsBlock(person) {
+  if (!Array.isArray(person.steps) || !person.steps.length) return null;
+  var number = mealWeekNumber(week);
+  var step = person.steps.filter(function (s) { return s.week === number; })[0] || person.steps[0];
+  var key = ukey(person.name);
+  var wrap = el("div");
+  wrap.appendChild(el("h4", null, "Small steps: this week’s new food"));
+  var p = el("p", "meal");
+  p.appendChild(el("span", "mk", "Try"));
+  p.appendChild(el("span", "mv", step.food));
+  wrap.appendChild(p);
+  if (step.how) wrap.appendChild(el("p", "note2", step.how + (step.from ? " (A step on from " + step.from + ".)" : "")));
+  wrap.appendChild(el("p", "note2", "A taste is enough, with no need to finish it. It often takes many tries before a new food is liked."));
+  var row = el("div", "row");
+  var said = el("p", "note2");
+
+  // Shows which answer is chosen (if any).
+  function show() {
+    var result = (stepsTried[key] || {})[step.food] || "";
+    Array.prototype.forEach.call(row.children, function (b) { b.setAttribute("aria-pressed", b.value === result); });
+    said.textContent = result === "liked" ? "Saved. The next plan will use it in meals." : result ? "Saved. It will be offered again." : "";
+  }
+  [["tried", "Tried it"], ["liked", "Liked it"], ["not yet", "Not this time"]].forEach(function (option) {
+    var b = el("button", "btn", option[1]);
+    b.type = "button";
+    b.value = option[0];
+    b.onclick = function () {
+      // Tapping the chosen answer again clears it.
+      var now = (stepsTried[key] || {})[step.food] === option[0] ? "" : option[0];
+      fetch("/api/steps?person=" + encodeURIComponent(key), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
+        body: JSON.stringify({ food: step.food, result: now }),
+      }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (d) { stepsTried[key] = d.tried; show(); })
+        .catch(function () { said.textContent = "That didn’t save. Only they or an admin can tick this."; });
+    };
+    row.appendChild(b);
+  });
+  wrap.appendChild(row);
+  wrap.appendChild(said);
+  if (stepsTried[key]) show();
+  else {
+    fetch("/api/steps?person=" + encodeURIComponent(key), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : { tried: {} }; })
+      .then(function (d) { stepsTried[key] = d.tried || {}; show(); })
+      .catch(function () {});
+  }
+  return wrap;
 }
 
 // One meal in a day card: an "eaten" tick box, the label and dish, anyone with a different meal

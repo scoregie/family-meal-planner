@@ -189,6 +189,7 @@ test('wording: health notes avoid "always", "never" and "must"', () => {
   const texts = [
     ...stringsIn(path.join(ROOT, 'api', 'planbuilder.js')),
     ...stringsIn(path.join(ROOT, 'api', 'healthtargets.js')),
+    ...stringsIn(path.join(ROOT, 'api', 'planextras.js')),
     ...textsIn(path.join(ROOT, 'site', 'questions.json')),
   ];
   const bad = texts.filter(t => ABSOLUTES.test(t) && !ALLOWED.some(a => t.includes(a)));

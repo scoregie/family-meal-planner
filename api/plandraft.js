@@ -27,6 +27,7 @@ const appearance = require('./appearance');
 const ai = require('./ai');
 const planbuilder = require('./planbuilder');
 const healthtargets = require('./healthtargets');
+const planextras = require('./planextras');
 
 const QUESTIONS_FILE = process.env.QUESTIONS_FILE || '/site/questions.json';
 const EXAMPLE_FILE = process.env.PLAN_EXAMPLE || '/site/plan.example.json';
@@ -127,6 +128,11 @@ function household(ctx) {
         finished: !!(profile && profile.finished_at),
         updated: profile ? profile.updated_at : null,
         answers,
+        // What else the plan writer is told about them (planextras.js): their feedback on earlier
+        // meals, the health numbers they've logged or uploaded, and new foods they've tried.
+        feedback: planextras.feedbackFor(person),
+        measured: planextras.measuredFor(person),
+        tried: planextras.triedFor(person),
         avoid: (() => { try { return JSON.parse(db.getSetting('exercise-avoid:' + person) || '[]'); } catch (e) { return []; } })(),
       };
     });
@@ -185,6 +191,8 @@ Structure:
 Food:
 - When things pull against each other, this is the order of importance: (1) allergies, intolerances, diets and medicine rules, which are never traded away; (2) each person's health targets (below); (3) safe foods and textures, which decide the form food comes in, not whether it is there; (4) likes and dislikes, which choose between dishes that already fit 1 to 3.
 - Vegetables and fruit: each person's days should average at least their target serves, given with the people below (a serve is 75 g of vegetables or legumes, or 150 g of fruit). Count their meals at their portion plus their snacks, and add vegetable sides or fruit where a day falls short. This applies to children too. If someone dislikes vegetables or fruit as a whole ("most veggies", "fruit"), still reach their target, in forms they are more likely to eat (grated or blended into sauces, soups, mash, smoothies, soft-cooked), and say in their tips that amounts can start small and build up. The app measures the draft against these targets from the "groups" block and tells the admin, so make "groups" match the recipes' real amounts.
+- Small steps: for anyone who dislikes vegetables or fruit as a whole (and didn't choose to keep close to what they eat now), add "steps" to their entry in "people": one small new food to try each week, each a short step on from a food they already like (their likes and safe foods), like {"week": 1, "food": "Oven-baked potato wedges", "from": "chips", "how": "Next to the usual chips, a couple of wedges to start."}. Keep it to tiny amounts beside food they like, with no pressure to finish.
+- Fresh food likely to be left over at the end of a week can be listed in that week's "useUp" (a list of short strings), so it gets used rather than thrown out.
 - Each person chose how much the plan should change what they eat (eating_change in About me; the line for each person below says which). "From week 1": reach their target in every week. "Build up": start weeks 1 and 2 close to what they eat now (usual_day, if they gave it) at about 70% and 85% of the target, and reach it in weeks 3 and 4; a snack or side that only runs in some weeks has "weeks", like [3, 4]. "Keep close to what they eat now": plan around what they eat now and what they love, and don't add foods to reach the targets (the hard limits in 1 still apply, and children still get normal growing portions).
 - Strictly respect every allergy, intolerance, diet and named food someone won't eat. Keep each person's safe foods in their plan. Avoid textures people listed as hard. Fit cooking time, kitchen equipment, packed lunches and budget to their answers. On the days someone said work or school provides lunch (lunch_provided), don't plan or shop for their lunch: for a child, set that weekday's lunch to "School provides lunch".
 - Shared family dinners where possible, with a different dish for one person (meals[].people) only when needed. Reuse ingredients across the week to cut waste and cost, and use leftovers for lunches.
@@ -230,6 +238,18 @@ function userText(ctx, people, note) {
   lines.push('', 'Their About me answers:');
   for (const p of people) {
     if (p.answered) lines.push('<person key="' + p.key + '">' + JSON.stringify(p.answers) + '</person>');
+  }
+  // What each person logged, said about earlier meals, and tried (planextras.js).
+  for (const p of people) {
+    const measured = planextras.measuredText(p.measured);
+    if (measured) lines.push('', 'Numbers ' + p.name + ' logged or uploaded (Health sync, Apple Health, Lose It). Use the latest weight in place of the About me weight, and fit food and exercise to what they actually do: ' + measured + '.');
+    const fb = p.feedback || { rated: {}, notes: [] };
+    const scores = Object.entries(fb.rated).slice(0, 40).map(([dish, score]) => dish + ' ' + score + '/10');
+    if (scores.length) lines.push('', p.name + '’s scores for meals in earlier plans (bring back what they scored 8 or more; leave out, for them, what they scored 4 or less): ' + scores.join('; ') + '.');
+    if (fb.notes.length) lines.push('', 'What ' + p.name + ' said they didn’t like (act on these: change the dish for them, or the whole meal if it suits everyone):',
+      '<feedback>' + fb.notes.map(n => n.dish + ': ' + n.note).join('\n') + '</feedback>');
+    const tried = Object.entries(p.tried || {});
+    if (tried.length) lines.push('', 'New foods ' + p.name + ' has been offered as small steps: ' + tried.map(([food, result]) => food + ' (' + result + ')').join('; ') + '. Use the ones they liked in their meals, offer "tried" and "not yet" ones again in a small amount, and add the next step.');
   }
   const kitchen = kitchenList();
   if (kitchen.length) {
@@ -319,6 +339,8 @@ async function runDraft(me, ready, ctx, note) {
     else if (Anthropic && err instanceof Anthropic.RateLimitError) message = 'Claude is busy right now (rate limit). Try again in a few minutes.';
     else if (Anthropic && err instanceof Anthropic.APIError) message = 'Claude couldn’t finish the plan: ' + String(err.message || '').slice(0, 300);
     job = { state: 'failed', by: job && job.by, started: job && job.started, error: message };
+    // Also in the server's log (docker compose logs api), so a failed draft can be looked into later.
+    console.error('Plan draft failed: ' + message);
   }
 }
 
@@ -466,7 +488,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     const ready = assistant.setup(me);
     const pending = pendingDraft();
     send(res, 200, {
-      people: household(ctx).map(p => Object.assign({}, p, { answers: undefined })),
+      people: household(ctx).map(p => Object.assign({}, p, { answers: undefined, feedback: undefined, measured: undefined, tried: undefined })),
       questions: questionCount(),
       claude: { enabled: ready.enabled, own: !!ready.own, reason: ready.reason || null, name: ready.name, provider: ready.provider, model: ready.model || null },
       ai: { family: ai.familyChoice(), keys: ai.familyKeys(), providers: Object.fromEntries(Object.entries(ai.PROVIDERS).map(([k, p]) => [k, { name: p.name, company: p.company, keys: p.keys || null }])) },
@@ -515,6 +537,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
       try {
         const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale, pantry: kitchenList(), rated: dishRatings() });
+        // (Each person in `people` also carries their own feedback, logged numbers and small steps.)
         saveDraft(me, ctx, people, built.plan, built.notesForAdmin, 'New 4-week plan for the family (built-in, no AI)');
         job = null;
         send(res, 200, { ok: true, done: true });

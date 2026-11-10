@@ -231,7 +231,10 @@ function renderAI() {
     input.onchange = function () { pickAI(p); };
     label.appendChild(input);
     var span = el("span");
-    span.appendChild(el("b", null, AI_ABOUT[p][0] + (p !== "none" && !keys[p] ? " (not set up)" : "")));
+    // This list is the AI the whole family shares, which needs a key in the server's .env file.
+    // Someone with their own key in Settings still drafts with that, whatever is chosen here.
+    var own = DATA.claude.own && DATA.claude.provider === p;
+    span.appendChild(el("b", null, AI_ABOUT[p][0] + (p !== "none" && !keys[p] ? (own ? " (no family key; your own key is used for plans you draft)" : " (no family key on the server)") : "")));
     span.appendChild(el("small", null, AI_ABOUT[p][1]));
     label.appendChild(span);
     set.appendChild(label);
@@ -241,7 +244,7 @@ function renderAI() {
   modelRow.id = "modelRow";
   box.appendChild(modelRow);
   if (fam.provider !== "none") showModels(fam.provider, fam.model);
-  if (DATA.claude.own) box.appendChild(el("p", "note", "You have your own " + DATA.claude.name + " key in Settings, so plans you draft use that (" + (DATA.claude.model || "") + ")."));
+  if (DATA.claude.own) box.appendChild(el("p", "note", "You have your own " + DATA.claude.name + " key in Settings, so plans you draft use that (" + (DATA.claude.model || "") + "), even if it is greyed out above. The list above is the AI the whole family shares: it needs a key in the server’s .env file, and is what other people’s Ask AI uses."));
   box.appendChild(el("p", "note", "To set up an AI, add its key to .env on the server and restart (see the README). Chat subscriptions like ChatGPT Plus or Claude Pro can’t be used by other apps; each company sells API access separately, paid per use. If you run Claude Code on the server, it can draft the plan on your Claude subscription instead: see “Drafting the plan with Claude Code” in the README. Its draft shows up here to approve."));
 }
 

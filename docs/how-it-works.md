@@ -86,6 +86,7 @@ ticks and files are all stored under that key (`toKey` in `api/server.js`).
 | `appearance.js` | The household's look, country, stores, energy unit and pinned products. |
 | `plandraft.js` | Plan setup: who has finished About me, which AI to use, and drafting a new plan. |
 | `planbuilder.js` | The built-in plan builder: makes a whole plan from everyone's answers, with no AI. |
+| `planextras.js` | What the plan writer is told about each person besides About me: their meal scores and notes, the health numbers they've logged or uploaded, and their "small steps" record. |
 | `healthtargets.js` | The serves of vegetables and fruit each person's plan aims for (by age and sex), and how a plan measures up. Used by the builder, the AI's instructions and the draft preview. |
 | `planchange.js` | Small, checked edits to the plan (used when someone's suggested change is approved). |
 | `assistant.js` | Ask AI: the chat, the tools the AI can use to look things up, and suggested changes. |

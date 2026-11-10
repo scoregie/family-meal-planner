@@ -398,6 +398,71 @@ test('dinners the family rated well come back more often, and ones they rated po
   assert.ok(count(disliked, rated) < count(disliked, {}), disliked + ' didn’t come back less often');
 });
 
+// ---------------------------------------------------------------------------
+// Feedback, logged health numbers, small steps and use-it-up
+// ---------------------------------------------------------------------------
+
+test('a person’s own low score for a dinner makes it turn up less often', () => {
+  const tally = feedback => {
+    const seen = {};
+    for (let seed = 1; seed <= 8; seed++) {
+      const plan = pb.build([{ key: 'a', name: 'A', answers: { age: 40 }, feedback }], { seed }).plan;
+      for (const m of plan.weeks.flatMap(w => w.meals || [])) seen[m.dinner] = (seen[m.dinner] || 0) + 1;
+    }
+    return seen;
+  };
+  const before = tally(null);
+  const most = Object.keys(before).sort((x, y) => before[y] - before[x])[0];
+  const after = tally({ rated: { [most.toLowerCase()]: 1 }, notes: [{ dish: most, note: 'too salty' }] });
+  assert.ok((after[most] || 0) < before[most], most + ': ' + before[most] + ' times before, ' + (after[most] || 0) + ' after');
+});
+
+test('written notes are passed on to the admin, because the builder can’t read them', () => {
+  const people = [{ key: 'a', name: 'Alex', answers: { age: 40 }, feedback: { rated: {}, notes: [{ dish: 'Tuna pasta bake', note: 'too dry' }] } }];
+  assert.match(pb.build(people, { seed: 1 }).notesForAdmin, /Alex on Tuna pasta bake: “too dry”/);
+});
+
+test('a logged weight is used in place of the About me weight, and says so', () => {
+  const answers = { age: 40, sex: 'Male', height: 180, weight: 80, activity: 'Mostly sitting (desk job)' };
+  const built = measured => pb.build([{ key: 'a', name: 'Alex', answers, measured }], { seed: 1 });
+  const lighter = built(null).plan.people.a, heavier = built({ weight: 110, weightDate: '2026-11-01' }).plan.people.a;
+  assert.ok(heavier.portion > lighter.portion, heavier.portion + ' is not more than ' + lighter.portion);
+  assert.match(heavier.guide, /latest logged weight \(110 kg on 2026-11-01\)/);
+});
+
+test('small steps: someone who isn’t keen on vegetables gets one new food a week, built on foods they like', () => {
+  const answers = { age: 10, dislikes: 'most veggies', likes: 'chips and gravy, mac and cheese' };
+  const stepsFor = person => pb.build([{ key: 'a', name: 'A', answers: { age: 40 } }, Object.assign({ key: 'k', name: 'K', answers }, person)], { seed: 1 }).plan.people.k.steps;
+  const steps = stepsFor({});
+  assert.deepEqual(steps.map(s => s.week), [1, 2, 3, 4]);
+  for (const s of steps) assert.ok(['chips', 'mac and cheese'].includes(s.from), s.from);
+  // A food they liked isn't offered again: the next plan moves on.
+  const next = stepsFor({ tried: { [steps[0].food]: 'liked' } });
+  assert.ok(!next.some(s => s.food === steps[0].food));
+  // A milk allergy leaves out every step with milk or cheese in it.
+  const noMilk = stepsFor({ answers: Object.assign({}, answers, { allergies: ['Milk'] }) });
+  assert.ok(noMilk.length && !noMilk.some(s => /cheese|yoghurt|smoothie/i.test(s.food)), JSON.stringify(noMilk.map(s => s.food)));
+  // People who are fine with vegetables, or who chose to keep to their own food, get none.
+  assert.equal(stepsFor({ answers: { age: 10 } }), undefined);
+  assert.equal(stepsFor({ answers: Object.assign({}, answers, { eating_change: 'Keep it close to what I eat now' }) }), undefined);
+});
+
+test('use it up: weeks list fresh food likely to be left over, as short pieces of text', () => {
+  let listed = 0;
+  for (let seed = 1; seed <= 4; seed++) {
+    const plan = build([{ age: 40 }, { age: 38 }], { seed });
+    for (const week of plan.weeks) {
+      if (week.kind === 'stockup') assert.equal(week.useUp, undefined);
+      for (const text of week.useUp || []) {
+        listed++;
+        assert.match(text, /^(most of the|about half of the|about a third of the) \S/);
+        assert.doesNotMatch(text, /Frozen|rice 1 kg/i, 'pantry and freezer food keeps');
+      }
+    }
+  }
+  assert.ok(listed > 0);
+});
+
 test('vegetable sides are only added as sides, never as an ordinary or school snack', () => {
   const sides = new Set(LIB.snacks.filter(s => s.kind === 'side').map(s => s.what));
   assert.ok(sides.size >= 3, 'the library has vegetable sides');
