@@ -586,9 +586,7 @@ function renderCountry() {
     });
   }
   sel.value = Appearance.country();
-  var r = Appearance.region();
-  $("countryNote").textContent = r.currency === "AUD" ? "" :
-    "Plans built without AI still price things in Australian dollars for now; AI-written plans use " + r.currency + ".";
+  $("countryNote").textContent = "Plans use shop names, pack sizes and prices from " + Appearance.region().where + ". Draft a new plan after changing it.";
 }
 
 function load() {

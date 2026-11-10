@@ -3,6 +3,20 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.4.0 (2026-11-10)
+
+- **Local prices for plans built without AI:** in every country, the built-in builder's shopping
+  lists use local shop names, pack sizes and prices in local currency (pounds and ounces in the
+  US). The About me budget is compared in your own currency too.
+- **Local words in recipes:** "pepper" for capsicum and "courgette" for zucchini in the UK, "bell
+  pepper", "ground beef" and "cilantro" in the US, Weetabix and Marmite where those are sold.
+- Dishes that need something hard to find locally (such as Vegemite or halloumi in Japan) are
+  left out.
+- Prices are estimates: typical local prices for about a dozen staples per country, and the rest
+  scaled from Australian prices by local price levels. They're in `api/library-prices.json`, made
+  by `tools/build_prices.py`.
+- Australian plans are unchanged.
+
 ## v1.3.0 (2026-11-10)
 
 - **Countries:** the planner now works outside Australia. Choose your country when you create the

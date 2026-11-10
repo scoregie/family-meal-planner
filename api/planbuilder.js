@@ -9,11 +9,67 @@
 //   - Portions come from age, size, activity and goal. Children are never given less to lose weight.
 //   - Shopping lists add up every recipe's amounts for the people eating them, in whole packs.
 //     Things that keep (pantry, freezer, cheese) carry over between weeks so nothing is bought twice.
+//   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
+//     (opts.country), and recipe words change to the local ones ("capsicum" to "pepper").
 //   - Exercise builds gently over the 4 weeks from each person's time, equipment and health notes.
 //
 // The result goes through the same review and approval as a plan drafted by AI (plandraft.js).
 const LIB = require('./library.json');
 const EXERCISES = require('./exercises.json').exercises;
+
+// Local shop names, pack sizes and prices for other countries (made by tools/build_prices.py).
+// Australia's are in library.json. A copy of the app without the file prices everything in AUD.
+let PRICES = { countries: {}, words: {} };
+try { PRICES = require('./library-prices.json'); } catch (e) { /* Australian prices only */ }
+
+// The country this build is for, set by useCountry() at the start of build().
+let ING = LIB.ingredients;   // ingredients with this country's names, packs and prices
+let MISSING = new Set();     // ingredients that are hard to find there
+let CURRENCY = 'AUD';
+let LOCALE = 'en-AU';
+function useCountry(country, locale) {
+  LOCALE = locale || 'en-AU';
+  const c = PRICES.countries && PRICES.countries[country];
+  CURRENCY = c ? c.currency : 'AUD';
+  MISSING = new Set(c ? c.missing || [] : []);
+  ING = {};
+  for (const [k, ing] of Object.entries(LIB.ingredients)) {
+    const local = c && c.items[k];
+    // An ingredient added to the library since the price list was made: its Australian price, converted.
+    ING[k] = local ? Object.assign({}, ing, { name: local[0], pack: local[1], price: local[2] })
+      : c ? Object.assign({}, ing, { price: Math.round(ing.price * (c.rate || 1) * 100) / 100 }) : ing;
+  }
+  return c || null;
+}
+// Whether a dish or snack can be made with what the shops there sell.
+const available = d => !d.per.some(x => MISSING.has(x[0]));
+
+// An amount in this build's currency, for notes: "$120", "£85", "¥12,000".
+function priceText(n) {
+  try {
+    return new Intl.NumberFormat(LOCALE, { style: 'currency', currency: CURRENCY, maximumFractionDigits: 0 }).format(n);
+  } catch (e) {
+    return '$' + Math.round(n);
+  }
+}
+
+// Changes recipe words to the country's ("capsicum" to "pepper"), in every text and key of the plan.
+function reword(value, pairs) {
+  if (!pairs || !pairs.length) return value;
+  const res = pairs.map(([from, to]) => [new RegExp('\\b' + from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), to]);
+  const fix = text => res.reduce((t, [re, to]) => t.replace(re, m => (m[0] === m[0].toUpperCase() && m[0] !== m[0].toLowerCase() ? to[0].toUpperCase() + to.slice(1) : to)), text);
+  const walk = v => {
+    if (typeof v === 'string') return fix(v);
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k === 'id' ? k : fix(k)] = k === 'id' ? x : walk(x);
+      return out;
+    }
+    return v;
+  };
+  return walk(value);
+}
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_NAMES = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
@@ -202,7 +258,7 @@ function portionFor(p, r) {
 // spices that are assumed on hand are left out (so "olives" doesn't match "olive oil").
 function dishWords(d) {
   return (d.name + ' ' + d.per.filter(x => LIB.ingredients[x[0]].aisle !== 'assumed')
-    .map(x => x[0] + ' ' + LIB.ingredients[x[0]].name).join(' ')).toLowerCase();
+    .map(x => x[0] + ' ' + LIB.ingredients[x[0]].name + ' ' + ING[x[0]].name).join(' ')).toLowerCase();
 }
 
 // Whether a dish or snack is allowed for a person (allergies, diet, foods they won't eat, textures).
@@ -484,6 +540,7 @@ function strengthWorkouts(p, r, o, rnd) {
 // ---------------------------------------------------------------------------
 
 function build(people, opts) {
+  const local = useCountry(opts && opts.country, opts && opts.locale);
   const rnd = random(opts && opts.seed || Date.now());
   const rules = people.map(rulesFor);
   rules.forEach((r, i) => { r.portion = portionFor(people[i], r); });
@@ -506,18 +563,19 @@ function build(people, opts) {
     tries++;
     const weekly = plan.weeks.reduce((n, w) => n + w.cost, 0) / 4;
     if (!house.budget || weekly <= house.budget * 1.1 || tries >= 4) {
-      if (house.budget && weekly > house.budget * 1.1) forAdmin.push('The cheapest plan that fits everyone’s needs is about $' + Math.round(weekly) + ' a week, over the $' + house.budget + ' budget from About me. Swapping a couple of meat dinners for vegetarian ones would bring it down.');
+      if (house.budget && weekly > house.budget * 1.1) forAdmin.push('The cheapest plan that fits everyone’s needs is about ' + priceText(weekly) + ' a week, over the ' + priceText(house.budget) + ' budget from About me. Swapping a couple of meat dinners for vegetarian ones would bring it down.');
       break;
     }
     house.costWeight *= 2.5;
     forAdmin.length = 0;
   } while (true);
   if (!adults.length) forAdmin.push('Everyone in the plan is a child, so portions are child-sized. Add the adults to the family for a full plan.');
+  if (local && local.words) plan = reword(plan, PRICES.words[local.words]);
   return { plan, notesForAdmin: forAdmin.join(' ') };
 }
 
 function attempt(people, rules, house, rnd, repeat, forAdmin) {
-  const byMeal = m => LIB.dishes.filter(d => d.meal === m && canCook(d, house) && !(d.tags || []).some(t => house.hard.has(t)));
+  const byMeal = m => LIB.dishes.filter(d => d.meal === m && available(d) && canCook(d, house) && !(d.tags || []).some(t => house.hard.has(t)));
   const dinners = byMeal('dinner');
   const lunches = byMeal('lunch');
   const breakfasts = byMeal('breakfast');
@@ -597,7 +655,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     const need = {};
     const addNeed = (dish, serves) => {
       for (const [k, amount] of dish.per) {
-        const ing = LIB.ingredients[k];
+        const ing = ING[k];
         if (ing.aisle === 'assumed') continue;
         need[k] = (need[k] || 0) + amount * serves;
       }
@@ -677,7 +735,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       const p = planPeople[r.key];
       if (!p.weekday) {
         const packs = own[r.key].lunches.filter(d => d.packable);
-        const kidSnacks = LIB.snacks.filter(s => s.kids && allowed(s, r));
+        const kidSnacks = LIB.snacks.filter(s => s.kids && available(s) && allowed(s, r));
         p.weekday = {};
         DAYS.slice(0, 5).forEach((d, i) => {
           const l = packs[i % Math.max(1, packs.length)];
@@ -767,8 +825,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   plan.title = 'Meal and exercise plan';
   const f1 = plan.weeks.slice(0, 3).reduce((n, w) => n + w.cost, 0);
   const f2 = plan.weeks.slice(3, 6).reduce((n, w) => n + w.cost, 0);
-  plan.subtitle = 'Built by the app from everyone’s answers. Fortnight 1 about $' + Math.round(f1) + ', fortnight 2 about $' + Math.round(f2) + '. Prices are estimates in Australian dollars.';
-  plan.currency = 'AUD';   // the library's prices are Australian (local price lists come later)
+  plan.subtitle = 'Built by the app from everyone’s answers. Fortnight 1 about ' + priceText(f1) + ', fortnight 2 about ' + priceText(f2) + '. Prices are estimates.';
+  plan.currency = CURRENCY;
   plan.people = planPeople;
   plan.exercise = topExercise;
   plan.macros = macros;
@@ -825,7 +883,7 @@ function labelOf(k) {
 
 // Two snacks a day for each person, tied to exercise where it helps.
 function snacksFor(r, exWeeks) {
-  const ok = LIB.snacks.filter(s => allowed(s, r) && (!r.kid || s.kids));
+  const ok = LIB.snacks.filter(s => available(s) && allowed(s, r) && (!r.kid || s.kids));
   const by = kind => ok.filter(s => s.kind === kind);
   const protein = by('protein'), fruit = by('fruit'), other = by('other').concat(by('veg'));
   const out = [];
@@ -884,7 +942,7 @@ function shoppingFor(needs) {
   const stockBought = [{}, {}];
   needs.forEach((need, w) => {
     for (const [k, amount] of Object.entries(need)) {
-      const ing = LIB.ingredients[k];
+      const ing = ING[k];
       if (!ing.pack) continue;
       let want = amount;
       const shelf = (onHand[k] || []).filter(x => x.until >= w);
@@ -908,7 +966,7 @@ function shoppingFor(needs) {
   const toList = counts => {
     const out = {};
     for (const [k, packs] of Object.entries(counts)) {
-      const ing = LIB.ingredients[k];
+      const ing = ING[k];
       const section = SECTION[ing.aisle];
       const name = ing.name + (packs > 1 ? ' × ' + packs : '');
       (out[section] = out[section] || []).push([name, money(ing.price * packs)]);
