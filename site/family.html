@@ -19,6 +19,7 @@
 .member .acts{display:flex;gap:.35rem;flex-wrap:wrap}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:0 .8rem}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -112,7 +113,7 @@ function status(text, isError) {
 }
 
 function when(ms) {
-  return new Date(ms).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(ms).toLocaleDateString(Appearance.locale(), { day: "numeric", month: "short", year: "numeric" });
 }
 
 // A link to share: shown in a box with Copy and (on phones) Share buttons.

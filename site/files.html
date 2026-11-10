@@ -56,6 +56,7 @@ h1{font-size:1.5rem;margin:0 0 .2rem}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 [hidden]{display:none!important}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -110,7 +111,7 @@ function size(bytes) {
 
 // A date and time people can read, such as "8 Nov 2026, 2:15 pm".
 function when(ms) {
-  return new Date(ms).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return new Date(ms).toLocaleString(Appearance.locale(), { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 // Builds the "?a=1&b=2" part of an address, safely encoding each value.

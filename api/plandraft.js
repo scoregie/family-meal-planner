@@ -30,7 +30,7 @@ const EXAMPLE_FILE = process.env.PLAN_EXAMPLE || '/site/plan.example.json';
 const DOCS_FILE = '/docs/plan-format.md';
 const MODEL = process.env.ASSISTANT_MODEL || 'claude-opus-5-5';
 const EXPECTED_CHARS = 110000;   // about how long a full plan is, for the progress bar
-const REPLACED = ['id', 'title', 'subtitle', 'weeks', 'people', 'exercise', 'macros', 'groups'];
+const REPLACED = ['id', 'title', 'subtitle', 'currency', 'weeks', 'people', 'exercise', 'macros', 'groups'];
 
 let Anthropic = null;
 try {
@@ -114,7 +114,7 @@ function pendingDraft() {
 function draftPreview(r) {
   const plan = r.change.preview || {};
   return {
-    id: r.id, title: r.title, details: r.details, created_at: r.created_at, user: r.user,
+    id: r.id, title: r.title, details: r.details, created_at: r.created_at, user: r.user, currency: plan.currency || 'AUD',
     weeks: (plan.weeks || []).map(w => ({
       name: w.name, kind: w.kind || null, cost: w.cost,
       dinners: (w.meals || []).map(m => m.day + ': ' + m.dinner),
@@ -132,17 +132,18 @@ function draftPreview(r) {
 // ---------------------------------------------------------------------------
 
 function systemText() {
+  const r = appearance.region();
   let docs = '';
   try { docs = fs.readFileSync(DOCS_FILE, 'utf8'); } catch (e) { /* the example still shows the shape */ }
   let example = '';
   try { example = fs.readFileSync(EXAMPLE_FILE, 'utf8'); } catch (e) { /* ok */ }
-  return `You write complete 4-week meal and exercise plans for a family's self-hosted planner app. The family is in Australia. You reply with one JSON object (the whole plan) and nothing else: no prose, no code fences.
+  return `You write complete 4-week meal and exercise plans for a family's self-hosted planner app. The family is in ${r.where}. You reply with one JSON object (the whole plan) and nothing else: no prose, no code fences.
 
 The plan must follow the format guide below exactly, because the app reads it directly. Use the example plan as a model for the shape and the level of detail.
 
 Structure:
 - "weeks" has six entries in this order: "Stock-up 1" (kind "stockup": pantry and freezer items for weeks 1 and 2), "Week 1", "Week 2", "Stock-up 2" (for weeks 3 and 4), "Week 3", "Week 4". Each meal week has "meals" (Mon to Sun), full "recipes" (with "items" amounts for the whole household), "shopping" (fresh food for that week; sections named like "Fruit and veg", "Meat and fish", "Dairy and eggs", "Bread and pantry top-ups"), "exercise" (one plan per person key, with "focus", "targets" and "days"), and "cost".
-- Shopping prices are estimates in AUD for the family's supermarkets. Each week's "cost" is the sum of its items.
+- Shopping prices are estimates in ${r.currency} for the family's supermarkets in ${r.where}, as plain numbers. Each week's "cost" is the sum of its items. Set the top-level "currency" to "${r.currency}". Use ingredient names and pack sizes found in supermarkets in ${r.where}.
 - "people": use exactly the person keys and names given, with "portion" (1.0 is an average adult serve; children smaller), "guide", "tips", and "snacks". Tie snacks to exercise where it makes sense with "exercise": "strength" (e.g. a glass of milk after weights) or "rest". Add "times" (suggested eating times) when the person's routine is known.
 - "exercise" at the top level: per person key, "workouts" (named like "Strength A: ..." so the day plan can mention "Strength A"), "notes" and "medical".
 - "macros" and "groups": an entry for every dish and snack name used, per average serve (your best estimate).
@@ -163,7 +164,7 @@ Health wording (important):
 - Don't diagnose, and don't comment on anyone's support needs; just fit the plan to them.
 - Medicines (medicine_types and medicines in About me): add hedged considerations for each to that person's tips (food) and exercise.medical (exercise), such as keeping leafy greens steady with warfarin, carrying fast-acting carbs if diabetes medicine can cause lows, going by effort rather than heart rate on some heart medicines, and asking a pharmacist about grapefruit with some blood pressure and cholesterol medicines. For an MAOI, leave out high-tyramine foods (soy sauce, fish sauce, yeast spreads, aged cheese, cured meats). Never suggest changing a medicine; suggest checking the plan with their GP or pharmacist.
 
-Style: plain Australian English, metric units, kilojoules (kJ).
+Style: plain English as written in ${r.where}, metric units. Energy numbers in the plan (macros, guides) are always kilojoules (kJ); the app converts them for people who prefer Calories.
 
 <format_guide>
 ${docs}
@@ -176,10 +177,9 @@ ${example}
 
 function userText(ctx, people, note) {
   const stores = appearance.storesFor(null);
-  const names = { coles: 'Coles', woolworths: 'Woolworths', aldi: 'Aldi', iga: 'IGA', foodland: 'Foodland (SA)', spudshed: 'Spudshed (WA)', drakes: 'Drakes' };
   const lines = [
-    'Today is ' + new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '.',
-    'The family shops at: ' + (stores.map(k => names[k] || k).join(', ') || 'Coles') + '.',
+    'Today is ' + new Date().toLocaleDateString(appearance.region().locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '.',
+    'The family lives in ' + appearance.region().where + ' and shops at: ' + (appearance.storeNames(stores) || 'local supermarkets') + '.',
     '',
     'The people in the plan (use these keys and names exactly):',
   ];
@@ -312,6 +312,8 @@ function readBig(req) {
 // Saves a whole new plan as one request that sets each top-level part of the plan, replacing any
 // older draft that was never decided.
 function saveDraft(me, ctx, people, plan, forAdmin, title) {
+    // Prices are in this currency; a plan without one is in Australian dollars.
+    plan.currency = /^[A-Z]{3}$/.test(String(plan.currency || '')) ? plan.currency : 'AUD';
     const problem = ctx.checkPlan(plan);
     if (problem) throw new Error('The plan didn’t pass the app’s checks: ' + problem + ' Try again.');
 

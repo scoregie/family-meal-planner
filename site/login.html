@@ -31,9 +31,9 @@ h1{font-size:1.6rem;line-height:1.15;margin:0 0 .25rem;text-align:center}
 .sub{margin:0 0 1.5rem;color:var(--mute);text-align:center;font-size:.95rem}
 form{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:1.25rem}
 label{display:block;font-weight:700;font-size:.95rem;margin:0 0 .35rem}
-input{display:block;width:100%;font:inherit;font-size:1.0625rem;color:var(--ink);background:var(--bg);border:2px solid var(--line);
+input,select{display:block;width:100%;font:inherit;font-size:1.0625rem;color:var(--ink);background:var(--bg);border:2px solid var(--line);
   border-radius:.5rem;padding:.65rem .75rem;min-height:3rem;margin:0 0 1rem}
-input:focus{outline:none;border-color:var(--accent)}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
 .pw{position:relative}
 .pw input{padding-right:4.5rem}
 .show{position:absolute;right:.35rem;top:.35rem;height:2.3rem;font:inherit;font-size:.85rem;color:var(--mute);background:transparent;border:0;border-radius:.35rem;padding:0 .6rem;cursor:pointer}
@@ -52,6 +52,7 @@ button[type=submit]:disabled{opacity:.6}
 .btn2:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 [hidden]{display:none!important}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -86,6 +87,11 @@ button[type=submit]:disabled{opacity:.6}
     <div id="emailRow" hidden>
       <label for="e">Email</label>
       <input id="e" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="200">
+    </div>
+    <div id="countryRow" hidden>
+      <label for="c">Country</label>
+      <select id="c"></select>
+      <p class="hint">Sets the currency, date style and grocery stores. You can change it later on Plan setup.</p>
     </div>
     <div id="pwRow" hidden>
       <label for="p2" id="p2Label">Choose a password</label>
@@ -152,12 +158,29 @@ button[type=submit]:disabled{opacity:.6}
   }
 
   // Shows the second form with the given rows.
+  // The country list, with a guess from the browser's language ("en-GB" means the United Kingdom).
+  function fillCountries() {
+    var R = window.REGIONS;
+    var sel = $("c");
+    if (!R || sel.options.length) return;
+    var region = String(navigator.language || "").split("-")[1] || "";
+    var guess = { GB: "uk" }[region.toUpperCase()] || region.toLowerCase();
+    var ids = R.order.slice().sort(function (a, b) { return R.countries[a].name.localeCompare(R.countries[b].name); });
+    ids.forEach(function (id) {
+      var o = document.createElement("option");
+      o.value = id;
+      o.textContent = R.countries[id].name;
+      sel.appendChild(o);
+    });
+    sel.value = R.countries[guess] ? guess : "au";
+  }
+
   function showForm(mode, sub, rows, button) {
     MODE = mode;
     $("f").hidden = true;
     $("f2").hidden = false;
     $("sub").textContent = sub;
-    ["nameRow", "emailRow", "pwRow"].forEach(function (r) { $(r).hidden = rows.indexOf(r) < 0; });
+    ["nameRow", "emailRow", "countryRow", "pwRow"].forEach(function (r) { $(r).hidden = rows.indexOf(r) < 0; });
     $("go2").textContent = button;
     $("backRow").hidden = mode === "register";
     var first = rows[0] && $(rows[0]).querySelector("input");
@@ -197,7 +220,7 @@ button[type=submit]:disabled{opacity:.6}
     b.disabled = true;
     b.textContent = "Please wait…";
     var done;
-    if (MODE === "register") done = api("POST", "/auth/register", { name: $("n").value, email: $("e").value, password: password }).then(goHome);
+    if (MODE === "register") done = api("POST", "/auth/register", { name: $("n").value, email: $("e").value, password: password, country: $("c").value }).then(goHome);
     else if (MODE === "signup") done = api("POST", "/auth/signup", { name: $("n").value, email: $("e").value, password: password }).then(function (d) {
       if (!d.pending) return goHome();   // a brand-new server: they're the owner, and logged in
       $("f2").hidden = true;
@@ -235,7 +258,8 @@ button[type=submit]:disabled{opacity:.6}
   } else {
     api("GET", "/auth/status").then(function (st) {
       if (st.setup) {
-        showForm("register", "Welcome! Create the first account. You’ll be the family’s owner, and you can invite everyone else afterwards.", ["nameRow", "emailRow", "pwRow"], "Create account");
+        showForm("register", "Welcome! Create the first account. You’ll be the family’s owner, and you can invite everyone else afterwards.", ["nameRow", "emailRow", "countryRow", "pwRow"], "Create account");
+        fillCountries();
       } else {
         showLogin();
       }

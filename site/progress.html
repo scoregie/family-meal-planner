@@ -98,6 +98,7 @@ th{color:var(--mute);font-weight:700}
 #app.loading{opacity:.55;transition:opacity .2s}
 [hidden]{display:none!important}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -228,7 +229,7 @@ function weekName(start) {
 // A number with thousands separators and a fixed number of decimals: 12345.6 -> "12,346".
 function fmt(n, places) {
   if (n == null) return "–";
-  return Number(n).toLocaleString("en-AU", { minimumFractionDigits: places || 0, maximumFractionDigits: places || 0 });
+  return Number(n).toLocaleString(Appearance.locale(), { minimumFractionDigits: places || 0, maximumFractionDigits: places || 0 });
 }
 
 // ---------------------------------------------------------------------------
@@ -617,7 +618,7 @@ function renderManual(d) {
 function renderSources(d) {
   var names = { "lose-it": "Lose It", "apple-health": "Apple Health" };
   var parts = (d.imported || []).filter(function (i) { return i.at; }).map(function (i) {
-    return names[i.source] + " (" + i.name + ", read " + new Date(i.at).toLocaleDateString("en-AU") + ")";
+    return names[i.source] + " (" + i.name + ", read " + new Date(i.at).toLocaleDateString(Appearance.locale()) + ")";
   });
   $("sources").textContent = "Weight: weigh-ins typed in here, then Apple Health (an export file, then Health sync), then Lose It. Steps and workouts: Apple Health, then Lose It. " +
     "Food: Lose It, or an estimate from the meals ticked in this app, using each dish’s macros and your portion size. " +
@@ -645,7 +646,7 @@ var SYNCNAMES = { steps: "steps", active_energy: "Move", weight: "weight", energ
 function syncWhen(ms) {
   var d = new Date(ms);
   var today = new Date().toDateString() === d.toDateString();
-  return (today ? "today" : d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })) + ", " + d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
+  return (today ? "today" : d.toLocaleDateString(Appearance.locale(), { weekday: "short", day: "numeric", month: "short" })) + ", " + d.toLocaleTimeString(Appearance.locale(), { hour: "numeric", minute: "2-digit" });
 }
 function renderSync() {
   var fold = $("syncFold"), line = $("syncLine"), body = $("syncBody");

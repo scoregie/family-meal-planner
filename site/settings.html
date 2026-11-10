@@ -72,6 +72,7 @@ details.fold>summary .hint{color:var(--mute);font-size:.85rem}
 details.fold[open]>summary{margin-bottom:.6rem}
 details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offset:4px;border-radius:.3rem}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -89,14 +90,14 @@ details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offse
     <div class="preview" aria-hidden="true">
       <p><b>Preview:</b> Tuesday dinner</p>
       <p class="note" style="margin:0">Chicken and vegetable stir-fry with rice · 2,350 kJ</p>
-      <div class="demo"><span class="tick"><i>✓</i> Eaten</span><span class="btn primary">Copy list</span><span class="btn">Search Coles</span></div>
+      <div class="demo"><span class="tick"><i>✓</i> Eaten</span><span class="btn primary">Copy list</span><span class="btn">Find it</span></div>
     </div>
     <div class="row"><button class="btn" id="resetMine" type="button">Use the household’s look</button></div>
   </details>
 
   <details class="card fold" id="storesCard">
-    <summary><h2>Where you shop</h2><span class="hint">Coles, Woolworths and the others</span></summary>
-    <p class="note">Pick one or more. The shopping list shows a search link for each, and Ask AI knows where you shop. Plan prices are Coles estimates, so other stores will differ a little.</p>
+    <summary><h2>Where you shop</h2><span class="hint" id="storesSummary">Supermarkets for the shopping list links</span></summary>
+    <p class="note">Pick one or more. The shopping list shows a search link for each, and Ask AI knows where you shop. Plan prices are estimates, so what you pay will differ a little.</p>
     <fieldset class="choices" id="myStores"><legend>Your stores</legend></fieldset>
     <p class="note" id="storesHint"></p>
     <div id="houseStoresBox" hidden>
@@ -405,7 +406,7 @@ function saveIcon() {
 function storeBoxes(boxId, picked, scope) {
   var box = $(boxId);
   box.querySelectorAll("label").forEach(function (l) { l.remove(); });
-  Object.keys(A.STORES).forEach(function (k) {
+  A.countryStores().forEach(function (k) {
     var store = A.STORES[k];
     var label = el("label", "choice");
     var input = el("input");
@@ -436,10 +437,11 @@ function renderStores() {
   var c = A.storeChoices();
   storeBoxes("myStores", c.mine, "me");
   var names = A.stores().map(function (k) { return A.STORES[k].name; }).join(", ");
-  $("storesHint").textContent = c.mine.length ? "" : "You haven’t picked any, so you get the household’s: " + names + ".";
+  var where = "Stores in " + A.region().where + ". " + (IS_ADMIN ? "You can change the country on Plan setup." : "An admin can change the country on Plan setup.");
+  $("storesHint").textContent = (c.mine.length ? "" : "You haven’t picked any, so you get the household’s: " + names + ". ") + where;
   if (IS_ADMIN) {
     $("houseStoresBox").hidden = false;
-    storeBoxes("houseStores", c.house.length ? c.house : ["coles"], "house");
+    storeBoxes("houseStores", c.house.length ? c.house : A.defaultStores(), "house");
   }
 }
 

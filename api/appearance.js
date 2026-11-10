@@ -6,6 +6,8 @@
 //   PUT /api/appearance/energy  {energy: "kJ" | "kcal" | "", scope: "me" or "house"}: energy units
 //   PUT /api/appearance/stores  {stores: [...], scope: "me" or "house"}: where you shop (admins
 //                               can also set the household's choice, used by anyone without their own)
+//   PUT /api/appearance/country {country: "au" | "nz" | ...}: admins: the household's country
+//                               (currency, date style, energy unit and stores to start with)
 //   PUT /api/appearance/icon    admins: a new icon, drawn in the browser {icon512, icon192, icon180}
 //                               (each a "data:image/png;base64,..." picture), or {reset: true}
 //                               to go back to the icon the app came with
@@ -27,13 +29,40 @@ const CHOICES = {
   size: ['small', 'normal', 'large', 'larger', 'largest'],
 };
 
-// Grocery stores (the same list as site/appearance.js).
-const STORES = ['coles', 'woolworths', 'aldi', 'iga', 'foodland', 'spudshed', 'drakes'];
+// Countries and their grocery stores: site/regions.js, shared with the pages.
+const REGIONS = require(path.join(SITE_DIR, 'regions.js'));
+const STORES = Object.keys(REGIONS.stores);
+
+// The household's country (default Australia, where the app started).
+function country() {
+  const c = db.getSetting('country');
+  return REGIONS.countries[c] ? c : 'au';
+}
+function region() {
+  return Object.assign({ id: country() }, REGIONS.countries[country()]);
+}
+function setCountry(id) {
+  if (!REGIONS.countries[id]) return false;
+  db.setSetting('country', id);
+  return true;
+}
+// "Coles, Aldi" from store ids.
+function storeNames(list) {
+  return list.map(k => (REGIONS.stores[k] ? REGIONS.stores[k].name : k)).join(', ');
+}
+// Without a choice: the country's first store with a search link.
+function defaultStores() {
+  const list = region().stores;
+  const linked = list.filter(k => REGIONS.stores[k].search || REGIONS.stores[k].site);
+  return (linked.length ? linked : list).slice(0, 1);
+}
 
 function readStores(key) {
   try {
     const list = JSON.parse(db.getSetting(key) || '[]');
-    return Array.isArray(list) ? list.filter(s => STORES.includes(s)) : [];
+    // Only this country's stores count (choices for another country are kept, in case it changes back).
+    const here = region().stores;
+    return Array.isArray(list) ? list.filter(s => here.includes(s)) : [];
   } catch (e) {
     return [];
   }
@@ -44,14 +73,14 @@ function stores(person) {
   return { house: readStores('stores'), mine: readStores('stores:' + person) };
 }
 
-// The stores a person shops at (their own choice, else the household's, else Coles), for the assistant.
+// The stores a person shops at (their own choice, else the household's, else the country's first), for the assistant.
 function storesFor(person) {
   const s = stores(person);
-  return s.mine.length ? s.mine : s.house.length ? s.house : ['coles'];
+  return s.mine.length ? s.mine : s.house.length ? s.house : defaultStores();
 }
 
 // Energy units: "kJ" (kilojoules) or "kcal" (Calories). Each person's choice, else the
-// household's, else kilojoules. The plan and database always use kJ; this only changes what's shown.
+// household's, else the country's usual unit. The plan and database always use kJ; this only changes what's shown.
 const ENERGY = ['kJ', 'kcal'];
 function energy(person) {
   const read = key => (ENERGY.includes(db.getSetting(key)) ? db.getSetting(key) : '');
@@ -59,13 +88,14 @@ function energy(person) {
 }
 function energyFor(person) {
   const e = energy(person);
-  return e.mine || e.house || 'kJ';
+  return e.mine || e.house || region().energy || 'kJ';
 }
 
 // Pinned products: for a shopping item (by its simplified name, like "turkey mince"), the exact
 // product page at a store, so the item's link goes straight there. Shared by the family.
 // {"turkey mince": {"coles": "https://www.coles.com.au/product/..."}}
-const PIN_HOSTS = { coles: 'coles.com.au', woolworths: 'woolworths.com.au', iga: 'igashop.com.au', foodland: 'foodlandsa.com.au', spudshed: 'spudshed.com.au', drakes: 'drakes.com.au' };
+const PIN_HOSTS = {};
+for (const [k, s] of Object.entries(REGIONS.stores)) if (s.host) PIN_HOSTS[k] = s.host;
 function pins() {
   try {
     const p = JSON.parse(db.getSetting('pins') || '{}');
@@ -167,14 +197,14 @@ function writeFile(file, bytes) {
 }
 
 async function handle(req, res, urlPath, url, me) {
-  if (!['/api/appearance', '/api/appearance/icon', '/api/appearance/stores', '/api/appearance/energy', '/api/appearance/pins'].includes(urlPath)) return false;
+  if (!['/api/appearance', '/api/appearance/icon', '/api/appearance/stores', '/api/appearance/energy', '/api/appearance/pins', '/api/appearance/country'].includes(urlPath)) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
     send(res, 403, { error: 'bad request' });
     return true;
   }
 
   if (urlPath === '/api/appearance' && req.method === 'GET') {
-    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person), energy: energy(me.person), pins: pins() });
+    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person), energy: energy(me.person), pins: pins(), country: country() });
     return true;
   }
   if (req.method !== 'PUT') {
@@ -210,6 +240,19 @@ async function handle(req, res, urlPath, url, me) {
     send(res, 200, { ok: true, pins: all });
     return true;
   }
+  if (urlPath === '/api/appearance/country') {
+    const b = await body(req, 2000);
+    if (!me.admin) {
+      send(res, 403, { error: 'Only an admin can change the household’s country.' });
+      return true;
+    }
+    if (!setCountry(String(b.country || ''))) {
+      send(res, 400, { error: 'Unknown country.' });
+      return true;
+    }
+    send(res, 200, { ok: true, country: country(), stores: stores(me.person), energy: energy(me.person) });
+    return true;
+  }
   if (urlPath === '/api/appearance/energy') {
     const b = await body(req, 2000);
     const value = ENERGY.includes(b.energy) ? b.energy : '';   // '' = use the household's
@@ -225,7 +268,7 @@ async function handle(req, res, urlPath, url, me) {
   }
   if (urlPath === '/api/appearance/stores') {
     const b = await body(req, 2000);
-    const list = Array.isArray(b.stores) ? [...new Set(b.stores.filter(s => STORES.includes(s)))] : [];
+    const list = Array.isArray(b.stores) ? [...new Set(b.stores.filter(s => region().stores.includes(s)))] : [];
     if (b.scope === 'house') {
       if (!me.admin) {
         send(res, 403, { error: 'Only an admin can change the household’s stores.' });
@@ -290,4 +333,4 @@ async function handle(req, res, urlPath, url, me) {
   return true;
 }
 
-module.exports = { handle, CHOICES, STORES, storesFor, energyFor };
+module.exports = { handle, CHOICES, STORES, REGIONS, storesFor, storeNames, energyFor, country, region, setCountry };

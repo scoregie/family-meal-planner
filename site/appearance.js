@@ -42,33 +42,66 @@
 
   var THEMES = { auto: "Match my device", light: "Light", dark: "Dark" };
 
-  // Grocery stores. Coles and Woolworths have a search page we can link to directly. The others run
-  // their online shops store by store with no shared search address, so their links search the
-  // store's website instead. Aldi has no online shop, so it has no link.
+  // The household's country (chosen by the owner) sets the currency, number and date style, the
+  // energy unit to start with and which grocery stores are offered. The data is in regions.js.
+  var R = window.REGIONS || { countries: {}, stores: {} };
+  function country() {
+    var c = read("country").id;
+    return R.countries[c] ? c : "au";
+  }
+  function region() {
+    return R.countries[country()] || { name: "Australia", currency: "AUD", locale: "en-AU", energy: "kJ", guidelines: "au", stores: ["coles"] };
+  }
+  // For dates and numbers: English, with the country's conventions ("en-GB", "en-DE"...).
+  function locale() {
+    return region().locale;
+  }
+  // An amount of money. Plan prices are in the plan's currency (AUD unless the plan says
+  // otherwise), so it is labelled with that: "$12.50" in Australia, "A$12.50" elsewhere.
+  function money(n, currency, whole) {
+    try {
+      return new Intl.NumberFormat(locale(), { style: "currency", currency: currency || "AUD", maximumFractionDigits: whole ? 0 : undefined, minimumFractionDigits: whole ? 0 : undefined }).format(+n || 0);
+    } catch (e) {
+      return "$" + (+n || 0).toFixed(whole ? 0 : 2);
+    }
+  }
+
+  // Grocery stores. Some have a search page we can link to directly. Others run their online
+  // shops store by store with no shared search address, so their links search the store's
+  // website on Google instead. In-store-only shops have no link.
   function siteSearch(site) {
     return function (q) { return "https://www.google.com/search?q=" + encodeURIComponent("site:" + site + " " + q); };
   }
-  var STORES = {
-    coles: { name: "Coles", short: "Coles", search: function (q) { return "https://www.coles.com.au/search/products?q=" + encodeURIComponent(q); } },
-    woolworths: { name: "Woolworths", short: "Woolies", search: function (q) { return "https://www.woolworths.com.au/shop/search/products?searchTerm=" + encodeURIComponent(q); } },
-    aldi: { name: "Aldi", short: "Aldi", search: null, note: "In store only" },
-    iga: { name: "IGA", short: "IGA", search: siteSearch("igashop.com.au"), note: "Searches IGA’s website" },
-    foodland: { name: "Foodland (SA)", short: "Foodland", search: siteSearch("foodlandsa.com.au"), note: "Searches Foodland’s website" },
-    spudshed: { name: "Spudshed (WA)", short: "Spudshed", search: siteSearch("spudshed.com.au"), note: "Searches Spudshed’s website" },
-    drakes: { name: "Drakes", short: "Drakes", search: siteSearch("drakes.com.au"), note: "Searches Drakes’ website" },
-  };
-  var DEFAULT_STORES = ["coles"];
+  function template(t) {
+    return function (q) { return t.replace("{q}", encodeURIComponent(q)); };
+  }
+  var STORES = {};
+  Object.keys(R.stores).forEach(function (k) {
+    var s = R.stores[k];
+    STORES[k] = { name: s.name, short: s.short, note: s.note, search: s.search ? template(s.search) : s.site ? siteSearch(s.site) : null };
+  });
+  // The stores offered in this household's country.
+  function countryStores() {
+    return region().stores.filter(function (k) { return STORES[k]; });
+  }
+  // Without a choice: the country's first store with a search link.
+  function defaultStores() {
+    var list = countryStores();
+    var linked = list.filter(function (k) { return STORES[k].search; });
+    return (linked.length ? linked : list).slice(0, 1);
+  }
 
   function cleanStores(list) {
     return Array.isArray(list) ? list.filter(function (k, i) { return STORES[k] && list.indexOf(k) === i; }) : [];
   }
 
-  // The stores to show: this person's choice, else the household's, else Coles.
+  // The stores to show: this person's choice, else the household's, else the country's first.
   function stores() {
     var saved = read("stores");
-    var mine = cleanStores(saved.mine);
-    var house = cleanStores(saved.house);
-    return mine.length ? mine : house.length ? house : DEFAULT_STORES;
+    var here = countryStores();
+    var mine = cleanStores(saved.mine).filter(function (k) { return here.indexOf(k) >= 0; });
+    var house = cleanStores(saved.house).filter(function (k) { return here.indexOf(k) >= 0; });
+    return mine.length ? mine : house.length ? house : defaultStores();
   }
 
   // Energy units: kilojoules or Calories. The plan stores kJ; this only changes what's shown.
@@ -79,7 +112,7 @@
   }
   function energyUnit() {
     var c = energyChoices();
-    return c.mine || c.house || "kJ";
+    return c.mine || c.house || region().energy || "kJ";
   }
   // A kJ amount as a number in the chosen unit.
   function energyValue(kj) {
@@ -87,7 +120,7 @@
   }
   // A kJ amount as text in the chosen unit: "1,234 kJ" or "295 kcal".
   function energyText(kj) {
-    return Math.round(energyValue(kj)).toLocaleString("en-AU") + " " + energyUnit();
+    return Math.round(energyValue(kj)).toLocaleString(locale()) + " " + energyUnit();
   }
 
   var DEFAULTS = { colour: "green", font: "atkinson", size: "normal", theme: "auto" };
@@ -141,6 +174,7 @@
   function apply(look) {
     look = look || current();
     var root = document.documentElement;
+    root.setAttribute("lang", locale());
     if (look.theme === "auto") root.removeAttribute("data-theme");
     else root.setAttribute("data-theme", look.theme);
 
@@ -201,6 +235,14 @@
         write("energy", got.energy);
         if (JSON.stringify(got.energy) !== beforeEnergy) window.dispatchEvent(new Event("units-changed"));
       }
+      if (got.country) {
+        var beforeCountry = read("country").id;
+        write("country", { id: got.country });
+        if (got.country !== beforeCountry) {
+          window.dispatchEvent(new Event("units-changed"));
+          window.dispatchEvent(new Event("stores-changed"));
+        }
+      }
       if (got.stores) {
         var beforeStores = JSON.stringify(read("stores"));
         write("stores", got.stores);
@@ -221,6 +263,14 @@
     STORES: STORES,
     DEFAULTS: DEFAULTS,
     stores: stores,
+    REGIONS: R,
+    country: country,
+    region: region,
+    setCountry: function (id) { write("country", { id: id }); window.dispatchEvent(new Event("units-changed")); window.dispatchEvent(new Event("stores-changed")); },
+    locale: locale,
+    money: money,
+    countryStores: countryStores,
+    defaultStores: defaultStores,
     ENERGY: ENERGY,
     // Pinned product pages: {item name: {store: url}}.
     pins: function () { return read("pins"); },
@@ -230,7 +280,12 @@
     energyText: energyText,
     energyChoices: energyChoices,
     setEnergy: function (choices) { write("energy", choices); window.dispatchEvent(new Event("units-changed")); },
-    storeChoices: function () { var s = read("stores"); return { mine: cleanStores(s.mine), house: cleanStores(s.house) }; },
+    storeChoices: function () {
+      var s = read("stores");
+      var here = countryStores();
+      var only = function (l) { return cleanStores(l).filter(function (k) { return here.indexOf(k) >= 0; }); };
+      return { mine: only(s.mine), house: only(s.house) };
+    },
     setStores: function (choices) { write("stores", { mine: cleanStores(choices.mine), house: cleanStores(choices.house) }); window.dispatchEvent(new Event("stores-changed")); },
     current: current,
     clean: clean,

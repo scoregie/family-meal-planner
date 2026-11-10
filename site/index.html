@@ -427,6 +427,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 .mtoggle{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin:0 0 .75rem}
 .mtoggle .btn{min-height:2.4rem;padding:.3rem .6rem;font-size:.9rem}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -602,7 +603,7 @@ function el(tag, cls, txt) {
 
 // A price as "$12.50".
 function money(n) {
-  return "$" + n.toFixed(2);
+  return Appearance.money(n, PLAN && PLAN.currency);
 }
 
 // Capital first letter: "alex" becomes "Alex".
@@ -646,7 +647,7 @@ function query(name) {
     .trim();
 }
 
-// Links to search the person's chosen stores for an item (Coles unless they picked others in
+// Links to search the person's chosen stores for an item (the country's first store unless they picked others in
 // Settings). Stores with no online shop (Aldi) get no link.
 // A pinned product goes straight to that product page instead of a search.
 function storeLinks(name) {
@@ -1202,7 +1203,7 @@ function renderTabs() {
     tab.setAttribute("role", "tab");
     tab.setAttribute("aria-selected", i === week);
     tab.appendChild(el("b", null, wk.name || ("Week " + (i + 1))));
-    tab.appendChild(el("span", null, "~$" + Math.round(total(i))));
+    tab.appendChild(el("span", null, "~" + Appearance.money(total(i), PLAN && PLAN.currency, true)));
     tab.onclick = function () { go(i, view); };
     row.appendChild(tab);
   });
@@ -1316,7 +1317,7 @@ function byText(key) {
   var d = new Date(by.at);
   var whenText = isNaN(d)
     ? ""
-    : " · " + d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
+    : " · " + d.toLocaleDateString(Appearance.locale(), { weekday: "short", day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString(Appearance.locale(), { hour: "numeric", minute: "2-digit" });
   return "Ticked by " + nameOf(by.who) + whenText;
 }
 
@@ -1773,7 +1774,7 @@ function addM(t, m) {
 // "1,234 kJ".
 function kjText(n) {
   if (window.Appearance) return Appearance.energyText(n);   // kJ or kcal, from Settings
-  return Math.round(n).toLocaleString("en-AU") + " kJ";
+  return Math.round(n).toLocaleString(Appearance.locale()) + " kJ";
 }
 
 // "1,234 kJ · P 20 g · C 40 g · F 10 g".
@@ -1882,7 +1883,7 @@ function macroCard(days, person) {
   var energy = macroEnergy(m);
   var kjLine = el("p", "mac-kj");
   var unit = window.Appearance ? Appearance.energyUnit() : "kJ";
-  kjLine.appendChild(el("b", null, Math.round(window.Appearance ? Appearance.energyValue(m.kj) : m.kj).toLocaleString("en-AU")));
+  kjLine.appendChild(el("b", null, Math.round(window.Appearance ? Appearance.energyValue(m.kj) : m.kj).toLocaleString(Appearance.locale())));
   kjLine.appendChild(el("span", null, unit));
   box.appendChild(kjLine);
 
@@ -3130,7 +3131,7 @@ function renderToday() {
   var now = new Date();
 
   var top = el("div", "td-date");
-  top.appendChild(el("h2", null, now.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })));
+  top.appendChild(el("h2", null, now.toLocaleDateString(Appearance.locale(), { weekday: "long", day: "numeric", month: "long" })));
   top.appendChild(el("span", null, (USER ? "For " + USER + " · " : "") + (w.name || "Week " + (week + 1))));
   panel.appendChild(top);
 
@@ -3230,7 +3231,7 @@ function renderToday() {
       if (old) phone.h.removeChild(old);
       phone.h.appendChild(el("small", null, d.date === localYmd(new Date()) ? "Today so far" : "Yesterday"));
       var stats = el("div", "tstats");
-      [["steps", "steps", function (v) { return Math.round(v).toLocaleString("en-AU"); }],
+      [["steps", "steps", function (v) { return Math.round(v).toLocaleString(Appearance.locale()); }],
        ["active_energy", "active energy", kjText],
        ["energy_in", "food logged", kjText]].forEach(function (x) {
         if (d[x[0]] == null) return;
