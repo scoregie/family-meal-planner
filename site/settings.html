@@ -13,9 +13,7 @@
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Settings</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link href="fonts/fonts.css" rel="stylesheet">
 <style>
 :root{--low:#b3261e;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--chip:#e3f1ec}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;color-scheme:dark}}
@@ -280,15 +278,6 @@ function fontOptions() {
 // The text size choices as [id, name].
 function sizeOptions() {
   return Object.keys(A.SIZES).map(function (k) { return [k, A.SIZES[k].name]; });
-}
-
-// Loads every font once, so the font tiles show what each looks like.
-function loadAllFonts() {
-  var families = Object.keys(A.FONTS).map(function (k) { return A.FONTS[k].google; }).filter(Boolean);
-  var link = el("link");
-  link.rel = "stylesheet";
-  link.href = "https://fonts.googleapis.com/css2?" + families.map(function (f) { return "family=" + f; }).join("&") + "&display=swap";
-  document.head.appendChild(link);
 }
 
 // "This device" choices. "" means "use the household's".
@@ -630,7 +619,6 @@ $("resetIcon").addEventListener("click", function () {
 });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { renderMine(); renderHouse(); });
 
-loadAllFonts();
 renderMine();
 renderStores();
 renderEnergy();

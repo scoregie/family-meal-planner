@@ -1,5 +1,5 @@
 {
-  "about": "Official healthy-eating guidelines used by the Macros tab (and later the assistant) when reviewing the plan and suggesting changes. Targets are per day unless they say otherwise. Every number has a source below. 'check' marks numbers that come from a secondary source and should be confirmed against the official page when it is next reviewed. Health advice from a doctor or dietitian always comes first.",
+  "about": "Official healthy-eating guidelines used by the Macros tab (and later the assistant) when reviewing the plan and suggesting changes. Targets are per day unless they say otherwise. Every number has a source below. 'check' marks numbers that come from a secondary source and should be confirmed against the official page when it is next reviewed. What a GP or dietitian says comes first.",
   "checked": "2026-11-08",
   "groups": {
     "veg":     { "label": "Vegetables and legumes", "short": "Vegetables" },

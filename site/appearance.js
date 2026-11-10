@@ -22,12 +22,12 @@
     slate: { name: "Slate", light: "#3d4f5c", dark: "#a8bccb" },
   };
 
-  // Fonts. "google" is the Google Fonts name to load; system fonts need nothing loaded.
+  // Fonts. All four are served from site/fonts/ (fonts/fonts.css, linked by every page), so no page contacts Google.
   var FONTS = {
-    atkinson: { name: "Atkinson Hyperlegible", note: "Made to be easy to read", stack: '"Atkinson Hyperlegible",system-ui,sans-serif', google: "Atkinson+Hyperlegible:wght@400;700" },
-    lexend: { name: "Lexend", note: "Wide and clear", stack: '"Lexend",system-ui,sans-serif', google: "Lexend:wght@400;700" },
-    nunito: { name: "Nunito", note: "Rounded and friendly", stack: '"Nunito",system-ui,sans-serif', google: "Nunito:wght@400;700" },
-    literata: { name: "Literata", note: "A book-style serif", stack: '"Literata",Georgia,serif', google: "Literata:opsz,wght@7..72,400;7..72,700" },
+    atkinson: { name: "Atkinson Hyperlegible", note: "Made to be easy to read", stack: '"Atkinson Hyperlegible",system-ui,sans-serif' },
+    lexend: { name: "Lexend", note: "Wide and clear", stack: '"Lexend",system-ui,sans-serif' },
+    nunito: { name: "Nunito", note: "Rounded and friendly", stack: '"Nunito",system-ui,sans-serif' },
+    literata: { name: "Literata", note: "A book-style serif", stack: '"Literata",Georgia,serif' },
     system: { name: "Your device’s font", note: "Loads fastest", stack: 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif' },
   };
 
@@ -207,14 +207,6 @@
       document.head.appendChild(style);
     }
     style.textContent = css;
-
-    if (font.google && look.font !== "atkinson" && !document.getElementById("font-" + look.font)) {
-      var link = document.createElement("link");
-      link.id = "font-" + look.font;
-      link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=" + font.google + "&display=swap";
-      document.head.appendChild(link);
-    }
 
     // The colour of the phone's status bar.
     var dark = look.theme === "dark" || (look.theme === "auto" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
