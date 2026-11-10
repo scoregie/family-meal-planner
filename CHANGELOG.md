@@ -3,6 +3,21 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.5.1 (2026-11-10)
+
+Fixes to the built-in plan builder (no AI), found by testing a real family plan. Restart the api
+after updating (`docker restart shopping-list-api`).
+
+- **Foot and ankle injuries** are now recognised. They leave out calf raises, lunges and one-leg
+  balance work, like other injuries leave out what loads them.
+- **Low-impact cardio for leg injuries:** with a foot, ankle, knee or hip injury, cardio is a swim
+  (on the pool days they gave) or a bike ride instead of a walk, if they have a pool or a bike.
+- **"Most veggies" in dislikes** now steers meals towards dishes with fewer vegetables (it isn't a
+  ban, so vegetables still turn up on the side).
+- **Children's packed lunches** were taken in library order, ignoring likes and dislikes; they're
+  now chosen the same way as other meals.
+- Two new tests.
+
 ## v1.5.0 (2026-11-10)
 
 Two About me questions made clearer, from testing a real family plan. Restart the api after
