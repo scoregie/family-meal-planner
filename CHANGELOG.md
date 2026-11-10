@@ -3,6 +3,18 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.2.0 (2026-11-10)
+
+- **New meals and exercises every 2 weeks** for the built-in plan builder (Plan setup → New meals
+  and exercises):
+  - **From the project, no AI needed:** the server downloads the project's shared additions from
+    GitHub every 2 weeks. The first batch: 6 meals, 2 snacks and 6 exercises.
+  - **Written by your AI:** with an AI chosen, it can write about 5 meals, a snack and 3 exercises
+    aimed at your family every 2 weeks. They wait for an admin to add or discard them.
+  - Every new entry is checked first. Dishes only use ingredients already in the library, and the
+    app works out their nutrition, allergens and cost itself.
+- `tools/library-pr.sh` shares approved additions with everyone through a pull request.
+
 ## v1.1.1 (2026-11-10)
 
 - Today: no Shopping card while the plan has no shopping list yet (for example after clearing the

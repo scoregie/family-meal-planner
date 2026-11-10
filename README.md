@@ -177,6 +177,17 @@ The builder follows rules instead of an AI. From everyone's About me answers it:
 
 Its meals come from `api/library.json`: 59 meals and 16 snacks, with recipes written for this project. Nutrition for each ingredient comes from **USDA FoodData Central** (U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov. SR Legacy data, public domain under CC0 1.0), with the food's id noted for each one; a few Australian products that aren't in it use typical label values, marked "label". Prices are rough Coles estimates. To change the library, edit `tools/build_library.py`, download SR Legacy (CSV) from [fdc.nal.usda.gov](https://fdc.nal.usda.gov/download-datasets) and run `python3 tools/build_library.py <the unzipped folder>`.
 
+### New meals and exercises every 2 weeks
+
+The builder's library grows by itself. **Plan setup → New meals and exercises** has two switches:
+
+- **Get new ones from the Family Health Planner project** (on by default, no AI needed). Every 2 weeks the server downloads `api/library-community.json` from this project on GitHub. It's a list of meals, snacks and exercises, never code, and nothing about your family is sent. **Check now** does it straight away.
+- **Have your AI write new ones for your family** (off by default; needs an AI chosen in step 2). Every 2 weeks the family's AI writes about 5 meals, a snack and 3 exercises in its own words, aimed at the cuisines you like, what people can't eat and how meals were rated (no health details are sent). They wait on Plan setup until an admin adds or discards them.
+
+Either way, every new entry is checked before it's used: dishes may only use ingredients already in the library, with sensible amounts and energy, and the app works out their nutrition (USDA FoodData Central), allergen tags and cost itself rather than trusting the source. New entries are used the next time the plan is built or rebuilt.
+
+**Sharing additions with everyone:** `tools/library-pr.sh` adds the ones your admins approved (`data/library-additions.json`), or any file shaped `{dishes, snacks, exercises}`, to `api/library-community.json` and opens a pull request. Once it's merged, every family's server picks them up. `DRY_RUN=1` shows what it would do. To run it every 2 weeks, add a cron line on the server such as `0 9 1,15 * * cd /path/to/project && tools/library-pr.sh >> data/library-pr.log 2>&1`. To use a different source, set `LIBRARY_UPDATES_URL` in `.env`.
+
 ## Shopping
 
 - Each meal week has one list. The 2-week **stock-up** (pantry and freezer) is shown with the week it's bought in; **Everything / This week / 2-week stock-up** filters the list.

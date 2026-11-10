@@ -1,0 +1,375 @@
+{
+ "version": 1,
+ "about": "Meals, snacks and exercises added to the built-in plan builder's library after it shipped, in the same shape as library.json and exercises.json (dishes only use ingredients from library.json; the app works out their nutrition, tags and cost). Families' servers download this every 2 weeks. New entries arrive by pull request (tools/library-pr.sh).",
+ "dishes": [
+  {
+   "name": "Chicken, pumpkin and chickpea tray bake",
+   "meal": "dinner",
+   "cuisine": "Middle Eastern",
+   "minutes": 45,
+   "kit": [
+    "oven"
+   ],
+   "per": [
+    [
+     "chicken thigh",
+     150
+    ],
+    [
+     "pumpkin",
+     200
+    ],
+    [
+     "chickpeas",
+     80
+    ],
+    [
+     "onion",
+     50
+    ],
+    [
+     "lemon",
+     0.25
+    ],
+    [
+     "oil",
+     8
+    ]
+   ],
+   "steps": [
+    "Heat the oven to 200°C.",
+    "Cut the pumpkin into 3 cm pieces and the onion into wedges. Drain and rinse the chickpeas.",
+    "Toss everything except the lemon with the oil, salt, pepper and a teaspoon of ground cumin or paprika on a big tray.",
+    "Sit the chicken on top and roast for 35 to 40 minutes, until the chicken is cooked through and the pumpkin is soft.",
+    "Squeeze the lemon over before serving."
+   ],
+   "onepan": true,
+   "separate": true,
+   "leftovers": true,
+   "kid": "Serve the chicken, pumpkin and chickpeas in separate piles; leave the lemon off."
+  },
+  {
+   "name": "Tuna and sweet potato patties with salad",
+   "meal": "dinner",
+   "cuisine": "Australian",
+   "minutes": 35,
+   "kit": [
+    "microwave",
+    "stovetop"
+   ],
+   "per": [
+    [
+     "tuna big",
+     90
+    ],
+    [
+     "sweet potato",
+     180
+    ],
+    [
+     "egg",
+     0.5
+    ],
+    [
+     "spring onion",
+     0.2
+    ],
+    [
+     "salad leaves",
+     50
+    ],
+    [
+     "lemon",
+     0.25
+    ],
+    [
+     "oil",
+     8
+    ]
+   ],
+   "steps": [
+    "Peel and dice the sweet potato. Microwave it covered with a splash of water for 8 to 10 minutes until soft, then mash.",
+    "Mix in the drained tuna, the egg and the sliced spring onion. Shape into patties about 2 cm thick.",
+    "Fry in the oil over medium heat for 4 minutes a side until golden.",
+    "Serve with the salad leaves and a squeeze of lemon."
+   ],
+   "separate": true,
+   "packable": true,
+   "texture": [
+    "soft"
+   ],
+   "kid": "Make small patties; they're good cold in a lunchbox."
+  },
+  {
+   "name": "Chicken and corn noodle soup",
+   "meal": "dinner",
+   "cuisine": "Chinese",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     120
+    ],
+    [
+     "egg noodles",
+     60
+    ],
+    [
+     "corn",
+     60
+    ],
+    [
+     "stock",
+     350
+    ],
+    [
+     "spring onion",
+     0.2
+    ],
+    [
+     "ginger",
+     4
+    ],
+    [
+     "soy sauce",
+     10
+    ]
+   ],
+   "steps": [
+    "Bring the stock to a simmer with the grated ginger.",
+    "Slice the chicken thinly, add it and simmer for 6 minutes until cooked through.",
+    "Add the noodles and corn and cook for 3 to 4 minutes.",
+    "Season with the soy sauce and scatter the sliced spring onion on top."
+   ],
+   "batch": true,
+   "texture": [
+    "mixed"
+   ],
+   "kid": "Lift the noodles, chicken and corn out with a slotted spoon if they'd rather not have soup."
+  },
+  {
+   "name": "Pork and broccoli rice noodles",
+   "meal": "dinner",
+   "cuisine": "Thai",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "pork mince",
+     120
+    ],
+    [
+     "rice noodles",
+     70
+    ],
+    [
+     "broccoli",
+     0.3
+    ],
+    [
+     "egg",
+     0.5
+    ],
+    [
+     "garlic",
+     0.1
+    ],
+    [
+     "soy sauce",
+     15
+    ],
+    [
+     "oil",
+     8
+    ]
+   ],
+   "steps": [
+    "Soak or cook the rice noodles as the packet says, then drain.",
+    "Cut the broccoli into small florets and stir-fry it in half the oil with a splash of water for 3 minutes. Set aside.",
+    "Brown the pork mince with the crushed garlic in the rest of the oil, breaking it up.",
+    "Push the pork aside, scramble the egg in the gap, then add the noodles, broccoli and soy sauce and toss until hot."
+   ],
+   "separate": true,
+   "leftovers": true,
+   "kid": "Keep some plain noodles and pork aside before adding the soy sauce."
+  },
+  {
+   "name": "Ricotta and berry toast",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 10,
+   "kit": [
+    "microwave"
+   ],
+   "per": [
+    [
+     "bread",
+     70
+    ],
+    [
+     "ricotta",
+     60
+    ],
+    [
+     "frozen berries",
+     60
+    ],
+    [
+     "honey",
+     8
+    ]
+   ],
+   "steps": [
+    "Toast the bread.",
+    "Warm the berries in the microwave for 40 seconds so they're soft and juicy.",
+    "Spread the ricotta on the toast, spoon the berries over and drizzle with the honey."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "kid": "Serve the berries in a little bowl for dipping."
+  },
+  {
+   "name": "Couscous salad with chickpeas and feta",
+   "meal": "lunch",
+   "cuisine": "Middle Eastern",
+   "minutes": 15,
+   "kit": [],
+   "per": [
+    [
+     "couscous",
+     50
+    ],
+    [
+     "chickpeas",
+     80
+    ],
+    [
+     "cucumber",
+     0.3
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "feta",
+     30
+    ],
+    [
+     "lemon",
+     0.25
+    ],
+    [
+     "oil",
+     8
+    ]
+   ],
+   "steps": [
+    "Pour the same amount of boiling water over the couscous, cover for 5 minutes, then fluff with a fork.",
+    "Dice the cucumber and tomato. Drain and rinse the chickpeas.",
+    "Toss everything with the crumbled feta, lemon juice, oil, salt and pepper."
+   ],
+   "packable": true,
+   "leftovers": true,
+   "texture": [
+    "mixed"
+   ]
+  }
+ ],
+ "snacks": [
+  {
+   "what": "Edamame and a mandarin",
+   "per": [
+    [
+     "edamame",
+     80
+    ],
+    [
+     "mandarin",
+     100
+    ]
+   ],
+   "kind": "protein",
+   "kids": true
+  },
+  {
+   "what": "Capsicum sticks with hummus",
+   "per": [
+    [
+     "capsicum",
+     0.5
+    ],
+    [
+     "hummus",
+     40
+    ]
+   ],
+   "kind": "veg",
+   "kids": true
+  }
+ ],
+ "exercises": [
+  {
+   "name": "Band calf raise",
+   "type": "calf",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 15",
+   "how": "Loop the band under the balls of your feet and hold the ends at your shoulders. Rise onto your toes, then lower slowly. Hold a wall if you need to.",
+   "flags": []
+  },
+  {
+   "name": "Dumbbell calf raise",
+   "type": "calf",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 12",
+   "how": "A dumbbell in each hand by your sides. Rise up onto your toes, pause, then lower slowly.",
+   "flags": []
+  },
+  {
+   "name": "Leg press calf raise",
+   "type": "calf",
+   "equipment": "gym",
+   "level": 2,
+   "dose": "3 × 15",
+   "how": "On the leg press, the balls of your feet on the bottom edge of the plate and legs straight but not locked. Push through your toes, then let your heels back slowly.",
+   "flags": []
+  },
+  {
+   "name": "Band side steps",
+   "type": "balance",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 10 steps each way",
+   "how": "Band just above your knees, knees slightly bent. Take small steps sideways keeping the band tight, then step back the other way.",
+   "flags": []
+  },
+  {
+   "name": "Single-leg leg press",
+   "type": "lunge",
+   "equipment": "gym",
+   "level": 2,
+   "dose": "3 × 10 each leg",
+   "how": "On the leg press with a light weight, one foot in the middle of the plate. Lower until your knee is at about a right angle, then press away without locking the knee.",
+   "flags": [
+    "knees"
+   ]
+  },
+  {
+   "name": "Cable biceps curl",
+   "type": "arms",
+   "equipment": "gym",
+   "level": 1,
+   "dose": "2 × 12",
+   "how": "Facing a low cable with a straight bar, elbows by your sides. Curl the bar up to your chest, then lower it slowly.",
+   "flags": []
+  }
+ ]
+}
