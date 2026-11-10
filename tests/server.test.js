@@ -158,6 +158,18 @@ test('a waiting draft shows every meal and each person’s tips, and is listed f
   assert.ok(list.json.requests.some(r => r.status === 'open' && r.kind === 'full-plan'));
 });
 
+test('a plan sent by a Claude Code session is saved, and the answer lists what the app’s checks found', async () => {
+  const plan = JSON.parse(fs.readFileSync(path.join(server.dir, 'site', 'plan.json'), 'utf8'));
+  const person = Object.keys(plan.people)[0];
+  plan.people[person].snacks = [];
+  plan.groups = {};   // nothing counts as vegetables or fruit now, so every week is short
+  const sent = await server.request('POST', '/api/plan/handoff', plan);
+  assert.equal(sent.status, 200, sent.text);
+  assert.ok(sent.json.problems.some(p => /serves of vegetables a day and the aim that week/.test(p)), JSON.stringify(sent.json.problems));
+  // Put a clean draft back for the tests that follow.
+  await server.request('POST', '/api/plan/draft', { how: 'builtin' });
+});
+
 test('Settings can ask which models a saved AI key can use (none saved: an empty list)', async () => {
   const got = await server.request('GET', '/api/account/ai-key');
   assert.equal(got.status, 200, got.text);

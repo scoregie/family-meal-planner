@@ -348,7 +348,7 @@ function renderDraft() {
     box.appendChild(el("p", "note", (minutes < 1 ? "Started just now. " : "Started " + minutes + (minutes === 1 ? " minute" : " minutes") + " ago. ") +
       (thinking ? "It is reading everyone’s answers and thinking the plan through. The bar starts moving when it begins writing, often after a few minutes. " : "") +
       heardText(job.heard) +
-      "The whole thing usually takes 5 to 15 minutes. You can close this page; the draft keeps going and shows up here when it’s ready."));
+      "The whole thing usually takes 10 to 20 minutes, because the plan is checked and corrected before you see it. You can close this page; the draft keeps going and shows up here when it’s ready."));
     // Stop it part-way (started by mistake, say). Nothing is saved.
     var stop = el("button", "btn small", "Cancel this draft");
     stop.type = "button";
@@ -368,7 +368,7 @@ function renderDraft() {
   var name = DATA.claude.name || "the AI";
   // One line on what the button does; the rest is behind "What happens?".
   box.appendChild(el("p", "note", useAI
-    ? name + " writes 4 weeks of meals, shopping and exercise from everyone’s answers. It takes 5 to 15 minutes. Nothing changes until you approve it."
+    ? name + " writes 4 weeks of meals, shopping and exercise from everyone’s answers. It takes 10 to 20 minutes, with a check at the end. Nothing changes until you approve it."
     : "The app’s plan builder makes 4 weeks of meals, shopping and exercise from everyone’s answers. It takes a moment and costs nothing. Nothing changes until you approve it."));
   var more = el("details");
   more.appendChild(el("summary", "note", "What happens?"));

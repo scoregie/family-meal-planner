@@ -27,6 +27,14 @@ Plans now listen to what people said and logged, and help fussy eaters one small
   which needs a key in the server's `.env`. If you have your own key in Settings, it now says
   that your own key is used for plans you draft, where it used to just say "not set up".
 - A failed AI draft is now written to the server's log as well as shown on Plan setup.
+- **An AI-written plan is checked and corrected before you see it.** The app measures the draft
+  itself (each person's vegetable and fruit serves for each week, named foods someone said they
+  won't eat, and "always", "never" or "must" in health text), then sends the AI back over its
+  plan once with that list and a checklist: allergies, every condition and medicine, hard
+  textures, and blood test dates. The AI replies with corrections only, and the app keeps them
+  when the plan measures no worse. It adds a few minutes to a draft. The first draft is kept if
+  the second check can't be finished, and the note with the draft says which happened. A plan
+  sent from a Claude Code session is told what the checks found, so it can be fixed and sent again.
 - **Blood test results can shape the plan.** A new About me question (under Health) asks whether
   the plan writer may read the blood test results you upload in My files. It is off unless you
   say yes. With yes, your newest results (up to 3 PDFs, photos or text files) go to Claude when
