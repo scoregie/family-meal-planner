@@ -108,6 +108,8 @@
           "options": ["Less than 15 minutes", "15 to 30 minutes", "30 to 60 minutes", "More than an hour"] },
         { "id": "equipment", "label": "What can you use?", "type": "multi",
           "options": ["Gym membership", "Dumbbells", "Resistance bands", "Exercise bike", "Rowing machine", "Treadmill", "Pool at home", "Public pool or swim centre", "Bike", "None"] },
+        { "id": "pool_days", "label": "If you use a public pool, which days could you get there?", "type": "multi",
+          "options": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], "help": "Leave it blank if you don't use one. Swims go on these days." },
         { "id": "exercise_likes", "label": "Exercise you enjoy, or want to avoid", "type": "long" }
       ]
     },

@@ -383,6 +383,7 @@ function exerciseFor(p, r, rnd) {
   if (!seated && (hasPool(equipment) && /swim/.test(likes))) cardio = equipment.has('Pool at home') ? 'Swim' : 'Swim at the pool';
   else if (!seated && (equipment.has('Exercise bike') || equipment.has('Bike')) && /bike|cycl|ride/.test(likes)) cardio = 'Ride';
   else if (!seated && /dance/.test(likes)) cardio = 'Dance or walk';
+  const poolDays = list(a.pool_days).filter(d => DAYS.includes(d));
 
   const medical = [];
   const injuries = String(a.injuries || '').trim();
@@ -431,15 +432,24 @@ function exerciseFor(p, r, rnd) {
     const [s, c] = plan[w];
     const sDays = strengthDays[s];
     const mins = minutes + (minutes >= 20 ? w * 5 : 0);
-    const cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, c);
+    let cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, c);
+    // Public pool: swims only on the days they can get there; any other cardio days are walks.
+    let swimDays = cDays;
+    if (cardio === 'Swim at the pool' && poolDays.length) {
+      swimDays = poolDays.filter(d => !sDays.includes(d)).slice(0, c);
+      cDays = swimDays.concat(cardioOrder.filter(d => !sDays.includes(d) && !swimDays.includes(d)).slice(0, c - swimDays.length));
+    }
+    const cardioTarget = swimDays.length === cDays.length
+      ? c + ' × ' + cardio.toLowerCase() + ' ' + mins + ' minutes'
+      : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × walk'].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
     let ab = 0;
     weeks.push({
       focus: focus[w],
-      targets: [s + ' strength session' + (s > 1 ? 's' : ''), c + ' × ' + cardio.toLowerCase() + ' ' + mins + ' minutes', 'A few more steps each day than last week'],
+      targets: [s + ' strength session' + (s > 1 ? 's' : ''), cardioTarget, 'A few more steps each day than last week'],
       days: DAYS.map(day => {
         const o = { day };
         if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
-        if (cDays.includes(day)) o.cardio = cardio + ' ' + mins + ' minutes';
+        if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? cardio : 'Walk') + ' ' + mins + ' minutes';
         if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
         return o;
       }),

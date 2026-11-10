@@ -16,7 +16,9 @@ updating (`docker restart shopping-list-api`).
   means a trip out. AI-drafted plans are asked to plan fewer, longer sessions at a public pool, and
   the built-in builder says "Swim at the pool". Older "Pool" answers still count, but tick the new
   option in About me so it shows.
-- Three new tests.
+- **New question: "If you use a public pool, which days could you get there?"** Swims go only on
+  those days, and any other cardio days become walks. AI-drafted plans are told the same.
+- Four new tests.
 
 ## v1.4.5 (2026-11-10)
 

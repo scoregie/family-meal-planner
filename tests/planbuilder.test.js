@@ -228,3 +228,15 @@ test('both pool answers, and the older "Pool", count as having a pool', () => {
   assert.match(cardio(['Public pool or swim centre']), /Swim at the pool/);
   assert.match(cardio(['Pool']), /Swim/);
 });
+
+test('public pool swims go only on the days they can get there', () => {
+  const plan = build([{ age: 40, equipment: ['Public pool or swim centre'], exercise_likes: 'swimming', pool_days: ['Sat'] }]);
+  for (const week of plan.weeks.filter(w => w.exercise)) {
+    for (const day of Object.values(week.exercise)[0].days) {
+      if (/Swim/.test(day.cardio || '')) assert.equal(day.day, 'Sat', 'a swim on ' + day.day);
+    }
+  }
+  const days = Object.values(plan.weeks.find(w => w.exercise).exercise)[0].days;
+  assert.ok(days.some(d => /Swim at the pool/.test(d.cardio || '')), 'no swim at all');
+  assert.ok(days.some(d => /^Walk/.test(d.cardio || '')), 'other cardio days should be walks');
+});
