@@ -185,6 +185,9 @@ const MEDS = {
   },
 };
 
+// About me cuisine choices whose wording differs from the cuisine names in the meal library.
+const CUISINE = { 'Australian classics': 'Australian' };
+
 const ALLERGY = { Peanuts: 'peanut', 'Tree nuts': 'treenut', Milk: 'milk', Eggs: 'egg', 'Wheat or gluten': 'gluten', Soy: 'soy', Fish: 'fish', Shellfish: 'shellfish', Sesame: 'sesame', Lactose: 'lactose' };
 const ALLERGY_WORDS = { peanut: 'peanuts', treenut: 'tree nuts', milk: 'milk', egg: 'eggs', gluten: 'gluten', soy: 'soy', fish: 'fish', shellfish: 'shellfish', sesame: 'sesame', lactose: 'lactose' };
 
@@ -200,7 +203,7 @@ function rulesFor(p) {
     avoidWords: [],       // foods they won't eat
     avoidTexture: new Set(),
     likeWords: words(a.likes).concat(words(a.safe_foods)),
-    cuisines: new Set(list(a.cuisines)),
+    cuisines: new Set(list(a.cuisines).map(c => CUISINE[c] || c)),
     cookLimit: COOK_LIMIT[a.cook_time] || null,
     cooks: a.cook_time !== "I don't cook",
     kitchen: new Set(list(a.kitchen).map(k => k.toLowerCase())),
