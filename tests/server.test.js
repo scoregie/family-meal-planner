@@ -158,6 +158,12 @@ test('a waiting draft shows every meal and each person’s tips, and is listed f
   assert.ok(list.json.requests.some(r => r.status === 'open' && r.kind === 'full-plan'));
 });
 
+test('Settings can ask which models a saved AI key can use (none saved: an empty list)', async () => {
+  const got = await server.request('GET', '/api/account/ai-key');
+  assert.equal(got.status, 200, got.text);
+  assert.deepEqual(got.json.models, []);
+});
+
 test('cancelling when no draft is being written is harmless', async () => {
   const res = await server.request('DELETE', '/api/plan/draft', null, { 'X-Requested-With': 'app' });
   assert.equal(res.status, 200, res.text);

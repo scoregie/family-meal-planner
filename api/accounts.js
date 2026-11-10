@@ -27,6 +27,7 @@
 //   POST /api/account/email        {email, password}: add or change your email
 //   POST /api/account/logout-everywhere
 //   POST /api/account/delete       {password, history}: delete your account (and, if asked, your history)
+//   GET  /api/account/ai-key       the models your saved key can use
 //   PUT  /api/account/ai-key       {key}: save your own Claude API key (checked, then stored encrypted)
 //   DELETE /api/account/ai-key     remove it
 //   GET  /api/family               admins: everyone's logins, and invites waiting to be used
@@ -413,6 +414,16 @@ async function aiKey(req, res, me) {
   if (req.method === 'DELETE') {
     ai.saveOwn(me, null);
     return send(res, 200, { ok: true });
+  }
+  // GET: the models your saved key can use, so Settings can offer them without pasting the key again.
+  if (req.method === 'GET') {
+    const own = ai.ownChoice(me);
+    if (!own) return send(res, 200, { models: [] });
+    try {
+      return send(res, 200, { models: (await ai.checkKey(own.provider, own.key)).models, model: own.model || null });
+    } catch (e) {
+      return send(res, 400, { error: String(e.message || e) });
+    }
   }
   if (req.method !== 'PUT') return send(res, 404, { error: 'not found' });
   const b = await body(req);

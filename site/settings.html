@@ -522,6 +522,7 @@ var KEY_INFO = {
   openai: { name: "OpenAI", start: "sk-…", url: "https://platform.openai.com/api-keys", site: "platform.openai.com" },
   gemini: { name: "Gemini", start: "AIza…", url: "https://aistudio.google.com/apikey", site: "aistudio.google.com" },
 };
+var modelsLoaded = false; // true once the full model list for the saved key has been asked for
 var ACCOUNT_KEY = null;   // {provider, name, model, hint} or null
 
 // Which AI company is ticked for your own key.
@@ -575,6 +576,14 @@ function renderKey(account) {
     var radio = document.querySelector('input[name="keyProvider"][value="' + ACCOUNT_KEY.provider + '"]');
     if (radio) radio.checked = true;
     if (!$("aiModel").options.length && ACCOUNT_KEY.model) fillModels([ACCOUNT_KEY.model], ACCOUNT_KEY.model);
+    // Then ask the AI company which models this key can use, so a different one can be picked.
+    if (!modelsLoaded) {
+      modelsLoaded = true;
+      api("GET", "/api/account/ai-key").then(function (got) {
+        if (got.models && got.models.length) fillModels(got.models, ACCOUNT_KEY && ACCOUNT_KEY.model);
+        showWhere();
+      }).catch(function () { modelsLoaded = false; /* the saved model stays as the only choice */ });
+    }
   } else {
     $("keyState").textContent = "You’re not using your own key.";
   }
@@ -618,6 +627,7 @@ $("keyRemove").addEventListener("click", function () {
   api("DELETE", "/api/account/ai-key").then(function () {
     status("Removed.");
     $("aiModel").textContent = "";
+    modelsLoaded = false;
     return loadAccount();
   }).catch(function (err) { status(err.message, true); });
 });
