@@ -426,7 +426,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       const people = household(ctx);
       if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
       try {
-        const built = planbuilder.build(people, { seed: Date.now() });
+        const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale });
         saveDraft(me, ctx, people, built.plan, built.notesForAdmin, 'New 4-week plan for the family (built-in, no AI)');
         job = null;
         send(res, 200, { ok: true, done: true });

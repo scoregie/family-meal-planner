@@ -27,6 +27,9 @@ adult serve); leave out macros, groups, tags and cost, because `api/libraryupdat
 out. Write recipes in your own words, never copied. Check them with `checkSet` in that file
 (run node inside the api container), then open a PR: `tools/library-pr.sh <file>` does it from a file.
 
+Local names, packs and prices for other countries are in `api/library-prices.json`, made by
+`tools/build_prices.py`; after adding an ingredient to `api/library.json`, run it again.
+
 ## Rules for health text
 
 Health notes say "considerations", never "advice"; no absolutes ("always", "never", "must");
