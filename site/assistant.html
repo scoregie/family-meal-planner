@@ -13,9 +13,7 @@
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Ask AI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link href="fonts/fonts.css" rel="stylesheet">
 <style>
 :root{--low:#b3261e;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--chip:#e3f1ec;--mine:#dcefe8;--warn:#8a5a00}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;--mine:#1d3a31;--warn:#f3c26b;color-scheme:dark}}
@@ -138,7 +136,7 @@ section.card{background:var(--card);border:1px solid var(--line);border-radius:.
     <textarea id="text" rows="1" maxlength="4000" placeholder="Ask a question…"></textarea>
     <button class="btn primary" id="sendBtn" type="submit">Send</button>
   </div>
-  <p class="note">AI can make mistakes. Changes are only suggestions until an admin applies them. Your doctor’s advice comes first.</p>
+  <p class="note">AI can make mistakes. Changes are only suggestions until an admin applies them. What your GP, dietitian or physio tells you comes first. In an emergency, call your local emergency number.</p>
 </form>
 <script>
 // The AI assistant page. Messages go to POST /api/assistant/chat and the answer streams back

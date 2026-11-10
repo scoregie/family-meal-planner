@@ -13,9 +13,7 @@
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Plan setup</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link href="fonts/fonts.css" rel="stylesheet">
 <link rel="stylesheet" href="page.css">
 <style>
 .member{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.65rem 0;border-top:1px solid var(--line)}
@@ -198,10 +196,10 @@ function renderPeople() {
 // Step 2: which AI the family uses (or none), and its model.
 var AI_ABOUT = {
   none: ["No AI", "The app’s built-in plan builder. Free and private: nothing leaves your server. Plans are simpler than an AI’s."],
-  anthropic: ["Claude", "Anthropic. Needs ANTHROPIC_API_KEY on the server. Writes the most detailed plans."],
-  openai: ["OpenAI", "ChatGPT’s maker. Needs OPENAI_API_KEY on the server."],
-  gemini: ["Gemini", "Google. Needs GEMINI_API_KEY on the server."],
-  ollama: ["Ollama (local)", "A free AI running on your own computer. Needs OLLAMA_URL on the server and a powerful machine."],
+  anthropic: ["Claude", "Anthropic. Needs ANTHROPIC_API_KEY on the server. Writes the most detailed plans. Everyone’s About me answers (including health and medicines) are sent to Anthropic to write the plan."],
+  openai: ["OpenAI", "ChatGPT’s maker. Needs OPENAI_API_KEY on the server. Everyone’s About me answers (including health and medicines) are sent to OpenAI to write the plan."],
+  gemini: ["Gemini", "Google. Needs GEMINI_API_KEY on the server. Everyone’s About me answers (including health and medicines) are sent to Google to write the plan."],
+  ollama: ["Ollama (local)", "A free AI running on your own computer. Needs OLLAMA_URL on the server and a powerful machine. Answers stay on that computer."],
 };
 var aiModels = {};   // provider -> [models], once loaded
 

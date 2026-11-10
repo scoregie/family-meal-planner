@@ -8,6 +8,18 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
 Fixes from a full code review. After updating, restart both containers
 (`docker compose restart`), because the Caddyfile changed too.
 
+- **Privacy and legal:**
+  - The fonts are now served from your own server, so pages never contact Google Fonts (which
+    would share each visitor's address with Google).
+  - Plan setup and About me now say that, with an AI chosen, About me answers (including health
+    and medicines) are sent to that AI company. With No AI they stay on your server.
+  - More has an "About this app" note: general information, not medical advice; AI can make
+    mistakes; in an emergency call your local emergency number; store and brand names belong to
+    their owners.
+  - Health notes on About me, Progress and Ask AI follow the wording rules ("what your GP tells
+    you comes first", no "always").
+  - The README has a "Legal and privacy" section, and `NOTICE.md` lists the fonts, data and
+    packages the app uses, with their licences.
 - **Security:**
   - The limit on wrong passwords can no longer be bypassed by sending a made-up
     `X-Forwarded-For` header. Caddy now works out the visitor's real address and passes it on.

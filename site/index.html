@@ -20,9 +20,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Family Health Planner</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link href="fonts/fonts.css" rel="stylesheet">
 <style>
 :root{--m-p:#2a78d6;--m-c:#eb6834;--m-f:#1baf7a;--low:#b3261e;--mid:#8a5a00;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--done:#8f8f94;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -494,6 +492,8 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
         <li><a id="ratesLink" href="#"><b>Meal ratings</b><span>What everyone thought of each meal</span></a></li>
       </ul>
     </div>
+    <h2 class="more-h">About this app</h2>
+    <p class="note2">The meals, exercise and health notes are general information, not medical advice, and AI can make mistakes. Check the plan with your GP, dietitian or physio, and in an emergency call your local emergency number. Prices are estimates. Store, brand and app names belong to their owners; this app isn’t connected with or endorsed by them.</p>
     <form method="post" action="/auth/logout" id="logout"><button class="btn logoutbtn" type="submit">Log out</button></form>
   </div>
   <details class="about"><summary>About this plan</summary><p id="sub"></p><p class="note">Tap the box to tick an item off. Tap &ldquo;At home?&rdquo; on anything you already have. It is removed from your total and stays marked in every week. Oil, salt, pepper and dried spices are assumed on hand. The store links open a search for that item, so pick the size and brand that suits you. Tap &ldquo;Pin product&rdquo; and paste a product page to make the link go straight to the one you buy. &ldquo;Shop mode&rdquo; shows one item at a time, in aisle order, while you walk the shop. Choose your stores in Settings.</p></details>

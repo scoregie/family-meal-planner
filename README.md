@@ -451,5 +451,27 @@ Back up `.env` (logins), `site/plan.json` (your plan) and `data/` (ticks, rating
 
 ## Notes
 
-- The page loads a font from Google Fonts and falls back to a system font without it.
+- The fonts are served from `site/fonts/`, so pages never contact Google Fonts.
 - Prices are rough estimates, in your country's currency. The store links open a search for each item, or the pinned product.
+
+## Legal and privacy
+
+This isn't legal advice; it's what the app does to keep you and your family on the safe side.
+
+- **Not medical advice.** The plan, exercise notes and Ask AI answers are general information. The
+  app says so on the plan, on About me, on Ask AI and under More → About this app, and asks people
+  to check with their GP, dietitian or physio. Children and teenagers never get an energy deficit.
+- **Where health answers go.** With **No AI**, About me answers, ticks and progress stay on your
+  server. If an admin picks Claude, OpenAI or Gemini, About me answers (including health and
+  medicines) are sent to that company to write the plan and answer Ask AI; Plan setup, About me and
+  Ask AI say so. Read that company's privacy terms before choosing it.
+- **No tracking.** Pages load nothing from other websites: no analytics, adverts or Google Fonts.
+  Store links only open when someone taps them.
+- **Running it for other people.** For your own household, privacy laws mostly don't apply. If you
+  host it for people outside your household, or publish the phone app, privacy law (such as
+  Australia's Privacy Act or Europe's GDPR) applies to health information, and you'll need a
+  privacy policy. Get advice from a lawyer first.
+- **Names.** Store, brand and app names (Coles, Woolworths, Lose It, Apple Health and others)
+  belong to their owners. This project isn't connected with or endorsed by them; it only links to
+  their public search pages.
+- **Other people's work** is listed in [NOTICE.md](NOTICE.md), with its licences.
