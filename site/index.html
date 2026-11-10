@@ -447,6 +447,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
   <p class="err" id="err" hidden></p>
   <div class="ask" id="emailNudge" hidden><span>You can log in with your email now. Add it to your account (your username keeps working).</span> <a class="btn primary" href="account.html">Add email</a></div>
   <div class="ask" id="setupNudge" hidden><span>Set up your family’s plan: get everyone’s About me answers in, then make 4 weeks of meals, shopping and exercise (with AI, or with the app’s own plan builder).</span> <a class="btn primary" href="setup.html">Plan setup</a></div>
+  <div class="ask" id="draftNudge" hidden><span>A new plan is waiting for you to check and approve.</span> <a class="btn primary" href="setup.html">Review it</a></div>
   <div class="ask" id="ask" hidden><span>Help shape your meals and exercise: answer a few questions about you.</span> <a class="btn primary" href="profile.html">Start</a> <button class="btn" type="button" id="askLater">Later</button></div>
   <div class="who" id="whoRow" hidden><label for="user">Ticks for</label><select id="user"></select><span class="me-name" id="meName" hidden></span></div>
   <div id="shopView">
@@ -3647,6 +3648,19 @@ function setMe(d) {
   // Admins still on the example plan are pointed at Plan setup.
   document.getElementById("setupNudge").hidden = !(d.admin && PLAN && /^example/i.test(String(PLAN.id || "")));
   document.getElementById("avatar").textContent = (d.person || d.user).charAt(0);
+  if (d.admin) checkForDraft();
+}
+
+// Admins: shows a banner when a new plan (from the AI, the builder or Claude Code) is waiting
+// to be approved. Looked up once each time the app opens.
+var draftChecked = false;
+function checkForDraft() {
+  if (draftChecked) return;
+  draftChecked = true;
+  fetch("/api/requests", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    var waiting = d && (d.requests || []).some(function (r) { return r.status === "open" && (r.kind === "full-plan" || /^New 4-week plan/.test(r.title || "")); });
+    document.getElementById("draftNudge").hidden = !waiting;
+  }).catch(function () { /* offline: no banner */ });
 }
 if (ME && ME.user) setMe(ME);   // straight away, from the copy remembered on this device
 

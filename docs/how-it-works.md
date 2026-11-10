@@ -115,9 +115,9 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 | --- | --- |
 | `index.html` | The main app: Today, Meals, Shopping, Exercise and More. The biggest file. |
 | `login.html` | Logging in, the first account, invites, sign-ups and password resets. |
-| `profile.html` | About me. The questions come from `questions.json`. |
+| `profile.html` | About me, one section at a time. The questions come from `questions.json`. |
 | `setup.html` | Plan setup (admins). |
-| `settings.html` | Settings. |
+| `settings.html` | Settings. For admins it also has the country and the plan builder's new meals and exercises. |
 | `assistant.html` | Ask AI. |
 | `progress.html` | Progress charts. |
 | `exercises.html` | The exercise library. |

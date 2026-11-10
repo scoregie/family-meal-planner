@@ -149,6 +149,20 @@ test('blood test results reach the plan writer only after the person says yes in
   assert.match(setup.json.draft.details, /can’t read uploaded files/);
 });
 
+test('a waiting draft shows every meal and each person’s tips, and is listed for the Today banner', async () => {
+  const setup = await server.request('GET', '/api/plan/setup');
+  const week = setup.json.draft.weeks.find(w => w.meals.length);
+  assert.ok(week.meals[0].day && week.meals[0].breakfast && week.meals[0].dinner, JSON.stringify(week.meals[0]));
+  assert.ok(Array.isArray(setup.json.draft.people[0].tips));
+  const list = await server.request('GET', '/api/requests');
+  assert.ok(list.json.requests.some(r => r.status === 'open' && r.kind === 'full-plan'));
+});
+
+test('cancelling when no draft is being written is harmless', async () => {
+  const res = await server.request('DELETE', '/api/plan/draft', null, { 'X-Requested-With': 'app' });
+  assert.equal(res.status, 200, res.text);
+});
+
 test('the "AI writes new meals" switch says it needs a key when there is none', async () => {
   const got = await server.request('GET', '/api/library/updates');
   assert.equal(got.status, 200, got.text);

@@ -182,10 +182,10 @@ Its meals come from `api/library.json`: 59 meals and 16 snacks, with recipes wri
 
 ### New meals and exercises every 2 weeks
 
-The builder's library grows by itself. **Plan setup → New meals and exercises** has two switches:
+The builder's library grows by itself. **Settings → New meals and exercises** (admins) has two switches:
 
 - **Get new ones from the Family Health Planner project** (on by default, no AI needed). Every 2 weeks the server downloads `api/library-community.json` from this project on GitHub. It's a list of meals, snacks and exercises, never code, and nothing about your family is sent. **Check now** does it straight away.
-- **Have your AI write new ones for your family** (off by default; needs an AI chosen in step 2). Every 2 weeks the family's AI writes about 5 meals, a snack and 3 exercises in its own words, aimed at the cuisines you like, what people can't eat and how meals were rated (no health details are sent). They wait on Plan setup until an admin adds or discards them.
+- **Have your AI write new ones for your family** (off by default; needs an AI key, yours or the server's). Every 2 weeks the family's AI writes about 5 meals, a snack and 3 exercises in its own words, aimed at the cuisines you like, what people can't eat and how meals were rated (no health details are sent). They wait on Plan setup until an admin adds or discards them.
 
 Either way, every new entry is checked before it's used: dishes may only use ingredients already in the library, with sensible amounts and energy, and the app works out their nutrition (USDA FoodData Central), allergen tags and cost itself rather than trusting the source. New entries are used the next time the plan is built or rebuilt.
 
@@ -364,7 +364,7 @@ With Claude, if Anthropic's safety checks decline a request, it is automatically
 - **For everyone (admins):** the household's colour, font and text size, used by anyone who hasn't chosen their own. Saved in `data/app.db`.
 - **App icon (admins):** pick a picture (or type up to two letters or an emoji) and a background colour. The icon is drawn in the browser and saved as `site/icon-512.png`, `site/icon-192.png` and `site/apple-touch-icon.png`. Old icons are kept in `data/icon-backups/`, and **Back to the original icon** restores the first one. On iPhone, remove the app from the home screen and add it again to see a new icon.
 
-- **Country** (Plan setup, admins; also asked when the first account is made): sets the currency, date and number style, the energy unit to start with (kJ in Australia and New Zealand, Calories elsewhere), the healthy-eating guidelines shown first, the grocery stores on offer, and what AI-written plans assume. There are 22 countries: Australia, New Zealand, the UK, Ireland, the US, Canada, Japan, South Korea, Singapore and 13 in Europe. The list and each store's search address are in `site/regions.js`.
+- **Country** (Settings, admins; also asked when the first account is made): sets the currency, date and number style, the energy unit to start with (kJ in Australia and New Zealand, Calories elsewhere), the healthy-eating guidelines shown first, the grocery stores on offer, and what AI-written plans assume. There are 22 countries: Australia, New Zealand, the UK, Ireland, the US, Canada, Japan, South Korea, Singapore and 13 in Europe. The list and each store's search address are in `site/regions.js`.
 - **Where you shop:** everyone picks their supermarkets from those in the household's country (in Australia: Coles, Woolworths, Aldi, IGA, Foodland, Spudshed, Drakes, or a mix), and admins pick the household's default. The shopping list shows a search link for each. Most stores open their own search; shops that run online store by store get a link that searches their website; in-store-only shops (like Aldi and Lidl in most countries) have no link.
 - **Kilojoules or Calories:** each person chooses how food and exercise energy is shown; admins set the household default.
 - **Your AI key:** anyone with an email login can add their own Claude, OpenAI or Gemini API key and choose its model, so Ask AI and their plan drafts use it (see [Choosing an AI](#choosing-an-ai)).

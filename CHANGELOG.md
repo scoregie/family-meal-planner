@@ -40,6 +40,16 @@ Plans now listen to what people said and logged, and help fussy eaters one small
 - **Clearer waiting and wording.** While an AI drafts, Plan setup says how long it has been going
   and that the bar only moves once the AI starts writing. My files says whether blood tests are
   used in plans, with a link to change it.
+- **About me, one part at a time.** The questions now show one section per screen with Back and
+  Next, and a row of buttons showing how much of each part is answered. "Show everything on one
+  page" brings back the long page.
+- **A banner on Today when a plan is waiting.** Admins see "A new plan is waiting for you to
+  check and approve" with a button to review it.
+- **A fuller look before approving.** The review now lists every day's breakfast, lunch and
+  dinner, and each person's guide, tips, small steps and medical considerations.
+- **Plan setup is shorter.** The country and "New meals and exercises" moved to Settings (admins).
+  The drafting step has one line of explanation, with the rest behind "What happens?".
+- **Cancel a draft.** While an AI is writing, "Cancel this draft" stops it. Nothing is saved.
 
 ## v1.7.0 (2026-11-10)
 

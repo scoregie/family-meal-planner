@@ -12,6 +12,7 @@
 //                            in the background and takes several minutes; built-in takes a moment.
 //   GET  /api/plan/handoff?note=   admins: the exact prompt the AI would get {system, user}, so a
 //                            Claude Code session can write the plan (tools/claude-code-plan.sh)
+//   DELETE /api/plan/draft  admins: stop the draft the AI is writing
 //   POST /api/plan/handoff   admins: {plan} written that way, checked and saved as a draft
 //
 // A finished draft is saved as a request (like Ask AI's suggestions) that replaces the plan's
@@ -68,6 +69,8 @@ function dishRatings() {
 // The one draft that can run at a time. Kept in memory: a restart loses a draft in progress.
 // {state: "running" | "failed", by, started, chars, stage, error}
 let job = null;
+// While an AI is writing: a function that stops it (the Cancel button on Plan setup), else null.
+let stopDraft = null;
 
 // Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
 // was sent) and an object, turned into JSON text.
@@ -158,12 +161,20 @@ function draftPreview(r) {
     weeks: (plan.weeks || []).map(w => ({
       name: w.name, kind: w.kind || null, cost: w.cost,
       dinners: (w.meals || []).map(m => m.day + ': ' + m.dinner),
+      // Every day's breakfast, lunch and dinner, for the fuller look before approving.
+      meals: (w.meals || []).map(m => ({ day: m.day, breakfast: m.breakfast || '', lunch: m.lunch || '', dinner: m.dinner || '' })),
+      useUp: Array.isArray(w.useUp) ? w.useUp.slice(0, 20) : [],
     })),
     people: Object.entries(plan.people || {}).filter(([, p]) => p && p.name).map(([key, p]) => ({
       key, name: p.name, portion: p.portion,
       // Their average vegetable and fruit serves a day against their targets (healthtargets.js).
       health: (plan.health || []).find(h => h.key === key) || null,
       snacks: (p.snacks || []).map(s => (s.when ? s.when + ': ' : '') + s.what),
+      // What the plan says to them: their guide, tips, small steps and medical considerations.
+      guide: typeof p.guide === 'string' ? p.guide : '',
+      tips: Array.isArray(p.tips) ? p.tips.filter(t => typeof t === 'string') : [],
+      steps: Array.isArray(p.steps) ? p.steps.filter(x => x && x.food).map(x => 'Week ' + x.week + ': ' + x.food + (x.from ? ' (from ' + x.from + ')' : '')) : [],
+      medical: plan.exercise && plan.exercise[key] && Array.isArray(plan.exercise[key].medical) ? plan.exercise[key].medical.filter(t => typeof t === 'string') : [],
       focus: plan.weeks && plan.weeks.filter(w => w.exercise).map(w => w.exercise[key] && w.exercise[key].focus).filter(Boolean)[0] || null,
     })),
   };
@@ -314,7 +325,10 @@ async function runDraft(me, ready, ctx, note) {
     job.stage = 'Writing the plan';
     if (ready.provider !== 'anthropic') {
       // OpenAI, Gemini or Ollama.
+      const stopper = new AbortController();
+      stopDraft = () => stopper.abort();
       const message = await ai.chat(ready, {
+        signal: stopper.signal,
         system: systemText(), messages: [{ role: 'user', content: userText(ctx, people, note) }],
         maxTokens: ai.maxOutput(ready.provider), json: true,
         onText: delta => {
@@ -341,6 +355,7 @@ async function runDraft(me, ready, ctx, note) {
       system: [{ type: 'text', text: systemText(), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: [...attached, { type: 'text', text: userText(ctx, people, note, 'attached') }] }],
     });
+    stopDraft = () => stream.abort();
     stream.on('text', delta => {
       // Only the new text (plus a little before it, for a name split across two pieces) is searched.
       const recent = text.slice(-40) + delta;
@@ -354,6 +369,8 @@ async function runDraft(me, ready, ctx, note) {
     if (message.stop_reason === 'refusal') throw new Error('Claude couldn’t write this plan. Check the About me answers and try again.');
     await finishDraft(me, ctx, people, known, text, 'Claude', planextras.skippedNote(people));
   } catch (err) {
+    // Stopped with the Cancel button: nothing went wrong, so there is no error to show.
+    if (job && job.cancelled) { job = null; stopDraft = null; return; }
     let message = String(err && err.message || err);
     if (ready.provider !== 'anthropic' && (err instanceof ai.AIError || /fetch|ECONN|ENOTFOUND/.test(message))) message = ai.explain(err, ready);
     else if (Anthropic && err instanceof Anthropic.AuthenticationError) message = 'The Claude key wasn’t accepted. Check it in Settings.';
@@ -363,6 +380,7 @@ async function runDraft(me, ready, ctx, note) {
     // Also in the server's log (docker compose logs api), so a failed draft can be looked into later.
     console.error('Plan draft failed: ' + message);
   }
+  stopDraft = null;
 }
 
 // Reads, checks and saves an AI-written plan as a draft for an admin to approve. `filesNote`
@@ -546,6 +564,17 @@ async function handle(req, res, urlPath, url, me, ctx) {
     } catch (e) {
       send(res, 400, { error: String(e.message || e).replace(/ Try again\.$/, '') });
     }
+    return true;
+  }
+
+  // The Cancel button: stops the AI part-way through writing. Nothing is saved.
+  if (urlPath === '/api/plan/draft' && req.method === 'DELETE') {
+    if (job && job.state === 'running') {
+      job.cancelled = true;
+      if (stopDraft) stopDraft();
+      else job = null;
+    }
+    send(res, 200, { ok: true });
     return true;
   }
 

@@ -577,6 +577,8 @@ function publicRequest(r) {
     title: r.title, details: r.details, status: r.status, reply: r.reply,
     decided_by: r.decided_by, decided_at: r.decided_at,
     summary: r.change && r.change.summary ? r.change.summary : [],
+    // What sort of change it is: "full-plan" is a whole new 4-week plan waiting on Plan setup.
+    kind: r.change && r.change.kind ? r.change.kind : null,
   };
 }
 
