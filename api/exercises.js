@@ -13,11 +13,15 @@ const planbuilder = require('./planbuilder');
 
 const EXERCISES = planbuilder.EXERCISES;
 
+// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
+// was sent) and an object, turned into JSON text.
 function send(res, code, obj) {
   res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(obj));
 }
 
+// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
+// if it is far bigger than expected.
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let text = '';
@@ -32,6 +36,7 @@ function readBody(req) {
   });
 }
 
+// The exercises a person asked to leave out of future plans (a list of exercise ids).
 function avoidList(person) {
   try {
     const v = JSON.parse(db.getSetting('exercise-avoid:' + person) || '[]');
@@ -41,6 +46,7 @@ function avoidList(person) {
   }
 }
 
+// Adds an exercise to a person's leave-out list (on = true) or takes it off. Returns the new list.
 function setAvoid(person, id, on) {
   const list = avoidList(person).filter(x => x !== id);
   if (on) list.push(id);
@@ -63,6 +69,8 @@ function lineFor(e, old) {
   return start + e.name + ' (' + e.dose + '): ' + e.how;
 }
 
+// Answers the requests this file looks after. server.js offers every /api/ request to each
+// file in turn: this returns true if it answered, or false to let the next file try.
 async function handle(req, res, urlPath, url, me, ctx) {
   if (!['/api/exercises', '/api/exercises/avoid', '/api/exercises/swap'].includes(urlPath)) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {

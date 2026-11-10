@@ -92,6 +92,7 @@ function fromUsDate(text) {
   return m ? m[3] + '-' + m[1] + '-' + m[2] : null;
 }
 
+// True for a date written like "2026-11-10".
 function isDate(text) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(text)) && !isNaN(new Date(text + 'T00:00:00Z'));
 }
@@ -261,6 +262,8 @@ function waitingImports(person) {
 
 // Imports the newest Lose It and Apple Health files. Only one import runs at a time.
 let importing = null;
+// Reads the newest Lose It or Apple Health export someone uploaded, saving its numbers. Only one
+// import runs at a time, so two can't write the same numbers at once.
 async function runImport(person) {
   while (importing) await importing.catch(() => {});
   const work = (async () => {
@@ -308,6 +311,7 @@ function average(list) {
   return list.length ? list.reduce((a, b) => a + b, 0) / list.length : null;
 }
 
+// Rounds to a number of decimal places: round(3.14159, 2) gives 3.14.
 function round(n, places) {
   return n == null ? null : Math.round(n * 10 ** places) / 10 ** places;
 }

@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  Your account: change your email or password, log out other devices, or delete your account.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -75,6 +81,7 @@ function $(id) {
   return document.getElementById(id);
 }
 
+// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
 function el(tag, cls, txt) {
   var e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -82,6 +89,8 @@ function el(tag, cls, txt) {
   return e;
 }
 
+// Asks the server for something (or sends it a change) and waits for the answer. Returns a
+// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
 function api(method, url, body) {
   return fetch(url, {
     method: method,
@@ -96,6 +105,7 @@ function api(method, url, body) {
   });
 }
 
+// Shows a short message at the bottom of the screen (red for errors), then hides it.
 function status(text, isError) {
   var s = $("status");
   s.textContent = text;
@@ -107,6 +117,7 @@ function status(text, isError) {
 
 var ROLES = { owner: "the family’s owner", admin: "an admin", member: "a member" };
 
+// Draws the page from your account details: email, password and the "delete my account" section.
 function render() {
   var a = ACCOUNT;
   $("sub").textContent = a.name + " · " + ROLES[a.role] + (a.email ? " · " + a.email : "");
@@ -131,6 +142,7 @@ function render() {
   $("familyLink").hidden = a.role === "member";
 }
 
+// Gets your account details from the server, then draws the page.
 function load() {
   return api("GET", "/api/account").then(function (a) {
     ACCOUNT = a;

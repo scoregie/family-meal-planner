@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  Health sync: make a personal sync key and set up the iPhone Shortcut that sends phone health numbers.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -155,6 +161,7 @@ function $(id) {
   return document.getElementById(id);
 }
 
+// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
 function el(tag, cls, txt) {
   var e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -162,6 +169,8 @@ function el(tag, cls, txt) {
   return e;
 }
 
+// Asks the server for something (or sends it a change) and waits for the answer. Returns a
+// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
 function api(method, url, body) {
   return fetch(url, {
     method: method,
@@ -176,6 +185,7 @@ function api(method, url, body) {
   });
 }
 
+// Shows a short message at the bottom of the screen (red for errors), then hides it.
 function status(text, isError) {
   var s = $("status");
   s.textContent = text;
@@ -185,6 +195,7 @@ function status(text, isError) {
   status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 3000);
 }
 
+// A date and time like "Tue 10 Nov, 7:05 am".
 function when(ms) {
   var d = new Date(ms);
   return d.toLocaleDateString(Appearance.locale(), { weekday: "short", day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString(Appearance.locale(), { hour: "numeric", minute: "2-digit" });
@@ -231,6 +242,7 @@ function describeText(url, key) {
     "7. Show a notification with the message value from the response.";
 }
 
+// For the owner: the step-by-step description of the Shortcut, for making it by hand.
 function renderDescribe(url) {
   var box = $("describeBox");
   if (!box) return;
@@ -297,6 +309,7 @@ function renderInstall() {
   }
 }
 
+// Sends a signed Shortcut install file (made on a Mac) to the server for everyone to use.
 function uploadSigned(file) {
   if (!file) return;
   fetch("/api/health/shortcut/signed", { method: "POST", headers: { "X-Requested-With": "app", "Content-Type": "application/octet-stream" }, body: file })
@@ -306,6 +319,7 @@ function uploadSigned(file) {
     .then(function () { $("signedUpload").value = ""; });
 }
 
+// Draws the page: the sync key, when the phone last sent numbers, and the setup steps.
 function render() {
   var link = $("unsignedLink");
   if (link) link.href = "/api/health/shortcut?origin=" + encodeURIComponent(location.origin);
@@ -380,6 +394,7 @@ function render() {
   box.appendChild(last);
 }
 
+// Gets the person's sync key details from the server, then draws the page.
 function load() {
   return api("GET", "/api/health/key" + (PERSON ? "?person=" + encodeURIComponent(PERSON) : "")).then(function (d) {
     DATA = d;

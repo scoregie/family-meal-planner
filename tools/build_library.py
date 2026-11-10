@@ -158,6 +158,7 @@ I = {
 D = []
 
 
+# Adds a dish to the library list (D). Used for every recipe written below.
 def dish(name, meal, cuisine, minutes, kit, per, steps, **kw):
     D.append(dict(name=name, meal=meal, cuisine=cuisine, minutes=minutes, kit=kit, per=per, steps=steps, **kw))
 
@@ -442,6 +443,7 @@ dish('Chicken, rice and vegetable lunch box', 'lunch', 'Australian', 20, ['stove
 S = []
 
 
+# Adds a snack to the snack list (S).
 def snack(what, per, kind, kids=True):
     S.append(dict(what=what, per=per, kind=kind, kids=kids))
 
@@ -577,11 +579,14 @@ DAIRY_SERVE = {'milk': 250, 'greek yoghurt': 200, 'cottage cheese': 120, 'ricott
 OILY = {'salmon'}
 
 
+# Grams of an ingredient: things counted one by one (like eggs) use the weight of one.
 def grams(key, amount):
     unit, each = I[key][3], I[key][8]
     return amount * each if unit == 'each' else amount
 
 
+# Builds the whole library: each ingredient's nutrition from the USDA files in `folder`, then each
+# dish's and snack's macros, food groups, tags and cost.
 def build(folder):
     fdc, names = load_fdc(folder)
     ingredients = {}
@@ -595,6 +600,7 @@ def build(folder):
         ingredients[key] = dict(name=name, pack=pack, unit=unit, each=each, price=price, aisle=aisle, tags=tags, kind=kind,
                                 per100=dict(p=p, c=c, f=f, kj=round(kcal * 4.184), ca=ca), source=source)
 
+    # Macros, food groups and tags for a list of [ingredient, amount] pairs.
     def nutrition(per):
         m = dict(p=0.0, c=0.0, f=0.0, kj=0.0)
         g = dict(veg=0.0, fruit=0.0, grain=0.0, protein=0.0, dairy=0.0, fv=0.0, leg=0.0, red=0.0, fish=0.0, oily=0.0, side=0.0, gc=0.0, mp=0.0, ca=0.0)
@@ -662,6 +668,7 @@ def build(folder):
         ingredients=ingredients, dishes=dishes, snacks=snacks, workouts=workouts)
 
 
+# Builds the library from the USDA folder named on the command line and saves api/library.json.
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)

@@ -44,10 +44,14 @@ const BASE = { dishes: LIB.dishes.length, snacks: LIB.snacks.length, exercises: 
 const GRAIN_SERVE = { bread: 40, wraps: 40, rolls: 40, pita: 40, 'fruit bread': 40, crackers: 35, 'rice crackers': 35, oats: 30, 'weet-bix': 30, muesli: 30 };
 const DAIRY_SERVE = { milk: 250, 'greek yoghurt': 200, 'cottage cheese': 120, ricotta: 120 };
 
+// Grams of an ingredient: amounts of things counted one by one ("each", like eggs) are turned
+// into grams using the weight of one.
 function grams(ing, amount) {
   return ing.unit === 'each' ? amount * ing.each : amount;
 }
 
+// Works out a dish's nutrition from its ingredients: macros (protein, carbs, fat, kJ), food groups
+// (serves of veg, fruit and so on) and tags (like "gluten" or "dairy", used for allergies).
 function nutrition(per) {
   const m = { p: 0, c: 0, f: 0, kj: 0 };
   const g = { veg: 0, fruit: 0, grain: 0, protein: 0, dairy: 0, fv: 0, leg: 0, red: 0, fish: 0, oily: 0, side: 0, gc: 0, mp: 0, ca: 0 };
@@ -93,6 +97,7 @@ function nutrition(per) {
   return { macros, groups, tags: [...tags].sort() };
 }
 
+// What one serve costs, from each ingredient's pack price (in Australian dollars).
 function cost(per) {
   let sum = 0;
   for (const [key, amount] of per) {
@@ -185,6 +190,7 @@ function checkDish(raw, taken) {
   return { item: dish };
 }
 
+// Checks a new snack the same way as checkDish: {snack} if it's fine, or {error} saying why not.
 function checkSnack(raw, taken) {
   if (!raw || typeof raw !== 'object') return { error: 'not a snack' };
   const what = text(raw.what, 4, 60);
@@ -199,6 +205,7 @@ function checkSnack(raw, taken) {
   return { item: { what, per: p.per, kind: raw.kind, kids: raw.kids !== false, macros: n.macros, groups: n.groups, tags: n.tags } };
 }
 
+// Checks a new exercise (name, type, level, equipment, steps): {exercise} if it's fine, or {error}.
 function checkExercise(raw, taken) {
   if (!raw || typeof raw !== 'object') return { error: 'not an exercise' };
   const name = text(raw.name, 3, 50);
@@ -255,6 +262,8 @@ function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; }
 }
 
+// Saves an object as a JSON file. It writes a temporary copy first, then swaps it in, so a crash
+// half-way through never leaves a broken file.
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = file + '.tmp';
@@ -262,6 +271,7 @@ function writeJson(file, value) {
   fs.renameSync(tmp, file);
 }
 
+// Reads one of this file's settings (all start with "library:"), or the fallback if it isn't set.
 function setting(key, fallback) {
   try {
     const v = db.getSetting('library:' + key);
@@ -270,6 +280,7 @@ function setting(key, fallback) {
     return fallback;
   }
 }
+// Saves one of this file's settings.
 function setSetting(key, value) {
   db.setSetting('library:' + key, JSON.stringify(value));
 }
@@ -359,6 +370,7 @@ async function checkCommunity() {
 
 let job = null;   // {state: "running"} while writing, or {state: "failed", error}
 
+// The family's chosen AI, ready to use, or null if they plan without AI.
 function familyAi() {
   const ready = assistant.setup({});   // the family's AI, not anyone's own key
   return ready && ready.enabled ? ready : null;
@@ -402,6 +414,8 @@ function exerciseGaps() {
   return all.sort((a, b) => a[1] - b[1]).slice(0, 8).map(x => x[0]);
 }
 
+// The instructions for the AI that writes new library entries: the rules, the ingredient list it
+// must use, and an example dish.
 function systemText() {
   const country = require('./appearance').region().where;
   const ingredients = Object.entries(LIB.ingredients).map(([key, i]) =>
@@ -427,6 +441,7 @@ Exercises: {"name", "type" (one of ${EX_TYPES.join(', ')}), "equipment" (one of 
 Reply as {"dishes": [...], "snacks": [...], "exercises": [...]}.`;
 }
 
+// The request itself: what to write, what is already in the library, and the family's tastes.
 function userText(ctx) {
   const lines = [
     'New ones are needed. Write 3 dinners, 1 breakfast and 1 lunch, 1 snack, and 3 exercises.',
@@ -438,6 +453,8 @@ function userText(ctx) {
   return lines.concat(familyHints(ctx)).join('\n');
 }
 
+// Sends the instructions and request to the family's AI and returns its reply as text. Claude
+// uses Anthropic's own library; the other AIs share one OpenAI-style way of asking.
 async function askAi(ready, system, user) {
   if (ready.provider === 'anthropic') {
     const msg = await ready.client.messages.create({
@@ -449,6 +466,8 @@ async function askAi(ready, system, user) {
   return msg.content.filter(b => b.type === 'text').map(b => b.text).join('');
 }
 
+// Asks the AI for new entries, checks each one, and keeps those that pass as "waiting for an
+// admin" (Plan setup shows them to add or discard).
 async function writeWithAi(ctx) {
   const ready = familyAi();
   if (!ready) throw new Error('The family isn’t using an AI. Choose one on Plan setup first.');
@@ -475,6 +494,7 @@ async function writeWithAi(ctx) {
   return n;
 }
 
+// Starts writing new entries in the background (it takes a minute or two). False if already running.
 function startWriting(ctx) {
   if (job && job.state === 'running') return false;
   job = { state: 'running', started: Date.now() };
@@ -524,6 +544,8 @@ function send(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
+// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
+// if it is far bigger than expected.
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let t = '';
@@ -533,6 +555,7 @@ function readBody(req) {
   });
 }
 
+// Everything the Plan setup card shows: the switches, the last results and what's waiting.
 function status() {
   const ready = familyAi();
   return {
@@ -549,6 +572,8 @@ function status() {
   };
 }
 
+// Answers the requests this file looks after. server.js offers every /api/ request to each
+// file in turn: this returns true if it answered, or false to let the next file try.
 async function handle(req, res, urlPath, url, me, ctx) {
   if (!urlPath.startsWith('/api/library/updates')) return false;
   if (!me.admin) { send(res, 403, { error: 'Only an admin can change the meal library.' }); return true; }

@@ -200,6 +200,8 @@ FORTNIGHT = {
 FORTNIGHTS = [(0, 1, 2), (3, 4, 5)]
 
 
+# Reads the plan named on the command line and prints anything a week's recipes need that its
+# shopping list (plus what's carried over) doesn't buy enough of.
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)

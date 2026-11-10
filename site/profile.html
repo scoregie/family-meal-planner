@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  About me: the questions each person answers so the plan can suit them.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -307,6 +313,7 @@ function render() {
 
 // ---------- Reminders (for people who said reminders would help) ----------
 var reminderEl = null;
+// The box that suggests turning on reminders (filled in by updateReminders).
 function reminderBox() {
   reminderEl = el("div", "remind");
   reminderEl.hidden = true;
@@ -322,6 +329,7 @@ function planKeyFor(person) {
   })[0] || null;
 }
 
+// Shows or hides the reminders suggestion, depending on the reminders answer.
 function updateReminders() {
   if (!reminderEl) return;
   var answer = ANSWERS.reminders || "";
@@ -365,6 +373,7 @@ function load(names) {
 
 // "I'm finished": tells the family's admins these answers are ready for drafting the plan.
 var FINISHED = false;
+// Shows the "I'm finished" card once enough questions are answered.
 function showFinish() {
   var mine = PERSON === ME.person;
   var name = mine ? "you" : $("sub").textContent.replace(/’s answers$/, "");

@@ -27,6 +27,8 @@ let ING = LIB.ingredients;   // ingredients with this country's names, packs and
 let MISSING = new Set();     // ingredients that are hard to find there
 let CURRENCY = 'AUD';
 let LOCALE = 'en-AU';
+// Sets up the module for one country: its ingredient names, pack sizes and prices, what's hard to
+// find there, and its currency. Returns that country's price list (null for Australia).
 function useCountry(country, locale) {
   LOCALE = locale || 'en-AU';
   const c = PRICES.countries && PRICES.countries[country];
@@ -93,6 +95,7 @@ function list(v) {
   return v ? [String(v)] : [];
 }
 
+// A number from an answer ("1,200" gives 1200), or null if it isn't one.
 function num(v) {
   const n = parseFloat(String(v === undefined || v === null ? '' : v).replace(/,/g, ''));
   return Number.isFinite(n) ? n : null;
@@ -119,6 +122,7 @@ function words(text) {
     .map(w => w.replace(/(ies)$/, 'y').replace(/(oes)$/, 'o').replace(/s$/, ''));
 }
 
+// Rounds to the nearest step: round(237, 25) gives 225.
 function round(n, step) {
   return Math.round(n / step) * step;
 }
@@ -181,6 +185,8 @@ const MEDS = {
 const ALLERGY = { Peanuts: 'peanut', 'Tree nuts': 'treenut', Milk: 'milk', Eggs: 'egg', 'Wheat or gluten': 'gluten', Soy: 'soy', Fish: 'fish', Shellfish: 'shellfish', Sesame: 'sesame', Lactose: 'lactose' };
 const ALLERGY_WORDS = { peanut: 'peanuts', treenut: 'tree nuts', milk: 'milk', egg: 'eggs', gluten: 'gluten', soy: 'soy', fish: 'fish', shellfish: 'shellfish', sesame: 'sesame', lactose: 'lactose' };
 
+// Turns one person's About me answers into rules for the builder: allergies and diets, foods they
+// won't eat, how they like to eat, cooking time, budget, health conditions and so on.
 function rulesFor(p) {
   const a = p.answers || {};
   const age = num(a.age);
@@ -589,6 +595,8 @@ function build(people, opts) {
   return { plan, notesForAdmin: forAdmin.join(' ') };
 }
 
+// One try at a whole plan: picks dinners, lunches, breakfasts and snacks for each week, makes the
+// recipes and shopping lists, and adds exercise. build() calls this again (cheaper) if it's over budget.
 function attempt(people, rules, house, rnd, repeat, forAdmin) {
   const byMeal = m => LIB.dishes.filter(d => d.meal === m && available(d) && canCook(d, house) && !(d.tags || []).some(t => house.hard.has(t)));
   const dinners = byMeal('dinner');
@@ -892,6 +900,7 @@ const EACH = { egg: 'eggs', tomato: 'tomatoes', wraps: 'wraps', rolls: 'bread ro
   lemon: 'lemons', lettuce: 'cos lettuces', cucumber: 'Lebanese cucumbers', capsicum: 'red capsicums', zucchini: 'zucchinis',
   broccoli: 'heads of broccoli', celery: 'half bunches of celery', cauliflower: 'cauliflowers', 'spring onion': 'bunches of spring onions' };
 
+// The name and counting word for an ingredient in a recipe ("tomato", "tomatoes").
 function labelOf(k) {
   return { name: k.replace(/ big$/, '').replace('stock', 'stock').replace('veg stock', 'vegetable stock'), each: EACH[k] || k };
 }

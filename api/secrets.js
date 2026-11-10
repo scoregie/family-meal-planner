@@ -21,6 +21,7 @@ function readKey() {
   if (saved.length !== 32) throw new Error(KEY_FILE + ' doesn’t hold a valid key. Restore it from a backup; saved AI keys can’t be read without it.');
   return saved;
 }
+// The key, read once and then remembered (made the first time, see readKey above).
 function getKey() {
   if (key) return key;
   try {

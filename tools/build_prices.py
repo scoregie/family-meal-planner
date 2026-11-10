@@ -52,6 +52,7 @@ FISH = {'salmon', 'white fish', 'crumbed fish', 'tuna', 'tuna big'}
 
 # Staples with a typical local price: {key: (name, pack in the ingredient's unit, price)}.
 S = 'chicken breast', 'beef mince', 'milk', 'egg', 'bread', 'rice', 'cheddar', 'butter', 'banana', 'potato', 'salmon'
+# Pairs the staple prices given below with their ingredient keys (S lists the keys in order).
 def staples(*rows):
     return {k: r for k, r in zip(S, rows) if r}
 ANCHORS = {
@@ -194,6 +195,7 @@ WORDS = {
 STYLE = {'au': 'au', 'nz': 'nz', 'us': 'us', 'ca': 'us'}
 
 SIZE = re.compile(r'^(.*?)(?:\s+((?:\d+-pack)?\s*(?:\d[\d.]*\s?(?:kg|g|L|ml))?(?:\s+can)?))?$')
+# Splits a shop name into the name and its size: "Pasta 500 g" gives ("Pasta", "500 g").
 def split(name):
     m = SIZE.match(name)
     return m.group(1).strip(), (m.group(2) or '').strip()
@@ -224,12 +226,14 @@ def us_size(size, pack, unit):
         return label, None
     return label, new
 
+# Rounds a price the way shops show it: yen to 10, won to 100, Nordic crowns to 0.50, others to 5 cents.
 def round_price(p, currency):
     if currency == 'JPY': return int(round(p / 10) * 10) or 10
     if currency == 'KRW': return int(round(p / 100) * 100) or 100
     if currency in ('SEK', 'NOK', 'DKK'): return round(round(p * 2) / 2, 2) or 0.5
     return round(round(p * 20) / 20, 2) or 0.05
 
+# Makes api/library-prices.json for every country in site/regions.js except Australia.
 def build():
     regions = open(os.path.join(ROOT, 'site', 'regions.js'), encoding='utf-8').read()
     countries = {}

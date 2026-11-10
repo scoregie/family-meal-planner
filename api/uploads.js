@@ -55,6 +55,7 @@ or removed here directly. The app just lists what is in these folders.
 // Makes every person's folders up front, so the layout is easy to see on the server.
 // It only does the work again when the list of people changes.
 let foldersMadeFor = '';
+// Makes the uploads folder and a folder for each person (once per list of people), with a README.
 function ensureRoot(people) {
   const key = people.join(',');
   if (foldersMadeFor === key) return;

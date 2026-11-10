@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  Plan setup (admins): the country, everyone's About me progress, choosing an AI, drafting and approving the plan, and new library meals.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -128,6 +134,7 @@ function $(id) {
   return document.getElementById(id);
 }
 
+// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
 function el(tag, cls, txt) {
   var e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -135,6 +142,8 @@ function el(tag, cls, txt) {
   return e;
 }
 
+// Asks the server for something (or sends it a change) and waits for the answer. Returns a
+// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
 function api(method, url, body) {
   return fetch(url, {
     method: method,
@@ -149,6 +158,7 @@ function api(method, url, body) {
   });
 }
 
+// Shows a short message at the bottom of the screen (red for errors), then hides it.
 function status(text, isError) {
   var s = $("status");
   s.textContent = text;
@@ -158,6 +168,7 @@ function status(text, isError) {
   status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 3000);
 }
 
+// An amount of money in the draft plan's currency, rounded to whole units.
 function money(n) {
   return Appearance.money(n, DATA && DATA.draft && DATA.draft.currency, true);
 }
@@ -194,6 +205,7 @@ var AI_ABOUT = {
 };
 var aiModels = {};   // provider -> [models], once loaded
 
+// Step 2: which AI the family uses (or none), with what each one costs and needs.
 function renderAI() {
   var box = $("aiBody");
   box.textContent = "";
@@ -226,6 +238,7 @@ function renderAI() {
   box.appendChild(el("p", "note", "To set up an AI, add its key to .env on the server and restart (see the README). Chat subscriptions like ChatGPT Plus or Claude Pro can’t be used by other apps; each company sells API access separately, paid per use. If you run Claude Code on the server, it can draft the plan on your Claude subscription instead: see “Drafting the plan with Claude Code” in the README. Its draft shows up here to approve."));
 }
 
+// What happens when an AI is chosen: save it, or show its model list first.
 function pickAI(p) {
   if (p === "none" || p === "anthropic") {
     saveAI(p, p === "anthropic" ? (DATA.ai.family.provider === "anthropic" && DATA.ai.family.model) || "" : "");
@@ -263,6 +276,7 @@ function showModels(p, current, saveFirst) {
   });
 }
 
+// Saves the family's AI choice on the server.
 function saveAI(p, model) {
   api("PUT", "/api/plan/ai", { provider: p, model: model }).then(function (got) {
     DATA.ai.family = got.family;
@@ -320,6 +334,7 @@ function renderDraft() {
   box.appendChild(note);
   var row = el("div", "row");
   var ready = all > 0 && finished === all;
+  // Starts making the plan, with the AI or the built-in builder, after checking with the admin.
   function start(how, button) {
     if (!ready && !confirm("Not everyone has finished their answers. Make the plan anyway?")) return;
     if (DATA.draft && !confirm("There’s already a draft waiting for approval. Replace it with a new one?")) return;
@@ -414,6 +429,7 @@ function renderReview() {
 var LIB = null;
 var libTimer = 0;
 
+// Gets the "New meals and exercises" card's details from the server.
 function loadLibrary() {
   return api("GET", "/api/library/updates").then(function (d) {
     LIB = d;
@@ -426,11 +442,13 @@ function loadLibrary() {
   });
 }
 
+// A date and time, or "never".
 function when(ms) {
   if (!ms) return "never";
   return new Date(ms).toLocaleString(Appearance.locale(), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 }
 
+// An on/off switch with a label, calling change(on) when it's flipped.
 function libSwitch(label, on, change) {
   var l = el("label", "switch");
   var box = el("input");
@@ -442,11 +460,13 @@ function libSwitch(label, on, change) {
   return l;
 }
 
+// Saves a library setting and redraws the card.
 function libPut(body) {
   api("PUT", "/api/library/updates", body).then(function (d) { LIB = d; renderLibrary(); status("Saved"); })
     .catch(function (e) { status(e.message, true); });
 }
 
+// Asks the server to do something with the library (check now, write, add, discard), then redraws.
 function libPost(path, body, done) {
   return api("POST", "/api/library/updates/" + path, body || {}).then(function (d) {
     LIB = d;
@@ -456,6 +476,7 @@ function libPost(path, body, done) {
   }).catch(function (e) { status(e.message, true); renderLibrary(); });
 }
 
+// Energy in kJ as text, like "2,760 kJ".
 function kjOf(m) { return m ? Math.round(m.kj).toLocaleString(Appearance.locale()) + " kJ" : ""; }
 
 // One waiting addition, folded: what it is, then its ingredients and steps (or how-to).
@@ -496,8 +517,10 @@ function pendingItem(p) {
   return d;
 }
 
+// Capital first letter: "dinner" gives "Dinner".
 function cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
 
+// Draws the "New meals and exercises" card: the two switches, the last results, and anything waiting.
 function renderLibrary() {
   var box = $("libBody");
   box.textContent = "";
@@ -589,6 +612,7 @@ function renderCountry() {
   $("countryNote").textContent = "Plans use shop names, pack sizes and prices from " + Appearance.region().where + ". Draft a new plan after changing it.";
 }
 
+// Gets everything the page shows from the server, then draws each step.
 function load() {
   return api("GET", "/api/plan/setup").then(function (d) {
     DATA = d;

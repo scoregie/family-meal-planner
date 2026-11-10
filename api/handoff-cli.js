@@ -15,12 +15,14 @@ const db = require('./db');
 const DIR = '/data/claude-code';
 const BASE = 'http://127.0.0.1:' + (process.env.PORT || 3000);
 
+// A login cookie for the owner (or an admin), so this tool can talk to the app as them.
 function cookie() {
   const owner = db.listAccounts().find(a => a.role === 'owner') || db.listAccounts().find(a => a.role === 'admin');
   if (!owner) throw new Error('No owner account yet. Create the family\'s first account in the app first.');
   return auth.loginCookie({ headers: {} }, 'acct-' + owner.id).split(';')[0];
 }
 
+// Sends a request to the running app and returns its answer (or stops with its error).
 async function call(method, url, body) {
   const res = await fetch(BASE + url, {
     method,
@@ -32,6 +34,8 @@ async function call(method, url, body) {
   return data;
 }
 
+// "prompt" writes the drafting instructions to data/claude-code/prompt.md; "submit" sends
+// data/claude-code/plan.json back to the app as a draft.
 async function main() {
   const [what, arg] = process.argv.slice(2);
   fs.mkdirSync(DIR, { recursive: true });

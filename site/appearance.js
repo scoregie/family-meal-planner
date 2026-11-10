@@ -45,10 +45,12 @@
   // The household's country (chosen by the owner) sets the currency, number and date style, the
   // energy unit to start with and which grocery stores are offered. The data is in regions.js.
   var R = window.REGIONS || { countries: {}, stores: {} };
+  // The household's country id, like "au" (remembered from the server; Australia if not known yet).
   function country() {
     var c = read("country").id;
     return R.countries[c] ? c : "au";
   }
+  // The household's country with its details from regions.js (name, currency, locale, energy, stores).
   function region() {
     return R.countries[country()] || { name: "Australia", currency: "AUD", locale: "en-AU", energy: "kJ", guidelines: "au", stores: ["coles"] };
   }
@@ -72,6 +74,7 @@
   function siteSearch(site) {
     return function (q) { return "https://www.google.com/search?q=" + encodeURIComponent("site:" + site + " " + q); };
   }
+  // A store's search link maker from its address pattern: {q} is replaced by the item's name.
   function template(t) {
     return function (q) { return t.replace("{q}", encodeURIComponent(q)); };
   }
@@ -91,6 +94,7 @@
     return (linked.length ? linked : list).slice(0, 1);
   }
 
+  // A list of store ids with unknown ones and repeats removed.
   function cleanStores(list) {
     return Array.isArray(list) ? list.filter(function (k, i) { return STORES[k] && list.indexOf(k) === i; }) : [];
   }
@@ -106,10 +110,12 @@
 
   // Energy units: kilojoules or Calories. The plan stores kJ; this only changes what's shown.
   var ENERGY = { kJ: { name: "Kilojoules (kJ)", short: "kJ" }, kcal: { name: "Calories (kcal)", short: "kcal" } };
+  // The energy units chosen: {mine: this person's, house: the household's} ('' = not chosen).
   function energyChoices() {
     var e = read("energy");
     return { mine: ENERGY[e.mine] ? e.mine : "", house: ENERGY[e.house] ? e.house : "" };
   }
+  // The energy unit to show: your own choice, else the household's, else the country's usual one.
   function energyUnit() {
     var c = energyChoices();
     return c.mine || c.house || region().energy || "kJ";
@@ -125,6 +131,7 @@
 
   var DEFAULTS = { colour: "green", font: "atkinson", size: "normal", theme: "auto" };
 
+  // Reads a saved choice from the browser's storage (an empty object if there isn't one).
   function read(key) {
     try {
       return JSON.parse(localStorage.getItem(key)) || {};
@@ -133,6 +140,7 @@
     }
   }
 
+  // Saves a choice in the browser's storage.
   function write(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
@@ -171,6 +179,8 @@
       ";--chip:" + soft + ";--mine:" + soft + ";--drop:" + soft + ";";
   }
 
+  // Puts a look on the page: light or dark, colour, font and text size, plus the phone's status bar
+  // colour. It does this by writing a few CSS rules into a <style> element.
   function apply(look) {
     look = look || current();
     var root = document.documentElement;
