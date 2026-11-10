@@ -10,6 +10,11 @@ A fix for plans built without AI. Restart the api after updating (`docker restar
 - **Fixed: "Australian classics".** Choosing it in "Kinds of food you'd like more of" did nothing in
   the built-in plan builder, because its dishes are labelled "Australian". It now favours them as
   intended. A new test checks that every cuisine choice matches dishes in the library.
+- **10 French dishes** in the shared meal library: omelette, French toast, quiche, croque monsieur,
+  niçoise salad, lentil soup, chicken ratatouille, chicken fricassee, salmon parcels and a
+  slow-cooker beef bourguignon. Servers download them within 2 weeks.
+- **Fixed: `tools/library-pr.sh`** crashed whenever the shared library already had exercises, so
+  sharing new meals had stopped working.
 
 ## v1.4.3 (2026-11-10)
 
