@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  Ask AI: chat with the AI about the plan, and see suggested changes waiting for an admin.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -158,6 +164,7 @@ function $(id) {
   return document.getElementById(id);
 }
 
+// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
 function el(tag, cls, txt) {
   var e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -165,6 +172,8 @@ function el(tag, cls, txt) {
   return e;
 }
 
+// Asks the server for something (or sends it a change) and waits for the answer. Returns a
+// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
 function api(method, url, body) {
   return fetch(url, {
     method: method,
@@ -179,6 +188,7 @@ function api(method, url, body) {
   });
 }
 
+// A time for the chat list: just the time for today, else the date.
 function when(ms) {
   var d = new Date(ms);
   var today = new Date();
@@ -198,6 +208,8 @@ function inline(parent, text) {
   });
 }
 
+// Shows the AI's answer with simple formatting: **bold**, bullet lists and paragraphs. It only
+// makes plain page elements, so nothing in an answer can run as code.
 function markdown(box, text) {
   box.textContent = "";
   var list = null;
@@ -238,6 +250,8 @@ function markdown(box, text) {
 // ---------- Suggested changes ----------
 var STATUS_NAMES = { draft: "Draft", open: "Waiting for an admin", done: "Applied", declined: "Declined", withdrawn: "Withdrawn" };
 
+// A card for a suggested change to the plan: what would change, and buttons to send it to the
+// admins, apply it (admins) or drop it.
 function proposalCard(r) {
   var card = el("div", "prop");
   card.dataset.request = r.id;
@@ -259,6 +273,7 @@ function proposalCard(r) {
 
   var acts = el("div", "acts");
   var open = r.status === "draft" || r.status === "open";
+  // A button on the card that asks the server to do something with the change, then refreshes.
   function button(label, primary, action, ask) {
     var b = el("button", "btn small" + (primary ? " primary" : ""), label);
     b.type = "button";
@@ -296,6 +311,7 @@ function scrollDown() {
   window.scrollTo({ top: document.body.scrollHeight });
 }
 
+// The welcome shown in a new chat, with a few example questions to tap.
 function hello() {
   var log = $("log");
   log.textContent = "";
@@ -314,6 +330,7 @@ function hello() {
   log.appendChild(box);
 }
 
+// Shows a whole saved chat.
 function showChat(chat) {
   var log = $("log");
   log.textContent = "";
@@ -328,6 +345,7 @@ function showChat(chat) {
   scrollDown();
 }
 
+// Opens a saved chat (or starts a new one when id is empty).
 function openChat(id) {
   $("chats").removeAttribute("open");
   if (!id) {
@@ -343,6 +361,7 @@ function openChat(id) {
   }).catch(function (e) { toast(e.message, true); });
 }
 
+// The list of earlier chats to go back to.
 function renderChatList() {
   var list = $("chatList");
   list.textContent = "";
@@ -368,6 +387,7 @@ function renderChatList() {
   }
 }
 
+// Shows how many messages are left today (there's a daily limit to keep AI costs down).
 function leftToday() {
   if (!STATUS) return;
   var left = Math.max(0, STATUS.limit - STATUS.used);
@@ -379,6 +399,7 @@ function readEvents(response, onEvent) {
   var reader = response.body.getReader();
   var decoder = new TextDecoder();
   var buffer = "";
+  // Reads the next piece of the answer as the server streams it, until it's complete.
   function pump() {
     return reader.read().then(function (part) {
       buffer += decoder.decode(part.value || new Uint8Array(), { stream: !part.done });
@@ -395,6 +416,8 @@ function readEvents(response, onEvent) {
   return pump();
 }
 
+// Sends what you typed and shows the answer as it arrives, including "Looking at the plan…"
+// steps while the AI uses its tools.
 function sendMessage() {
   var text = $("text").value.trim();
   if (!text || BUSY) return;
@@ -411,6 +434,7 @@ function sendMessage() {
   var said = "";
   scrollDown();
 
+  // The box the answer's text goes into, made when the first words arrive.
   function textBox() {
     if (!box) {
       box = el("div", "m assistant");
@@ -467,6 +491,7 @@ function grow() {
 
 // ---------- Requests ----------
 var REQUESTS = [];
+// Gets the suggested changes (yours, or everyone's for admins) for the Requests tab.
 function loadRequests() {
   return api("GET", "/api/requests").then(function (got) {
     REQUESTS = got.requests;
@@ -482,6 +507,7 @@ function loadRequests() {
   }).catch(function () { /* shown on the next try */ });
 }
 
+// Switches between the Chat and Requests tabs.
 function showTab(which) {
   var chat = which === "chat";
   $("chatView").hidden = !chat;
@@ -512,6 +538,7 @@ function toast(text, isError) {
   toast.timer = setTimeout(function () { t.hidden = true; }, isError ? 6000 : 3000);
 }
 
+// Gets this person's chats and how many messages are left today.
 function loadStatus() {
   return api("GET", "/api/assistant?person=" + encodeURIComponent(PERSON)).then(function (s) {
     STATUS = s;
@@ -520,6 +547,7 @@ function loadStatus() {
   });
 }
 
+// For admins: buttons to choose whose plan the chat is about (hidden with only one person).
 function renderPicker(people) {
   var box = $("people");
   box.textContent = "";

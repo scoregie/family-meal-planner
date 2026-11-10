@@ -12,6 +12,7 @@ const crypto = require('crypto');
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// Writes a value in Apple's "plist" format (the XML a Shortcut file is made of).
 function plist(v, pad = '') {
   if (v === true) return pad + '<true/>';
   if (v === false) return pad + '<false/>';

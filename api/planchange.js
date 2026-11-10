@@ -13,6 +13,7 @@
 const MAX_STEPS = 60;
 const BAD_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 
+// True for a plain object like {a: 1} (not a list and not null).
 function isObj(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
 }

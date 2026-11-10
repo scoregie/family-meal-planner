@@ -38,9 +38,11 @@ function country() {
   const c = db.getSetting('country');
   return REGIONS.countries[c] ? c : 'au';
 }
+// The household's country with its details from regions.js: {id, name, currency, locale, energy, stores...}.
 function region() {
   return Object.assign({ id: country() }, REGIONS.countries[country()]);
 }
+// Saves the household's country. Returns false for a country that isn't in regions.js.
 function setCountry(id) {
   if (!REGIONS.countries[id]) return false;
   db.setSetting('country', id);
@@ -57,6 +59,7 @@ function defaultStores() {
   return (linked.length ? linked : list).slice(0, 1);
 }
 
+// A saved list of stores (the household's, or one person's), keeping only stores in this country.
 function readStores(key) {
   try {
     const list = JSON.parse(db.getSetting(key) || '[]');
@@ -82,10 +85,12 @@ function storesFor(person) {
 // Energy units: "kJ" (kilojoules) or "kcal" (Calories). Each person's choice, else the
 // household's, else the country's usual unit. The plan and database always use kJ; this only changes what's shown.
 const ENERGY = ['kJ', 'kcal'];
+// The energy units chosen: {house: the household's, mine: this person's own} ('' = not chosen).
 function energy(person) {
   const read = key => (ENERGY.includes(db.getSetting(key)) ? db.getSetting(key) : '');
   return { house: read('energy'), mine: read('energy:' + person) };
 }
+// The energy unit to use for a person: their own choice, else the household's, else the country's.
 function energyFor(person) {
   const e = energy(person);
   return e.mine || e.house || region().energy || 'kJ';
@@ -96,6 +101,7 @@ function energyFor(person) {
 // {"turkey mince": {"coles": "https://www.coles.com.au/product/..."}}
 const PIN_HOSTS = {};
 for (const [k, s] of Object.entries(REGIONS.stores)) if (s.host) PIN_HOSTS[k] = s.host;
+// All pinned product pages, {item: {store: link}} (an empty object if none or unreadable).
 function pins() {
   try {
     const p = JSON.parse(db.getSetting('pins') || '{}');
@@ -119,11 +125,15 @@ function cleanPin(store, link) {
 // The icon files, and the size each must be.
 const ICONS = { icon512: ['icon-512.png', 512], icon192: ['icon-192.png', 192], icon180: ['apple-touch-icon.png', 180] };
 
+// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
+// was sent) and an object, turned into JSON text.
 function send(res, code, obj) {
   res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(obj));
 }
 
+// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
+// if it is far bigger than expected.
 function body(req, limit) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -145,6 +155,7 @@ function body(req, limit) {
   });
 }
 
+// The household's look chosen by an admin ({colour, font, size}), keeping only known choices.
 function house() {
   try {
     const saved = JSON.parse(db.getSetting('appearance') || '{}');
@@ -196,6 +207,8 @@ function writeFile(file, bytes) {
   fs.renameSync(tmp, file);
 }
 
+// Answers the requests this file looks after. server.js offers every /api/ request to each
+// file in turn: this returns true if it answered, or false to let the next file try.
 async function handle(req, res, urlPath, url, me) {
   if (!['/api/appearance', '/api/appearance/icon', '/api/appearance/stores', '/api/appearance/energy', '/api/appearance/pins', '/api/appearance/country'].includes(urlPath)) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {

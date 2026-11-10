@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  The exercise library: every exercise the plan builder can use, and which suit you.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -73,6 +79,11 @@ input[type=search]{flex:1;min-width:10rem}
 </main>
 <script>
 var TYPES = [["all", "All"], ["legs", "Legs"], ["push", "Push"], ["pull", "Pull"], ["core", "Core"], ["balance", "Balance and calves"], ["arms", "Arms"], ["stretch", "Warm-ups and stretches"]];
+// The Exercise library page: every exercise the built-in plan builder can use, filtered by kind.
+// It marks which suit the person (from their About me answers) and lets them leave any out of
+// future plans. The data comes from GET /api/exercises (api/exercises.js).
+
+// Which filter button each exercise type goes under, and labels for equipment, level and flags.
 var GROUP = { squat: "legs", lunge: "legs", hinge: "legs", push: "push", pull: "pull", core: "core", calf: "balance", balance: "balance", arms: "arms", warmup: "stretch", mobility: "stretch" };
 var EQUIP = { none: "No equipment", bands: "Bands", dumbbells: "Dumbbells", gym: "Gym" };
 var LEVEL = ["", "Easier", "Medium", "Harder"];
@@ -85,12 +96,15 @@ var DATA = null, PERSON = "", TYPE = "all";
 try { TYPE = localStorage.getItem("exlib-type") || "all"; } catch (e) {}
 
 function $(id) { return document.getElementById(id); }
+// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
 function el(tag, cls, txt) {
   var n = document.createElement(tag);
   if (cls) n.className = cls;
   if (txt != null) n.textContent = txt;
   return n;
 }
+// Asks the server for something (or sends it a change) and waits for the answer. Returns a
+// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
 function api(method, url, body) {
   var o = { method: method, headers: { "X-Requested-With": "app" }, cache: "no-store" };
   if (body) { o.headers["Content-Type"] = "application/json"; o.body = JSON.stringify(body); }
@@ -102,11 +116,13 @@ function api(method, url, body) {
     });
   });
 }
+// Shows an error message at the top (or clears it when text is empty).
 function showErr(text) {
   $("msg").textContent = "";
   if (text) $("msg").appendChild(el("div", "msg", text));
 }
 
+// The row of buttons for each kind of exercise (legs, push, pull...), to filter the list.
 function drawTypes() {
   var row = $("types");
   row.textContent = "";
@@ -124,6 +140,8 @@ function drawTypes() {
   });
 }
 
+// Draws the list of exercises for the chosen kind, marking which suit the person and which they
+// left out, with a button to leave each one out (or bring it back).
 function draw() {
   var list = $("list");
   list.textContent = "";
@@ -170,6 +188,7 @@ function draw() {
   if (!shown.length) list.appendChild(el("p", "note", fitOnly ? "Nothing here suits you. Untick “Only ones that suit me” to see them all." : "Nothing matches."));
 }
 
+// Gets the exercise library and what suits this person, then draws the list.
 function load() {
   return api("GET", "/api/exercises?person=" + encodeURIComponent(PERSON)).then(function (d) {
     DATA = d;

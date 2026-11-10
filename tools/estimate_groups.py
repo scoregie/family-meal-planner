@@ -69,10 +69,12 @@ EXTRA_NUTRITION = {
 COOKED = {'red': 0.7, 'processed': 0.85}   # cooked weight from raw, for the UK's 70 g
 
 
+# Protein, carbs and fat per 100 g for a food, from the tables above (zeros if it isn't listed).
 def nutrition(food):
     return NUTRITION.get(food) or EXTRA_NUTRITION.get(food) or (0, 0, 0)
 
 
+# A fresh set of food-group totals, all zero.
 def empty():
     return {k: 0.0 for k in ('veg', 'fruit', 'grain', 'protein', 'dairy', 'fv', 'leg', 'red', 'fish', 'oily', 'side', 'gc', 'mp', 'ca')}
 
@@ -117,6 +119,7 @@ def add_food(totals, food, grams):
     return True
 
 
+# The totals divided by the number of serves and rounded (serves to 1 decimal place, grams to whole numbers).
 def rounded(totals, serves):
     out = {}
     for k, v in totals.items():
@@ -251,6 +254,8 @@ def snack_groups(text):
     return rounded(totals, 1), unknown
 
 
+# Reads the plan named on the command line, works out food groups for every dish, and prints them
+# (or saves them into the plan with --write).
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)

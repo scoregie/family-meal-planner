@@ -1,12 +1,17 @@
 # Helper tools
 
-Small Python scripts for checking and filling in `site/plan.json`. They need Python 3 and nothing else. Run them from the project folder.
+Scripts you run by hand, from the project folder. The Python ones need Python 3 and nothing else.
 
 | Script | What it does | Changes the plan? |
 | --- | --- | --- |
 | `estimate_macros.py` | Estimates protein, carbs and fat for one serve of each recipe, from the recipe's ingredients. | Only with `--write` |
 | `estimate_groups.py` | Estimates the food groups in each dish and snack (vegetables, fruit, grains, protein foods, dairy and more), for the healthy-eating guidelines on the Macros tab. | Only with `--write` |
 | `check_shopping.py` | Checks each week's shopping list buys enough for that week's recipes and snacks. | Never |
+| `build_library.py` | Builds `api/library.json` (the plan builder's ingredients, meals and snacks) from USDA nutrition data. See the README. | No (writes the library) |
+| `build_prices.py` | Builds `api/library-prices.json`: local shop names, pack sizes and prices for each country. Edit its tables and run it again. | No (writes the price list) |
+| `claude-code-plan.sh` | Lets Claude Code draft the family's plan (`prompt`, then `submit`). See CLAUDE.md. | No (makes a draft to approve) |
+| `library-pr.sh` | Shares new library meals and exercises with everyone through a GitHub pull request. | No |
+| `offsite-backup.sh` | Encrypts the whole app folder and uploads it to a private GitHub repository. See the README. | No |
 
 ## estimate_macros.py
 

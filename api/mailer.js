@@ -11,10 +11,12 @@
 let transport = null;
 let problem = '';
 
+// True if .env has everything needed to send email (SMTP_URL, MAIL_FROM and APP_URL).
 function configured() {
   return !!(process.env.SMTP_URL && process.env.MAIL_FROM && process.env.APP_URL);
 }
 
+// The email sender, made the first time it's needed (null if the nodemailer package is missing).
 function getTransport() {
   if (transport) return transport;
   try {

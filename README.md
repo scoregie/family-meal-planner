@@ -52,6 +52,8 @@ Two small Docker containers. The only npm package is Anthropic's SDK for the opt
 - **A small Node server** (`api/`) handles logins, ticks, ratings, uploads, progress and the Claude features. This fortnight's ticks are in `data/state.json`; everything else (accounts, history, answers, measurements, chats, settings) is in a SQLite database, `data/app.db`, built into Node.
 - The plan itself is one file, `site/plan.json`, which Plan setup writes for you (or you can write it by hand, see below).
 
+New to the code? [docs/how-it-works.md](docs/how-it-works.md) explains, for beginners, how the pages and the server fit together, what happens when you tap something, where data is kept, and what every file does. Each file also starts with a plain note about what it does.
+
 ## Quick start
 
 You need a Linux machine (or a Proxmox container, see below) with Docker.

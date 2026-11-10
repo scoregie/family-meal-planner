@@ -1,7 +1,11 @@
 # Family Health Planner
 
 A self-hosted family meal, shopping and exercise planner. `api/` is the Node server (no framework),
-`site/` the pages Caddy serves, `docs/plan-format.md` the plan.json format. The README covers the rest.
+`site/` the pages Caddy serves, `docs/plan-format.md` the plan.json format. `docs/how-it-works.md`
+explains the code for beginners. The README covers the rest.
+
+The owner wants the code readable by someone with minimal coding experience: every file starts with
+a plain note saying what it does, and every new function gets a one-line plain comment above it.
 
 ## "Draft our family plan with Claude Code"
 

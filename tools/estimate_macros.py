@@ -174,6 +174,8 @@ def leftovers_source(dish, recipe_names):
     return None
 
 
+# Reads the plan named on the command line, estimates macros for dishes that have none, and prints
+# them (or saves them into the plan with --write).
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)

@@ -84,11 +84,15 @@ async function checkKey(apiKey) {
   }
 }
 
+// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
+// was sent) and an object, turned into JSON text.
 function send(res, code, obj) {
   res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(obj));
 }
 
+// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
+// if it is far bigger than expected.
 function body(req) {
   return new Promise((resolve, reject) => {
     let text = '';
@@ -121,6 +125,8 @@ function today() {
 // The instructions stay the same for every chat, so they can be cached (cheaper and faster).
 // Anything that changes (the date, who is asking) goes in the first message of each chat instead.
 let systemPrompt = null;
+// The assistant's standing instructions (the "system prompt"): what it can do, the health wording
+// rules and the plan format. Made once and then reused.
 function system() {
   if (systemPrompt) return systemPrompt;
   let docs = '';
@@ -247,6 +253,7 @@ function planKey(plan, person, toKey) {
   return db.planKeyFor(plan, person, toKey);
 }
 
+// Finds a recipe by its dish name in every week of the plan: [{week, position, recipe}].
 function findRecipe(plan, name) {
   const want = String(name || '').trim().toLowerCase();
   const found = [];
@@ -390,6 +397,8 @@ function opening(me, person, names, text) {
     '. The family lives in ' + require('./appearance').region().where + '. They shop at: ' + shopsAt(person) + '. Show energy in ' + (require('./appearance').energyFor(me.person) === 'kcal' ? 'Calories (kcal)' : 'kilojoules (kJ)') + '.</context>\n\n' + text;
 }
 
+// One message in an Ask AI chat: sends it with the chat so far to the AI, lets the AI use its tools
+// (look up the plan, guidelines and so on), and streams the answer back to the page as it's written.
 async function chatTurn(req, res, me, ctx) {
   const b = await body(req);
   const text = String(b.text || '').trim().slice(0, MAX_TEXT);

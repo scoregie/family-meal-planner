@@ -27,11 +27,15 @@ const NAMES = { steps: 'steps', active_energy: 'Move', weight: 'weight', energy_
 const PER_HOUR = 30;              // syncs per key per hour
 const recentSyncs = new Map();    // key hash -> [times]
 
+// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
+// was sent) and an object, turned into JSON text.
 function send(res, code, obj) {
   res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(obj));
 }
 
+// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
+// if it is far bigger than expected.
 function readBody(req, limit) {
   return new Promise((resolve, reject) => {
     let text = '';
@@ -120,6 +124,8 @@ async function sync(req, res) {
   return send(res, 200, { ok: true, saved: rows.map(r => r.kind), skipped, message: 'Synced ' + rows.map(r => NAMES[r.kind]).join(', ') + ' for ' + date + '.' + notSaved });
 }
 
+// The phone sending health numbers (POST /auth/health-sync). This needs no login: the phone
+// proves who it is with the person's sync key instead.
 function handlePublic(req, res, urlPath) {
   if (urlPath !== '/auth/health-sync') return false;
   if (req.method !== 'POST') {
@@ -151,6 +157,7 @@ function shortcutFile(req, res, url) {
 // install with one tap. Kept in the data folder, next to the database.
 const SIGNED = path.join(process.env.DATA_DIR || '/data', 'health-sync.shortcut');
 
+// Reads a file the page sent (raw bytes, not JSON), up to a size limit.
 function readRaw(req, limit) {
   return new Promise((resolve, reject) => {
     const parts = [];
@@ -165,6 +172,7 @@ function readRaw(req, limit) {
   });
 }
 
+// The signed one-tap install file for the Shortcut: download it (GET), or an admin uploads a new one.
 async function signedFile(req, res, me) {
   if (req.method === 'GET') {
     if (!fs.existsSync(SIGNED)) return send(res, 404, { error: 'No install file yet.' });
@@ -190,6 +198,8 @@ async function signedFile(req, res, me) {
   return send(res, 200, { ok: true, signed: true, signedAt: Date.now() });
 }
 
+// Answers the requests this file looks after. server.js offers every /api/ request to each
+// file in turn: this returns true if it answered, or false to let the next file try.
 function handle(req, res, urlPath, url, me, ctx) {
   if (urlPath === '/api/health/shortcut' && req.method === 'GET') {
     shortcutFile(req, res, url);

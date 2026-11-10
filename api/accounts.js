@@ -48,6 +48,9 @@ const RESET_HOURS_EMAILED = 1;
 const RESET_HOURS_SHARED = 24;
 const EMAIL = /^[^\s@<>()",;:]{1,64}@[^\s@<>()",;:]+\.[^\s@<>()",;:]{2,}$/;
 
+// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
+// was sent) and an object, turned into JSON text.
+// A login cookie can be sent with it.
 function send(res, code, obj, cookie) {
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
   if (cookie) headers['Set-Cookie'] = cookie;
@@ -55,6 +58,8 @@ function send(res, code, obj, cookie) {
   res.end(JSON.stringify(obj));
 }
 
+// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
+// if it is far bigger than expected.
 function body(req) {
   return new Promise((resolve, reject) => {
     let text = '';
@@ -81,10 +86,13 @@ function newToken() {
   return { token, hash: hashToken(token) };
 }
 
+// Links in emails (invites, password resets) carry a random code. Only a hash of the code is
+// stored (a one-way scramble), so someone who copies the database can't use the links.
 function hashToken(token) {
   return crypto.createHash('sha256').update(String(token || '')).digest('hex');
 }
 
+// An email address tidied up (trimmed, lower case), or '' if it doesn't look like one.
 function cleanEmail(email) {
   const e = String(email || '').trim().toLowerCase();
   return EMAIL.test(e) && e.length <= 200 ? e : '';
@@ -95,6 +103,7 @@ function goodName(name) {
   return /[\p{L}\p{N}]/u.test(String(name || ''));
 }
 
+// What's wrong with a new password ('' if it's fine).
 function passwordProblem(password) {
   const p = String(password || '');
   if (p.length < 8) return 'The password needs at least 8 characters.';
@@ -107,6 +116,7 @@ function tooMany(req) {
   return auth.recent(auth.clientIp(req)).length >= auth.LIMIT;
 }
 
+// Counts one more try from this address towards the "too many tries" limit.
 function countTry(req) {
   const ip = auth.clientIp(req);
   auth.fails.set(ip, auth.recent(ip).concat(Date.now()));
@@ -117,6 +127,7 @@ function needsSetup() {
   return db.countAccounts() === 0 && auth.users().length === 0 && db.listLogins().length === 0;
 }
 
+// True if someone already owns this family's planner.
 function hasOwner() {
   return db.listAccounts().some(a => a.role === 'owner');
 }
@@ -237,6 +248,7 @@ function usernameFree(username) {
     !db.listSignups().some(x => x.email === username);
 }
 
+// An admin adding someone without an email (like a child), with an optional username and password.
 async function addPersonNoEmail(req, res, me, ctx) {
   const b = await body(req);
   const name = String(b.name || '').trim().slice(0, 40);
@@ -258,12 +270,14 @@ async function addPersonNoEmail(req, res, me, ctx) {
   return send(res, 200, { ok: true, person, username: username || null });
 }
 
+// What an invite link is for (name, email, role), so the join page can greet the person.
 function inviteInfo(res, url, ctx) {
   const invite = db.inviteByToken(hashToken(url.searchParams.get('t')));
   if (!invite) return send(res, 404, { error: 'This invite link has expired or has already been used. Ask for a new one.' });
   return send(res, 200, { name: invite.name, email: invite.email, role: invite.role, expires_at: invite.expires_at });
 }
 
+// Someone opening an invite link and choosing their password: makes their account and logs them in.
 async function join(req, res, ctx) {
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
   const b = await body(req);
@@ -284,6 +298,7 @@ async function join(req, res, ctx) {
   return send(res, 200, { ok: true }, auth.loginCookie(req, 'acct-' + id));
 }
 
+// "Forgot password": emails a reset link if the address has an account.
 async function forgot(req, res, ctx) {
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
   const b = await body(req);
@@ -302,6 +317,7 @@ async function forgot(req, res, ctx) {
   return send(res, 200, { ok: true, mail: true });
 }
 
+// Setting a new password from a reset link. Logs the person out everywhere else.
 async function reset(req, res) {
   if (req.method === 'GET') return send(res, 200, { ok: true });
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
@@ -318,6 +334,7 @@ async function reset(req, res) {
   return send(res, 200, { ok: true }, auth.loginCookie(req, 'acct-' + found.account_id));
 }
 
+// Whose password a reset link is for, so the page can show their email.
 function resetInfo(res, url) {
   const found = db.resetByToken(hashToken(url.searchParams.get('t')));
   if (!found) return send(res, 404, { error: 'This reset link has expired or has already been used. Ask for a new one.' });
@@ -351,6 +368,7 @@ async function setEmail(req, res, me) {
   return send(res, 200, { ok: true, email, role }, auth.loginCookie(req, 'acct-' + id));
 }
 
+// Someone deleting their own account (and, if they choose, their history), after typing their password.
 async function deleteMine(req, res, me) {
   const b = await body(req);
   if (!me.accountId) return send(res, 400, { error: 'Add your email first (older usernames are removed by an admin on the server).' });
@@ -437,6 +455,7 @@ function family(res, me, ctx) {
   send(res, 200, { me: { accountId: me.accountId || null, role: me.role }, accounts, older, invites: db.listInvites(), signups: db.listSignups(), people, mail: mailer.configured() });
 }
 
+// An admin inviting someone: makes an invite link (emailed if email is set up, else shown to copy).
 async function invite(req, res, me, ctx) {
   const b = await body(req);
   const name = String(b.name || '').trim().slice(0, 40);
@@ -463,6 +482,7 @@ async function invite(req, res, me, ctx) {
   return send(res, 200, { ok: true, path, emailed, person });
 }
 
+// An admin acting on someone's login on the Family page: reset link, change role, or remove.
 async function memberAction(req, res, me, id, action, ctx) {
   const target = db.getAccount(id);
   if (!target) return send(res, 404, { error: 'That login was not found.' });
@@ -525,6 +545,8 @@ async function handlePublic(req, res, urlPath, url, ctx) {
   return true;
 }
 
+// Answers the requests this file looks after. server.js offers every /api/ request to each
+// file in turn: this returns true if it answered, or false to let the next file try.
 async function handle(req, res, urlPath, url, me, ctx) {
   if (!urlPath.startsWith('/api/account') && !urlPath.startsWith('/api/family')) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {

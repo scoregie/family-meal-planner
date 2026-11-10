@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  Logging in, plus making the first account, joining from an invite, signing up and resetting a password.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -117,12 +123,15 @@ button[type=submit]:disabled{opacity:.6}
   var q = new URLSearchParams(location.search);
   var MODE = null;
   function $(id) { return document.getElementById(id); }
+  // Shows a message above the form (red unless cls says otherwise).
   function say(text, cls) {
     var m = $("msg");
     m.textContent = text;
     m.className = "msg " + (cls || "bad");
     m.hidden = !text;
   }
+  // Asks the server for something (or sends it a change) and waits for the answer. Returns a
+  // "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
   function api(method, url, body) {
     return fetch(url, {
       method: method,
@@ -146,6 +155,7 @@ button[type=submit]:disabled{opacity:.6}
     });
   });
 
+  // Shows the normal email and password form.
   function showLogin() {
     MODE = "login";
     $("f").hidden = false;
@@ -175,6 +185,7 @@ button[type=submit]:disabled{opacity:.6}
     sel.value = R.countries[guess] ? guess : "au";
   }
 
+  // Shows the other form (make the first account, join, sign up, reset), with only the rows it needs.
   function showForm(mode, sub, rows, button) {
     MODE = mode;
     $("f").hidden = true;
@@ -187,6 +198,7 @@ button[type=submit]:disabled{opacity:.6}
     if (first) first.focus();
   }
 
+  // Goes to the app's front page (after logging in or joining).
   function goHome() {
     location.href = "/";
   }

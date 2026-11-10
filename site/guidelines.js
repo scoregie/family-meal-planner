@@ -9,6 +9,7 @@ var Guidelines = (function () {
   var data = null;        // guidelines.json, once loaded
   var loading = null;     // the fetch of guidelines.json, so it only happens once
   var profiles = {};      // person key -> their About me answers (or {} if we can't see them)
+  // The locale for numbers ("en-GB" and so on), from the household's country.
   function LOC() { return window.Appearance ? Appearance.locale() : "en-AU"; }
 
   // Makes a new element, with an optional class name and text.
@@ -24,6 +25,7 @@ var Guidelines = (function () {
     return String(Math.round(n * 10) / 10);
   }
 
+  // Loads guidelines.json (only once, however many cards ask for it).
   function loadData() {
     if (!loading) {
       loading = fetch("guidelines.json", { cache: "no-cache" })
@@ -279,6 +281,7 @@ var Guidelines = (function () {
       var fish = days.reduce(function (s, d) { return s + d.fishMeals; }, 0) * 7 / days.length;
       var oily = days.reduce(function (s, d) { return s + d.oilyMeals; }, 0) * 7 / days.length;
       var extra = el("ul", "gl-checks");
+      // One line of the comparison: a tick if the week meets the guideline, "!" if it falls short.
       function check(ok, text) {
         var li = el("li", ok ? "meets" : "below");
         li.appendChild(el("span", "gl-icon", ok ? "✓" : "!"));

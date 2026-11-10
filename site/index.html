@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  The main app: Today, Meals, Shopping, Exercise and More, all drawn from plan.json.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -766,6 +772,7 @@ function savePins(name, remove) {
   });
 }
 
+// Closes the "pin a product page" box.
 function closePin() {
   var dlg = $("pinDlg");
   if (dlg.close) dlg.close(); else dlg.removeAttribute("open");
@@ -847,6 +854,7 @@ function grouped(items) {
   }).filter(function (g) { return g[1].length; });
 }
 
+// True if a shopping item is ticked off.
 function isTicked(it) {
   return (ticks[it.src] || []).indexOf(it.id) > -1;
 }
@@ -2174,6 +2182,7 @@ function mealRow(card, day, row, person, ppl, updateEaten) {
 var FULLDAY = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
 var dayName = TODAY;   // the day shown in Meals and Exercise ("Mon"); starts on today
 
+// A day's short name: "Monday" gives "Mon".
 function short(day) {
   return String(day || "").slice(0, 3);
 }
@@ -2194,6 +2203,7 @@ function dayNav(days, rerender) {
   var weeks = mealWeeks();
   var wAt = weeks.indexOf(week);
 
+  // Moves to the day before (dir -1) or after (dir 1), if there is one.
   function step(dir) {
     var next = at + dir;
     if (next >= 0 && next < names.length) {
@@ -2371,6 +2381,7 @@ function renderMeals() {
   var count = el("p", "count");
   card.appendChild(count);
   var ids = dayInfo.rows.map(function (row) { return (day.day || "") + "|" + row[0]; });
+  // Updates "3 of 5 eaten" after a meal is ticked.
   function updateEaten() {
     var done = (eaten[week] || []).filter(function (id) { return ids.indexOf(id) > -1; }).length;
     count.textContent = "";
@@ -2752,6 +2763,7 @@ function todayLines(workout, exDay) {
   return out;
 }
 
+// A folding section for one workout: its name, then each exercise with how to do it and a video link.
 function workoutFold(workout, videos, today) {
   var fold = el("details");
   var summary = el("summary", null, workout.name || "Workout");
@@ -2982,6 +2994,7 @@ function leftText() {
 var SHOP = null;
 var wakeLock = null;
 
+// A unique name for a shopping item, for remembering it in Shop mode.
 function itemKey(it) { return it.src + "|" + it.id; }
 
 // The items still to get, in aisle order (not ticked, not at home).
@@ -2996,6 +3009,7 @@ function shopQueue(only) {
   return out;
 }
 
+// Opens Shop mode: one item at a time, in aisle order, with big buttons for in-store use.
 function shopOpen() {
   SHOP = { queue: shopQueue(), at: 0, skipped: {} };
   $("shopMode").hidden = false;
@@ -3006,6 +3020,7 @@ function shopOpen() {
   shopDraw();
 }
 
+// Closes Shop mode and goes back to the list.
 function shopClose() {
   SHOP = null;
   $("shopMode").hidden = true;
@@ -3074,6 +3089,7 @@ function shopDraw() {
   $("smName").focus();
 }
 
+// Moves Shop mode forward (by = 1) or back (by = -1) one item.
 function shopStep(by) {
   if (!SHOP) return;
   SHOP.at = Math.max(0, Math.min(SHOP.queue.length, SHOP.at + by));
@@ -3143,6 +3159,7 @@ function renderToday() {
     var meals = todayCard("Today’s meals", "", "Meals and recipes", function () { dayName = TODAY; goTop(week, "meals"); });
     var energyLine = el("p", "note2");
     var ids = info.rows.map(function (row) { return info.d.day + "|" + row[0]; });
+    // Updates the Today meals card after a tick: how many eaten and the energy so far.
     function update() {
       var list = eaten[week] || [];
       var done = 0, kjDone = 0;
@@ -3380,6 +3397,7 @@ $("hide").onclick = function () {
 $("copy").onclick = function () {
   var button = this;
   var text = leftText();
+  // For older browsers without the copy feature: copies through a hidden text box instead.
   function fallback() {
     var box = document.createElement("textarea");
     box.value = text;

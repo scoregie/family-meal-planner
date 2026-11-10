@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  Settings: the look (colour, font, size, dark mode), where you shop, kJ or kcal, your own AI key and the app icon.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -184,6 +190,7 @@ function $(id) {
   return document.getElementById(id);
 }
 
+// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
 function el(tag, cls, txt) {
   var e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -191,6 +198,8 @@ function el(tag, cls, txt) {
   return e;
 }
 
+// Asks the server for something (or sends it a change) and waits for the answer. Returns a
+// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
 function api(method, url, body) {
   return fetch(url, {
     method: method,
@@ -205,6 +214,7 @@ function api(method, url, body) {
   });
 }
 
+// Shows a short message at the bottom of the screen (red for errors), then hides it.
 function status(text, isError) {
   var s = $("status");
   s.textContent = text;
@@ -214,6 +224,7 @@ function status(text, isError) {
   status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 2500);
 }
 
+// True if the page is showing in dark mode (chosen, or matching the device).
 function isDark() {
   var t = document.documentElement.getAttribute("data-theme");
   return t === "dark" || (!t && matchMedia("(prefers-color-scheme: dark)").matches);
@@ -251,6 +262,7 @@ function group(name, legend, options, picked, onPick, cls) {
   return set;
 }
 
+// The colour choices as [id, name, colour to show] (the dark-mode colour in dark mode).
 function colourOptions() {
   return Object.keys(A.COLOURS).map(function (k) {
     var c = A.COLOURS[k];
@@ -258,12 +270,14 @@ function colourOptions() {
   });
 }
 
+// The font choices as [id, name, note, font list to show the name in].
 function fontOptions() {
   return Object.keys(A.FONTS).map(function (k) {
     return [k, A.FONTS[k].name, A.FONTS[k].note, A.FONTS[k].stack];
   });
 }
 
+// The text size choices as [id, name].
 function sizeOptions() {
   return Object.keys(A.SIZES).map(function (k) { return [k, A.SIZES[k].name]; });
 }
@@ -283,10 +297,12 @@ function renderMine() {
   var house = A.house();
   var box = $("mine");
   box.textContent = "";
+  // The label for "use the household's choice", naming what that is.
   function houseName(kind, table) {
     var v = house[kind] || A.DEFAULTS[kind];
     return "Household (" + (table[v].name || table[v]) + ")";
   }
+  // What happens when a choice is tapped: save it for this device and apply it straight away.
   function pick(kind) {
     return function (value) {
       var next = A.mine();
@@ -309,6 +325,7 @@ function renderHouse() {
   if (!IS_ADMIN) return;
   var box = $("house");
   box.textContent = "";
+  // What happens when a household choice is tapped (saved later with the Save button).
   function pick(kind) {
     return function (value) { HOUSE[kind] = value; };
   }
@@ -346,12 +363,14 @@ function paintIcon(canvas, size) {
   g.fillText(isLetters ? text.toUpperCase() : text, size / 2, size * (isLetters ? 0.53 : 0.54));
 }
 
+// Redraws the two icon previews (big and small) with the current picture and colour.
 function drawIcon() {
   if (!IS_ADMIN) return;
   paintIcon($("iconBig"), 180);
   paintIcon($("iconSmall"), 180);
 }
 
+// Shows the pictures to choose from for the app icon.
 function renderIconChoices() {
   var symbols = $("symbols");
   SYMBOLS.forEach(function (s) {
@@ -387,6 +406,7 @@ function renderIconChoices() {
   });
 }
 
+// Draws the icon at the three sizes phones need and sends them to the server to save.
 function saveIcon() {
   var canvas = document.createElement("canvas");
   var pictures = {};
@@ -433,6 +453,7 @@ function storeBoxes(boxId, picked, scope) {
   });
 }
 
+// Shows the store ticks: yours, and (for admins) the household's.
 function renderStores() {
   var c = A.storeChoices();
   storeBoxes("myStores", c.mine, "me");
@@ -470,6 +491,7 @@ function energyBoxes(boxId, current, scope, options) {
   });
 }
 
+// Shows the energy unit choices: yours, and (for admins) the household's.
 function renderEnergy() {
   var c = A.energyChoices();
   var houseName = A.ENERGY[c.house || "kJ"].name;
@@ -488,11 +510,13 @@ var KEY_INFO = {
 };
 var ACCOUNT_KEY = null;   // {provider, name, model, hint} or null
 
+// Which AI company is ticked for your own key.
 function keyProvider() {
   var on = document.querySelector('input[name="keyProvider"]:checked');
   return on ? on.value : "anthropic";
 }
 
+// Shows where to make a key for the ticked AI company.
 function showWhere() {
   var k = KEY_INFO[keyProvider()];
   var where = $("keyWhere");
@@ -506,6 +530,7 @@ function showWhere() {
   $("modelRow").hidden = !same || !$("aiModel").options.length;
 }
 
+// Fills the model list for your own key, with the saved one chosen.
 function fillModels(models, chosen) {
   var sel = $("aiModel");
   sel.textContent = "";
@@ -521,6 +546,7 @@ function fillModels(models, chosen) {
   }
 }
 
+// Shows the "Your AI key" card: whether a key is saved, and the form to add or change one.
 function renderKey(account) {
   $("claudeCard").hidden = false;
   if (account.needsEmail) {
@@ -542,6 +568,7 @@ function renderKey(account) {
   showWhere();
 }
 
+// Gets your account details for the AI key card (it stays hidden if this fails).
 function loadAccount() {
   return api("GET", "/api/account").then(renderKey).catch(function () { /* card stays hidden */ });
 }

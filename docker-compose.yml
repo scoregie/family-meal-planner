@@ -1,3 +1,9 @@
+# Starts the app's two containers (small self-contained programs) with: docker compose up -d
+#   api    the Node.js server in api/: logins, the database and everything under /api/
+#   caddy  the web server people's browsers talk to: it shows the pages in site/, sends /api/
+#          and /auth/ requests on to the api container, and checks the login first (see Caddyfile)
+# The "volumes" lines connect folders here to folders inside each container, so the data in
+# data/ survives restarts and updates.
 services:
   api:
     image: node:22-alpine

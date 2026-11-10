@@ -30,6 +30,7 @@ const PROVIDERS = {
 const DEFAULT_CLAUDE = process.env.ASSISTANT_MODEL || 'claude-opus-5-5';
 const ENV_KEY = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', gemini: 'GEMINI_API_KEY' };
 
+// The address of a local Ollama AI server, if .env sets OLLAMA_URL ('' if not).
 function ollamaBase() {
   const u = String(process.env.OLLAMA_URL || '').trim().replace(/\/+$/, '');
   return u ? u + '/v1' : '';
@@ -56,6 +57,7 @@ function familyChoice() {
   return first ? { provider: first, model: first === 'anthropic' ? DEFAULT_CLAUDE : (process.env[first.toUpperCase() + '_MODEL'] || '') } : { provider: 'none' };
 }
 
+// Saves which AI the family uses for plans and Ask AI (chosen on Plan setup).
 function setFamilyChoice(choice) {
   db.setSetting('ai-family', JSON.stringify(choice));
 }
@@ -77,6 +79,7 @@ function ownChoice(me) {
   return { provider: 'anthropic', key: text, model: DEFAULT_CLAUDE };
 }
 
+// Saves someone's own AI key (encrypted), or removes it when choice is null.
 function saveOwn(me, choice) {
   db.setAiKey(me.accountId, choice ? secrets.encrypt(JSON.stringify(choice)) : null);
 }
@@ -131,6 +134,8 @@ function explain(err, ready) {
   return 'Something went wrong talking to ' + who + '. Try again in a moment.';
 }
 
+// Sends a request to an OpenAI-style AI service and returns the answer, or throws an error with
+// the service's own explanation.
 async function request(base, key, path, init) {
   const res = await fetch(base + path, Object.assign({}, init, {
     headers: Object.assign({ Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }, init && init.headers),

@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  Progress: week-by-week charts of weight, energy, steps and meals eaten.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
@@ -289,6 +295,7 @@ function chartCard(spec) {
   return card;
 }
 
+// Draws a line chart as an SVG picture (no chart library), with dots you can tap to see each value.
 function drawChart(box, spec) {
   box.textContent = "";
   var W = Math.max(260, Math.round(box.clientWidth || 600));
@@ -388,6 +395,7 @@ function drawChart(box, spec) {
   var tip = el("div", "tip");
   tip.hidden = true;
   var current = -1;
+  // Shows the value of point i in a little box next to it.
   function show(i) {
     if (i < 0 || i >= pts.length) return;
     current = i;
@@ -415,6 +423,7 @@ function drawChart(box, spec) {
     tip.style.left = Math.max(0, Math.min(box.clientWidth - tw, left - tw / 2)) + "px";
     tip.style.top = Math.max(-8, top - tip.offsetHeight - 10) + "px";
   }
+  // Hides that box again.
   function hide() {
     current = -1;
     tip.hidden = true;
@@ -476,6 +485,7 @@ window.addEventListener("resize", function () {
 function renderTiles(d) {
   var tiles = $("tiles");
   tiles.textContent = "";
+  // A summary tile: a label, a big number with its unit, and a small detail line.
   function tile(label, value, unit, detail) {
     var t = el("div", "tile");
     t.appendChild(el("div", "k", label));
@@ -629,6 +639,7 @@ function renderSources(d) {
 // Redraw in the new unit when kJ or kcal is changed in Settings.
 window.addEventListener("units-changed", function () { if (DATA) render(DATA); });
 
+// Draws the whole page from the server's numbers.
 function render(d) {
   DATA = d;
   var name = NAMES[PERSON] || PERSON;
@@ -643,11 +654,13 @@ function render(d) {
 
 // The Apple Health sync card at the top: a one-line status, and (opened) the details and the set-up link.
 var SYNCNAMES = { steps: "steps", active_energy: "Move", weight: "weight", energy_in: "food", protein_in: "protein", carbs_in: "carbs", fat_in: "fat" };
+// When the phone last sent numbers: "today, 7:05 am" or a date.
 function syncWhen(ms) {
   var d = new Date(ms);
   var today = new Date().toDateString() === d.toDateString();
   return (today ? "today" : d.toLocaleDateString(Appearance.locale(), { weekday: "short", day: "numeric", month: "short" })) + ", " + d.toLocaleTimeString(Appearance.locale(), { hour: "numeric", minute: "2-digit" });
 }
+// The Health sync section: when the phone last sent numbers, and how to set it up.
 function renderSync() {
   var fold = $("syncFold"), line = $("syncLine"), body = $("syncBody");
   var who = PERSON && ME && PERSON !== ME.person ? "?person=" + encodeURIComponent(PERSON) : "";
@@ -698,6 +711,7 @@ function load() {
 
 // New export files were uploaded: read them, then reload the charts.
 var importing = false;
+// Reads the newest uploaded Lose It or Apple Health export now, and shows how it went.
 function importNow(waiting) {
   if (importing) return;
   importing = true;
@@ -738,6 +752,7 @@ function renderRange() {
   });
 }
 
+// For admins: buttons to choose whose progress to see (hidden with only one person).
 function renderPicker(list) {
   var picker = $("people");
   picker.textContent = "";

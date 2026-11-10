@@ -17,6 +17,11 @@
 //   password_resets  links for setting a new password (also only hashes)
 //
 // To look inside it yourself:  sqlite3 data/app.db ".tables"   (or any SQLite viewer)
+//
+// How the functions below talk to the database: open().prepare('SQL command') gets a command
+// ready, then .get(...) returns one row (or undefined), .all(...) returns a list of rows, and
+// .run(...) changes data. Each ? in the command is filled in, in order, by the values passed to
+// get/all/run, which keeps what people type from being read as part of the command.
 const path = require('path');
 const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
@@ -408,6 +413,7 @@ function getChat(id) {
   return row ? Object.assign({}, row, { messages: JSON.parse(row.messages) }) : null;
 }
 
+// The newest chats with the assistant about one person, up to `limit` of them.
 function listChats(person, limit) {
   return open().prepare('SELECT id, person, user, title, created_at, updated_at FROM chats WHERE person = ? ORDER BY updated_at DESC LIMIT ?').all(person, limit || 30);
 }
@@ -423,6 +429,7 @@ function saveChat(id, person, user, title, messages) {
     .run(person, user, title || null, JSON.stringify(messages), now, now).lastInsertRowid);
 }
 
+// Deletes one chat with the assistant.
 function deleteChat(id) {
   open().prepare('DELETE FROM chats WHERE id = ?').run(id);
 }
@@ -434,10 +441,12 @@ function addRequest(r) {
     .run(r.person, r.user, r.chatId || null, Date.now(), r.title, r.details || null, JSON.stringify(r.change || null), r.status || 'draft').lastInsertRowid);
 }
 
+// A request row from the database, with its "change" turned back from text into an object.
 function readRequest(row) {
   return row ? Object.assign({}, row, { change: row.change ? JSON.parse(row.change) : null }) : null;
 }
 
+// One suggested change by its id (or null).
 function getRequest(id) {
   return readRequest(open().prepare('SELECT * FROM requests WHERE id = ?').get(id));
 }
@@ -450,10 +459,12 @@ function listRequests(person) {
   return rows.map(readRequest);
 }
 
+// Links a suggested change to the chat it came from (only the first time).
 function setRequestChat(id, chatId) {
   open().prepare('UPDATE requests SET chat_id = ? WHERE id = ? AND chat_id IS NULL').run(chatId, id);
 }
 
+// Marks a suggested change as done, declined, withdrawn and so on, with who decided and their reply.
 function setRequestStatus(id, status, by, reply) {
   const decided = status === 'done' || status === 'declined';
   open().prepare('UPDATE requests SET status = ?, decided_by = ?, decided_at = ?, reply = ? WHERE id = ?')
@@ -469,6 +480,7 @@ function countUsage(user, day, inputTokens, outputTokens, messages) {
   return usage(user, day);
 }
 
+// How much someone used the AI on one day: {messages, input_tokens, output_tokens}.
 function usage(user, day) {
   return open().prepare('SELECT messages, input_tokens, output_tokens FROM ai_usage WHERE user = ? AND day = ?').get(user, day)
     || { messages: 0, input_tokens: 0, output_tokens: 0 };
@@ -481,10 +493,12 @@ function getSetting(key) {
   return row ? row.value : null;
 }
 
+// Saves a setting (a named value, like "country" = "uk"), replacing the old value.
 function setSetting(key, value) {
   open().prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value').run(key, String(value));
 }
 
+// Removes a setting, so its default is used again.
 function deleteSetting(key) {
   open().prepare('DELETE FROM settings WHERE key = ?').run(key);
 }
@@ -592,14 +606,17 @@ function setPassword(username, hash) {
 
 const ACCOUNT_COLUMNS = 'id, email, hash, person, role, legacy_user, token_version, created_at, created_by, ai_key IS NOT NULL AS has_ai_key';
 
+// One account by its id (without the password hash).
 function getAccount(id) {
   return open().prepare('SELECT ' + ACCOUNT_COLUMNS + ' FROM accounts WHERE id = ?').get(id);
 }
 
+// The account with this email address, if there is one.
 function accountByEmail(email) {
   return open().prepare('SELECT ' + ACCOUNT_COLUMNS + ' FROM accounts WHERE email = ?').get(String(email || '').trim());
 }
 
+// The account made from an older username login (from before email logins), if there is one.
 function accountByLegacy(user) {
   return open().prepare('SELECT ' + ACCOUNT_COLUMNS + ' FROM accounts WHERE legacy_user = ?').get(user);
 }
@@ -609,6 +626,7 @@ function listAccounts() {
   return open().prepare("SELECT id, email, person, role, legacy_user, created_at, created_by FROM accounts ORDER BY role = 'owner' DESC, role = 'admin' DESC, email").all();
 }
 
+// How many accounts there are (0 means the server is brand new).
 function countAccounts() {
   return open().prepare('SELECT COUNT(*) AS n FROM accounts').get().n;
 }
@@ -635,6 +653,7 @@ function updateAccount(id, fields) {
   open().prepare('UPDATE accounts SET ' + sets.join(', ') + ' WHERE id = ?').run(...values, id);
 }
 
+// Deletes an account and its unused password-reset links. Both happen together or not at all.
 function deleteAccount(id) {
   transaction(d => {
     d.prepare('DELETE FROM password_resets WHERE account_id = ?').run(id);
@@ -647,6 +666,7 @@ function setAiKey(id, encrypted) {
   open().prepare('UPDATE accounts SET ai_key = ? WHERE id = ?').run(encrypted, id);
 }
 
+// Someone's saved AI key, still encrypted (secrets.js decrypts it).
 function getAiKey(id) {
   const row = open().prepare('SELECT ai_key FROM accounts WHERE id = ?').get(id);
   return row ? row.ai_key : null;
@@ -671,18 +691,22 @@ function addInvite(i) {
     .run(i.tokenHash, i.email || null, i.name, i.person, i.role, i.createdBy || null, Date.now(), i.expiresAt).lastInsertRowid);
 }
 
+// An invite that is still valid (not used, not expired), found by the hashed code from its link.
 function inviteByToken(tokenHash) {
   return open().prepare('SELECT * FROM invites WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?').get(tokenHash, Date.now());
 }
 
+// All invites that are still waiting to be used, for the Family page.
 function listInvites() {
   return open().prepare('SELECT id, email, name, person, role, created_by, created_at, expires_at FROM invites WHERE used_at IS NULL AND expires_at > ? ORDER BY created_at DESC').all(Date.now());
 }
 
+// Marks an invite as used. Returns false if it was already used (so a link only works once).
 function useInvite(id) {
   return open().prepare('UPDATE invites SET used_at = ? WHERE id = ? AND used_at IS NULL').run(Date.now(), id).changes > 0;
 }
 
+// Cancels an invite.
 function deleteInvite(id) {
   open().prepare('DELETE FROM invites WHERE id = ?').run(id);
 }
@@ -692,16 +716,19 @@ function deleteInvitesFor(person) {
   open().prepare('DELETE FROM invites WHERE person = ? AND used_at IS NULL').run(person);
 }
 
+// Saves a new password-reset link (only a hash of its code is kept, never the code itself).
 function addReset(tokenHash, accountId, expiresAt) {
   // A new link replaces any older unused ones for the same account.
   open().prepare('DELETE FROM password_resets WHERE account_id = ? AND used_at IS NULL').run(accountId);
   open().prepare('INSERT INTO password_resets (token_hash, account_id, created_at, expires_at) VALUES (?, ?, ?, ?)').run(tokenHash, accountId, Date.now(), expiresAt);
 }
 
+// A password-reset link that is still valid, found by the hashed code from the link.
 function resetByToken(tokenHash) {
   return open().prepare('SELECT * FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?').get(tokenHash, Date.now());
 }
 
+// Marks a reset link as used. Returns false if it was already used.
 function useReset(tokenHash) {
   return open().prepare('UPDATE password_resets SET used_at = ? WHERE token_hash = ? AND used_at IS NULL').run(Date.now(), tokenHash).changes > 0;
 }
@@ -735,14 +762,17 @@ function listSignups() {
   return open().prepare('SELECT id, name, email, created_at FROM signups ORDER BY created_at').all();
 }
 
+// One sign-up that is waiting for an admin, by id.
 function getSignup(id) {
   return open().prepare('SELECT * FROM signups WHERE id = ?').get(id) || null;
 }
 
+// Removes a waiting sign-up (approved or declined).
 function deleteSignup(id) {
   open().prepare('DELETE FROM signups WHERE id = ?').run(id);
 }
 
+// How many sign-ups are waiting (there's a limit, so the list can't be flooded).
 function countSignups() {
   return open().prepare('SELECT COUNT(*) AS n FROM signups').get().n;
 }

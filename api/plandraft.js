@@ -44,11 +44,15 @@ try {
 // {state: "running" | "failed", by, started, chars, stage, error}
 let job = null;
 
+// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
+// was sent) and an object, turned into JSON text.
 function send(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
 }
 
+// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
+// if it is far bigger than expected.
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
@@ -66,6 +70,7 @@ function readBody(req) {
   });
 }
 
+// Reads a JSON file, or null if it's missing or broken.
 function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; }
 }
@@ -175,6 +180,8 @@ ${example}
 </example_plan>`;
 }
 
+// The request the AI gets for a new plan: today's date, the country and stores, everyone in the
+// plan and their About me answers, and any note from the admin.
 function userText(ctx, people, note) {
   const stores = appearance.storesFor(null);
   const lines = [
