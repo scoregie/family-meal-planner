@@ -38,7 +38,11 @@ try:
     com = json.load(open(dst))
 except FileNotFoundError:
     com = {'version': 0, 'dishes': [], 'snacks': [], 'exercises': []}
-keys = {'dishes': lambda d: d['name'].lower(), 'snacks': lambda s: s['what'].lower(), 'exercises': lambda e: e['id']}
+import re
+# An exercise's id, worked out from its name the same way the app does (entries may not have one).
+def exercise_id(e):
+    return e.get('id') or re.sub(r'^-|-$', '', re.sub(r'[^a-z0-9]+', '-', e['name'].lower()))
+keys = {'dishes': lambda d: d['name'].lower(), 'snacks': lambda s: s['what'].lower(), 'exercises': exercise_id}
 added = 0
 for kind, key in keys.items():
     have = {key(x) for x in com.get(kind, [])}
