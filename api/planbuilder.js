@@ -773,7 +773,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       const p = planPeople[r.key];
       if (!p.weekday) {
         const packs = own[r.key].lunches.filter(d => d.packable);
-        const kidSnacks = LIB.snacks.filter(s => s.kids && available(s) && allowed(s, r));
+        const kidSnacks = snackOrder(LIB.snacks.filter(s => s.kids && available(s) && allowed(s, r)), r, rnd);
         p.weekday = {};
         DAYS.slice(0, 5).forEach((d, i) => {
           const l = packs[i % Math.max(1, packs.length)];
@@ -807,7 +807,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   for (let i = 0; i < people.length; i++) {
     const r = rules[i];
     const p = planPeople[people[i].key];
-    p.snacks = snacksFor(r, exercise[people[i].key]);
+    p.snacks = snacksFor(r, exercise[people[i].key], rnd);
     for (let w = 0; w < 4; w++) {
       const exWeek = exercise[people[i].key][w];
       for (const s of p.snacks) {
@@ -920,11 +920,18 @@ function labelOf(k) {
   return { name: k.replace(/ big$/, '').replace('stock', 'stock').replace('veg stock', 'vegetable stock'), each: EACH[k] || k };
 }
 
-// Two snacks a day for each person, tied to exercise where it helps.
-function snacksFor(r, exWeeks) {
-  const ok = LIB.snacks.filter(s => available(s) && allowed(s, r) && (!r.kid || s.kids));
+// Puts snacks in a shuffled order (the same for the same seed), with ones matching foods they love first.
+function snackOrder(list, r, rnd) {
+  const loved = s => r.likeWords.some(w => w && s.what.toLowerCase().includes(w));
+  return list.map(s => ({ s, k: rnd() + (loved(s) ? 1 : 0) })).sort((a, b) => b.k - a.k).map(x => x.s);
+}
+
+// Two snacks a day for each person, tied to exercise where it helps. Snacks are shuffled, so
+// different people and different plans get a variety rather than always the first in the library.
+function snacksFor(r, exWeeks, rnd) {
+  const ok = snackOrder(LIB.snacks.filter(s => available(s) && allowed(s, r) && (!r.kid || s.kids)), r, rnd);
   const by = kind => ok.filter(s => s.kind === kind);
-  const protein = by('protein'), fruit = by('fruit'), other = by('other').concat(by('veg'));
+  const protein = by('protein'), fruit = by('fruit'), other = ok.filter(s => s.kind === 'other' || s.kind === 'veg');
   const out = [];
   const lifts = exWeeks.some(w => w.days.some(d => d.strength));
   if (r.kid) {
