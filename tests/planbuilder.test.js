@@ -305,6 +305,99 @@ test('one person disliking vegetables doesn’t lower them for everyone else', (
   }
 });
 
+test('the three answers to "How much should the plan change what you eat?" each mean a different pace', () => {
+  const find = node => Array.isArray(node) ? node.map(find).find(Boolean)
+    : node && typeof node === 'object' ? (node.id === 'eating_change' ? node : find(Object.values(node))) : null;
+  const options = find(require('../site/questions.json')).options;
+  assert.deepEqual(options.map(o => ht.paceFor({ eating_change: o })), ['full', 'build', 'own']);
+  assert.equal(ht.paceFor({}), 'full', 'no answer means from week 1');
+});
+
+test('someone building up gets less added in weeks 1 and 2, and reaches their serves by weeks 3 and 4', () => {
+  const child = { age: 10, sex: 'Female', dislikes: 'most veggies, fruit', eating_change: 'Build up to them over the 4 weeks' };
+  let eased = 0;
+  for (let seed = 1; seed <= 6; seed++) {
+    const { plan, review } = reviewOf([{ age: 40, sex: 'Male' }, child], seed);
+    assert.deepEqual(review[1].short, [], 'the child got ' + review[1].veg + ' veg and ' + review[1].fruit + ' fruit in weeks 3 and 4 with seed ' + seed);
+    for (const snack of plan.people.p1.snacks) {
+      if (!snack.weeks) continue;
+      eased++;
+      assert.ok(snack.weeks.length < 4 && snack.weeks.every(n => n >= 1 && n <= 4), JSON.stringify(snack));
+    }
+    const early = ht.dailyAverage(plan, 'p1', [1]), late = ht.dailyAverage(plan, 'p1', [3, 4]);
+    assert.ok(early.veg + early.fruit <= late.veg + late.fruit + 1.5, 'week 1 has more than weeks 3 and 4 with seed ' + seed);
+  }
+  assert.ok(eased > 0, 'nothing was added for only some weeks');
+});
+
+test('someone keeping close to what they eat now gets nothing added, and isn’t reported as short', () => {
+  const own = { age: 10, dislikes: 'most veggies, fruit', eating_change: 'Keep it close to what I eat now' };
+  for (let seed = 1; seed <= 6; seed++) {
+    const people = [{ key: 'p0', name: 'Person 0', answers: { age: 40 } }, { key: 'p1', name: 'Person 1', answers: own }];
+    const built = pb.build(people, { seed });
+    for (const snack of built.plan.people.p1.snacks) assert.doesNotMatch(snack.when, /^With |^After dinner$/);
+    assert.deepEqual(ht.review(built.plan, people)[1].short, []);
+    assert.doesNotMatch(built.notesForAdmin, /Person 1’s days average/);
+    assert.match(built.plan.people.p1.tips.join(' '), /You chose to keep close to what you eat now/);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Food already in the kitchen
+// ---------------------------------------------------------------------------
+
+test('the kitchen list is read into ingredients and amounts, and says what it couldn’t match', () => {
+  const read = pb.kitchenStock(['rice 2 kg', '6 eggs', 'peas', '2 tins diced tomatoes, spaghetti', 'tomato sauce', 'dragon fruit']);
+  assert.deepEqual(read.stock.rice.map(x => x.amount), [2000]);
+  assert.deepEqual(read.stock.egg.map(x => x.amount), [6]);
+  assert.deepEqual(read.stock['frozen peas'].map(x => x.amount), [1000], 'no amount means one pack');
+  assert.deepEqual(read.stock['canned tomatoes'].map(x => x.amount), [800], '2 tins of 400 g');
+  assert.ok(read.stock.pasta, 'spaghetti is pasta');
+  assert.deepEqual(read.unknown, ['tomato sauce', 'dragon fruit']);
+  assert.deepEqual(pb.kitchenStock(null), { stock: {}, counted: [], unknown: [] });
+});
+
+test('food already in the kitchen is left off the shopping lists, and meals that use it are preferred', () => {
+  const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
+  const shop = plan => plan.weeks.flatMap(w => Object.values(w.shopping).flat());
+  // How many dinners over the 4 weeks use rice.
+  const riceDinners = plan => plan.weeks.flatMap(w => w.meals || []).filter(m => {
+    const dish = LIB.dishes.find(d => d.name === m.dinner);
+    return dish && dish.per.some(x => x[0] === 'rice');
+  }).length;
+  let withList = 0, withoutList = 0;
+  for (let seed = 1; seed <= 6; seed++) {
+    withoutList += riceDinners(pb.build(people, { seed }).plan);
+    const built = pb.build(people, { seed, pantry: ['rice 5 kg', 'frozen peas 3 kg'] });
+    withList += riceDinners(built.plan);
+    assert.ok(!shop(built.plan).some(item => /^(Jasmine rice|Frozen peas)/.test(item[0])), 'rice or peas were bought with seed ' + seed);
+    assert.match(built.notesForAdmin, /From your kitchen list, the plan counts: Jasmine rice 1 kg, Frozen peas 1 kg/);
+  }
+  assert.ok(withList > withoutList, withList + ' rice dinners with the list, ' + withoutList + ' without');
+});
+
+test('dinners the family rated well come back more often, and ones they rated poorly less often', () => {
+  const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
+  // How many times each dinner turns up over several plans: {name: count}.
+  const tally = rated => {
+    const seen = {};
+    for (let seed = 1; seed <= 8; seed++) {
+      const plan = pb.build(people, { seed, rated }).plan;
+      for (const m of plan.weeks.flatMap(w => w.meals || [])) seen[m.dinner] = (seen[m.dinner] || 0) + 1;
+    }
+    return seen;
+  };
+  const count = (name, rated) => tally(rated)[name] || 0;
+  // Without ratings: the dinner that turns up most becomes the one they disliked, and one that
+  // turns up least becomes the one they loved.
+  const before = tally({});
+  const names = LIB.dishes.filter(d => d.meal === 'dinner').map(d => d.name).sort((x, y) => (before[x] || 0) - (before[y] || 0));
+  const loved = names[0], disliked = names[names.length - 1];
+  const rated = { [loved.toLowerCase()]: 9.5, [disliked.toLowerCase()]: 2 };
+  assert.ok(count(loved, rated) > count(loved, {}), loved + ' didn’t come back more often');
+  assert.ok(count(disliked, rated) < count(disliked, {}), disliked + ' didn’t come back less often');
+});
+
 test('vegetable sides are only added as sides, never as an ordinary or school snack', () => {
   const sides = new Set(LIB.snacks.filter(s => s.kind === 'side').map(s => s.what));
   assert.ok(sides.size >= 3, 'the library has vegetable sides');

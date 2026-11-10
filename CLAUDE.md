@@ -42,7 +42,8 @@ Whoever writes a plan (the builder, an AI, or a Claude Code session) uses this o
 diets and medicine rules; (2) each person's vegetable and fruit serves for their age and sex
 (`api/healthtargets.js`), children included; (3) safe foods and textures, which decide the form
 food comes in; (4) likes and dislikes. A sweeping dislike from a child ("most veggies") changes the
-form, not the amount; a named food is still left out.
+form, not the amount; a named food is still left out. Each person picks the pace for (2) in About me
+(`eating_change`): from week 1, building up by week 3, or keeping close to what they eat now.
 
 ## Rules for health text
 

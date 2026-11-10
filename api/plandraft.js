@@ -6,6 +6,8 @@
 //                            AI choice, and the draft (running, failed, or waiting to be approved)
 //   PUT  /api/plan/ai        admins: the family's AI {provider, model} ("none" for no AI)
 //   GET  /api/plan/ai/models?provider=   admins: the models the family's key for it can use
+//   PUT  /api/plan/kitchen   admins: {items} the food already in the kitchen, one per line
+//                            ("rice 2 kg", "6 eggs"). The next draft uses it first.
 //   POST /api/plan/draft     admins: start a draft {how: "ai" | "builtin", note}. With AI it runs
 //                            in the background and takes several minutes; built-in takes a moment.
 //   GET  /api/plan/handoff?note=   admins: the exact prompt the AI would get {system, user}, so a
@@ -39,6 +41,27 @@ try {
   Anthropic = sdk.Anthropic || sdk.default || sdk;
 } catch (e) {
   // assistant.setup() explains what's missing.
+}
+
+// The family's kitchen list: food they already have, as the lines they typed on Plan setup.
+// The next plan uses these first and leaves what they cover off the shopping lists.
+function kitchenList() {
+  try {
+    const items = JSON.parse(db.getSetting('kitchen-list') || '[]');
+    return Array.isArray(items) ? items.filter(x => typeof x === 'string') : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// What the family thought of meals they've rated: {"lower-case dish name": average score out of
+// 10}. Averages across everyone, so no one person's ratings are shown. Empty if nothing is rated.
+function dishRatings() {
+  const rated = {};
+  try {
+    for (const d of db.dishes()) if (d && d.name && d.avg_score != null) rated[d.name.toLowerCase()] = d.avg_score;
+  } catch (e) { /* ratings are a nice-to-have */ }
+  return rated;
 }
 
 // The one draft that can run at a time. Kept in memory: a restart loses a draft in progress.
@@ -162,6 +185,7 @@ Structure:
 Food:
 - When things pull against each other, this is the order of importance: (1) allergies, intolerances, diets and medicine rules, which are never traded away; (2) each person's health targets (below); (3) safe foods and textures, which decide the form food comes in, not whether it is there; (4) likes and dislikes, which choose between dishes that already fit 1 to 3.
 - Vegetables and fruit: each person's days should average at least their target serves, given with the people below (a serve is 75 g of vegetables or legumes, or 150 g of fruit). Count their meals at their portion plus their snacks, and add vegetable sides or fruit where a day falls short. This applies to children too. If someone dislikes vegetables or fruit as a whole ("most veggies", "fruit"), still reach their target, in forms they are more likely to eat (grated or blended into sauces, soups, mash, smoothies, soft-cooked), and say in their tips that amounts can start small and build up. The app measures the draft against these targets from the "groups" block and tells the admin, so make "groups" match the recipes' real amounts.
+- Each person chose how much the plan should change what they eat (eating_change in About me; the line for each person below says which). "From week 1": reach their target in every week. "Build up": start weeks 1 and 2 close to what they eat now (usual_day, if they gave it) at about 70% and 85% of the target, and reach it in weeks 3 and 4; a snack or side that only runs in some weeks has "weeks", like [3, 4]. "Keep close to what they eat now": plan around what they eat now and what they love, and don't add foods to reach the targets (the hard limits in 1 still apply, and children still get normal growing portions).
 - Strictly respect every allergy, intolerance, diet and named food someone won't eat. Keep each person's safe foods in their plan. Avoid textures people listed as hard. Fit cooking time, kitchen equipment, packed lunches and budget to their answers. On the days someone said work or school provides lunch (lunch_provided), don't plan or shop for their lunch: for a child, set that weekday's lunch to "School provides lunch".
 - Shared family dinners where possible, with a different dish for one person (meals[].people) only when needed. Reuse ingredients across the week to cut waste and cost, and use leftovers for lunches.
 - Children: normal growing portions, never weight-loss. No very low energy intakes, crash diets or supplements.
@@ -200,12 +224,24 @@ function userText(ctx, people, note) {
     const target = healthtargets.targetFor(p.answers);
     lines.push('- key "' + p.key + '", name "' + p.name + '"' + (p.portion ? ', current portion ' + p.portion : '') +
       ', target at least ' + target.veg + ' serves of vegetables and ' + target.fruit + ' of fruit a day' +
+      { full: ' from week 1', build: ', building up to it by week 3', own: ' (but they chose to keep close to what they eat now, so don’t add foods to reach it)' }[healthtargets.paceFor(p.answers)] +
       (p.answered ? '' : ' (no About me answers yet: plan sensibly from what the others said, and keep it simple)'));
   }
   lines.push('', 'Their About me answers:');
   for (const p of people) {
     if (p.answered) lines.push('<person key="' + p.key + '">' + JSON.stringify(p.answers) + '</person>');
   }
+  const kitchen = kitchenList();
+  if (kitchen.length) {
+    lines.push('', 'Food the family already has at home. Use it up first (fresh food in week 1, pantry and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists:',
+      '<kitchen>' + kitchen.join('\n') + '</kitchen>');
+  }
+  // Meals from earlier plans that the family rated well or poorly (averages out of 10).
+  const rated = Object.entries(dishRatings());
+  const liked = rated.filter(([, score]) => score >= 7.5).map(([name]) => name).slice(0, 15);
+  const disliked = rated.filter(([, score]) => score <= 4.5).map(([name]) => name).slice(0, 15);
+  if (liked.length) lines.push('', 'Meals the family rated highly in earlier plans (bring some back, or ones like them): ' + liked.join('; ') + '.');
+  if (disliked.length) lines.push('', 'Meals they rated poorly (leave these out, and ones like them): ' + disliked.join('; ') + '.');
   if (note) lines.push('', 'A note from the admin who asked for this plan:', '<note>' + note + '</note>');
   lines.push('', 'Write the whole plan now, as one JSON object.');
   return lines.join('\n');
@@ -378,7 +414,7 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
 // ---------------------------------------------------------------------------
 
 async function handle(req, res, urlPath, url, me, ctx) {
-  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;
+  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/kitchen'].includes(urlPath)) return false;
   if (!me.admin) {
     send(res, 403, { error: 'Only an admin can set up the family’s plan.' });
     return true;
@@ -413,6 +449,19 @@ async function handle(req, res, urlPath, url, me, ctx) {
     return true;
   }
 
+  if (urlPath === '/api/plan/kitchen' && req.method === 'PUT') {
+    let b;
+    try { b = await readBody(req); } catch (e) { send(res, 400, { error: 'That list is too long. Keep it to the main things.' }); return true; }
+    if (!Array.isArray(b.items)) { send(res, 400, { error: 'bad request' }); return true; }
+    // Tidy the lines: no blanks, at most 80 characters each and 200 lines.
+    const items = b.items.filter(x => typeof x === 'string').map(x => x.replace(/[<>]/g, '').trim().slice(0, 80)).filter(Boolean).slice(0, 200);
+    db.setSetting('kitchen-list', JSON.stringify(items));
+    // Say what the plan builder understands, so they can reword anything it missed.
+    const read = planbuilder.kitchenStock(items);
+    send(res, 200, { ok: true, kitchen: items, counted: read.counted, unknown: read.unknown });
+    return true;
+  }
+
   if (urlPath === '/api/plan/setup' && req.method === 'GET') {
     const ready = assistant.setup(me);
     const pending = pendingDraft();
@@ -424,6 +473,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       job: job ? { state: job.state, by: job.by, started: job.started, stage: job.stage || '', error: job.error || null,
         progress: job.state === 'running' ? Math.min(0.97, (job.chars || 0) / EXPECTED_CHARS) : null } : null,
       draft: pending ? draftPreview(pending) : null,
+      kitchen: kitchenList(),
       isExample: !(ctx.readPlan() || {}).people || /^example/i.test(String((ctx.readPlan() || {}).id || '')),
     });
     return true;
@@ -464,7 +514,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       const people = household(ctx);
       if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
       try {
-        const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale });
+        const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale, pantry: kitchenList(), rated: dishRatings() });
         saveDraft(me, ctx, people, built.plan, built.notesForAdmin, 'New 4-week plan for the family (built-in, no AI)');
         job = null;
         send(res, 200, { ok: true, done: true });
