@@ -71,7 +71,7 @@
         { "id": "dislikes", "label": "Foods you won't eat", "type": "long", "placeholder": "e.g. mushrooms, coriander, spicy food" },
         { "id": "likes", "label": "Foods and meals you love", "type": "long", "placeholder": "e.g. stir-fries, roast chicken, curries" },
         { "id": "cuisines", "label": "Kinds of food you'd like more of", "type": "multi",
-          "options": ["Australian classics", "Italian", "Mexican", "Indian", "Chinese", "Japanese", "Korean", "Thai", "Vietnamese", "Middle Eastern", "Greek", "British"] },
+          "options": ["Australian classics", "Italian", "Mexican", "Indian", "Chinese", "Japanese", "Korean", "Thai", "Vietnamese", "Middle Eastern", "Greek", "British", "French"] },
         { "id": "breakfast", "label": "What's breakfast like for you?", "type": "choice",
           "options": ["I always eat breakfast", "Sometimes", "I usually skip it", "Only coffee"] },
         { "id": "hungry", "label": "When do you get hungriest or have cravings?", "type": "multi",
@@ -79,7 +79,7 @@
         { "id": "guidelines", "label": "Which countries' healthy-eating guidelines would you like your meals compared with?", "type": "multi",
           "options": ["Australia", "New Zealand", "United Kingdom", "Japan", "Korea"], "help": "Pick one or more. The Macros tab shows the first one you pick, and you can switch between the others there." },
         { "id": "drinks", "label": "What do you usually drink?", "type": "multi",
-          "options": ["Water", "Coffee", "Tea", "Milk", "Soft drink", "Energy drinks", "Juice", "Alcohol a few times a week", "Alcohol most days"] }
+          "options": ["Water", "Coffee", "Tea", "Milk", "Soft drink", "Energy drinks", "Juice", "Cordial", "Alcohol a few times a week", "Alcohol most days"] }
       ]
     },
     {
