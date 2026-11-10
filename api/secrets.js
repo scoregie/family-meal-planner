@@ -13,18 +13,28 @@ const DATA_DIR = process.env.DATA_DIR || '/data';
 const KEY_FILE = path.join(DATA_DIR, 'encryption-key');
 let key = null;
 
+// The key. It is only ever made when the file doesn't exist: if it exists but can't be read or
+// looks wrong, this stops with an error instead of replacing it, because a new key would make every
+// saved secret unreadable for good.
+function readKey() {
+  const saved = Buffer.from(fs.readFileSync(KEY_FILE, 'utf8').trim(), 'base64');
+  if (saved.length !== 32) throw new Error(KEY_FILE + ' doesn’t hold a valid key. Restore it from a backup; saved AI keys can’t be read without it.');
+  return saved;
+}
 function getKey() {
   if (key) return key;
   try {
-    const saved = Buffer.from(fs.readFileSync(KEY_FILE, 'utf8').trim(), 'base64');
-    if (saved.length === 32) key = saved;
+    key = readKey();
   } catch (e) {
-    // Not made yet.
-  }
-  if (!key) {
-    key = crypto.randomBytes(32);
+    if (e.code !== 'ENOENT') throw e;
     fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(KEY_FILE, key.toString('base64'), { mode: 0o600 });
+    try {
+      // 'wx': only if it still doesn't exist, so two programs starting at once can't both make one.
+      fs.writeFileSync(KEY_FILE, crypto.randomBytes(32).toString('base64'), { mode: 0o600, flag: 'wx' });
+    } catch (e2) {
+      if (e2.code !== 'EEXIST') throw e2;
+    }
+    key = readKey();
   }
   return key;
 }

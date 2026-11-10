@@ -3,6 +3,39 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.4.1 (2026-11-10)
+
+Fixes from a full code review. After updating, restart both containers
+(`docker compose restart`), because the Caddyfile changed too.
+
+- **Security:**
+  - The limit on wrong passwords can no longer be bypassed by sending a made-up
+    `X-Forwarded-For` header. Caddy now works out the visitor's real address and passes it on.
+  - A crafted `next=` link can no longer send people to another website after they log in.
+- **Country choice on a new server:** the country list on the first-account form was empty,
+  because `regions.js` needed a login. Fixed.
+- **Exercise:**
+  - Pregnant people get bodyweight exercises only again, as their note says.
+  - Injury words are matched as whole words, and "no knee problems" no longer counts as a knee
+    problem. Hip problems now leave out deep knee-bend moves.
+  - Swapping an exercise is now checked on the server too.
+- **Names in any alphabet:** names like 유나 or ゆき can now be used. Uploaded files are now deleted
+  with the account for names that start with an accented letter (like Émile).
+- **Reliability:**
+  - A download that fails part-way no longer stops the server.
+  - A damaged or unusual zip can't use up the memory, and an empty file inside one no longer
+    fails the import.
+  - The encryption key for saved AI keys is never replaced. If it can't be read, saving a key
+    shows an error.
+  - "Too big" errors reach the page instead of showing as a dropped connection.
+  - A failed download of the shared meals and exercises is tried again within 6 hours.
+  - Reminders at 11:30 pm or ending at midnight make valid calendar events.
+  - Offsite backups of 2 GB or more are uploaded in parts. docs/restore.md shows how to join them.
+- **Wording:**
+  - The plan draft and its approval summary show the plan's own currency.
+  - Ask AI no longer calls prices Coles estimates.
+  - Plans written by the AI and by Claude Code no longer interfere with each other.
+
 ## v1.4.0 (2026-11-10)
 
 - **Local prices for plans built without AI:** in every country, the built-in builder's shopping

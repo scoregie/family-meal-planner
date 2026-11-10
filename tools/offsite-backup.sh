@@ -52,8 +52,20 @@ age -r "$RECIPIENT" -o "$WORK/$NAME.tar.gz.age" "$WORK/$NAME.tar.gz"
 rm "$WORK/$NAME.tar.gz"
 SIZE=$(du -h "$WORK/$NAME.tar.gz.age" | cut -f1)
 
-gh release create "backup-$STAMP" "$WORK/$NAME.tar.gz.age" --repo "$BACKUP_REPO" \
-  --title "Backup $STAMP" --notes "Encrypted backup of the whole app folder ($SIZE). See RESTORE.md." >/dev/null
+# GitHub won't take a release file of 2 GB or more, so a bigger backup goes up in 1.9 GB parts
+# (name.tar.gz.age.part00, .part01, ...). docs/restore.md joins them back together with cat.
+if [ "$(stat -c %s "$WORK/$NAME.tar.gz.age")" -ge 2000000000 ]; then
+  split -b 1900m -d -a 2 "$WORK/$NAME.tar.gz.age" "$WORK/$NAME.tar.gz.age.part"
+  rm "$WORK/$NAME.tar.gz.age"
+fi
+
+# If the upload fails part-way, remove the half-made release so it isn't mistaken for a backup.
+if ! gh release create "backup-$STAMP" "$WORK/$NAME".tar.gz.age* --repo "$BACKUP_REPO" \
+  --title "Backup $STAMP" --notes "Encrypted backup of the whole app folder ($SIZE). See RESTORE.md." >/dev/null; then
+  gh release delete "backup-$STAMP" --repo "$BACKUP_REPO" --yes --cleanup-tag >/dev/null 2>&1 || true
+  echo "The upload to $BACKUP_REPO failed, so no backup was kept this time." >&2
+  exit 1
+fi
 
 # Keep the newest $KEEP backups.
 gh release list --repo "$BACKUP_REPO" --limit 200 --json tagName,createdAt \

@@ -273,7 +273,8 @@ async function runDraft(me, ready, ctx, note) {
 
 // Reads, checks and saves an AI-written plan as a draft for an admin to approve.
 async function finishDraft(me, ctx, people, known, text, who) {
-    if (job) job.stage = 'Checking the plan';
+    // The progress shown on Plan setup belongs to drafts the server is writing, not Claude Code's.
+    if (job && who !== 'Claude Code') job.stage = 'Checking the plan';
     let plan;
     try {
       plan = parsePlan(text);
@@ -291,7 +292,8 @@ async function finishDraft(me, ctx, people, known, text, who) {
       plan.people[p.key].name = p.name;
     }
     saveDraft(me, ctx, people, plan, forAdmin, 'New 4-week plan for the family (' + who + ')');
-    if (who !== 'Claude Code') job = null;
+    // Done: clear the progress (or an old failure, which no longer matters now there's a new draft).
+    if (who !== 'Claude Code' || (job && job.state === 'failed')) job = null;
 }
 
 // Reads a whole plan sent by tools/claude-code-plan.sh (up to 3 MB).
@@ -301,12 +303,27 @@ function readBig(req) {
     let size = 0;
     req.on('data', chunk => {
       size += chunk.length;
-      if (size > 3e6) { reject(new Error('too big')); req.destroy(); return; }
+      if (size > 3e6) {
+        // Answer straight away, and read (and drop) the rest so the answer isn't cut off.
+        req.removeAllListeners('data');
+        req.resume();
+        reject(new Error('too big'));
+        return;
+      }
       chunks.push(chunk);
     });
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
+}
+
+// An amount in a plan's currency, in the household's style: "$548", "£230", "¥57,060".
+function priceText(n, currency) {
+  try {
+    return new Intl.NumberFormat(appearance.region().locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
+  } catch (e) {
+    return '$' + Math.round(n);
+  }
 }
 
 // Saves a whole new plan as one request that sets each top-level part of the plan, replacing any
@@ -325,7 +342,7 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
     const fortnights = [plan.weeks.slice(0, 3), plan.weeks.slice(3, 6)].map(f => f.reduce((n, w) => n + (w.cost || 0), 0));
     const summary = [
       'Replaces the whole plan: 4 weeks of meals, recipes, shopping and exercise for ' + people.map(p => p.name).join(', ') + '.',
-      'Shopping: about $' + Math.round(fortnights[0]) + ' for weeks 1 and 2, and $' + Math.round(fortnights[1]) + ' for weeks 3 and 4.',
+      'Shopping: about ' + priceText(fortnights[0], plan.currency) + ' for weeks 1 and 2, and ' + priceText(fortnights[1], plan.currency) + ' for weeks 3 and 4.',
       'Everyone’s ticks start fresh. The current plan is backed up first.',
     ];
     // Older drafts that were never decided are replaced by this one.
@@ -334,7 +351,7 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
     }
     db.addRequest({
       person: me.person, user: me.user, title, details: forAdmin || null,
-      change: { kind: 'full-plan', steps, summary, preview: { weeks: plan.weeks, people: plan.people } },
+      change: { kind: 'full-plan', steps, summary, preview: { weeks: plan.weeks, people: plan.people, currency: plan.currency } },
       status: 'open',
     });
 }
@@ -403,6 +420,10 @@ async function handle(req, res, urlPath, url, me, ctx) {
     return true;
   }
   if (urlPath === '/api/plan/handoff' && req.method === 'POST') {
+    if (job && job.state === 'running') {
+      send(res, 409, { error: 'The AI is drafting a plan on Plan setup right now. Wait until it finishes (or fails), then submit again.' });
+      return true;
+    }
     let text;
     try { text = await readBig(req); } catch (e) { send(res, 400, { error: 'The plan is too big (over 3 MB).' }); return true; }
     const people = household(ctx);

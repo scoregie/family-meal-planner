@@ -116,6 +116,16 @@ async function handle(req, res, urlPath, url, me, ctx) {
       send(res, 400, { error: 'Pick an exercise of the same kind.' });
       return true;
     }
+    // A person's own workout: the new exercise has to suit them (equipment, injuries, pregnancy,
+    // seated) and not be one they left out. The page only offers these, but check here too.
+    if (target !== ex) {
+      const profile = db.getProfile(person);
+      const fits = planbuilder.exerciseFits({ answers: (profile && profile.answers) || {}, avoid: avoidList(person) });
+      if (!fits.includes(to.id)) {
+        send(res, 400, { error: 'That exercise doesn’t suit their About me answers (equipment, injuries or health), or it’s on their leave-out list. Pick another.' });
+        return true;
+      }
+    }
     workout.items[index] = lineFor(to, workout.items[index]);
     ctx.savePlan(plan);
     if (body.avoid && old.id !== to.id) setAvoid(person, old.id, true);

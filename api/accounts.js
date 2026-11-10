@@ -90,9 +90,9 @@ function cleanEmail(email) {
   return EMAIL.test(e) && e.length <= 200 ? e : '';
 }
 
-// True if a name has at least one letter or number (so it makes a usable person key).
+// True if a name has at least one letter or number in any alphabet (so it makes a usable person key).
 function goodName(name) {
-  return /[a-z0-9]/i.test(String(name || ''));
+  return /[\p{L}\p{N}]/u.test(String(name || ''));
 }
 
 function passwordProblem(password) {

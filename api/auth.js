@@ -276,9 +276,11 @@ const fails = new Map();   // address -> times of recent wrong passwords
 const WINDOW = 15 * 60e3;
 const LIMIT = 10;
 
-// The visitor's IP address (Caddy passes the real one in X-Forwarded-For).
+// The visitor's IP address. Caddy works it out (skipping trusted proxies, see the Caddyfile)
+// and sends it as X-Real-IP, replacing anything the visitor sent. X-Forwarded-For isn't used:
+// its first entry is whatever the visitor put there.
 function clientIp(req) {
-  return String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '?';
+  return String(req.headers['x-real-ip'] || '').trim().slice(0, 64) || req.socket.remoteAddress || '?';
 }
 
 // The wrong-password times for an address in the last 15 minutes (older ones are forgotten).
@@ -287,6 +289,8 @@ function recent(address) {
   const times = (fails.get(address) || []).filter(t => now - t < WINDOW);
   if (times.length) fails.set(address, times);
   else fails.delete(address);
+  // Now and then, forget addresses whose wrong passwords are all old, so the list can't grow forever.
+  if (fails.size > 1000) for (const [a, t] of fails) if (!t.some(x => now - x < WINDOW)) fails.delete(a);
   return times;
 }
 
@@ -294,7 +298,9 @@ function recent(address) {
 // /login?next=https://evil.example cannot send people somewhere else.
 function safeNext(next) {
   next = String(next || '');
-  const isLocal = next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\');
+  // Browsers ignore tabs and line breaks in addresses and treat a backslash like "/", so "/<tab>/evil.example"
+  // would leave the site: any of those characters means "go home" instead.
+  const isLocal = next.startsWith('/') && !next.startsWith('//') && !/[\\\u0000-\u001f\u007f]/.test(next);
   if (!isLocal || /^\/(login|auth)\b/.test(next)) return '/';
   return next;
 }

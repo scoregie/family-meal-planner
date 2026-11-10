@@ -180,7 +180,10 @@ function save(req, res, dir, name) {
     out.destroy();
     fs.rm(tempFile, { force: true }, () => {});
     if (!res.headersSent) send(res, code, { error: message });
-    req.destroy();
+    // Stop the upload only once the answer has gone out, so the page sees the message
+    // instead of a dropped connection.
+    if (res.writableFinished) req.destroy();
+    else res.on('finish', () => req.destroy());
   };
 
   req.on('data', chunk => {
@@ -235,7 +238,12 @@ function download(res, url, file) {
     // Even if a file is opened in the browser, it cannot run scripts or load anything else.
     'Content-Security-Policy': "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox",
   });
-  fs.createReadStream(file.f).pipe(res);
+  // If the file can't be read after all (deleted a moment ago, say), end this download quietly:
+  // an unhandled stream error would stop the whole server.
+  const stream = fs.createReadStream(file.f);
+  stream.on('error', () => res.destroy());
+  res.on('close', () => stream.destroy());
+  stream.pipe(res);
 }
 
 // Answers every /api/uploads... request. Returns true if it handled the request.
@@ -288,7 +296,8 @@ async function handle(req, res, urlPath, url, me, people) {
 
 // Deletes everything a person uploaded (when they delete their account and history).
 function forget(person) {
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(String(person || ''))) return;
+  // Keys can start with "-" (a name like "Émile" gives "-mile"), but never contain anything else.
+  if (!/^[a-z0-9-]+$/.test(String(person || '')) || !/[a-z0-9]/.test(person)) return;
   const dir = path.join(ROOT, person);
   if (path.dirname(dir) !== ROOT) return;
   fs.rmSync(dir, { recursive: true, force: true });

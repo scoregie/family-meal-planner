@@ -19,10 +19,11 @@ new machine or container:
 3. **Download the newest backup and unpack it** (replace the repository name with yours):
 
        cd /home
-       gh release download --repo you/your-private-backup-repo --pattern '*.age'
-       age -d -i ~/.config/family-planner-backup/key.txt family-planner-*.tar.gz.age | tar -xz
+       gh release download --repo you/your-private-backup-repo --pattern '*.age*'
+       cat family-planner-*.tar.gz.age* | age -d -i ~/.config/family-planner-backup/key.txt | tar -xz
 
-   If there are several files, use the newest one (the date is in the name). This makes the
+   This downloads the newest backup. A backup of 2 GB or more is uploaded in parts
+   (`.age.part00`, `.age.part01`, ...); the `cat` line joins them back together in order. This makes the
    app folder (for example `/home/shopping-list-selfhost`) exactly as it was.
 
 4. **Start it:**

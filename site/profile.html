@@ -318,7 +318,7 @@ var PLAN_PEOPLE = null;
 function planKeyFor(person) {
   var people = (PLAN_PEOPLE || {});
   return Object.keys(people).filter(function (k) {
-    return people[k] && people[k].name && String(people[k].name).toLowerCase().replace(/[^a-z0-9]+/g, "-") === person;
+    return people[k] && people[k].name && Appearance.personKey(people[k].name) === person;
   })[0] || null;
 }
 
