@@ -13,6 +13,8 @@
 //     Each person picks the pace in About me: from week 1, building up by week 3, or no change.
 //   - Shopping lists add up every recipe's amounts for the people eating them, in whole packs.
 //     Things that keep (pantry, freezer, cheese) carry over between weeks so nothing is bought twice.
+//   - Food the family already has (the kitchen list on Plan setup, opts.pantry) is used first:
+//     dishes that use it score higher, and what it covers is left off the shopping lists.
 //   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
 //     (opts.country), and recipe words change to the local ones ("capsicum" to "pepper").
 //   - Exercise builds gently over the 4 weeks from each person's time, equipment and health notes.
@@ -299,6 +301,78 @@ function portionFor(p, r) {
 }
 
 // ---------------------------------------------------------------------------
+// Food already in the kitchen
+// ---------------------------------------------------------------------------
+
+// Words in a kitchen list that describe the packaging, not the food.
+const PACK_WORDS = /\b(tins?|cans?|packs?|packets?|bags?|boxe?s?|bottles?|jars?|cartons?|tubs?|loaf|loaves|bunch(es)?|heads?|pieces?|of|a|an|some|half|dozen|about|x)\b/g;
+
+// Everyday names for library ingredients, as people write them on a kitchen list (plurals removed).
+const KITCHEN_NAMES = { cheese: 'cheddar', spaghetti: 'pasta', penne: 'pasta', macaroni: 'pasta', noodle: 'egg noodles',
+  yoghurt: 'greek yoghurt', yogurt: 'greek yoghurt', chicken: 'chicken breast', mince: 'beef mince', sausage: 'beef sausages',
+  steak: 'beef steak', fish: 'white fish', lentil: 'red lentils', bean: 'baked beans', vegetable: 'frozen veg' };
+// Words that make it a different food ("tomato sauce" isn't tomatoes), or name no food by themselves.
+const DIFFERENT_FOOD = ['sauce', 'paste', 'soup', 'juice', 'powder', 'chip', 'flavour', 'flavoured', 'cake', 'biscuit'];
+const TOO_VAGUE = ['fruit', 'frozen', 'canned', 'tinned', 'fresh', 'food', 'meat', 'milk powder'];
+
+// The library ingredient a food on the kitchen list means, or null: "eggs" is "egg", "peas" is
+// "frozen peas", "brown rice" is "rice", "diced tomatoes" is "canned tomatoes".
+function ingredientFor(food) {
+  // Words without plurals or hyphens: "Weet-Bix biscuits" -> ["weetbix", "biscuit"].
+  const tidy = text => String(text).toLowerCase().replace(/-/g, '').replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(Boolean)
+    .map(w => w.replace(/(ies)$/, 'y').replace(/(oes)$/, 'o').replace(/s$/, ''));
+  const want = tidy(food);
+  if (!want.length || TOO_VAGUE.includes(want.join(' '))) return null;
+  if (KITCHEN_NAMES[want.join(' ')]) return KITCHEN_NAMES[want.join(' ')];
+  let best = null, bestScore = 0;
+  for (const key of Object.keys(LIB.ingredients)) {
+    const k = tidy(key);
+    const name = tidy(LIB.ingredients[key].name.replace(/\d+(\.\d+)?\s*(kg|g|ml|l)\b/gi, ''));
+    // It's a match when every word they wrote is in the ingredient's key or shop name ("diced
+    // tomatoes"), or the whole key is in what they wrote ("brown rice" has "rice").
+    const inKey = want.filter(w => k.includes(w)).length;
+    const inName = want.filter(w => !k.includes(w) && name.includes(w)).length;
+    if (!inKey && !inName) continue;
+    if (inKey + inName < want.length && !k.every(w => want.includes(w))) continue;
+    if (want.some(w => DIFFERENT_FOOD.includes(w) && !k.includes(w) && !name.includes(w))) continue;
+    // Words in the key count most, then the shop name; a key with extra words loses a little.
+    const score = inKey * 2 + inName * 1.5 - k.filter(w => !want.includes(w)).length * 0.1;
+    if (score > bestScore) { best = key; bestScore = score; }
+  }
+  return best;
+}
+
+// Reads the family's kitchen list (lines like "rice 2 kg", "6 eggs", "frozen peas") into amounts
+// of library ingredients. Returns {stock: {ingredient key: [{amount, until}]}, counted: [names],
+// unknown: [what it couldn't match]}. "until" is the last meal week (0 to 3) the food keeps for.
+// No amount means one pack; a number without a unit means that many (eggs) or that many packs.
+function kitchenStock(lines) {
+  const stock = {}, counted = [], unknown = [];
+  for (const line of list(lines).slice(0, 200)) {
+    for (const part of String(line).split(/[,;\n]/)) {
+      const text = part.trim().toLowerCase();
+      if (!text) continue;
+      const m = text.match(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|l|litres?|liters?)?\b/);
+      const food = text.replace(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|l|litres?|liters?)?\b/g, ' ').replace(PACK_WORDS, ' ');
+      const key = ingredientFor(food);
+      if (!key) { unknown.push(part.trim().slice(0, 60)); continue; }
+      const ing = ING[key];
+      if (ing.aisle === 'assumed' || !ing.pack) continue;   // oil, salt, spices: never on the list anyway
+      const number = m ? parseFloat(m[1]) : null;
+      const unit = m && m[2] ? m[2][0] : '';
+      let amount = ing.pack;                                   // no amount given: one pack
+      if (number && unit && ing.unit !== 'each') amount = number * (m[2] === 'kg' || unit === 'l' ? 1000 : 1);
+      else if (number) amount = ing.unit === 'each' ? number : number * ing.pack;
+      const keeps = KEEPS_ITEM[key] || KEEPS[ing.aisle] || 5;
+      const longLife = ing.aisle === 'pantry' || ing.aisle === 'frozen';
+      (stock[key] = stock[key] || []).push({ amount, until: longLife ? 3 : Math.min(3, Math.floor(keeps / 7)) });
+      if (!counted.includes(ing.name)) counted.push(ing.name);
+    }
+  }
+  return { stock, counted, unknown };
+}
+
+// ---------------------------------------------------------------------------
 // Choosing dishes
 // ---------------------------------------------------------------------------
 
@@ -347,8 +421,13 @@ function score(d, eaters, house, rnd) {
     if (r.help.has('Cooking a batch on a good day') && d.batch) s += 1.5;
     if (r.sensory.has('Strong smells') && (d.tags || []).includes('fish')) s -= 2;
   }
+  // Food already in the kitchen: dishes that use it score higher, and it costs nothing to use,
+  // so its price comes off what the dish costs.
+  const owned = house.ownedNow ? d.per.filter(x => house.ownedNow.has(x[0])) : [];
+  const ownedCost = owned.reduce((n, [k, amount]) => n + ING[k].price / ING[k].pack * amount, 0);
+  s += Math.min(owned.length, 3) * 0.5 + ownedCost;
   if (house.cookLimit && d.minutes > house.cookLimit) s -= (d.minutes - house.cookLimit) / 5;
-  if (house.budget) s -= d.cost * house.costWeight;
+  if (house.budget) s -= (d.cost - ownedCost) * house.costWeight;
   return s;
 }
 
@@ -650,6 +729,9 @@ function build(people, opts) {
     costWeight: 0.6,
   };
   if (house.cookLimit === Infinity) house.cookLimit = null;
+  // Food already in the kitchen (the list on Plan setup), as amounts of library ingredients.
+  const kitchen = kitchenStock(opts && opts.pantry);
+  house.stock = kitchen.stock;
   const repeat = rules.some(r => r.help.has('Eating the same meals often (fewer decisions)') || r.sensory.has('A brand or recipe changing'));
   const forAdmin = [];
 
@@ -665,6 +747,8 @@ function build(people, opts) {
     house.costWeight *= 2.5;
     forAdmin.length = 0;
   } while (true);
+  if (kitchen.counted.length) forAdmin.push('From your kitchen list, the plan counts: ' + kitchen.counted.join(', ') + '. Meals that use them were preferred, and what they cover is left off the shopping lists.');
+  if (kitchen.unknown.length) forAdmin.push('Not matched to anything in the meal library, so not counted: ' + kitchen.unknown.join(', ') + '.');
   // Anyone still short of their vegetable or fruit serves (their answers ruled out the options).
   const shortNote = TARGETS.shortNote(plan, people);
   if (shortNote) forAdmin.push(shortNote);
@@ -701,7 +785,10 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
 
   const mealWeeks = [];
   let fixedDinners = null;
+  // The kitchen foods that still keep in meal week `w` (fresh food only counts for the first weeks).
+  const ownedIn = w => new Set(Object.keys(house.stock || {}).filter(k => house.stock[k].some(x => x.until >= w)));
   for (let w = 0; w < 4; w++) {
+    house.ownedNow = ownedIn(w);
     // Dinners for the week.
     let week;
     if (repeat && fixedDinners && w % 2 === 1) week = fixedDinners;
@@ -731,6 +818,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   }
 
   // Per-person swaps: anyone a shared dish doesn't suit gets one that does.
+  house.ownedNow = ownedIn(0);
   const own = {};   // person key -> {dinner: [dishes], breakfast, lunch}
   for (const r of rules) {
     const myDinners = dinners.filter(d => allowed(d, r));
@@ -916,7 +1004,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   }
 
   // Shopping: buy in whole packs, carrying over what keeps.
-  const shopping = shoppingFor(needs);
+  const shopping = shoppingFor(needs, house.stock);
   const plan = { weeks: [] };
   for (let f = 0; f < 2; f++) {
     plan.weeks.push({ name: 'Stock-up ' + (f + 1), kind: 'stockup', shopping: shopping.stock[f] });
@@ -1159,10 +1247,13 @@ function guideFor(r, p) {
 
 // The shopping lists: what each meal week needs, in whole packs. Pantry and freezer things go on
 // the stock-up list before each fortnight. Leftover pack amounts carry over while they keep.
-function shoppingFor(needs) {
+// `inKitchen` is the food the family already has ({key: [{amount, until}]}, from kitchenStock):
+// it is used up before anything is bought.
+function shoppingFor(needs, inKitchen) {
   const weekly = needs.map(() => ({}));
   const stock = [{}, {}];
   const onHand = {};   // key -> [{amount, until (week index)}]
+  for (const [k, shelf] of Object.entries(inKitchen || {})) onHand[k] = shelf.map(x => ({ amount: x.amount, until: x.until }));
   const bought = needs.map(() => ({}));
   const stockBought = [{}, {}];
   needs.forEach((need, w) => {
@@ -1213,7 +1304,7 @@ function useData(data) {
 }
 
 const PlanBuilder = {
-  build, rulesFor, portionFor, allowed, exerciseFits, useData,
+  build, rulesFor, portionFor, allowed, exerciseFits, useData, kitchenStock,
   get EXERCISES() { return EXERCISES; },
   get LIB() { return LIB; },
 };

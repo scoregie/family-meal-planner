@@ -6,6 +6,8 @@
 //                            AI choice, and the draft (running, failed, or waiting to be approved)
 //   PUT  /api/plan/ai        admins: the family's AI {provider, model} ("none" for no AI)
 //   GET  /api/plan/ai/models?provider=   admins: the models the family's key for it can use
+//   PUT  /api/plan/kitchen   admins: {items} the food already in the kitchen, one per line
+//                            ("rice 2 kg", "6 eggs"). The next draft uses it first.
 //   POST /api/plan/draft     admins: start a draft {how: "ai" | "builtin", note}. With AI it runs
 //                            in the background and takes several minutes; built-in takes a moment.
 //   GET  /api/plan/handoff?note=   admins: the exact prompt the AI would get {system, user}, so a
@@ -39,6 +41,17 @@ try {
   Anthropic = sdk.Anthropic || sdk.default || sdk;
 } catch (e) {
   // assistant.setup() explains what's missing.
+}
+
+// The family's kitchen list: food they already have, as the lines they typed on Plan setup.
+// The next plan uses these first and leaves what they cover off the shopping lists.
+function kitchenList() {
+  try {
+    const items = JSON.parse(db.getSetting('kitchen-list') || '[]');
+    return Array.isArray(items) ? items.filter(x => typeof x === 'string') : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 // The one draft that can run at a time. Kept in memory: a restart loses a draft in progress.
@@ -207,6 +220,11 @@ function userText(ctx, people, note) {
   lines.push('', 'Their About me answers:');
   for (const p of people) {
     if (p.answered) lines.push('<person key="' + p.key + '">' + JSON.stringify(p.answers) + '</person>');
+  }
+  const kitchen = kitchenList();
+  if (kitchen.length) {
+    lines.push('', 'Food the family already has at home. Use it up first (fresh food in week 1, pantry and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists:',
+      '<kitchen>' + kitchen.join('\n') + '</kitchen>');
   }
   if (note) lines.push('', 'A note from the admin who asked for this plan:', '<note>' + note + '</note>');
   lines.push('', 'Write the whole plan now, as one JSON object.');
@@ -380,7 +398,7 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
 // ---------------------------------------------------------------------------
 
 async function handle(req, res, urlPath, url, me, ctx) {
-  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;
+  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/kitchen'].includes(urlPath)) return false;
   if (!me.admin) {
     send(res, 403, { error: 'Only an admin can set up the family’s plan.' });
     return true;
@@ -415,6 +433,19 @@ async function handle(req, res, urlPath, url, me, ctx) {
     return true;
   }
 
+  if (urlPath === '/api/plan/kitchen' && req.method === 'PUT') {
+    let b;
+    try { b = await readBody(req); } catch (e) { send(res, 400, { error: 'That list is too long. Keep it to the main things.' }); return true; }
+    if (!Array.isArray(b.items)) { send(res, 400, { error: 'bad request' }); return true; }
+    // Tidy the lines: no blanks, at most 80 characters each and 200 lines.
+    const items = b.items.filter(x => typeof x === 'string').map(x => x.replace(/[<>]/g, '').trim().slice(0, 80)).filter(Boolean).slice(0, 200);
+    db.setSetting('kitchen-list', JSON.stringify(items));
+    // Say what the plan builder understands, so they can reword anything it missed.
+    const read = planbuilder.kitchenStock(items);
+    send(res, 200, { ok: true, kitchen: items, counted: read.counted, unknown: read.unknown });
+    return true;
+  }
+
   if (urlPath === '/api/plan/setup' && req.method === 'GET') {
     const ready = assistant.setup(me);
     const pending = pendingDraft();
@@ -426,6 +457,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       job: job ? { state: job.state, by: job.by, started: job.started, stage: job.stage || '', error: job.error || null,
         progress: job.state === 'running' ? Math.min(0.97, (job.chars || 0) / EXPECTED_CHARS) : null } : null,
       draft: pending ? draftPreview(pending) : null,
+      kitchen: kitchenList(),
       isExample: !(ctx.readPlan() || {}).people || /^example/i.test(String((ctx.readPlan() || {}).id || '')),
     });
     return true;
@@ -466,7 +498,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       const people = household(ctx);
       if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
       try {
-        const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale });
+        const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale, pantry: kitchenList() });
         saveDraft(me, ctx, people, built.plan, built.notesForAdmin, 'New 4-week plan for the family (built-in, no AI)');
         job = null;
         send(res, 200, { ok: true, done: true });

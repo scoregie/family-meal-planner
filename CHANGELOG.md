@@ -5,7 +5,15 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
 
 ## v1.7.0 (2026-11-10)
 
-Each person chooses how much the plan changes what they eat.
+Each person chooses how much the plan changes what they eat, and plans can start from the food
+already in the kitchen.
+
+- **New on Plan setup: "What's already in your kitchen?"** List the food you'd like used up, one
+  thing per line ("rice 2 kg", "6 eggs", "frozen peas"). The next plan prefers meals that use it
+  and leaves what it covers off the shopping lists: fresh food in the first week or so, pantry and
+  freezer food across all four. Saving the list shows what the plan builder understood and
+  anything it couldn't match. An AI-written plan gets the same list. It is a starting point, not
+  a stocktake, and it isn't updated as you cook.
 
 - **New About me question: "How much should the plan change what you eat?"** Some people use the
   app to eat healthier, others for the planning and shopping. Three answers:

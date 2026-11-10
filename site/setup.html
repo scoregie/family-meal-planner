@@ -102,6 +102,15 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(-
       <div id="aiBody"></div>
     </section>
 
+    <section class="card" id="kitchenCard">
+      <h2>What’s already in your kitchen? (optional)</h2>
+      <p class="note">List the food you’d like used up, one thing per line, with an amount if you know it. The next plan you draft prefers meals that use it and leaves what it covers off the shopping lists. It’s a starting point, not a stocktake: the main things in the fridge, freezer and pantry are enough.</p>
+      <label class="f" for="kitchen">Food at home</label>
+      <textarea id="kitchen" rows="6" maxlength="8000" placeholder="rice 2 kg&#10;6 eggs&#10;frozen peas&#10;2 tins diced tomatoes&#10;chicken thighs 500 g"></textarea>
+      <div class="row"><button class="btn" type="button" id="kitchenSave">Save the list</button></div>
+      <p class="note" id="kitchenNote"></p>
+    </section>
+
     <section class="card" id="draftCard">
       <h2><span class="step">3</span><span id="draftTitle">Draft the plan</span></h2>
       <div id="draftBody"></div>
@@ -617,11 +626,37 @@ function renderCountry() {
   $("countryNote").textContent = "Plans use shop names, pack sizes and prices from " + Appearance.region().where + ". Draft a new plan after changing it.";
 }
 
+// ---------- the kitchen list ----------
+
+var kitchenShown = false;   // the saved list is put in the box once, so reloading doesn't wipe typing
+
+// Puts the saved kitchen list in its box the first time the page loads.
+function renderKitchen() {
+  if (kitchenShown) return;
+  kitchenShown = true;
+  $("kitchen").value = (DATA.kitchen || []).join("\n");
+}
+
+// Says what the plan builder understood from the list, and what it couldn't match.
+function kitchenResult(d) {
+  var bits = [];
+  if (d.counted.length) bits.push("The plan builder will count: " + d.counted.join(", ") + ".");
+  if (d.unknown.length) bits.push("It has no meals that use: " + d.unknown.join(", ") + " (an AI-written plan can still use these).");
+  if (!d.kitchen.length) bits.push("The list is empty, so nothing is counted.");
+  $("kitchenNote").textContent = "Saved. " + bits.join(" ") + " Draft or rebuild the plan to use it.";
+}
+
+$("kitchenSave").addEventListener("click", function () {
+  var items = $("kitchen").value.split("\n").map(function (line) { return line.trim(); }).filter(Boolean);
+  api("PUT", "/api/plan/kitchen", { items: items }).then(kitchenResult).catch(function (e) { status(e.message, true); });
+});
+
 // Gets everything the page shows from the server, then draws each step.
 function load() {
   return api("GET", "/api/plan/setup").then(function (d) {
     DATA = d;
     $("app").hidden = false;
+    renderKitchen();
     renderCountry();
     renderPeople();
     renderAI();

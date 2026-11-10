@@ -92,6 +92,17 @@ test('the instructions for an AI-written plan give each person’s vegetable and
   assert.match(handoff.json.system, /order of importance/);
 });
 
+test('the kitchen list is saved, read back, and given to an AI-written plan', async () => {
+  const saved = await server.request('PUT', '/api/plan/kitchen', { items: ['rice 2 kg', '  ', '6 eggs', 'dragon fruit'] });
+  assert.equal(saved.status, 200, saved.text);
+  assert.deepEqual(saved.json.kitchen, ['rice 2 kg', '6 eggs', 'dragon fruit']);
+  assert.deepEqual(saved.json.unknown, ['dragon fruit']);
+  const setup = await server.request('GET', '/api/plan/setup');
+  assert.deepEqual(setup.json.kitchen, ['rice 2 kg', '6 eggs', 'dragon fruit']);
+  const handoff = await server.request('GET', '/api/plan/handoff');
+  assert.match(handoff.json.user, /<kitchen>rice 2 kg\n6 eggs\ndragon fruit<\/kitchen>/);
+});
+
 test('a tick on the shopping list is saved for everyone', async () => {
   const put = await server.request('PUT', '/api/shared', { ticks: { 0: ['milk'] } });
   assert.equal(put.status, 200, put.text);

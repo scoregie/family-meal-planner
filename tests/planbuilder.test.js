@@ -342,6 +342,40 @@ test('someone keeping close to what they eat now gets nothing added, and isn’t
   }
 });
 
+// ---------------------------------------------------------------------------
+// Food already in the kitchen
+// ---------------------------------------------------------------------------
+
+test('the kitchen list is read into ingredients and amounts, and says what it couldn’t match', () => {
+  const read = pb.kitchenStock(['rice 2 kg', '6 eggs', 'peas', '2 tins diced tomatoes, spaghetti', 'tomato sauce', 'dragon fruit']);
+  assert.deepEqual(read.stock.rice.map(x => x.amount), [2000]);
+  assert.deepEqual(read.stock.egg.map(x => x.amount), [6]);
+  assert.deepEqual(read.stock['frozen peas'].map(x => x.amount), [1000], 'no amount means one pack');
+  assert.deepEqual(read.stock['canned tomatoes'].map(x => x.amount), [800], '2 tins of 400 g');
+  assert.ok(read.stock.pasta, 'spaghetti is pasta');
+  assert.deepEqual(read.unknown, ['tomato sauce', 'dragon fruit']);
+  assert.deepEqual(pb.kitchenStock(null), { stock: {}, counted: [], unknown: [] });
+});
+
+test('food already in the kitchen is left off the shopping lists, and meals that use it are preferred', () => {
+  const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
+  const shop = plan => plan.weeks.flatMap(w => Object.values(w.shopping).flat());
+  // How many dinners over the 4 weeks use rice.
+  const riceDinners = plan => plan.weeks.flatMap(w => w.meals || []).filter(m => {
+    const dish = LIB.dishes.find(d => d.name === m.dinner);
+    return dish && dish.per.some(x => x[0] === 'rice');
+  }).length;
+  let withList = 0, withoutList = 0;
+  for (let seed = 1; seed <= 6; seed++) {
+    withoutList += riceDinners(pb.build(people, { seed }).plan);
+    const built = pb.build(people, { seed, pantry: ['rice 5 kg', 'frozen peas 3 kg'] });
+    withList += riceDinners(built.plan);
+    assert.ok(!shop(built.plan).some(item => /^(Jasmine rice|Frozen peas)/.test(item[0])), 'rice or peas were bought with seed ' + seed);
+    assert.match(built.notesForAdmin, /From your kitchen list, the plan counts: Jasmine rice 1 kg, Frozen peas 1 kg/);
+  }
+  assert.ok(withList > withoutList, withList + ' rice dinners with the list, ' + withoutList + ' without');
+});
+
 test('vegetable sides are only added as sides, never as an ordinary or school snack', () => {
   const sides = new Set(LIB.snacks.filter(s => s.kind === 'side').map(s => s.what));
   assert.ok(sides.size >= 3, 'the library has vegetable sides');
