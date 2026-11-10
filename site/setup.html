@@ -39,6 +39,17 @@ textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var
 .choice input:disabled+span{opacity:.6;cursor:default}
 select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;max-width:100%}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.lib-row{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start;padding:.6rem 0;border-top:1px solid var(--line)}
+.lib-row:first-child{border-top:0}
+.lib-row b{display:block}
+.lib-row small{display:block;color:var(--mute);font-size:.85rem}
+.switch{flex:none;display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer;min-height:2.5rem}
+.switch input{width:1.3rem;height:1.3rem;accent-color:var(--accent)}
+.pend{border:1px solid var(--line);border-radius:.6rem;padding:.5rem .7rem;margin:.4rem 0}
+.pend summary{cursor:pointer;display:flex;justify-content:space-between;gap:.5rem}
+.pend summary span{color:var(--mute);font-size:.85rem;white-space:nowrap}
+.pend ol,.pend ul{margin:.3rem 0 .3rem 1.1rem;padding:0;font-size:.9rem}
+.pend .row{margin-top:.4rem}
 .warn{border-left:4px solid var(--mid,#8a5a00);padding:.5rem .8rem;background:var(--bg);border-radius:.3rem;font-size:.92rem;margin:.6rem 0}
 </style>
 <script src="appearance.js"></script>
@@ -88,6 +99,12 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(-
     <section class="card" id="reviewCard" hidden>
       <h2><span class="step">4</span>Review and approve</h2>
       <div id="review"></div>
+    </section>
+
+    <section class="card" id="libCard">
+      <h2>New meals and exercises</h2>
+      <p class="note">The app’s own plan builder chooses from a library of meals, snacks and exercises. It can grow by itself every 2 weeks. New ones are used the next time you build or rebuild the plan.</p>
+      <div id="libBody"></div>
     </section>
   </div>
 </main>
@@ -243,6 +260,7 @@ function saveAI(p, model) {
   api("PUT", "/api/plan/ai", { provider: p, model: model }).then(function (got) {
     DATA.ai.family = got.family;
     status(p === "none" ? "Saved: no AI. Plans use the built-in plan builder." : "Saved: the family uses " + AI_ABOUT[p][0] + (model ? " (" + model + ")" : "") + ".");
+    loadLibrary();   // the AI choice decides whether the AI can write new meals
     return api("GET", "/api/plan/setup").then(function (d) { DATA = d; renderDraft(); });
   }).catch(function (e) { status(e.message, true); });
 }
@@ -384,6 +402,161 @@ function renderReview() {
   box.appendChild(el("p", "note", "Want changes? Approve it and use Ask AI or Edit plan for tweaks afterwards, or discard it and make another."));
 }
 
+// ---------- new meals and exercises ----------
+
+var LIB = null;
+var libTimer = 0;
+
+function loadLibrary() {
+  return api("GET", "/api/library/updates").then(function (d) {
+    LIB = d;
+    renderLibrary();
+    clearTimeout(libTimer);
+    if (d.writing) libTimer = setTimeout(loadLibrary, 5000);   // the AI is writing: check again soon
+  }).catch(function (e) {
+    $("libBody").textContent = "";
+    $("libBody").appendChild(el("p", "note", "Couldn’t load this: " + e.message));
+  });
+}
+
+function when(ms) {
+  if (!ms) return "never";
+  return new Date(ms).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function libSwitch(label, on, change) {
+  var l = el("label", "switch");
+  var box = el("input");
+  box.type = "checkbox";
+  box.checked = on;
+  box.onchange = function () { change(box.checked); };
+  l.appendChild(box);
+  l.appendChild(document.createTextNode(label));
+  return l;
+}
+
+function libPut(body) {
+  api("PUT", "/api/library/updates", body).then(function (d) { LIB = d; renderLibrary(); status("Saved"); })
+    .catch(function (e) { status(e.message, true); });
+}
+
+function libPost(path, body, done) {
+  return api("POST", "/api/library/updates/" + path, body || {}).then(function (d) {
+    LIB = d;
+    renderLibrary();
+    if (done) status(done);
+    if (d.writing) libTimer = setTimeout(loadLibrary, 5000);
+  }).catch(function (e) { status(e.message, true); renderLibrary(); });
+}
+
+function kjOf(m) { return m ? Math.round(m.kj).toLocaleString("en-AU") + " kJ" : ""; }
+
+// One waiting addition, folded: what it is, then its ingredients and steps (or how-to).
+function pendingItem(p) {
+  var d = el("details", "pend");
+  var sum = el("summary");
+  var it = p.item;
+  var title = p.kind === "dish" ? it.name : p.kind === "snack" ? it.what : it.name;
+  var meta = p.kind === "dish" ? cap(it.meal) + " · " + it.cuisine + " · " + it.minutes + " min · " + kjOf(it.macros) + " · about $" + Number(it.cost).toFixed(2) + " a serve"
+    : p.kind === "snack" ? "Snack · " + kjOf(it.macros)
+    : "Exercise · " + it.type + " · " + it.equipment + " · level " + it.level;
+  sum.appendChild(el("b", null, title));
+  sum.appendChild(el("span", null, meta));
+  d.appendChild(sum);
+  if (p.kind === "exercise") {
+    d.appendChild(el("p", null, it.dose + ": " + it.how));
+  } else {
+    var ing = el("ul");
+    it.per.forEach(function (row) { ing.appendChild(el("li", null, row[0] + ": " + row[1])); });
+    d.appendChild(ing);
+    if (it.steps) {
+      var steps = el("ol");
+      it.steps.forEach(function (st) { steps.appendChild(el("li", null, st)); });
+      d.appendChild(steps);
+    }
+    if (it.tags && it.tags.length) d.appendChild(el("p", "note", "Contains or is: " + it.tags.join(", ")));
+  }
+  var row = el("div", "row");
+  var yes = el("button", "btn primary", "Add to the library");
+  yes.type = "button";
+  yes.onclick = function () { libPost("approve", { ids: [p.id] }, "Added"); };
+  var no = el("button", "btn", "Discard");
+  no.type = "button";
+  no.onclick = function () { libPost("discard", { ids: [p.id] }, "Discarded"); };
+  row.appendChild(yes);
+  row.appendChild(no);
+  d.appendChild(row);
+  return d;
+}
+
+function cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function renderLibrary() {
+  var box = $("libBody");
+  box.textContent = "";
+  var d = LIB;
+  if (!d) return;
+
+  // 1. Shared additions from the project (no AI).
+  var r1 = el("div", "lib-row");
+  var t1 = el("div");
+  t1.appendChild(el("b", null, "Get new ones from the Family Health Planner project"));
+  t1.appendChild(el("small", null, "No AI needed. Every 2 weeks the server downloads the project’s newest meals and exercises from GitHub (just the list; nothing about your family is sent). Last checked: " + when(d.lastCheck) + "."));
+  if (d.lastResult) t1.appendChild(el("small", null, d.lastResult.text));
+  var a = d.added || {};
+  var c = a.community || {}, o = a.own || {};
+  t1.appendChild(el("small", null, "In your library from the project: " + (c.dishes || 0) + " meals, " + (c.snacks || 0) + " snacks, " + (c.exercises || 0) + " exercises. Your own approved ones: " + (o.dishes || 0) + " meals, " + (o.snacks || 0) + " snacks, " + (o.exercises || 0) + " exercises."));
+  var check = el("button", "btn", "Check now");
+  check.type = "button";
+  check.style.marginTop = ".4rem";
+  check.onclick = function () { check.disabled = true; check.textContent = "Checking…"; libPost("check", {}, "Checked"); };
+  t1.appendChild(check);
+  r1.appendChild(t1);
+  r1.appendChild(libSwitch("On", d.auto, function (on) { libPut({ auto: on }); }));
+  box.appendChild(r1);
+
+  // 2. The family's AI writes some, aimed at the family.
+  var r2 = el("div", "lib-row");
+  var t2 = el("div");
+  t2.appendChild(el("b", null, "Have your AI write new ones for your family"));
+  if (d.aiName) {
+    t2.appendChild(el("small", null, "Every 2 weeks " + d.aiName + " writes about 5 meals, a snack and 3 exercises, aimed at the cuisines you like, what you can’t eat and how you rated meals (no health details are sent). They wait here for you to approve. Each run is one AI request on the family’s key."));
+  } else {
+    t2.appendChild(el("small", null, "Needs an AI. Choose one in step 2 to turn this on. Without one, the project’s additions above still arrive."));
+  }
+  if (d.lastAi) t2.appendChild(el("small", null, when(d.lastAi.at) + ": " + d.lastAi.text));
+  if (d.aiName) {
+    var write = el("button", "btn", d.writing ? "Writing… (about a minute)" : "Write some now");
+    write.type = "button";
+    write.disabled = !!d.writing;
+    write.style.marginTop = ".4rem";
+    write.onclick = function () { write.disabled = true; write.textContent = "Writing… (about a minute)"; libPost("write", {}, d.aiName + " is writing them"); };
+    t2.appendChild(write);
+  }
+  r2.appendChild(t2);
+  var sw = libSwitch("On", d.ai && !!d.aiName, function (on) { libPut({ ai: on }); });
+  if (!d.aiName) sw.querySelector("input").disabled = true;
+  r2.appendChild(sw);
+  box.appendChild(r2);
+
+  // Waiting for approval.
+  if (d.pending && d.pending.length) {
+    box.appendChild(el("h3", null, d.pending.length + " waiting for you"));
+    box.appendChild(el("p", "note", "Nutrition, allergens and cost are worked out by the app from USDA data for the ingredients, not taken from the AI. Read the steps before adding: AI can make mistakes."));
+    d.pending.forEach(function (p) { box.appendChild(pendingItem(p)); });
+    var all = el("div", "row");
+    var yes = el("button", "btn primary", "Add all " + d.pending.length);
+    yes.type = "button";
+    yes.onclick = function () { libPost("approve", { all: true }, "Added"); };
+    var no = el("button", "btn", "Discard all");
+    no.type = "button";
+    no.onclick = function () { libPost("discard", { all: true }, "Discarded"); };
+    all.appendChild(yes);
+    all.appendChild(no);
+    box.appendChild(all);
+  }
+}
+
 function load() {
   return api("GET", "/api/plan/setup").then(function (d) {
     DATA = d;
@@ -392,6 +565,7 @@ function load() {
     renderAI();
     renderDraft();
     renderReview();
+    loadLibrary();
   }).catch(function (e) {
     $("msg").textContent = "";
     $("msg").appendChild(el("div", "msg err", e.message));

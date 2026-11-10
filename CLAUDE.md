@@ -19,6 +19,14 @@ The family may have no AI API key, so a Claude Code session can write the 4-week
 
 The prompt file holds health details: never commit it or copy it out of `data/`.
 
+## "Write new meals and exercises for the library"
+
+New entries for the built-in builder go in `api/library-community.json` (bump `version`), shaped like
+the entries there. Dishes may only use ingredient keys from `api/library.json` (amounts per average
+adult serve); leave out macros, groups, tags and cost, because `api/libraryupdates.js` works them
+out. Write recipes in your own words, never copied. Check them with `checkSet` in that file
+(run node inside the api container), then open a PR: `tools/library-pr.sh <file>` does it from a file.
+
 ## Rules for health text
 
 Health notes say "considerations", never "advice"; no absolutes ("always", "never", "must");

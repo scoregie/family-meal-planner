@@ -919,4 +919,4 @@ function shoppingFor(needs) {
   return { weekly: bought.map(toList), stock: stockBought.map(toList) };
 }
 
-module.exports = { build, rulesFor, portionFor, allowed, exerciseFits, EXERCISES };
+module.exports = { build, rulesFor, portionFor, allowed, exerciseFits, EXERCISES, LIB };
