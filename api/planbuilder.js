@@ -14,16 +14,19 @@
 //   - Exercise builds gently over the 4 weeks from each person's time, equipment and health notes.
 //
 // The result goes through the same review and approval as a plan drafted by AI (plandraft.js).
-const LIB = require('./library.json');
-const EXERCISES = require('./exercises.json').exercises;
+// The data files. On the server they're loaded here with require(). The phone app has no
+// require(), so its local-api.js loads them itself and passes them in with useData().
+const ON_SERVER = typeof require === 'function';
+let LIB = ON_SERVER ? require('./library.json') : null;
+let EXERCISES = ON_SERVER ? require('./exercises.json').exercises : [];
 
 // Local shop names, pack sizes and prices for other countries (made by tools/build_prices.py).
 // Australia's are in library.json. A copy of the app without the file prices everything in AUD.
 let PRICES = { countries: {}, words: {} };
-try { PRICES = require('./library-prices.json'); } catch (e) { /* Australian prices only */ }
+try { if (ON_SERVER) PRICES = require('./library-prices.json'); } catch (e) { /* Australian prices only */ }
 
 // The country this build is for, set by useCountry() at the start of build().
-let ING = LIB.ingredients;   // ingredients with this country's names, packs and prices
+let ING = LIB ? LIB.ingredients : {};   // ingredients with this country's names, packs and prices
 let MISSING = new Set();     // ingredients that are hard to find there
 let CURRENCY = 'AUD';
 let LOCALE = 'en-AU';
@@ -1011,4 +1014,19 @@ function shoppingFor(needs) {
   return { weekly: bought.map(toList), stock: stockBought.map(toList) };
 }
 
-module.exports = { build, rulesFor, portionFor, allowed, exerciseFits, EXERCISES, LIB };
+// Gives the builder its data where require() isn't available (the phone app):
+// {library: library.json, exercises: exercises.json, prices: library-prices.json}.
+function useData(data) {
+  LIB = data.library;
+  EXERCISES = data.exercises.exercises || data.exercises;
+  if (data.prices) PRICES = data.prices;
+  ING = LIB.ingredients;
+}
+
+const PlanBuilder = {
+  build, rulesFor, portionFor, allowed, exerciseFits, useData,
+  get EXERCISES() { return EXERCISES; },
+  get LIB() { return LIB; },
+};
+if (typeof module === 'object' && module.exports) module.exports = PlanBuilder;
+else window.PlanBuilder = PlanBuilder;

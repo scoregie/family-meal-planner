@@ -158,3 +158,18 @@ test('if no breakfast in the library fits, the plan says "your own choice" inste
     LIB.dishes = saved;
   }
 });
+
+test('the builder also works without require(), as in the phone app', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const vm = require('node:vm');
+  const read = f => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'api', f), 'utf8'));
+  const page = { window: {} };
+  vm.createContext(page);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'api', 'planbuilder.js'), 'utf8'), page);
+  const app = page.window.PlanBuilder;
+  app.useData({ library: read('library.json'), exercises: read('exercises.json'), prices: read('library-prices.json') });
+  const plan = app.build([{ key: 'a', name: 'A', answers: { age: 40 } }], { seed: 42, country: 'uk', locale: 'en-GB' }).plan;
+  assert.equal(plan.currency, 'GBP');
+  assert.ok(plan.weeks.length >= 4);
+});

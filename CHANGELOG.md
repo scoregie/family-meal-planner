@@ -13,7 +13,7 @@ Automated tests, and a fix they found. Restart the api after updating
   library had gluten. It now has 6 gluten-free breakfasts and 6 gluten-free lunches, which also
   give more choice for milk, egg and dairy-free families. If a meal ever can't be matched to
   everyone, the plan says "your own choice" for it instead of failing.
-- **Automated tests:** `tools/test.sh` runs 34 checks in a few seconds, covering logins and the
+- **Automated tests:** `tools/test.sh` runs 35 checks in a few seconds, covering logins and the
   wrong-password limit, safe redirects, the plan builder (allergies, diets, children's portions,
   injuries, pregnancy, every country's prices), Apple Health imports, and the wording rules for
   health text. GitHub runs them on every pull request. See `tests/README.md`.
