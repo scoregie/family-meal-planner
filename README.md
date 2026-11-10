@@ -173,7 +173,7 @@ The builder follows rules instead of an AI. From everyone's About me answers it:
 
 - leaves out allergens, and anything that doesn't fit a person's diet (vegetarian, vegan, gluten free, halal and so on) or that they said they won't eat, and gives someone their own dinner on nights the family dinner doesn't suit them;
 - prefers dishes that match their liked cuisines, cooking time, kitchen equipment, spice level, textures and budget, with leftovers for lunches where they can;
-- sizes each person's portions from their age, height, weight, activity and goal (Mifflin-St Jeor), adds snacks tied to their exercise days, and builds shopping lists in whole packs that carry over what's left;
+- sizes each person's portions from their age, height, weight, activity and goal (Mifflin-St Jeor), adds snacks tied to their exercise days (shuffled, so people and plans get a variety, with snacks matching foods they love first), and builds shopping lists in whole packs that carry over what's left;
 - writes an exercise plan that builds over 4 weeks: strength workouts picked from the exercise library (`api/exercises.json`) for the equipment they have, leaving out exercises that load anything they mentioned in their injuries (knees, back, shoulders, wrists, balance), lying on the back or front when pregnant, standing work for wheelchair users, and anything they chose to leave out; easier workouts for weeks 1 and 2 and harder ones for weeks 3 and 4, gentler where they asked, with play-based activity for kids;
 - notes what people said about their health, injuries and medicines as considerations to check with their GP or pharmacist. It doesn't give medical advice.
 

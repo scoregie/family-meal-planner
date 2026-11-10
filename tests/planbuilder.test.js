@@ -187,3 +187,20 @@ test('every cuisine choice in About me matches dishes in the library (French has
     assert.ok(inLibrary.has(cuisine), `"${option}" matches no dishes in the library`);
   }
 });
+
+test('snacks vary between plans instead of always being the first ones in the library', () => {
+  const seen = new Set();
+  for (let seed = 1; seed <= 12; seed++) {
+    const plan = build([{ age: 40 }, { age: 8 }], { seed });
+    for (const person of Object.values(plan.people)) for (const s of person.snacks || []) seen.add(s.what);
+  }
+  assert.ok(seen.size >= 8, 'only ' + seen.size + ' different snacks across 12 plans');
+});
+
+test('a snack matching a food someone loves is picked for them', () => {
+  for (let seed = 1; seed <= 5; seed++) {
+    const plan = build([{ age: 40, likes: 'hummus' }], { seed });
+    const snacks = Object.values(plan.people)[0].snacks.map(s => s.what.toLowerCase());
+    assert.ok(snacks.some(s => s.includes('hummus')), 'no hummus snack with seed ' + seed + ': ' + snacks.join(', '));
+  }
+});

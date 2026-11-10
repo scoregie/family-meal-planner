@@ -3,6 +3,17 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.4.5 (2026-11-10)
+
+More variety in snacks from the built-in plan builder. Restart the api after updating
+(`docker restart shopping-list-api`).
+
+- **Snacks are shuffled.** The builder used to give everyone the first suitable snacks in its
+  library, so plans kept the same few and newer snacks were almost never used. It now shuffles the
+  suitable ones for each person (the same plan gives the same snacks; **Rebuild** gives new ones)
+  and puts snacks matching foods they said they love first. Children's school-day snacks rotate
+  through the shuffled list too. Two new tests check this.
+
 ## v1.4.4 (2026-11-10)
 
 A fix for plans built without AI. Restart the api after updating (`docker restart shopping-list-api`).
