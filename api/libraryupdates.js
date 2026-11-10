@@ -376,6 +376,21 @@ function familyAi() {
   return ready && ready.enabled ? ready : null;
 }
 
+// The AI that writes new meals: the family's (a key on the server) if there is one, otherwise
+// the own key (from Settings) of the admin who is asking, or who turned this on. `me` is that
+// admin when a page is asking; the 2-weekly run has no one asking, so it uses the saved admin.
+function writerAi(me) {
+  const family = familyAi();
+  if (family) return family;
+  // The admin asking first, then the admin who turned the switch on.
+  for (const accountId of [me && me.accountId, setting('aiBy', null)]) {
+    if (!accountId) continue;
+    const ready = assistant.setup({ accountId });
+    if (ready && ready.enabled && ready.own) return ready;
+  }
+  return null;
+}
+
 // What the AI is told about the family: only food likes and limits and ratings, no health details.
 function familyHints(ctx) {
   const lines = [];
@@ -468,9 +483,9 @@ async function askAi(ready, system, user) {
 
 // Asks the AI for new entries, checks each one, and keeps those that pass as "waiting for an
 // admin" (Plan setup shows them to add or discard).
-async function writeWithAi(ctx) {
-  const ready = familyAi();
-  if (!ready) throw new Error('The family isn’t using an AI. Choose one on Plan setup first.');
+async function writeWithAi(ctx, me) {
+  const ready = writerAi(me);
+  if (!ready) throw new Error('There is no AI to write them. Add an API key in Settings first.');
   const reply = await askAi(ready, systemText(), userText(ctx));
   const start = reply.indexOf('{');
   const end = reply.lastIndexOf('}');
@@ -495,10 +510,10 @@ async function writeWithAi(ctx) {
 }
 
 // Starts writing new entries in the background (it takes a minute or two). False if already running.
-function startWriting(ctx) {
+function startWriting(ctx, me) {
   if (job && job.state === 'running') return false;
   job = { state: 'running', started: Date.now() };
-  writeWithAi(ctx).then(() => { job = null; }).catch(e => {
+  writeWithAi(ctx, me).then(() => { job = null; }).catch(e => {
     const text = 'Couldn’t write new ones: ' + String(e.message || e).slice(0, 200);
     setSetting('lastAi', { at: Date.now(), ok: false, text });
     job = null;
@@ -529,7 +544,7 @@ function start(ctx) {
     const now = Date.now();
     if (setting('auto', true) && now - setting('lastCheck', 0) > EVERY) checkCommunity().catch(() => {});
     const last = setting('lastAi', null);
-    if (setting('ai', false) && familyAi() && now - (last ? last.at : 0) > EVERY) startWriting(ctx);
+    if (setting('ai', false) && writerAi(null) && now - (last ? last.at : 0) > EVERY) startWriting(ctx);
   };
   setTimeout(tick, 2 * 60 * 1000);                 // a couple of minutes after starting
   setInterval(tick, 6 * 3600 * 1000).unref();      // then look every 6 hours
@@ -556,12 +571,13 @@ function readBody(req) {
 }
 
 // Everything the Plan setup card shows: the switches, the last results and what's waiting.
-function status() {
-  const ready = familyAi();
+function status(me) {
+  const ready = writerAi(me);
   return {
     auto: setting('auto', true),
     ai: setting('ai', false),
     aiName: ready ? ready.name : null,
+    aiOwn: !!(ready && ready.own),   // true when it runs on an admin's own key from Settings
     lastCheck: setting('lastCheck', 0),
     lastResult: setting('lastResult', null),
     lastAi: setting('lastAi', null),
@@ -579,31 +595,35 @@ async function handle(req, res, urlPath, url, me, ctx) {
   if (!me.admin) { send(res, 403, { error: 'Only an admin can change the meal library.' }); return true; }
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') { send(res, 403, { error: 'bad request' }); return true; }
 
-  if (urlPath === '/api/library/updates' && req.method === 'GET') { send(res, 200, status()); return true; }
+  if (urlPath === '/api/library/updates' && req.method === 'GET') { send(res, 200, status(me)); return true; }
 
   let body;
   try { body = await readBody(req); } catch (e) { send(res, 400, { error: 'bad request' }); return true; }
 
   if (urlPath === '/api/library/updates' && req.method === 'PUT') {
     if (typeof body.auto === 'boolean') setSetting('auto', body.auto);
-    if (typeof body.ai === 'boolean') setSetting('ai', body.ai);
-    send(res, 200, status());
+    if (typeof body.ai === 'boolean') {
+      setSetting('ai', body.ai);
+      // Remember who turned it on: without a family key, the 2-weekly run uses their own key.
+      if (body.ai && me.accountId) setSetting('aiBy', me.accountId);
+    }
+    send(res, 200, status(me));
     return true;
   }
   if (urlPath === '/api/library/updates/check' && req.method === 'POST') {
     await checkCommunity();
-    send(res, 200, status());
+    send(res, 200, status(me));
     return true;
   }
   if (urlPath === '/api/library/updates/write' && req.method === 'POST') {
-    if (!familyAi()) { send(res, 400, { error: 'The family isn’t using an AI. Choose one on Plan setup first.' }); return true; }
-    startWriting(ctx);
-    send(res, 202, status());
+    if (!writerAi(me)) { send(res, 400, { error: 'There is no AI to write them. Add an API key in Settings first.' }); return true; }
+    startWriting(ctx, me);
+    send(res, 202, status(me));
     return true;
   }
   if ((urlPath === '/api/library/updates/approve' || urlPath === '/api/library/updates/discard') && req.method === 'POST') {
     decide(body.ids, body.all === true, urlPath.endsWith('approve'));
-    send(res, 200, status());
+    send(res, 200, status(me));
     return true;
   }
   send(res, 404, { error: 'not found' });

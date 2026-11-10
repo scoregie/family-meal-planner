@@ -66,6 +66,14 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
 .msg.ok{background:color-mix(in srgb,var(--accent) 14%,var(--card));border:1px solid var(--accent)}
 .pw label{display:block;font-size:.9rem;margin:.6rem 0 .2rem}
 .privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
+.steps{display:flex;flex-wrap:wrap;gap:.35rem;margin:0 0 .8rem;scroll-margin-top:.6rem}
+.steps .btn{min-height:2rem;padding:.2rem .6rem;font-size:.85rem;border-radius:1.2rem;border-width:1px}
+.steps .btn[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stepnav{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin:0 0 .4rem}
+.stepcount{color:var(--mute);font-size:.85rem;flex:1;text-align:center}
+.stepall{margin:0 0 1rem;text-align:center}
+.linkish{background:none;border:0;padding:.3rem;color:var(--mute);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer}
+.finish.later{display:none}
 [hidden]{display:none!important}
 </style>
 <script src="regions.js"></script>
@@ -82,7 +90,14 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
     <div class="pseg" id="people" hidden role="group" aria-label="Whose answers"></div>
     <p class="intro" id="intro"></p>
     <div class="progress" id="progress"></div>
+    <div class="steps" id="steps" role="group" aria-label="Parts of About me"></div>
     <form id="form" novalidate></form>
+    <div class="stepnav">
+      <button class="btn" type="button" id="stepBack">← Back</button>
+      <span class="stepcount" id="stepCount"></span>
+      <button class="btn primary" type="button" id="stepNext">Next →</button>
+    </div>
+    <p class="stepall"><button class="linkish" type="button" id="stepAll"></button></p>
     <section class="card finish" id="finishCard" hidden>
       <h2 id="finishTitle">Finished?</h2>
       <p class="intro" id="finishText"></p>
@@ -97,7 +112,7 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
         <div id="pwMsg" role="status"></div>
       </form>
     </section>
-    <p class="privacy">Only you and the plan’s admins can see these answers. If your family has chosen an AI on Plan setup, they’re also sent to that AI company to write the plan and answer Ask AI; with No AI they stay on your server. The plan offers general considerations only: your GP, dietitian or physio knows your situation best.</p>
+    <p class="privacy">Only you and the plan’s admins can see these answers. If an AI writes the plan or answers Ask AI (a key on the server, or someone’s own key in Settings), they’re also sent to that AI company; with no AI they stay on your server. Blood test results in My files are only sent if you say yes under Health. The plan offers general considerations only: your GP, dietitian or physio knows your situation best.</p>
   </div>
 </main>
 <div class="status" id="status" role="status" hidden></div>
@@ -177,6 +192,7 @@ function updateProgress() {
 // Saves the answers in 0.8 seconds (unless something else changes first).
 function saveSoon() {
   updateProgress();
+  renderSteps();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 800);
 }
@@ -290,7 +306,52 @@ function questionField(q) {
   return wrap;
 }
 
-// Draws every section of questions.
+// ---------- One section at a time ----------
+var STEP = 0;           // which section is showing (0 is the first)
+var SHOW_ALL = false;   // true when the person chose to see every section on one page
+try { SHOW_ALL = localStorage.getItem("aboutme-all") === "1"; } catch (e) { /* private window: fine */ }
+
+// How many of a section's questions have an answer.
+function answeredIn(section) {
+  return section.questions.filter(function (q) { return answered(q.id); }).length;
+}
+
+// Draws the row of section buttons ("Health 3/8") above the questions.
+function renderSteps() {
+  var box = $("steps");
+  box.textContent = "";
+  box.hidden = SHOW_ALL;
+  QUESTIONS.sections.forEach(function (section, i) {
+    var button = el("button", "btn small", section.title + " " + answeredIn(section) + "/" + section.questions.length);
+    button.type = "button";
+    button.setAttribute("aria-pressed", i === STEP);
+    button.onclick = function () { goTo(i); };
+    box.appendChild(button);
+  });
+}
+
+// Shows one section (or all of them), with Back and Next under it.
+function showStep() {
+  var cards = $("form").children;
+  var last = QUESTIONS.sections.length - 1;
+  for (var i = 0; i < cards.length; i++) cards[i].hidden = !SHOW_ALL && i !== STEP;
+  $("stepBack").hidden = SHOW_ALL || STEP === 0;
+  $("stepNext").hidden = SHOW_ALL || STEP === last;
+  $("stepCount").textContent = SHOW_ALL ? "" : "Part " + (STEP + 1) + " of " + (last + 1);
+  $("stepAll").textContent = SHOW_ALL ? "Show one part at a time" : "Show everything on one page";
+  // "I'm finished" belongs at the end.
+  $("finishCard").classList.toggle("later", !SHOW_ALL && STEP !== last);
+  renderSteps();
+}
+
+// Moves to another section and scrolls back to the top of the questions.
+function goTo(i) {
+  STEP = Math.max(0, Math.min(QUESTIONS.sections.length - 1, i));
+  showStep();
+  $("steps").scrollIntoView({ block: "start" });
+}
+
+// Draws every section of questions (only one shows at a time: see showStep).
 function render() {
   var form = $("form");
   form.textContent = "";
@@ -305,9 +366,23 @@ function render() {
     });
     form.appendChild(card);
   });
+  // Start at the first section that still has an unanswered question.
+  STEP = 0;
+  for (var i = 0; i < QUESTIONS.sections.length; i++) {
+    if (answeredIn(QUESTIONS.sections[i]) < QUESTIONS.sections[i].questions.length) { STEP = i; break; }
+  }
+  showStep();
   updateProgress();
   updateReminders();
 }
+
+$("stepBack").onclick = function () { goTo(STEP - 1); };
+$("stepNext").onclick = function () { goTo(STEP + 1); };
+$("stepAll").onclick = function () {
+  SHOW_ALL = !SHOW_ALL;
+  try { localStorage.setItem("aboutme-all", SHOW_ALL ? "1" : "0"); } catch (e) { /* not remembered: fine */ }
+  showStep();
+};
 
 // ---------- Reminders (for people who said reminders would help) ----------
 var reminderEl = null;

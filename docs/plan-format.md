@@ -61,6 +61,7 @@ Each meal week is one tab along the top of the page. A stock-up week has no tab 
 | `name` | Yes | The label on the tab, such as `"Week 1"` or `"Stock-up 1"`. |
 | `kind` | No | Set to `"stockup"` for a shopping-only week (pantry and freezer items bought once a fortnight). It has no meals. Its items show on the shopping list of the week right after it, tagged "Stock-up", with buttons to show everything, just that week's items, or just the stock-up. |
 | `cost` | No | The week's total, shown on the tab. The admin editor works it out for you when you save. |
+| `useUp` | Optional. Fresh food likely to be left over at the end of this week, as a list of short strings ("about half of the Baby spinach 120 g"). The Shopping page lists them under "Likely left over this week". |
 | `shopping` | Yes | The shopping list. |
 | `meals` | No | What everyone eats each day. |
 | `recipes` | No | How to cook each dish, with amounts. |
@@ -180,6 +181,7 @@ For example, 230 g of yoghurt for Alex (portion 1.1) with `units` 2.3 is 230 × 
 | `name` | The name shown in the app. |
 | `portion` | How much this person eats compared with an average serve. `1.0` is average, `1.2` is 20% more. |
 | `guide` | A paragraph of advice shown on the Meals tab for this person. |
+| `steps` | Optional "small steps": one new food to try each week for someone who isn't keen on vegetables or fruit, each a short step on from a food they like. A list of `{ "week": 1, "food": "Sweet potato wedges", "from": "chips", "how": "A few next to the usual chips." }`. The Meals page shows the week's step with "Tried it", "Liked it" and "Not this time" buttons, and the next plan carries on from the answers. |
 | `snacks` | A list of snacks, each with `when` and `what`. Add `days` (a list of short day names) if it is not every day, and `"optional": true` for "if hungry" snacks, which are left out of the Macros totals. Add `exercise` to tie a snack to that day's exercise: `"strength"` (only on days with a strength session, like a glass of milk after weights), `"rest"` (only on days without one), `"active"` (days with any session) or `"inactive"`. Add `weeks` (a list of meal week numbers, like `[3, 4]`) for a snack that only runs in some weeks, for someone building up to more vegetables and fruit. A vegetable side or extra fruit that goes with a meal is written the same way, with `when` set to "With dinner", "With lunch" or "With breakfast": it counts towards that person's serves on the Macros tab. |
 | `times` | Suggested eating or exercise times, each with `when` and `what`. These can be added to a phone calendar. A `when` like `"6:30 to 7:30 am (Mon to Fri)"` repeats on weekdays only. |
 | `timesNote` | A note shown under the times. |

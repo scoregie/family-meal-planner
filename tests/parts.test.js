@@ -162,6 +162,120 @@ test('targets: a plan is measured the way the Macros tab does it', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Blood test results for the plan writer
+// ---------------------------------------------------------------------------
+
+test('results: shared files are sent to Claude as documents and images, newest three only', () => {
+  const extras = require('../api/planextras');
+  const dir = path.join(process.env.DATA_DIR, 'uploads', 'sam', 'blood-tests');
+  fs.mkdirSync(dir, { recursive: true });
+  for (const name of ['2026-01-01 Old.pdf', '2026-05-01 A.pdf', '2026-06-01 B.png', '2026-07-01 C.txt']) fs.writeFileSync(path.join(dir, name), 'abc');
+  const yes = { share_results: 'Yes, use my blood test results' };
+  assert.deepEqual(extras.sharedResults([{ person: 'sam', answers: {} }]).sam.files, [], 'nothing without a yes');
+  const got = extras.sharedResults([{ person: 'sam', answers: yes }]).sam;
+  assert.deepEqual(got.files.map(f => f.name), ['2026-07-01 C.txt', '2026-06-01 B.png', '2026-05-01 A.pdf']);
+  assert.equal(got.skipped[0].name, '2026-01-01 Old.pdf');
+  const blocks = extras.resultBlocks('Sam', got.files);
+  assert.deepEqual(blocks.map(b => b.type), ['document', 'text', 'image', 'document']);
+  assert.deepEqual(blocks[0].source, { type: 'text', media_type: 'text/plain', data: 'abc' });
+  assert.deepEqual(blocks[2].source, { type: 'base64', media_type: 'image/png', data: 'YWJj' });
+  assert.equal(blocks[3].source.media_type, 'application/pdf');
+  assert.match(extras.skippedNote([{ name: 'Sam', results: got }]), /Old\.pdf” wasn’t read because only the newest 3/);
+});
+
+test('drafting: Claude is left room to write after thinking, and running out is explained', () => {
+  const draft = require('../api/plandraft');
+  // "high" effort once used a 100,000-token allowance on thinking alone and wrote no plan.
+  assert.notEqual(draft.CLAUDE_DRAFT.effort, 'high');
+  assert.ok(draft.CLAUDE_DRAFT.maxTokens >= 128000);
+  // The draft runs on the model chosen for the key, with settings that model accepts.
+  assert.deepEqual(draft.claudeRequest('claude-sonnet-5-5'), { model: 'claude-sonnet-5-5', max_tokens: 128000, thinking: { type: 'adaptive', display: 'summarized' }, output_config: { effort: 'medium' } });
+  assert.equal(draft.claudeRequest('claude-haiku-5-5').model, 'claude-haiku-5-5');
+  assert.deepEqual(draft.claudeRequest('claude-haiku-4-5'), { model: 'claude-haiku-4-5', max_tokens: 64000 });
+  assert.match(draft.cutOffMessage(0), /thinking the plan through/);
+  assert.match(draft.cutOffMessage(50000), /too long and got cut off/);
+});
+
+// A tiny plan for the checks below: one meal week, where Sam's dinner has green beans in it and
+// the day gives Sam 2 serves of vegetables and no fruit.
+function smallPlan() {
+  return {
+    weeks: [
+      { name: 'Stock-up 1', kind: 'stockup', shopping: { Pantry: [['Rice 1 kg', 3]] } },
+      {
+        name: 'Week 1',
+        meals: [{ day: 'Mon', breakfast: 'Porridge', lunch: 'Sandwich', dinner: 'Salmon and veg' }],
+        recipes: [{ name: 'Salmon and veg', ingredients: ['250 g green beans or broccoli'], items: [{ q: 250, l: 'g green beans or broccoli', i: 0 }], steps: ['Steam the green beans.'] }],
+        shopping: { 'Fruit and veg': [['Green beans 250 g', 3], ['Carrots 1 kg', 2]] },
+        cost: 5,
+      },
+    ],
+    people: { sam: { name: 'Sam', portion: 1, snacks: [], tips: ['You must eat breakfast.'], guide: 'Average serves.' } },
+    exercise: { sam: { medical: [] } },
+    groups: { 'Salmon and veg': { veg: 2 }, Porridge: {}, Sandwich: {} },
+    macros: {},
+  };
+}
+const SAM = [{ key: 'sam', name: 'Sam', answers: { age: '40', sex: 'Female', dislikes: 'Long green beans, most veggies', conditions: ['Type 2 diabetes or pre-diabetes'] } }];
+
+test('plan check: finds a plan short of vegetables, a food someone won’t eat, and "must"', () => {
+  const check = require('../api/plancheck');
+  const found = check.problems(smallPlan(), SAM).join('\n');
+  assert.match(found, /week 1: the plan gives about 2\.0 serves of vegetables a day and the aim that week is 5\.0/);
+  assert.match(found, /serves of fruit/);
+  assert.match(found, /won’t eat "green beans", and it seems to be in Salmon and veg \(Week 1\)/);
+  assert.match(found, /tips use the word "must"/);
+  // A sweeping dislike isn't a named food, and "no corn" isn't corn.
+  assert.deepEqual(check.namedDislikes({ dislikes: 'Most veggies, corn' }), ['corn']);
+  assert.equal(check.mentions('frozen mixed vegetables (no corn)', 'corn'), false);
+  assert.equal(check.mentions('2 tbsp cornflour', 'corn'), false);
+  assert.equal(check.mentions('1 cob of corn', 'corn'), true);
+  // The follow-up for the AI lists what was found and what the person said.
+  const ask = check.fixRequest(smallPlan(), SAM);
+  assert.match(ask, /Type 2 diabetes or pre-diabetes/);
+  assert.match(ask, /Reply with one JSON object of corrections/);
+});
+
+test('plan check: the AI’s corrections are applied, and a bad reply keeps the first draft', async () => {
+  const check = require('../api/plancheck');
+  const fixes = {
+    people: { sam: { snacks: [{ when: 'With dinner', what: 'Steamed vegetables' }, { when: 'Morning', what: '2 pieces of fruit' }], tips: ['Consider eating breakfast.'] }, stranger: { tips: ['x'] } },
+    medical: { sam: ['You said you have type 2 diabetes. It may be worth checking this plan with your GP.'] },
+    groups: { 'Steamed vegetables': { veg: 3 }, '2 pieces of fruit': { fruit: 2 } },
+    replace: [{ find: 'green beans or broccoli', with: 'broccoli' }, { find: 'green beans', with: 'broccoli' }],
+    remove: ['Green beans'],
+    shopping: [{ week: 'Week 1', section: 'Fruit and veg', item: 'Broccoli', price: 2.5 }, { week: 'Week 9', item: 'Nothing', price: 1 }],
+    recipes: ['Steamed vegetables: microwave for 3 minutes.'],
+    notesForAdmin: 'Corrected.',
+  };
+  const plan = smallPlan();
+  const good = await check.improve(plan, SAM, 'First.', async () => JSON.stringify(fixes), () => '');
+  assert.deepEqual(check.problems(good.plan, SAM), []);
+  assert.equal(good.notes, 'Corrected.');
+  assert.match(good.note, /went back over this plan/);
+  assert.deepEqual(good.plan.weeks[1].shopping['Fruit and veg'], [['Carrots 1 kg', 2], ['Broccoli', 2.5]]);
+  assert.equal(good.plan.weeks[1].recipes.length, 2);
+  assert.equal(good.plan.people.stranger, undefined);
+  assert.equal(plan.people.sam.snacks.length, 0, 'the first draft itself is left untouched');
+
+  // Unreadable corrections, no reply, or corrections that break the plan: the first draft stays.
+  for (const [reply, broken] of [['sorry, I can’t', ''], ['', ''], [JSON.stringify(fixes), 'weeks are the wrong shape']]) {
+    const kept = await check.improve(plan, SAM, 'First.', async () => reply, () => broken);
+    assert.equal(kept.plan, plan);
+    assert.equal(kept.notes, 'First.');
+    assert.match(kept.note, /first draft as written/);
+  }
+  // Nothing to change: no note at all.
+  assert.equal((await check.improve(plan, SAM, 'First.', async () => '{}', () => '')).note, '');
+});
+
+test('drafting: the instructions tell the AI to check serves, named foods and blood test dates itself', () => {
+  const text = require('../api/plandraft').systemText();
+  assert.match(text, /Check before you reply/);
+  assert.match(text, /belonging only to the date it is printed under/);
+});
+
+// ---------------------------------------------------------------------------
 // Wording rules for health text (see CLAUDE.md)
 // ---------------------------------------------------------------------------
 
@@ -189,6 +303,7 @@ test('wording: health notes avoid "always", "never" and "must"', () => {
   const texts = [
     ...stringsIn(path.join(ROOT, 'api', 'planbuilder.js')),
     ...stringsIn(path.join(ROOT, 'api', 'healthtargets.js')),
+    ...stringsIn(path.join(ROOT, 'api', 'planextras.js')),
     ...textsIn(path.join(ROOT, 'site', 'questions.json')),
   ];
   const bad = texts.filter(t => ABSOLUTES.test(t) && !ALLOWED.some(a => t.includes(a)));

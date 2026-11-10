@@ -3,6 +3,69 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.8.0 (2026-11-10)
+
+Plans now listen to what people said and logged, and help fussy eaters one small step at a time.
+
+- **Feedback is used when a plan is made.** Each person's own meal scores now count for them: a
+  dinner someone scored low turns up less often, one they scored high more often. An AI-written
+  plan also reads the "What didn't you like?" notes. The built-in builder can't read written
+  notes, so it passes them to the admin with the draft to check against the new plan.
+- **Logged and uploaded health numbers are used.** Until now a new plan only read About me. It
+  now also uses the numbers from Health sync, Apple Health and Lose It: the latest logged weight
+  replaces the About me weight for serve sizes (the plan says so), average steps can lift the
+  activity level, and an AI-written plan also gets weight change, active energy, food logged and
+  workouts. Files uploaded as PDFs or photos (like blood tests) still aren't read.
+- **Small steps for people who aren't keen on vegetables or fruit.** Their plan has one new food
+  to try each week, a short step on from a food they already like (chips, then oven wedges, then
+  sweet potato wedges). The Meals page shows it with "Tried it", "Liked it" and "Not this time".
+  Liked foods count as likes in the next plan, and the steps carry on from there. Allergies and
+  diets are respected, and it is left out for anyone who chose to keep to what they eat now.
+- **"Likely left over this week"** on the Shopping page: fresh food the week's meals don't use up
+  (a third of a pack or more), so it can be used, frozen or bought smaller.
+- **Plan setup is clearer about AI keys.** "Choose your AI" is the AI the whole family shares,
+  which needs a key in the server's `.env`. If you have your own key in Settings, it now says
+  that your own key is used for plans you draft, where it used to just say "not set up".
+- A failed AI draft is now written to the server's log as well as shown on Plan setup.
+- **An AI-written plan is checked and corrected before you see it.** The app measures the draft
+  itself (each person's vegetable and fruit serves for each week, named foods someone said they
+  won't eat, and "always", "never" or "must" in health text), then sends the AI back over its
+  plan once with that list and a checklist: allergies, every condition and medicine, hard
+  textures, and blood test dates. The AI replies with corrections only, and the app keeps them
+  when the plan measures no worse. It adds a few minutes to a draft. The first draft is kept if
+  the second check can't be finished, and the note with the draft says which happened. A plan
+  sent from a Claude Code session is told what the checks found, so it can be fixed and sent again.
+- **Blood test results can shape the plan.** A new About me question (under Health) asks whether
+  the plan writer may read the blood test results you upload in My files. It is off unless you
+  say yes. With yes, your newest results (up to 3 PDFs, photos or text files) go to Claude when
+  an admin drafts the plan, or are read by a Claude Code session. The plan notes what the report
+  flags as considerations and points you to your GP. The built-in builder and the other AIs
+  can't read files, and tell the admin so. Plan setup shows who has files and who is sharing.
+- **Plan setup's AI step is simpler.** It now shows the AI that has a key (yours from Settings, or
+  one on the server), or "No AI" with a button to add a key. A choice only appears when the
+  server has keys to choose between. "Have your AI write new ones for your family" now works
+  with your own key too (before, the switch stayed greyed out unless the server had a key).
+- **Clearer waiting and wording.** While an AI drafts, Plan setup says how long it has been going
+  and that the bar only moves once the AI starts writing. My files says whether blood tests are
+  used in plans, with a link to change it.
+- **About me, one part at a time.** The questions now show one section per screen with Back and
+  Next, and a row of buttons showing how much of each part is answered. "Show everything on one
+  page" brings back the long page.
+- **A banner on Today when a plan is waiting.** Admins see "A new plan is waiting for you to
+  check and approve" with a button to review it.
+- **A fuller look before approving.** The review now lists every day's breakfast, lunch and
+  dinner, and each person's guide, tips, small steps and medical considerations.
+- **Plan setup is shorter.** The country and "New meals and exercises" moved to Settings (admins).
+  The drafting step has one line of explanation, with the rest behind "What happens?".
+- **Fixed: Claude drafts that ran for a quarter of an hour and then failed.** Claude could spend
+  its whole allowance thinking and never write the plan, and the app then said the plan was
+  "too long". It now thinks less before writing, has more room, and says what happened if it
+  runs out. While it works, Plan setup shows "Thinking it through" and when it was last heard from.
+- **Plans are written by the model you chose.** Drafts used to run on the server's fixed model
+  whatever was picked. They now use the model chosen for the key (Settings for your own key),
+  so a cheaper one can be picked.
+- **Cancel a draft.** While an AI is writing, "Cancel this draft" stops it. Nothing is saved.
+
 ## v1.7.0 (2026-11-10)
 
 Each person chooses how much the plan changes what they eat, and plans can start from the food

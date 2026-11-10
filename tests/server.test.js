@@ -103,6 +103,93 @@ test('the kitchen list is saved, read back, and given to an AI-written plan', as
   assert.match(handoff.json.user, /<kitchen>rice 2 kg\n6 eggs\ndragon fruit<\/kitchen>/);
 });
 
+test('small steps: how a new food went is saved and read back', async () => {
+  const put = await server.request('PUT', '/api/steps?person=alex-smith', { food: 'Sweet potato wedges', result: 'liked' });
+  assert.equal(put.status, 200, put.text);
+  const got = await server.request('GET', '/api/steps?person=alex-smith');
+  assert.deepEqual(got.json.tried, { 'Sweet potato wedges': 'liked' });
+  const bad = await server.request('PUT', '/api/steps?person=alex-smith', { food: 'Peas', result: 'hated' });
+  assert.equal(bad.status, 400);
+  assert.equal((await server.request('GET', '/api/steps?person=nobody')).status, 404);
+});
+
+test('logged health numbers and small steps reach the instructions for an AI-written plan', async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const weight = await server.request('POST', '/api/measurements?person=alex-smith', { weight: 91.5, date: today });
+  assert.equal(weight.status, 200, weight.text);
+  const handoff = await server.request('GET', '/api/plan/handoff');
+  assert.match(handoff.json.user, /latest weight 91\.5 kg on /);
+  assert.match(handoff.json.user, /Sweet potato wedges \(liked\)/);
+});
+
+test('blood test results reach the plan writer only after the person says yes in About me', async () => {
+  const mine = setup => setup.json.people.find(p => p.person === 'alex-smith').results;
+  const dir = path.join(server.dir, 'data', 'uploads', 'alex-smith', 'blood-tests');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, '2026-11-01 Results.txt'), 'Ferritin 12 ug/L (low)');
+  fs.writeFileSync(path.join(dir, '2026-11-02 Scan.heic'), 'x');
+
+  let handoff = await server.request('GET', '/api/plan/handoff');
+  assert.doesNotMatch(handoff.json.user, /blood-tests/, 'left out until they say yes');
+  let setup = await server.request('GET', '/api/plan/setup');
+  assert.deepEqual(mine(setup), { shared: false, count: 2, reading: 0 });
+
+  const answers = { age: '41', allergies: ['Peanuts'], diet: ['None'], share_results: 'Yes, use my blood test results' };
+  await server.request('PUT', '/api/profile?person=alex-smith', { answers });
+  handoff = await server.request('GET', '/api/plan/handoff');
+  assert.match(handoff.json.user, /- data\/uploads\/alex-smith\/blood-tests\/2026-11-01 Results\.txt/);
+  assert.doesNotMatch(handoff.json.user, /Scan\.heic/, 'a type the AI can’t read is left out');
+  assert.match(handoff.json.system, /Blood test results:/);
+  setup = await server.request('GET', '/api/plan/setup');
+  assert.deepEqual(mine(setup), { shared: true, count: 2, reading: 1 });
+
+  // The built-in builder can't read them, and says so to the admin.
+  await server.request('POST', '/api/plan/draft', { how: 'builtin' });
+  setup = await server.request('GET', '/api/plan/setup');
+  assert.match(setup.json.draft.details, /can’t read uploaded files/);
+});
+
+test('a waiting draft shows every meal and each person’s tips, and is listed for the Today banner', async () => {
+  const setup = await server.request('GET', '/api/plan/setup');
+  const week = setup.json.draft.weeks.find(w => w.meals.length);
+  assert.ok(week.meals[0].day && week.meals[0].breakfast && week.meals[0].dinner, JSON.stringify(week.meals[0]));
+  assert.ok(Array.isArray(setup.json.draft.people[0].tips));
+  const list = await server.request('GET', '/api/requests');
+  assert.ok(list.json.requests.some(r => r.status === 'open' && r.kind === 'full-plan'));
+});
+
+test('a plan sent by a Claude Code session is saved, and the answer lists what the app’s checks found', async () => {
+  const plan = JSON.parse(fs.readFileSync(path.join(server.dir, 'site', 'plan.json'), 'utf8'));
+  const person = Object.keys(plan.people)[0];
+  plan.people[person].snacks = [];
+  plan.groups = {};   // nothing counts as vegetables or fruit now, so every week is short
+  const sent = await server.request('POST', '/api/plan/handoff', plan);
+  assert.equal(sent.status, 200, sent.text);
+  assert.ok(sent.json.problems.some(p => /serves of vegetables a day and the aim that week/.test(p)), JSON.stringify(sent.json.problems));
+  // Put a clean draft back for the tests that follow.
+  await server.request('POST', '/api/plan/draft', { how: 'builtin' });
+});
+
+test('Settings can ask which models a saved AI key can use (none saved: an empty list)', async () => {
+  const got = await server.request('GET', '/api/account/ai-key');
+  assert.equal(got.status, 200, got.text);
+  assert.deepEqual(got.json.models, []);
+});
+
+test('cancelling when no draft is being written is harmless', async () => {
+  const res = await server.request('DELETE', '/api/plan/draft', null, { 'X-Requested-With': 'app' });
+  assert.equal(res.status, 200, res.text);
+});
+
+test('the "AI writes new meals" switch says it needs a key when there is none', async () => {
+  const got = await server.request('GET', '/api/library/updates');
+  assert.equal(got.status, 200, got.text);
+  assert.equal(got.json.aiName, null);
+  const write = await server.request('POST', '/api/library/updates/write', {});
+  assert.equal(write.status, 400);
+  assert.match(write.json.error, /API key/);
+});
+
 test('a tick on the shopping list is saved for everyone', async () => {
   const put = await server.request('PUT', '/api/shared', { ticks: { 0: ['milk'] } });
   assert.equal(put.status, 200, put.text);

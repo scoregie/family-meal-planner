@@ -51,8 +51,13 @@ async function main() {
     if (!file.startsWith('/data/')) throw new Error('The plan file must be inside the data folder.');
     const text = fs.readFileSync(file, 'utf8');
     JSON.parse(text);   // a clear error here beats one from the server
-    await call('POST', '/api/plan/handoff', text);
+    const sent = await call('POST', '/api/plan/handoff', text);
     console.log('Sent. It is waiting on Plan setup for an admin to approve.');
+    // What the app's own checks found (short of vegetables, a food someone won't eat, wording).
+    if (sent.problems && sent.problems.length) {
+      console.log('\nThe app’s checks found ' + sent.problems.length + ' thing(s) to fix. Correct the plan and submit again (the new draft replaces this one):');
+      for (const p of sent.problems) console.log('- ' + p);
+    }
     return;
   }
   console.log('Usage: tools/claude-code-plan.sh prompt ["a note for the plan"]\n       tools/claude-code-plan.sh submit [data/claude-code/plan.json]');
