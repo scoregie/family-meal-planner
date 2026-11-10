@@ -191,6 +191,17 @@ const CUISINE = { 'Australian classics': 'Australian' };
 const ALLERGY = { Peanuts: 'peanut', 'Tree nuts': 'treenut', Milk: 'milk', Eggs: 'egg', 'Wheat or gluten': 'gluten', Soy: 'soy', Fish: 'fish', Shellfish: 'shellfish', Sesame: 'sesame', Lactose: 'lactose' };
 const ALLERGY_WORDS = { peanut: 'peanuts', treenut: 'tree nuts', milk: 'milk', egg: 'eggs', gluten: 'gluten', soy: 'soy', fish: 'fish', shellfish: 'shellfish', sesame: 'sesame', lactose: 'lactose' };
 
+// The weekdays work or school provides lunch: the days they picked, or Mon to Fri if they said it
+// does but didn't pick days.
+function providedDays(a) {
+  const picked = list(a.lunch_provided).filter(d => DAYS.includes(d));
+  if (picked.length) return new Set(picked);
+  return new Set(a.packed_lunch === 'Work or school provides lunch' ? DAYS.slice(0, 5) : []);
+}
+
+// Whether they can get to a pool (at home or a public one; "Pool" is the older answer).
+const hasPool = equipment => ['Pool', 'Pool at home', 'Public pool or swim centre'].some(p => equipment.has(p));
+
 // Turns one person's About me answers into rules for the builder: allergies and diets, foods they
 // won't eat, how they like to eat, cooking time, budget, health conditions and so on.
 function rulesFor(p) {
@@ -213,6 +224,7 @@ function rulesFor(p) {
     conditions: new Set(list(a.conditions)),
     meds: new Set(list(a.medicine_types).filter(m => m !== 'None of these')),
     packed: /Yes|Some/.test(String(a.packed_lunch || '')),
+    lunchProvided: providedDays(a),
     budget: num(a.budget),
     notes: [],
   };
@@ -368,9 +380,10 @@ function exerciseFor(p, r, rnd) {
   const minutes = { 'Less than 15 minutes': 10, '15 to 30 minutes': 20, '30 to 60 minutes': 30, 'More than an hour': 45 }[a.exercise_time] || 20;
   const level = seated ? 'seated' : equipment.has('Gym membership') ? 'gym' : equipment.has('Dumbbells') ? 'dumbbells' : equipment.has('Resistance bands') ? 'bands' : 'none';
   let cardio = seated ? 'Seated cardio or a push/wheel' : 'Walk';
-  if (!seated && (equipment.has('Pool') && /swim/.test(likes))) cardio = 'Swim';
+  if (!seated && (hasPool(equipment) && /swim/.test(likes))) cardio = equipment.has('Pool at home') ? 'Swim' : 'Swim at the pool';
   else if (!seated && (equipment.has('Exercise bike') || equipment.has('Bike')) && /bike|cycl|ride/.test(likes)) cardio = 'Ride';
   else if (!seated && /dance/.test(likes)) cardio = 'Dance or walk';
+  const poolDays = list(a.pool_days).filter(d => DAYS.includes(d));
 
   const medical = [];
   const injuries = String(a.injuries || '').trim();
@@ -419,15 +432,24 @@ function exerciseFor(p, r, rnd) {
     const [s, c] = plan[w];
     const sDays = strengthDays[s];
     const mins = minutes + (minutes >= 20 ? w * 5 : 0);
-    const cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, c);
+    let cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, c);
+    // Public pool: swims only on the days they can get there; any other cardio days are walks.
+    let swimDays = cDays;
+    if (cardio === 'Swim at the pool' && poolDays.length) {
+      swimDays = poolDays.filter(d => !sDays.includes(d)).slice(0, c);
+      cDays = swimDays.concat(cardioOrder.filter(d => !sDays.includes(d) && !swimDays.includes(d)).slice(0, c - swimDays.length));
+    }
+    const cardioTarget = swimDays.length === cDays.length
+      ? c + ' × ' + cardio.toLowerCase() + ' ' + mins + ' minutes'
+      : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × walk'].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
     let ab = 0;
     weeks.push({
       focus: focus[w],
-      targets: [s + ' strength session' + (s > 1 ? 's' : ''), c + ' × ' + cardio.toLowerCase() + ' ' + mins + ' minutes', 'A few more steps each day than last week'],
+      targets: [s + ' strength session' + (s > 1 ? 's' : ''), cardioTarget, 'A few more steps each day than last week'],
       days: DAYS.map(day => {
         const o = { day };
         if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
-        if (cDays.includes(day)) o.cardio = cardio + ' ' + mins + ' minutes';
+        if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? cardio : 'Walk') + ' ' + mins + ' minutes';
         if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
         return o;
       }),
@@ -727,18 +749,24 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       m.dinner = day.dinner.name;
       used.set(day.dinner.name, day.dinner);
       const tomorrow = days[i + 1];
-      const leftoverFor = tomorrow && tomorrow.lunch.leftover === day.dinner ? rules.filter(r => !r.kid && allowed(day.dinner, r)) : [];
+      const leftoverFor = tomorrow && tomorrow.lunch.leftover === day.dinner ? rules.filter(r => !r.kid && allowed(day.dinner, r) && !r.lunchProvided.has(tomorrow.day)) : [];
       const extra = leftoverFor.reduce((n, r) => n + r.portion, 0);
       addNeed(day.dinner, dServes + extra); addCooked(day.dinner, dServes + extra);
       if (extra) m.note = 'Cook extra tonight: pack ' + (leftoverFor.length === 1 ? 'a serve' : leftoverFor.length + ' serves') + ' for tomorrow’s lunch.';
       if (day.dinner.kit.includes('slow cooker')) m.note = 'Start the slow cooker this morning.' + (m.note ? ' ' + m.note : '');
       if (tomorrow && tomorrow.breakfast.name === 'Overnight oats with berries') m.note = (m.note ? m.note + ' ' : '') + 'Make tomorrow’s overnight oats tonight.';
-      // Lunch.
+      // Lunch. Adults whose work provides lunch that day get that instead.
+      const providedLunch = r => {
+        if (r.kid || !r.lunchProvided.has(day.day)) return false;
+        overrides[r.key] = Object.assign(overrides[r.key] || {}, { lunch: 'Work provides lunch' });
+        return true;
+      };
       if (day.lunch.leftover) {
         m.lunch = 'Leftovers: ' + day.lunch.leftover.name;
         used.set(m.lunch, Object.assign({}, day.lunch.leftover, { name: m.lunch, leftoverOf: day.lunch.leftover.name }));
         rules.forEach(r => {
           if (r.kid && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(day.day)) return;   // school lunch, below
+          if (providedLunch(r)) return;
           if (!allowed(day.lunch.leftover, r) || r.kid) {
             const alt = own[r.key].lunches[i % Math.max(1, own[r.key].lunches.length)];
             if (alt) {
@@ -753,6 +781,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
         let lServes = 0;
         rules.forEach(r => {
           if (r.kid && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(day.day)) return;
+          if (providedLunch(r)) return;
           if (allowed(day.lunch, r)) lServes += r.portion;
           else {
             const alt = own[r.key].lunches[i % Math.max(1, own[r.key].lunches.length)];
@@ -779,7 +808,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
           const l = packs[i % Math.max(1, packs.length)];
           const s = kidSnacks[i % Math.max(1, kidSnacks.length)];
           p.weekday[d] = {};
-          if (l) { p.weekday[d].lunch = l.name; used.set(l.name, l); }
+          if (r.lunchProvided.has(d)) p.weekday[d].lunch = 'School provides lunch';
+          else if (l) { p.weekday[d].lunch = l.name; used.set(l.name, l); }
           if (s) p.weekday[d].snack = s.what;
         });
       }
