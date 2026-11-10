@@ -14,9 +14,9 @@ an empty data folder in a temporary folder, and deletes it afterwards.
 | File | What it checks |
 | --- | --- |
 | `server.test.js` | The server end to end: the first account, logins, the wrong-password limit, safe redirects, About me, building and approving a plan, ticks. |
-| `planbuilder.test.js` | The built-in plan builder: allergies, diets, children's portions, exercise for injuries and pregnancy, every country's prices. |
+| `planbuilder.test.js` | The built-in plan builder: allergies, diets, children's portions, vegetable and fruit targets, exercise for injuries and pregnancy, every country's prices. |
 | `names.test.js` | People's keys are the same in the browser and on the server. |
-| `parts.test.js` | Calendar times, reading Apple Health zips, the meal library, countries and prices, and the wording rules for health text. |
+| `parts.test.js` | Calendar times, reading Apple Health zips, the meal library, countries and prices, the vegetable and fruit targets, and the wording rules for health text. |
 
 `fixtures/` holds small made-up files the tests read.
 

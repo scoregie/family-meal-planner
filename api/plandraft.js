@@ -24,6 +24,7 @@ const planchange = require('./planchange');
 const appearance = require('./appearance');
 const ai = require('./ai');
 const planbuilder = require('./planbuilder');
+const healthtargets = require('./healthtargets');
 
 const QUESTIONS_FILE = process.env.QUESTIONS_FILE || '/site/questions.json';
 const EXAMPLE_FILE = process.env.PLAN_EXAMPLE || '/site/plan.example.json';
@@ -115,7 +116,8 @@ function pendingDraft() {
 }
 
 // What the setup page shows about a waiting draft: the weeks, their cost and dinners, and each
-// person's snacks and exercise focus, so the admin can see what they are approving.
+// person's snacks, exercise focus and how their vegetables and fruit measure up, so the admin can
+// see what they are approving.
 function draftPreview(r) {
   const plan = r.change.preview || {};
   return {
@@ -126,6 +128,8 @@ function draftPreview(r) {
     })),
     people: Object.entries(plan.people || {}).filter(([, p]) => p && p.name).map(([key, p]) => ({
       key, name: p.name, portion: p.portion,
+      // Their average vegetable and fruit serves a day against their targets (healthtargets.js).
+      health: (plan.health || []).find(h => h.key === key) || null,
       snacks: (p.snacks || []).map(s => (s.when ? s.when + ': ' : '') + s.what),
       focus: plan.weeks && plan.weeks.filter(w => w.exercise).map(w => w.exercise[key] && w.exercise[key].focus).filter(Boolean)[0] || null,
     })),
@@ -156,7 +160,9 @@ Structure:
 - Add a top-level "notesForAdmin": two to five short sentences on how the plan fits the family (it is removed before saving).
 
 Food:
-- Strictly respect every allergy, intolerance, diet and food someone won't eat. Keep each person's safe foods in their plan. Avoid textures people listed as hard. Fit cooking time, kitchen equipment, packed lunches and budget to their answers. On the days someone said work or school provides lunch (lunch_provided), don't plan or shop for their lunch: for a child, set that weekday's lunch to "School provides lunch".
+- When things pull against each other, this is the order of importance: (1) allergies, intolerances, diets and medicine rules, which are never traded away; (2) each person's health targets (below); (3) safe foods and textures, which decide the form food comes in, not whether it is there; (4) likes and dislikes, which choose between dishes that already fit 1 to 3.
+- Vegetables and fruit: each person's days should average at least their target serves, given with the people below (a serve is 75 g of vegetables or legumes, or 150 g of fruit). Count their meals at their portion plus their snacks, and add vegetable sides or fruit where a day falls short. This applies to children too. If someone dislikes vegetables or fruit as a whole ("most veggies", "fruit"), still reach their target, in forms they are more likely to eat (grated or blended into sauces, soups, mash, smoothies, soft-cooked), and say in their tips that amounts can start small and build up. The app measures the draft against these targets from the "groups" block and tells the admin, so make "groups" match the recipes' real amounts.
+- Strictly respect every allergy, intolerance, diet and named food someone won't eat. Keep each person's safe foods in their plan. Avoid textures people listed as hard. Fit cooking time, kitchen equipment, packed lunches and budget to their answers. On the days someone said work or school provides lunch (lunch_provided), don't plan or shop for their lunch: for a child, set that weekday's lunch to "School provides lunch".
 - Shared family dinners where possible, with a different dish for one person (meals[].people) only when needed. Reuse ingredients across the week to cut waste and cost, and use leftovers for lunches.
 - Children: normal growing portions, never weight-loss. No very low energy intakes, crash diets or supplements.
 
@@ -191,7 +197,9 @@ function userText(ctx, people, note) {
     'The people in the plan (use these keys and names exactly):',
   ];
   for (const p of people) {
+    const target = healthtargets.targetFor(p.answers);
     lines.push('- key "' + p.key + '", name "' + p.name + '"' + (p.portion ? ', current portion ' + p.portion : '') +
+      ', target at least ' + target.veg + ' serves of vegetables and ' + target.fruit + ' of fruit a day' +
       (p.answered ? '' : ' (no About me answers yet: plan sensibly from what the others said, and keep it simple)'));
   }
   lines.push('', 'Their About me answers:');
@@ -298,7 +306,9 @@ async function finishDraft(me, ctx, people, known, text, who) {
       // Logins, answers and history are matched by name, so each person keeps the name they have now.
       plan.people[p.key].name = p.name;
     }
-    saveDraft(me, ctx, people, plan, forAdmin, 'New 4-week plan for the family (' + who + ')');
+    // Tell the admin if anyone's days are short of their vegetable or fruit serves.
+    const shortNote = healthtargets.shortNote(plan, people);
+    saveDraft(me, ctx, people, plan, [forAdmin, shortNote].filter(Boolean).join(' '), 'New 4-week plan for the family (' + who + ')');
     // Done: clear the progress (or an old failure, which no longer matters now there's a new draft).
     if (who !== 'Claude Code' || (job && job.state === 'failed')) job = null;
 }
@@ -358,7 +368,7 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
     }
     db.addRequest({
       person: me.person, user: me.user, title, details: forAdmin || null,
-      change: { kind: 'full-plan', steps, summary, preview: { weeks: plan.weeks, people: plan.people, currency: plan.currency } },
+      change: { kind: 'full-plan', steps, summary, preview: { weeks: plan.weeks, people: plan.people, currency: plan.currency, health: healthtargets.review(plan, people) } },
       status: 'open',
     });
 }

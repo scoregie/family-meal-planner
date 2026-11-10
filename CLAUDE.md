@@ -36,6 +36,14 @@ out. Write recipes in your own words, never copied. Check them with `checkSet` i
 Local names, packs and prices for other countries are in `api/library-prices.json`, made by
 `tools/build_prices.py`; after adding an ingredient to `api/library.json`, run it again.
 
+## What comes first in a plan
+
+Whoever writes a plan (the builder, an AI, or a Claude Code session) uses this order: (1) allergies,
+diets and medicine rules; (2) each person's vegetable and fruit serves for their age and sex
+(`api/healthtargets.js`), children included; (3) safe foods and textures, which decide the form
+food comes in; (4) likes and dislikes. A sweeping dislike from a child ("most veggies") changes the
+form, not the amount; a named food is still left out.
+
 ## Rules for health text
 
 Health notes say "considerations", never "advice"; no absolutes ("always", "never", "must");

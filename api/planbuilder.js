@@ -7,6 +7,9 @@
 //   - Shared family dinners are picked from the library to suit everyone where possible. Anyone a
 //     dinner doesn't suit gets their own dinner that night instead.
 //   - Portions come from age, size, activity and goal. Children are never given less to lose weight.
+//   - Health comes before likes: everyone's days are topped up with vegetable sides and fruit until
+//     they reach the guideline serves for their age and sex (healthtargets.js). What people find
+//     hard to eat decides the form (soft, blended), and likes choose between dishes that fit.
 //   - Shopping lists add up every recipe's amounts for the people eating them, in whole packs.
 //     Things that keep (pantry, freezer, cheese) carry over between weeks so nothing is bought twice.
 //   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
@@ -19,6 +22,9 @@
 const ON_SERVER = typeof require === 'function';
 let LIB = ON_SERVER ? require('./library.json') : null;
 let EXERCISES = ON_SERVER ? require('./exercises.json').exercises : [];
+// The vegetable and fruit serves to aim for, and how a plan measures up (healthtargets.js).
+// The phone app loads healthtargets.js before this file, which puts it on window.
+const TARGETS = ON_SERVER ? require('./healthtargets') : window.HealthTargets;
 
 // Local shop names, pack sizes and prices for other countries (made by tools/build_prices.py).
 // Australia's are in library.json. A copy of the app without the file prices everything in AUD.
@@ -202,6 +208,10 @@ function providedDays(a) {
 // Whether they can get to a pool (at home or a public one; "Pool" is the older answer).
 const hasPool = equipment => ['Pool', 'Pool at home', 'Public pool or swim centre'].some(p => equipment.has(p));
 
+// A dislike that names a whole food group rather than a food, after words() has tidied it:
+// "most veggy" (from "most veggies"), "vegetable", "fruit", "greens".
+const BROAD_DISLIKE = /^(most |all |any )?(veg|veggy|vegy|veggie|vegie|vegetable|fruit|green|salad stuff|healthy food)$/;
+
 // Turns one person's About me answers into rules for the builder: allergies and diets, foods they
 // won't eat, how they like to eat, cooking time, budget, health conditions and so on.
 function rulesFor(p) {
@@ -242,9 +252,16 @@ function rulesFor(p) {
     if (d === 'No pork') r.diet.add('pork');
     if (d === 'No beef') r.diet.add('beef');
   }
-  r.avoidWords.push(...words(a.dislikes));
-  // "Most veggies" or "vegetables" in their dislikes: prefer dishes with fewer vegetables (not a ban).
-  r.fewVeg = /\b(veg|veggies|vegies|vegetables?)\b/i.test(String(a.dislikes || ''));
+  // Foods they won't eat. A child's sweeping dislikes ("most veggies", "fruit") aren't a ban:
+  // they still get vegetables and fruit, in forms that are easier to eat (see gentleVeg below).
+  // Named foods ("corn", "mushrooms") are always left out, whatever their age.
+  const child = age !== null && age < 18;
+  r.avoidWords.push(...words(a.dislikes).filter(w => !(child && BROAD_DISLIKE.test(w))));
+  // Vegetables or fruit as a whole in their dislikes: serve them soft, cooked in or blended.
+  r.gentleVeg = /\b(veg|veggies|vegies|vegetables?|greens)\b/i.test(String(a.dislikes || ''));
+  r.gentleFruit = /\bfruits?\b/i.test(String(a.dislikes || ''));
+  // The serves of vegetables and fruit a day to aim for, from their age and sex.
+  r.target = TARGETS.targetFor(a);
   if (r.sensory.has('Spicy food')) r.diet.add('spicy');
   if (r.sensory.has('Lumpy or mixed textures (like stews)')) r.avoidTexture.add('mixed');
   if (r.sensory.has('Mushy or soft textures')) r.avoidTexture.add('soft');
@@ -311,7 +328,12 @@ function score(d, eaters, house, rnd) {
     if (d.meal === 'lunch' && r.packed && !d.packable) s -= 4;
     for (const w of r.likeWords) if (w && text.includes(w)) s += 3;
     if (r.cuisines.has(d.cuisine)) s += 2;
-    if (r.fewVeg) s -= ((d.groups && d.groups.veg) || 0) * 1.5;
+    // Dishes with more vegetables score a little higher (up to 3 serves), for everyone. Anything
+    // still missing is added as sides afterwards (see topUp).
+    const veg = (d.groups && d.groups.veg) || 0;
+    s += Math.min(veg, 3) * 0.3;
+    // Not keen on vegetables: prefer them cooked in (stews, soups, sauces) over raw or on their own.
+    if (r.gentleVeg && veg >= 1 && (d.texture || []).some(x => x === 'soft' || x === 'mixed')) s += 1.5;
     if (r.sensory.has('Foods touching on the plate') && d.separate) s += 2;
     if (r.help.has('Meals with only a few steps') && d.steps.length > 3) s -= 2;
     if (r.help.has('One-pan or tray-bake meals') && d.onepan) s += 2;
@@ -636,6 +658,9 @@ function build(people, opts) {
     house.costWeight *= 2.5;
     forAdmin.length = 0;
   } while (true);
+  // Anyone still short of their vegetable or fruit serves (their answers ruled out the options).
+  const shortNote = TARGETS.shortNote(plan, people);
+  if (shortNote) forAdmin.push(shortNote);
   if (!adults.length) forAdmin.push('Everyone in the plan is a child, so portions are child-sized. Add the adults to the family for a full plan.');
   if (local && local.words) plan = reword(plan, PRICES.words[local.words]);
   return { plan, notesForAdmin: forAdmin.join(' ') };
@@ -821,7 +846,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       const p = planPeople[r.key];
       if (!p.weekday) {
         const packs = own[r.key].lunches.filter(d => d.packable);
-        const kidSnacks = snackOrder(LIB.snacks.filter(s => s.kids && available(s) && allowed(s, r)), r, rnd);
+        const kidSnacks = snackOrder(LIB.snacks.filter(s => s.kids && s.kind !== 'side' && available(s) && allowed(s, r)), r, rnd);
         p.weekday = {};
         DAYS.slice(0, 5).forEach((d, i) => {
           const l = packs[i % Math.max(1, packs.length)];
@@ -857,6 +882,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     const r = rules[i];
     const p = planPeople[people[i].key];
     p.snacks = snacksFor(r, exercise[people[i].key], rnd);
+    topUp(r, people[i].key, planPeople, weeks, used);
     for (let w = 0; w < 4; w++) {
       const exWeek = exercise[people[i].key][w];
       for (const s of p.snacks) {
@@ -975,12 +1001,73 @@ function snackOrder(list, r, rnd) {
   return list.map(s => ({ s, k: rnd() + (loved(s) ? 1 : 0) })).sort((a, b) => b.k - a.k).map(x => x.s);
 }
 
+// Puts blended and soft forms first (mash, smoothies, steamed) when someone isn't keen on that
+// kind of food; otherwise leaves the order alone.
+function gentleFirst(list, gentle) {
+  if (!gentle) return list;
+  const rank = s => (s.blended ? 0 : (s.texture || []).includes('soft') ? 1 : 2);
+  return list.slice().sort((a, b) => rank(a) - rank(b));
+}
+
+// The food groups of every dish used so far and every library snack, by name, for measuring a
+// person's days against their targets.
+function groupsSoFar(used) {
+  const groups = {};
+  for (const [name, d] of used) groups[name] = d.groups;
+  for (const s of LIB.snacks) groups[s.what] = s.groups;
+  return groups;
+}
+
+// The builder stops topping up once someone's days are within a quarter of a serve of their target.
+const NEAR_ENOUGH = 0.25;
+
+// Health targets come before likes: adds vegetable sides and fruit to one person's days until
+// their average reaches the guideline serves for their age and sex (within a quarter of a serve).
+// Sides go with dinner first, then lunch; fruit goes with breakfast, then after dinner. Only
+// foods their allergies, diet, textures and named dislikes allow are used, so someone whose
+// answers rule out every option stays short, and build() tells the admin.
+function topUp(r, key, planPeople, weeks, used) {
+  const p = planPeople[key];
+  const measure = () => TARGETS.dailyAverage({ weeks, people: planPeople, groups: groupsSoFar(used) }, key);
+  const fits = s => available(s) && allowed(s, r) && (!r.kid || s.kids) && !p.snacks.some(x => x.what === s.what);
+  // What one of a snack or side costs, from its ingredients' pack prices.
+  const costOf = s => s.per.reduce((n, [k, amount]) => n + (ING[k].pack ? ING[k].price / ING[k].pack * amount : 0), 0);
+  // The option whose amount is closest to what's missing: gentle forms first when that matters,
+  // and the cheaper one when two are as close.
+  const closest = (options, group, gap, gentle) => gentleFirst(options, gentle)
+    .map((s, i) => ({ s, off: Math.abs(((s.groups || {})[group] || 0) - gap) + (gentle ? i : 0) + costOf(s) * 0.2 }))
+    .sort((a, b) => a.off - b.off).map(x => x.s)[0];
+
+  // Vegetables: a side with dinner, then with lunch (weekends only for children, who are at
+  // school; not on days work provides lunch), then a vegetable snack.
+  const lunchDays = r.kid ? ['Sat', 'Sun'] : DAYS.filter(d => !r.lunchProvided.has(d));
+  const vegSlots = [{ when: 'With dinner', kind: 'side' }, { when: 'With lunch', kind: 'side', days: lunchDays }, { when: 'Afternoon', kind: 'veg' }];
+  for (const slot of vegSlots) {
+    const gap = r.target.veg - measure().veg;
+    if (gap <= NEAR_ENOUGH) break;
+    if (slot.days && !slot.days.length) continue;   // no lunches at home to add a side to
+    const s = closest(LIB.snacks.filter(x => x.kind === slot.kind && fits(x)), 'veg', gap, r.gentleVeg);
+    if (!s) continue;
+    const entry = { when: slot.when, what: s.what };
+    if (slot.days && slot.days.length < 7) entry.days = slot.days;
+    p.snacks.push(entry);
+  }
+  // Fruit: with breakfast, then after dinner.
+  for (const when of ['With breakfast', 'After dinner']) {
+    const gap = r.target.fruit - measure().fruit;
+    if (gap <= NEAR_ENOUGH) break;
+    const s = closest(LIB.snacks.filter(x => x.kind === 'fruit' && fits(x)), 'fruit', gap, r.gentleFruit);
+    if (!s) break;
+    p.snacks.push({ when, what: s.what });
+  }
+}
+
 // Two snacks a day for each person, tied to exercise where it helps. Snacks are shuffled, so
 // different people and different plans get a variety rather than always the first in the library.
 function snacksFor(r, exWeeks, rnd) {
   const ok = snackOrder(LIB.snacks.filter(s => available(s) && allowed(s, r) && (!r.kid || s.kids)), r, rnd);
   const by = kind => ok.filter(s => s.kind === kind);
-  const protein = by('protein'), fruit = by('fruit'), other = ok.filter(s => s.kind === 'other' || s.kind === 'veg');
+  const protein = by('protein'), fruit = gentleFirst(by('fruit'), r.gentleFruit), other = ok.filter(s => s.kind === 'other' || s.kind === 'veg');
   const out = [];
   const lifts = exWeeks.some(w => w.days.some(d => d.strength));
   if (r.kid) {
@@ -1023,6 +1110,11 @@ function guideFor(r, p) {
   if (r.conditions.has('Coeliac disease')) tips.push('You said you have coeliac disease: check every label for gluten, including sauces and stock.');
   if (r.conditions.has('Reflux')) tips.push('You mentioned reflux: smaller dinners earlier in the evening may help.');
   if (r.conditions.has('Irritable bowel (IBS)')) tips.push('You mentioned IBS: if some foods (like onion, garlic or beans) bother you, add them to “Foods you won’t eat” in About me and rebuild the plan.');
+  tips.push('This plan aims for about ' + r.target.veg + ' serves of vegetables and ' + r.target.fruit + ' of fruit a day, the guideline amounts for your age. A serve is about half a cup of cooked vegetables or a medium piece of fruit. What your GP or dietitian says comes first.');
+  if (r.gentleVeg || r.gentleFruit) {
+    const what = r.gentleVeg && r.gentleFruit ? 'vegetables and fruit aren’t' : r.gentleVeg ? 'most vegetables aren’t' : 'fruit isn’t';
+    tips.push('You said ' + what + ' a favourite, so where possible they come cooked into meals, soft or blended. Starting with small amounts and building up may be easier, and a GP or dietitian can suggest what suits.');
+  }
   tips.push('Drink water through the day.');
   return { guide: bits.join(' '), tips };
 }

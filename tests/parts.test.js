@@ -122,6 +122,40 @@ test('countries: every country but Australia has a local price list in its own c
 });
 
 // ---------------------------------------------------------------------------
+// Vegetable and fruit targets
+// ---------------------------------------------------------------------------
+
+test('targets: the builder’s vegetable and fruit serves match the guidelines the Macros tab shows', () => {
+  const ht = require('../api/healthtargets');
+  const au = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'guidelines.json'), 'utf8')).countries.find(c => c.id === 'au');
+  for (let age = 2; age <= 95; age++) {
+    for (const sex of ['Male', 'Female']) {
+      const row = au.targets.find(r => age >= r.age[0] && age <= r.age[1] && (r.sex === 'any' || r.sex === sex.toLowerCase()));
+      assert.deepEqual(ht.targetFor({ age, sex }), { veg: row.veg, fruit: row.fruit }, sex + ' aged ' + age);
+    }
+  }
+  // No age given: an adult's numbers.
+  assert.deepEqual(ht.targetFor({}), { veg: 5, fruit: 2 });
+});
+
+test('targets: a plan is measured the way the Macros tab does it', () => {
+  const ht = require('../api/healthtargets');
+  const plan = {
+    people: { kid: { name: 'Kid', portion: 0.5, snacks: [{ when: 'Afternoon', what: 'An apple' }, { when: 'Later', what: 'A pear', optional: true }], weekday: { Mon: { lunch: 'Soup' } } } },
+    weeks: [{ name: 'Stock-up 1', kind: 'stockup' }, { name: 'Week 1', meals: [
+      { day: 'Mon', breakfast: 'Toast', lunch: 'Salad', dinner: 'Stew' },
+      { day: 'Tue', breakfast: 'Toast', lunch: 'Salad', dinner: 'Stew', people: { kid: { dinner: 'Soup' } } },
+    ] }],
+    groups: { Stew: { veg: 4 }, Salad: { veg: 2 }, soup: { veg: 1 }, 'An apple': { fruit: 1 }, 'A pear': { fruit: 1 } },
+  };
+  // Monday: soup for lunch (1) and stew (4), at half a portion = 2.5. Tuesday: salad (2) and soup (1) = 1.5.
+  assert.deepEqual(ht.dailyAverage(plan, 'kid'), { veg: 2, fruit: 1 });
+  const review = ht.review(plan, [{ key: 'kid', name: 'Kid', answers: { age: 10 } }]);
+  assert.deepEqual(review[0].short, ['veg', 'fruit']);
+  assert.match(ht.shortNote(plan, [{ key: 'kid', name: 'Kid', answers: { age: 10 } }]), /Kid’s days average about 2 of 5 serves of vegetables/);
+});
+
+// ---------------------------------------------------------------------------
 // Wording rules for health text (see CLAUDE.md)
 // ---------------------------------------------------------------------------
 
@@ -148,6 +182,7 @@ function textsIn(file) {
 test('wording: health notes avoid "always", "never" and "must"', () => {
   const texts = [
     ...stringsIn(path.join(ROOT, 'api', 'planbuilder.js')),
+    ...stringsIn(path.join(ROOT, 'api', 'healthtargets.js')),
     ...textsIn(path.join(ROOT, 'site', 'questions.json')),
   ];
   const bad = texts.filter(t => ABSOLUTES.test(t) && !ALLOWED.some(a => t.includes(a)));
@@ -157,6 +192,7 @@ test('wording: health notes avoid "always", "never" and "must"', () => {
 test('wording: the app calls its own notes "considerations", never "advice"', () => {
   const texts = [
     ...stringsIn(path.join(ROOT, 'api', 'planbuilder.js')),
+    ...stringsIn(path.join(ROOT, 'api', 'healthtargets.js')),
     ...textsIn(path.join(ROOT, 'site', 'questions.json')),
     ...textsIn(path.join(ROOT, 'api', 'exercises.json')),
   ];
