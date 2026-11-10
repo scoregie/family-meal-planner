@@ -356,6 +356,13 @@ async function runDraft(me, ready, ctx, note) {
       messages: [{ role: 'user', content: [...attached, { type: 'text', text: userText(ctx, people, note, 'attached') }] }],
     });
     stopDraft = () => stream.abort();
+    // Every piece that arrives (thinking included, which sends no plan text) is noted, so Plan
+    // setup can show the AI is still working during the long quiet stretch before it writes.
+    stream.on('streamEvent', event => {
+      if (!job) return;
+      job.heard = Date.now();
+      if (event.type === 'content_block_start' && event.content_block && event.content_block.type === 'thinking' && !job.chars) job.stage = 'Thinking it through';
+    });
     stream.on('text', delta => {
       // Only the new text (plus a little before it, for a name split across two pieces) is searched.
       const recent = text.slice(-40) + delta;
@@ -534,7 +541,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       questions: questionCount(),
       claude: { enabled: ready.enabled, own: !!ready.own, reason: ready.reason || null, name: ready.name, provider: ready.provider, model: ready.model || null },
       ai: { family: ai.familyChoice(), keys: ai.familyKeys(), providers: Object.fromEntries(Object.entries(ai.PROVIDERS).map(([k, p]) => [k, { name: p.name, company: p.company, keys: p.keys || null }])) },
-      job: job ? { state: job.state, by: job.by, started: job.started, stage: job.stage || '', error: job.error || null,
+      job: job ? { state: job.state, by: job.by, started: job.started, stage: job.stage || '', error: job.error || null, heard: job.heard || null,
         progress: job.state === 'running' ? Math.min(0.97, (job.chars || 0) / EXPECTED_CHARS) : null } : null,
       draft: pending ? draftPreview(pending) : null,
       kitchen: kitchenList(),
