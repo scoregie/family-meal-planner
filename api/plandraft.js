@@ -364,7 +364,9 @@ async function runDraft(me, ready, ctx, note) {
       // all of it thinking (16 minutes) and wrote nothing, so effort is "medium" and the
       // allowance is the largest the API gives. A whole plan is about 30,000 tokens.
       max_tokens: CLAUDE_DRAFT.maxTokens,
-      thinking: { type: 'adaptive' },
+      // "summarized" sends a running summary of the thinking. The app doesn't show it, but each
+      // piece arriving is how Plan setup knows Claude is still working (see job.heard below).
+      thinking: { type: 'adaptive', display: 'summarized' },
       output_config: { effort: CLAUDE_DRAFT.effort },
       system: [{ type: 'text', text: systemText(), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: [...attached, { type: 'text', text: userText(ctx, people, note, 'attached') }] }],

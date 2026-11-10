@@ -316,6 +316,14 @@ function saveAI(p, model) {
   }).catch(function (e) { status(e.message, true); });
 }
 
+// A few words on when the AI last sent anything while drafting, or "" if that isn't known.
+function heardText(heard) {
+  if (!heard) return "";
+  var seconds = Math.max(0, Math.round((Date.now() - heard) / 1000));
+  if (seconds < 90) return "Last heard from it " + seconds + " seconds ago, so it is still working. ";
+  return "Last heard from it " + Math.round(seconds / 60) + " minutes ago. If that passes 10 minutes, it has probably stalled: cancel and try again. ";
+}
+
 // Step 3: the button to draft (or rebuild) the plan, or its progress while the AI writes it.
 function renderDraft() {
   var box = $("draftBody");
@@ -339,7 +347,7 @@ function renderDraft() {
     if (thinking) bar.className = "bar waiting";
     box.appendChild(el("p", "note", (minutes < 1 ? "Started just now. " : "Started " + minutes + (minutes === 1 ? " minute" : " minutes") + " ago. ") +
       (thinking ? "It is reading everyone’s answers and thinking the plan through. The bar starts moving when it begins writing, often after a few minutes. " : "") +
-      (job.heard ? "Last heard from it " + Math.max(0, Math.round((Date.now() - job.heard) / 1000)) + " seconds ago, so it is still working. " : "") +
+      heardText(job.heard) +
       "The whole thing usually takes 5 to 15 minutes. You can close this page; the draft keeps going and shows up here when it’s ready."));
     // Stop it part-way (started by mistake, say). Nothing is saved.
     var stop = el("button", "btn small", "Cancel this draft");
