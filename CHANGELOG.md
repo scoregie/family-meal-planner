@@ -3,6 +3,13 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.4.3 (2026-11-10)
+
+Two new About me choices. No restart needed.
+
+- **French** is now in "Kinds of food you'd like more of".
+- **Cordial** is now in "What do you usually drink?".
+
 ## v1.4.2 (2026-11-10)
 
 Automated tests, and a fix they found. Restart the api after updating
