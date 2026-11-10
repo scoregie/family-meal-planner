@@ -329,6 +329,7 @@ function cutOffMessage(written) {
 // ---------------------------------------------------------------------------
 
 async function runDraft(me, ready, ctx, note) {
+  const mine = job;   // this run's progress record (a later run gets its own)
   const people = household(ctx);
   const known = new Set(people.map(p => p.key));
   let text = '';
@@ -375,17 +376,17 @@ async function runDraft(me, ready, ctx, note) {
     // Every piece that arrives (thinking included, which sends no plan text) is noted, so Plan
     // setup can show the AI is still working during the long quiet stretch before it writes.
     stream.on('streamEvent', event => {
-      if (!job) return;
-      job.heard = Date.now();
-      if (event.type === 'content_block_start' && event.content_block && event.content_block.type === 'thinking' && !job.chars) job.stage = 'Thinking it through';
+      mine.heard = Date.now();
+      if (event.type === 'content_block_start' && event.content_block && event.content_block.type === 'thinking' && !mine.chars) mine.stage = 'Thinking it through';
     });
     stream.on('text', delta => {
       // Only the new text (plus a little before it, for a name split across two pieces) is searched.
       const recent = text.slice(-40) + delta;
+      if (!text) mine.stage = 'Writing the plan';   // the thinking is over
       text += delta;
-      job.chars = text.length;
+      mine.chars = text.length;
       const weeks = recent.match(/"name":\s*"((?:Stock-up|Week) \d)"/g);
-      if (weeks) job.stage = 'Writing ' + weeks[weeks.length - 1].replace(/"name":\s*"/, '').replace(/"$/, '');
+      if (weeks) mine.stage = 'Writing ' + weeks[weeks.length - 1].replace(/"name":\s*"/, '').replace(/"$/, '');
     });
     const message = await stream.finalMessage();
     if (message.stop_reason === 'max_tokens') throw new Error(cutOffMessage(text.length));
@@ -393,7 +394,11 @@ async function runDraft(me, ready, ctx, note) {
     await finishDraft(me, ctx, people, known, text, 'Claude', planextras.skippedNote(people));
   } catch (err) {
     // Stopped with the Cancel button: nothing went wrong, so there is no error to show.
-    if (job && job.cancelled) { job = null; stopDraft = null; return; }
+    if (mine && mine.cancelled) {
+      if (job === mine) { job = null; stopDraft = null; }
+      return;
+    }
+    if (job !== mine) return;   // a newer draft has started: leave its progress alone
     let message = String(err && err.message || err);
     if (ready.provider !== 'anthropic' && (err instanceof ai.AIError || /fetch|ECONN|ENOTFOUND/.test(message))) message = ai.explain(err, ready);
     else if (Anthropic && err instanceof Anthropic.AuthenticationError) message = 'The Claude key wasn’t accepted. Check it in Settings.';

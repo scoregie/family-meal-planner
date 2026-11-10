@@ -127,7 +127,8 @@ function triedFor(person) {
 const RESULT_TYPES = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', txt: 'text/plain' };
 // Limits, so one request to the AI stays well inside what it accepts (32 MB once encoded).
 const RESULTS_EACH = 3;                        // newest files per person
-const RESULT_MAX = 8 * 1024 * 1024;            // biggest PDF or text file
+const RESULT_MAX = 8 * 1024 * 1024;            // biggest PDF
+const RESULT_TEXT_MAX = 200 * 1024;            // biggest text file (text is read word for word)
 const RESULT_IMAGE_MAX = 3.5 * 1024 * 1024;    // biggest photo
 const RESULTS_TOTAL = 20 * 1024 * 1024;        // everyone's files together
 
@@ -157,11 +158,15 @@ function sharedResults(people) {
       const file = path.join(dir, name);
       const type = RESULT_TYPES[path.extname(name).slice(1).toLowerCase()];
       let size = 0;
-      try { size = fs.statSync(file).size; } catch (e) { continue; }
+      try {
+        const info = fs.statSync(file);
+        if (!info.isFile()) continue;   // a folder someone put there by hand
+        size = info.size;
+      } catch (e) { continue; }
       const isImage = type && type.startsWith('image/');
       if (!type) mine.skipped.push({ name, why: 'it is a type the AI can’t read (use a PDF, JPG, PNG or text file)' });
       else if (mine.files.length >= RESULTS_EACH) mine.skipped.push({ name, why: 'only the newest ' + RESULTS_EACH + ' files are read' });
-      else if (size > (isImage ? RESULT_IMAGE_MAX : RESULT_MAX)) mine.skipped.push({ name, why: 'it is too big (photos up to 3.5 MB, other files up to 8 MB)' });
+      else if (size > (isImage ? RESULT_IMAGE_MAX : type === 'text/plain' ? RESULT_TEXT_MAX : RESULT_MAX)) mine.skipped.push({ name, why: 'it is too big (photos up to 3.5 MB, PDFs up to 8 MB, text files up to 200 KB)' });
       else if (total + size > RESULTS_TOTAL) mine.skipped.push({ name, why: 'the family’s files together are too big for one request' });
       else {
         total += size;

@@ -382,10 +382,13 @@ function familyAi() {
 function writerAi(me) {
   const family = familyAi();
   if (family) return family;
-  const accountId = (me && me.accountId) || setting('aiBy', null);
-  if (!accountId) return null;
-  const ready = assistant.setup({ accountId });
-  return ready && ready.enabled && ready.own ? ready : null;
+  // The admin asking first, then the admin who turned the switch on.
+  for (const accountId of [me && me.accountId, setting('aiBy', null)]) {
+    if (!accountId) continue;
+    const ready = assistant.setup({ accountId });
+    if (ready && ready.enabled && ready.own) return ready;
+  }
+  return null;
 }
 
 // What the AI is told about the family: only food likes and limits and ratings, no health details.
