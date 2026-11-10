@@ -313,6 +313,17 @@ function fixCosts(plan) {
   }
 }
 
+// How Claude is asked to write a plan: the most tokens it may use (thinking plus the plan), and
+// how hard it thinks first.
+const CLAUDE_DRAFT = { maxTokens: 128000, effort: 'medium' };
+
+// What to tell the admin when Claude ran out of tokens. `written` is how many characters of the
+// plan had arrived: none means it used the whole allowance thinking, before writing anything.
+function cutOffMessage(written) {
+  if (!written) return 'Claude used up its whole allowance thinking the plan through and didn’t get to write it. Nothing was saved. Try again; a shorter note, or fewer special requests, gives it less to weigh up.';
+  return 'The plan was too long and got cut off. Try again, perhaps with a note asking for simpler recipes.';
+}
+
 // ---------------------------------------------------------------------------
 // Running a draft
 // ---------------------------------------------------------------------------
@@ -349,9 +360,12 @@ async function runDraft(me, ready, ctx, note) {
     const client = ready.client;
     const stream = client.beta.messages.stream({
       model: MODEL,
-      max_tokens: 100000,
+      // Thinking and the plan share one allowance of tokens. At "high" effort Claude once spent
+      // all of it thinking (16 minutes) and wrote nothing, so effort is "medium" and the
+      // allowance is the largest the API gives. A whole plan is about 30,000 tokens.
+      max_tokens: CLAUDE_DRAFT.maxTokens,
       thinking: { type: 'adaptive' },
-      output_config: { effort: 'high' },
+      output_config: { effort: CLAUDE_DRAFT.effort },
       system: [{ type: 'text', text: systemText(), cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: [...attached, { type: 'text', text: userText(ctx, people, note, 'attached') }] }],
     });
@@ -372,7 +386,7 @@ async function runDraft(me, ready, ctx, note) {
       if (weeks) job.stage = 'Writing ' + weeks[weeks.length - 1].replace(/"name":\s*"/, '').replace(/"$/, '');
     });
     const message = await stream.finalMessage();
-    if (message.stop_reason === 'max_tokens') throw new Error('The plan was too long and got cut off. Try again, perhaps with a note asking for simpler recipes.');
+    if (message.stop_reason === 'max_tokens') throw new Error(cutOffMessage(text.length));
     if (message.stop_reason === 'refusal') throw new Error('Claude couldn’t write this plan. Check the About me answers and try again.');
     await finishDraft(me, ctx, people, known, text, 'Claude', planextras.skippedNote(people));
   } catch (err) {
@@ -625,4 +639,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { handle, household };
+module.exports = { handle, household, CLAUDE_DRAFT, cutOffMessage };

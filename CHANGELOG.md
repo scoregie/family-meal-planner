@@ -49,6 +49,10 @@ Plans now listen to what people said and logged, and help fussy eaters one small
   dinner, and each person's guide, tips, small steps and medical considerations.
 - **Plan setup is shorter.** The country and "New meals and exercises" moved to Settings (admins).
   The drafting step has one line of explanation, with the rest behind "What happens?".
+- **Fixed: Claude drafts that ran for a quarter of an hour and then failed.** Claude could spend
+  its whole allowance thinking and never write the plan, and the app then said the plan was
+  "too long". It now thinks less before writing, has more room, and says what happened if it
+  runs out. While it works, Plan setup shows "Thinking it through" and when it was last heard from.
 - **Cancel a draft.** While an AI is writing, "Cancel this draft" stops it. Nothing is saved.
 
 ## v1.7.0 (2026-11-10)

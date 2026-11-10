@@ -183,6 +183,15 @@ test('results: shared files are sent to Claude as documents and images, newest t
   assert.match(extras.skippedNote([{ name: 'Sam', results: got }]), /Old\.pdf” wasn’t read because only the newest 3/);
 });
 
+test('drafting: Claude is left room to write after thinking, and running out is explained', () => {
+  const draft = require('../api/plandraft');
+  // "high" effort once used a 100,000-token allowance on thinking alone and wrote no plan.
+  assert.notEqual(draft.CLAUDE_DRAFT.effort, 'high');
+  assert.ok(draft.CLAUDE_DRAFT.maxTokens >= 128000);
+  assert.match(draft.cutOffMessage(0), /thinking the plan through/);
+  assert.match(draft.cutOffMessage(50000), /too long and got cut off/);
+});
+
 // ---------------------------------------------------------------------------
 // Wording rules for health text (see CLAUDE.md)
 // ---------------------------------------------------------------------------
