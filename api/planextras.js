@@ -6,10 +6,13 @@
 //
 //   GET /api/steps?person=...   your own small-steps record (admins: anyone's)
 //   PUT /api/steps?person=...   {food, result}: result is "tried", "liked", "not yet" or "" to clear
-//
-// Files uploaded as PDFs or photos (blood tests and so on) can't be read here: only the numbers
-// from Lose It, Apple Health and Health sync, which are saved as measurements.
+//   - their blood test results from My files, but only if they said yes in About me
+//     ("share_results"). Only an AI can read those: Claude gets the files themselves, and a
+//     Claude Code session is told where they are. The built-in builder can't read documents.
+const fs = require('fs');
+const path = require('path');
 const db = require('./db');
+const uploads = require('./uploads');
 
 const DAY = 24 * 3600 * 1000;
 const RESULTS = ['tried', 'liked', 'not yet'];
@@ -116,6 +119,97 @@ function triedFor(person) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Blood test results (My files → Blood tests)
+// ---------------------------------------------------------------------------
+
+// The file types an AI can read, and what each is called when it is sent.
+const RESULT_TYPES = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', txt: 'text/plain' };
+// Limits, so one request to the AI stays well inside what it accepts (32 MB once encoded).
+const RESULTS_EACH = 3;                        // newest files per person
+const RESULT_MAX = 8 * 1024 * 1024;            // biggest PDF or text file
+const RESULT_IMAGE_MAX = 3.5 * 1024 * 1024;    // biggest photo
+const RESULTS_TOTAL = 20 * 1024 * 1024;        // everyone's files together
+
+// True if someone said yes in About me to the plan writer reading their blood test results.
+function sharesResults(answers) {
+  return /^Yes/.test(String((answers || {}).share_results || ''));
+}
+
+// The blood test files the plan writer may read, for a list of people [{person, answers}].
+// Returns {person: {shared, count, files: [{name, file, type, size}], skipped: [{name, why}]}}.
+// "count" is how many files they have uploaded; "files" is empty unless they said yes.
+function sharedResults(people) {
+  const out = {};
+  let total = 0;
+  for (const p of people) {
+    const dir = path.join(uploads.ROOT, p.person, 'blood-tests');
+    let names = [];
+    try {
+      names = fs.readdirSync(dir).filter(n => !n.startsWith('.') && !n.endsWith('.part'));
+    } catch (e) {
+      // No folder yet, so no files.
+    }
+    names.sort((a, b) => b.localeCompare(a));   // names start with the upload date: newest first
+    const mine = out[p.person] = { shared: sharesResults(p.answers), count: names.length, files: [], skipped: [] };
+    if (!mine.shared) continue;
+    for (const name of names) {
+      const file = path.join(dir, name);
+      const type = RESULT_TYPES[path.extname(name).slice(1).toLowerCase()];
+      let size = 0;
+      try { size = fs.statSync(file).size; } catch (e) { continue; }
+      const isImage = type && type.startsWith('image/');
+      if (!type) mine.skipped.push({ name, why: 'it is a type the AI can’t read (use a PDF, JPG, PNG or text file)' });
+      else if (mine.files.length >= RESULTS_EACH) mine.skipped.push({ name, why: 'only the newest ' + RESULTS_EACH + ' files are read' });
+      else if (size > (isImage ? RESULT_IMAGE_MAX : RESULT_MAX)) mine.skipped.push({ name, why: 'it is too big (photos up to 3.5 MB, other files up to 8 MB)' });
+      else if (total + size > RESULTS_TOTAL) mine.skipped.push({ name, why: 'the family’s files together are too big for one request' });
+      else {
+        total += size;
+        mine.files.push({ name, file, type, size });
+      }
+    }
+  }
+  return out;
+}
+
+// One person's shared files in the form Claude's API takes them: a PDF or text file as a
+// "document", a photo as an "image" with a line before it saying whose it is.
+function resultBlocks(name, files) {
+  const blocks = [];
+  for (const f of files) {
+    const title = name + '’s blood test results: ' + f.name;
+    let data;
+    try { data = fs.readFileSync(f.file); } catch (e) { continue; }   // deleted a moment ago
+    if (f.type === 'application/pdf') {
+      blocks.push({ type: 'document', title, source: { type: 'base64', media_type: f.type, data: data.toString('base64') } });
+    } else if (f.type === 'text/plain') {
+      blocks.push({ type: 'document', title, source: { type: 'text', media_type: f.type, data: data.toString('utf8') } });
+    } else {
+      blocks.push({ type: 'text', text: title });
+      blocks.push({ type: 'image', source: { type: 'base64', media_type: f.type, data: data.toString('base64') } });
+    }
+  }
+  return blocks;
+}
+
+// A sentence for the admin about files that were left out, or '' when none were.
+// `people` is the household list (each with name and results).
+function skippedNote(people) {
+  const bits = [];
+  for (const p of people) {
+    for (const s of (p.results || {}).skipped || []) bits.push(p.name + '’s “' + s.name + '” wasn’t read because ' + s.why);
+  }
+  return bits.length ? 'Blood test files: ' + bits.join('; ') + '.' : '';
+}
+
+// A sentence for the admin when shared results couldn't be read at all, because the plan was
+// made by something that can't read documents (`who`, like "The built-in builder"). '' if none.
+function unreadNote(people, who) {
+  const names = people.filter(p => p.results && p.results.files.length).map(p => p.name);
+  if (!names.length) return '';
+  return who + ' can’t read uploaded files, so the blood test results ' + names.join(' and ') + ' shared weren’t used. Claude (with a key, or in a Claude Code session) can read them.';
+}
+
 // Answers /api/steps requests. Returns true if it handled the request. `ctx.people()` lists the
 // people in the plan. People see and change their own record; admins can do it for anyone
 // (parents usually tick for a child).
@@ -145,4 +239,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { handle, feedbackFor, measuredFor, measuredText, triedFor };
+module.exports = { handle, feedbackFor, measuredFor, measuredText, triedFor, sharesResults, sharedResults, resultBlocks, skippedNote, unreadNote };

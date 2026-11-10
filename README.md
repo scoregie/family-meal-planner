@@ -204,6 +204,8 @@ Either way, every new entry is checked before it's used: dishes may only use ing
 
 Everyone gets a **My files** page in More for things that help with the plan: Lose It exports, Apple Health exports, blood tests, photos and anything else. Each person only sees their own files. Admins can see, add and delete everyone's.
 
+Blood test results are only used in a plan if the person says yes to the About me question "May the plan writer read the blood test results you upload in My files?" (under Health). Then their newest results (up to 3 PDFs, JPG or PNG photos, or text files) are sent to Claude with the rest of the request when an admin drafts the plan, or read by a Claude Code session. The built-in builder and the other AIs can't read files.
+
 Files are stored in plain folders on the server, one per person and then one per type, with the upload date at the front of the name:
 
     data/uploads/alex/blood-tests/2026-11-08 Blood results.pdf

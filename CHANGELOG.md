@@ -27,6 +27,16 @@ Plans now listen to what people said and logged, and help fussy eaters one small
   which needs a key in the server's `.env`. If you have your own key in Settings, it now says
   that your own key is used for plans you draft, where it used to just say "not set up".
 - A failed AI draft is now written to the server's log as well as shown on Plan setup.
+- **Blood test results can shape the plan.** A new About me question (under Health) asks whether
+  the plan writer may read the blood test results you upload in My files. It is off unless you
+  say yes. With yes, your newest results (up to 3 PDFs, photos or text files) go to Claude when
+  an admin drafts the plan, or are read by a Claude Code session. The plan notes what the report
+  flags as considerations and points you to your GP. The built-in builder and the other AIs
+  can't read files, and tell the admin so. Plan setup shows who has files and who is sharing.
+- **Plan setup's AI step is simpler.** It now shows the AI that has a key (yours from Settings, or
+  one on the server), or "No AI" with a button to add a key. A choice only appears when the
+  server has keys to choose between. "Have your AI write new ones for your family" now works
+  with your own key too (before, the switch stayed greyed out unless the server had a key).
 
 ## v1.7.0 (2026-11-10)
 

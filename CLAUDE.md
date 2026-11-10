@@ -18,12 +18,14 @@ The family may have no AI API key, so a Claude Code session can write the 4-week
    plan, and everyone's About me answers.
 2. Read the whole of `data/claude-code/prompt.md` and follow its instructions exactly. Write the
    complete plan as one JSON object (including `notesForAdmin`) to `data/claude-code/plan.json`.
+   If the prompt lists blood test files (people who said yes to sharing them in About me), read
+   each one where it is, under `data/uploads/`, before writing; the prompt says how to use them.
    It is long (around 100 KB): write it in parts if needed, then check it parses
    (`python3 -m json.tool data/claude-code/plan.json > /dev/null`).
 3. Run `tools/claude-code-plan.sh submit`. If the app reports a problem, fix the plan and submit again.
 4. Tell the user it is waiting on **Plan setup** for them to review and approve. Don't approve it yourself.
 
-The prompt file holds health details: never commit it or copy it out of `data/`.
+The prompt file and the blood test files hold health details: never commit them or copy them out of `data/`.
 
 ## "Write new meals and exercises for the library"
 

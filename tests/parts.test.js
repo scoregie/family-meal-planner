@@ -162,6 +162,28 @@ test('targets: a plan is measured the way the Macros tab does it', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Blood test results for the plan writer
+// ---------------------------------------------------------------------------
+
+test('results: shared files are sent to Claude as documents and images, newest three only', () => {
+  const extras = require('../api/planextras');
+  const dir = path.join(process.env.DATA_DIR, 'uploads', 'sam', 'blood-tests');
+  fs.mkdirSync(dir, { recursive: true });
+  for (const name of ['2026-01-01 Old.pdf', '2026-05-01 A.pdf', '2026-06-01 B.png', '2026-07-01 C.txt']) fs.writeFileSync(path.join(dir, name), 'abc');
+  const yes = { share_results: 'Yes, use my blood test results' };
+  assert.deepEqual(extras.sharedResults([{ person: 'sam', answers: {} }]).sam.files, [], 'nothing without a yes');
+  const got = extras.sharedResults([{ person: 'sam', answers: yes }]).sam;
+  assert.deepEqual(got.files.map(f => f.name), ['2026-07-01 C.txt', '2026-06-01 B.png', '2026-05-01 A.pdf']);
+  assert.equal(got.skipped[0].name, '2026-01-01 Old.pdf');
+  const blocks = extras.resultBlocks('Sam', got.files);
+  assert.deepEqual(blocks.map(b => b.type), ['document', 'text', 'image', 'document']);
+  assert.deepEqual(blocks[0].source, { type: 'text', media_type: 'text/plain', data: 'abc' });
+  assert.deepEqual(blocks[2].source, { type: 'base64', media_type: 'image/png', data: 'YWJj' });
+  assert.equal(blocks[3].source.media_type, 'application/pdf');
+  assert.match(extras.skippedNote([{ name: 'Sam', results: got }]), /Old\.pdf” wasn’t read because only the newest 3/);
+});
+
+// ---------------------------------------------------------------------------
 // Wording rules for health text (see CLAUDE.md)
 // ---------------------------------------------------------------------------
 

@@ -122,6 +122,42 @@ test('logged health numbers and small steps reach the instructions for an AI-wri
   assert.match(handoff.json.user, /Sweet potato wedges \(liked\)/);
 });
 
+test('blood test results reach the plan writer only after the person says yes in About me', async () => {
+  const mine = setup => setup.json.people.find(p => p.person === 'alex-smith').results;
+  const dir = path.join(server.dir, 'data', 'uploads', 'alex-smith', 'blood-tests');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, '2026-11-01 Results.txt'), 'Ferritin 12 ug/L (low)');
+  fs.writeFileSync(path.join(dir, '2026-11-02 Scan.heic'), 'x');
+
+  let handoff = await server.request('GET', '/api/plan/handoff');
+  assert.doesNotMatch(handoff.json.user, /blood-tests/, 'left out until they say yes');
+  let setup = await server.request('GET', '/api/plan/setup');
+  assert.deepEqual(mine(setup), { shared: false, count: 2, reading: 0 });
+
+  const answers = { age: '41', allergies: ['Peanuts'], diet: ['None'], share_results: 'Yes, use my blood test results' };
+  await server.request('PUT', '/api/profile?person=alex-smith', { answers });
+  handoff = await server.request('GET', '/api/plan/handoff');
+  assert.match(handoff.json.user, /- data\/uploads\/alex-smith\/blood-tests\/2026-11-01 Results\.txt/);
+  assert.doesNotMatch(handoff.json.user, /Scan\.heic/, 'a type the AI can’t read is left out');
+  assert.match(handoff.json.system, /Blood test results:/);
+  setup = await server.request('GET', '/api/plan/setup');
+  assert.deepEqual(mine(setup), { shared: true, count: 2, reading: 1 });
+
+  // The built-in builder can't read them, and says so to the admin.
+  await server.request('POST', '/api/plan/draft', { how: 'builtin' });
+  setup = await server.request('GET', '/api/plan/setup');
+  assert.match(setup.json.draft.details, /can’t read uploaded files/);
+});
+
+test('the "AI writes new meals" switch says it needs a key when there is none', async () => {
+  const got = await server.request('GET', '/api/library/updates');
+  assert.equal(got.status, 200, got.text);
+  assert.equal(got.json.aiName, null);
+  const write = await server.request('POST', '/api/library/updates/write', {});
+  assert.equal(write.status, 400);
+  assert.match(write.json.error, /API key/);
+});
+
 test('a tick on the shopping list is saved for everyone', async () => {
   const put = await server.request('PUT', '/api/shared', { ticks: { 0: ['milk'] } });
   assert.equal(put.status, 200, put.text);

@@ -21,6 +21,8 @@
 .member h3{font-size:1rem;margin:0 0 .1rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
 .member small{display:block;color:var(--mute);font-size:.85rem}
 .member small.ok{color:var(--accent);font-weight:700}
+.aiok{margin:.4rem 0 .1rem}
+.aiok b{color:var(--accent)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:0 .8rem}
 textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .65rem;width:100%;min-height:5rem;resize:vertical}
 .bar{height:.6rem;background:var(--line);border-radius:1rem;overflow:hidden;margin:.6rem 0 .3rem}
@@ -97,8 +99,8 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(-
     </section>
 
     <section class="card" id="aiCard">
-      <h2><span class="step">2</span>Choose your AI</h2>
-      <p class="note">The plan can be written by an AI, which fits it closely to everyone’s answers, or made by the app’s own plan builder, which needs no AI and costs nothing. The choice here is also what Ask AI uses for the family. Anyone can use their own AI key instead, in Settings.</p>
+      <h2><span class="step">2</span>Your AI</h2>
+      <p class="note">An AI fits the plan closely to everyone’s answers. Without one, the app’s own plan builder makes the plan for free.</p>
       <div id="aiBody"></div>
     </section>
 
@@ -193,6 +195,11 @@ function renderPeople() {
     if (p.finished) text.appendChild(el("small", "ok", "✓ Finished"));
     else if (p.answered) text.appendChild(el("small", null, p.answered + " of " + DATA.questions + " answered, not marked finished yet"));
     else text.appendChild(el("small", null, "Not started"));
+    // Blood test files in My files, and whether they said yes in About me to a plan reading them.
+    if (p.results && p.results.count) {
+      var n = p.results.count + " blood test file" + (p.results.count === 1 ? "" : "s");
+      text.appendChild(el("small", null, p.results.shared ? n + ": a plan written by Claude reads " + (p.results.reading === p.results.count ? (p.results.count === 1 ? "it" : "them") : "the newest " + p.results.reading) : n + ", not used in plans (they can say yes in About me, under Health)"));
+    }
     row.appendChild(text);
     var a = el("a", "btn small", p.login ? (p.finished ? "See answers" : "Answer or check") : "Answer for " + p.name);
     a.href = "profile.html?person=" + encodeURIComponent(p.person);
@@ -202,50 +209,82 @@ function renderPeople() {
   if (!DATA.people.length) box.appendChild(el("p", "note", "Nobody is in the plan yet. Add people below, or invite them."));
 }
 
-// Step 2: which AI the family uses (or none), and its model.
+// Step 2: which AI writes the plan. Only AIs that have a key are shown; with no key it says "No AI".
+// For each AI: its name, and what is sent to it when it writes a plan.
 var AI_ABOUT = {
-  none: ["No AI", "The app’s built-in plan builder. Free and private: nothing leaves your server. Plans are simpler than an AI’s."],
-  anthropic: ["Claude", "Anthropic. Needs ANTHROPIC_API_KEY on the server. Writes the most detailed plans. Everyone’s About me answers (including health and medicines) are sent to Anthropic to write the plan."],
-  openai: ["OpenAI", "ChatGPT’s maker. Needs OPENAI_API_KEY on the server. Everyone’s About me answers (including health and medicines) are sent to OpenAI to write the plan."],
-  gemini: ["Gemini", "Google. Needs GEMINI_API_KEY on the server. Everyone’s About me answers (including health and medicines) are sent to Google to write the plan."],
-  ollama: ["Ollama (local)", "A free AI running on your own computer. Needs OLLAMA_URL on the server and a powerful machine. Answers stay on that computer."],
+  none: ["No AI", "Plans are made by the app’s built-in plan builder. Free and private: nothing leaves your server. Plans are simpler than an AI’s."],
+  anthropic: ["Claude", "Everyone’s About me answers (including health and medicines) are sent to Anthropic to write the plan, with the blood test results of anyone who said yes to sharing them in About me."],
+  openai: ["OpenAI", "Everyone’s About me answers (including health and medicines) are sent to OpenAI to write the plan."],
+  gemini: ["Gemini", "Everyone’s About me answers (including health and medicines) are sent to Google to write the plan."],
+  ollama: ["Ollama (local)", "A free AI running on your own computer. Answers stay on that computer."],
 };
 var aiModels = {};   // provider -> [models], once loaded
 
-// Step 2: which AI the family uses (or none), with what each one costs and needs.
+// One line saying an AI is ready: a tick, its name and where its key is, then what is sent to it.
+function aiLine(box, p, where) {
+  var line = el("p", "aiok");
+  line.appendChild(el("b", null, "✓ " + AI_ABOUT[p][0]));
+  line.appendChild(document.createTextNode(" " + where));
+  box.appendChild(line);
+  box.appendChild(el("p", "note", AI_ABOUT[p][1]));
+}
+
+// Step 2: shows the AI that has a key (yours, or the family's on the server), or "No AI" and how
+// to add a key. A choice only appears when the server has keys to choose between.
 function renderAI() {
   var box = $("aiBody");
   box.textContent = "";
   var fam = DATA.ai.family, keys = DATA.ai.keys;
-  var set = el("fieldset", "choices");
-  var legend = el("legend", "sr", "Which AI");
-  set.appendChild(legend);
-  ["none", "anthropic", "openai", "gemini", "ollama"].forEach(function (p) {
-    var label = el("label", "choice");
-    var input = el("input");
-    input.type = "radio";
-    input.name = "aiChoice";
-    input.value = p;
-    input.checked = fam.provider === p;
-    input.disabled = p !== "none" && !keys[p];
-    input.onchange = function () { pickAI(p); };
-    label.appendChild(input);
-    var span = el("span");
-    // This list is the AI the whole family shares, which needs a key in the server's .env file.
-    // Someone with their own key in Settings still drafts with that, whatever is chosen here.
-    var own = DATA.claude.own && DATA.claude.provider === p;
-    span.appendChild(el("b", null, AI_ABOUT[p][0] + (p !== "none" && !keys[p] ? (own ? " (no family key; your own key is used for plans you draft)" : " (no family key on the server)") : "")));
-    span.appendChild(el("small", null, AI_ABOUT[p][1]));
-    label.appendChild(span);
-    set.appendChild(label);
-  });
-  box.appendChild(set);
+  var withKey = ["anthropic", "openai", "gemini", "ollama"].filter(function (p) { return keys[p]; });
+
+  // Your own key (saved in Settings) is what plans you draft use.
+  if (DATA.claude.own) {
+    aiLine(box, DATA.claude.provider, "is set up with your own key" + (DATA.claude.model ? " (" + DATA.claude.model + ")" : "") + ". Plans you draft use it.");
+  }
+
+  if (withKey.length) {
+    // The server has a key the whole family shares: choose it (or no AI) and its model.
+    if (DATA.claude.own) box.appendChild(el("p", "note", "For everyone else in the family (their Ask AI):"));
+    var set = el("fieldset", "choices");
+    set.appendChild(el("legend", "sr", "Which AI the family uses"));
+    ["none"].concat(withKey).forEach(function (p) {
+      var label = el("label", "choice");
+      var input = el("input");
+      input.type = "radio";
+      input.name = "aiChoice";
+      input.value = p;
+      input.checked = fam.provider === p;
+      input.onchange = function () { pickAI(p); };
+      label.appendChild(input);
+      var span = el("span");
+      span.appendChild(el("b", null, AI_ABOUT[p][0] + (p === "none" ? "" : " (key on the server)")));
+      span.appendChild(el("small", null, AI_ABOUT[p][1]));
+      label.appendChild(span);
+      set.appendChild(label);
+    });
+    box.appendChild(set);
+  } else if (!DATA.claude.own) {
+    // No key anywhere.
+    box.appendChild(el("p", null, "No AI")).style.fontWeight = "600";
+    box.appendChild(el("p", "note", AI_ABOUT.none[1]));
+    box.appendChild(el("p", "note", "Want an AI to write the plan? Add an API key in Settings and it will show here."));
+  }
   var modelRow = el("div", "row");
   modelRow.id = "modelRow";
   box.appendChild(modelRow);
-  if (fam.provider !== "none") showModels(fam.provider, fam.model);
-  if (DATA.claude.own) box.appendChild(el("p", "note", "You have your own " + DATA.claude.name + " key in Settings, so plans you draft use that (" + (DATA.claude.model || "") + "), even if it is greyed out above. The list above is the AI the whole family shares: it needs a key in the server’s .env file, and is what other people’s Ask AI uses."));
-  box.appendChild(el("p", "note", "To set up an AI, add its key to .env on the server and restart (see the README). Chat subscriptions like ChatGPT Plus or Claude Pro can’t be used by other apps; each company sells API access separately, paid per use. If you run Claude Code on the server, it can draft the plan on your Claude subscription instead: see “Drafting the plan with Claude Code” in the README. Its draft shows up here to approve."));
+  if (withKey.length && fam.provider !== "none" && keys[fam.provider]) showModels(fam.provider, fam.model);
+
+  var link = el("a", "btn small", DATA.claude.own ? "Change or remove your key" : "Add an API key");
+  link.href = "settings.html";
+  var row = el("div", "row");
+  row.appendChild(link);
+  box.appendChild(row);
+
+  // The longer explanation, tucked away.
+  var more = el("details");
+  more.appendChild(el("summary", "note", "More about AI keys"));
+  more.appendChild(el("p", "note", "An API key is bought from the AI company and paid per use. Chat subscriptions like ChatGPT Plus or Claude Pro can’t be used by other apps. A key you add in Settings is yours: it writes the plans you draft and answers your Ask AI. To share one key with the whole family, put it in .env on the server and restart (see the README). If you run Claude Code on the server, it can draft the plan on your Claude subscription instead: see “Drafting the plan with Claude Code” in the README. Its draft shows up here to approve."));
+  box.appendChild(more);
 }
 
 // What happens when an AI is chosen: save it, or show its model list first.
@@ -567,9 +606,9 @@ function renderLibrary() {
   var t2 = el("div");
   t2.appendChild(el("b", null, "Have your AI write new ones for your family"));
   if (d.aiName) {
-    t2.appendChild(el("small", null, "Every 2 weeks " + d.aiName + " writes about 5 meals, a snack and 3 exercises, aimed at the cuisines you like, what you can’t eat and how you rated meals (no health details are sent). They wait here for you to approve. Each run is one AI request on the family’s key."));
+    t2.appendChild(el("small", null, "Every 2 weeks " + d.aiName + " writes about 5 meals, a snack and 3 exercises, aimed at the cuisines you like, what you can’t eat and how you rated meals (no health details are sent). They wait here for you to approve. Each run is one AI request on " + (d.aiOwn ? "your own key." : "the family’s key.")));
   } else {
-    t2.appendChild(el("small", null, "Needs an AI. Choose one in step 2 to turn this on. Without one, the project’s additions above still arrive."));
+    t2.appendChild(el("small", null, "Needs an AI. Add an API key (step 2) to turn this on. Without one, the project’s additions above still arrive."));
   }
   if (d.lastAi) t2.appendChild(el("small", null, when(d.lastAi.at) + ": " + d.lastAi.text));
   if (d.aiName) {
