@@ -240,3 +240,31 @@ test('public pool swims go only on the days they can get there', () => {
   assert.ok(days.some(d => /Swim at the pool/.test(d.cardio || '')), 'no swim at all');
   assert.ok(days.some(d => /^Walk/.test(d.cardio || '')), 'other cardio days should be walks');
 });
+
+test('a foot injury swaps walks for the pool or bike, and leaves out calf raises and lunges', () => {
+  const plan = build([{ age: 33, injuries: 'Injury with my right foot', equipment: ['Dumbbells', 'Bike', 'Public pool or swim centre'], pool_days: ['Sat', 'Sun'] }]);
+  for (const week of plan.weeks.filter(w => w.exercise)) {
+    for (const day of Object.values(week.exercise)[0].days) {
+      if (!day.cardio) continue;
+      assert.doesNotMatch(day.cardio, /^Walk/, 'a walk on ' + day.day);
+      if (/Swim/.test(day.cardio)) assert.ok(['Sat', 'Sun'].includes(day.day), 'a swim on ' + day.day);
+    }
+  }
+  const workouts = JSON.stringify(Object.values(plan.exercise)[0].workouts).toLowerCase();
+  assert.doesNotMatch(workouts, /calf raise|lunge/);
+});
+
+test('someone who dislikes most veggies gets lunches with fewer vegetables', () => {
+  const vegIn = dislikes => {
+    let total = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      const plan = build([{ age: 40 }, { age: 10, packed_lunch: 'Yes, most days', dislikes }], { seed });
+      for (const day of Object.values(Object.values(plan.people)[1].weekday)) {
+        const dish = LIB.dishes.find(d => d.name === day.lunch);
+        if (dish) total += dish.groups.veg || 0;
+      }
+    }
+    return total;
+  };
+  assert.ok(vegIn('most veggies') < vegIn(''), 'no fewer vegetables');
+});

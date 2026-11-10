@@ -243,6 +243,8 @@ function rulesFor(p) {
     if (d === 'No beef') r.diet.add('beef');
   }
   r.avoidWords.push(...words(a.dislikes));
+  // "Most veggies" or "vegetables" in their dislikes: prefer dishes with fewer vegetables (not a ban).
+  r.fewVeg = /\b(veg|veggies|vegies|vegetables?)\b/i.test(String(a.dislikes || ''));
   if (r.sensory.has('Spicy food')) r.diet.add('spicy');
   if (r.sensory.has('Lumpy or mixed textures (like stews)')) r.avoidTexture.add('mixed');
   if (r.sensory.has('Mushy or soft textures')) r.avoidTexture.add('soft');
@@ -309,6 +311,7 @@ function score(d, eaters, house, rnd) {
     if (d.meal === 'lunch' && r.packed && !d.packable) s -= 4;
     for (const w of r.likeWords) if (w && text.includes(w)) s += 3;
     if (r.cuisines.has(d.cuisine)) s += 2;
+    if (r.fewVeg) s -= ((d.groups && d.groups.veg) || 0) * 1.5;
     if (r.sensory.has('Foods touching on the plate') && d.separate) s += 2;
     if (r.help.has('Meals with only a few steps') && d.steps.length > 3) s -= 2;
     if (r.help.has('One-pan or tray-bake meals') && d.onepan) s += 2;
@@ -384,6 +387,16 @@ function exerciseFor(p, r, rnd) {
   else if (!seated && (equipment.has('Exercise bike') || equipment.has('Bike')) && /bike|cycl|ride/.test(likes)) cardio = 'Ride';
   else if (!seated && /dance/.test(likes)) cardio = 'Dance or walk';
   const poolDays = list(a.pool_days).filter(d => DAYS.includes(d));
+  // A foot, ankle, knee or hip injury: swim or ride instead of walking, where they can.
+  const injuryText = (String(a.injuries || '') + ' ' + String(a.gp || '')).toLowerCase();
+  const lowerBody = !seated && INJURY_FLAGS.some(([re, flags]) => flags.some(f => LOWER_BODY.includes(f)) && mentions(re, injuryText));
+  const canRide = equipment.has('Exercise bike') || equipment.has('Bike');
+  if (lowerBody && cardio === 'Walk') {
+    if (hasPool(equipment)) cardio = equipment.has('Pool at home') ? 'Swim' : 'Swim at the pool';
+    else if (canRide) cardio = 'Ride';
+  }
+  // What the other cardio days are when the pool is only some days.
+  const otherCardio = lowerBody && canRide ? 'Ride' : 'Walk';
 
   const medical = [];
   const injuries = String(a.injuries || '').trim();
@@ -441,7 +454,7 @@ function exerciseFor(p, r, rnd) {
     }
     const cardioTarget = swimDays.length === cDays.length
       ? c + ' × ' + cardio.toLowerCase() + ' ' + mins + ' minutes'
-      : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × walk'].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
+      : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × ' + otherCardio.toLowerCase()].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
     let ab = 0;
     weeks.push({
       focus: focus[w],
@@ -449,7 +462,7 @@ function exerciseFor(p, r, rnd) {
       days: DAYS.map(day => {
         const o = { day };
         if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
-        if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? cardio : 'Walk') + ' ' + mins + ' minutes';
+        if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? cardio : otherCardio) + ' ' + mins + ' minutes';
         if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
         return o;
       }),
@@ -471,7 +484,10 @@ const INJURY_FLAGS = [
   [/\b(shoulders?|rotator)\b/g, ['shoulders'], 'shoulders'],
   [/\b(wrists?|carpal|thumbs?|hands?)\b/g, ['wrists'], 'wrists or hands'],
   [/\b(balance|falls?|fell|dizz\w*|vertigo)\b/g, ['balance'], 'balance'],
+  [/\b(foot|feet|ankles?|heels?|achilles|plantar\w*|toes?)\b/g, ['feet'], 'feet or ankles'],
 ];
+// Flags for injuries that make walking and standing work harder (feet, ankles, knees, hips).
+const LOWER_BODY = ['feet', 'knees'];
 const NOT_A_PROBLEM = /\b(no|not|never|without|none|don['’]?t|haven['’]?t|isn['’]?t)\b(\s+\S+){0,2}\s*$/;
 // Whether a pattern is mentioned as a problem somewhere in the text.
 function mentions(re, text) {
@@ -501,8 +517,10 @@ function exerciseRules(p, o) {
     if (!o.seated) { have.clear(); have.add('none'); }
   }
   const disliked = new Set(Array.isArray(p.avoid) ? p.avoid : []);
+  // Feet or ankles: no calf raises, lunges, one-leg balance or jumping.
+  const feet = skip.has('feet') && (e => ['calf', 'lunge', 'balance'].includes(e.type) || e.flags.some(f => f === 'impact' || f === 'balance'));
   const usable = e => have.has(e.equipment) && !disliked.has(e.id)
-    && !e.flags.some(f => skip.has(f)) && (!o.seated || e.flags.includes('seated'));
+    && !e.flags.some(f => skip.has(f)) && !(feet && feet(e)) && (!o.seated || e.flags.includes('seated'));
   return { usable, why };
 }
 
@@ -689,7 +707,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     own[r.key] = {
       dinners: pick(myDinners, 7, [r], house, rnd, new Set()),
       breakfast: myBreakfasts.length ? pick(myBreakfasts, 1, [r], house, rnd, new Set())[0] : null,
-      lunches: myLunches.filter(d => !r.kid || d.packable),
+      // Their own lunches (packable for children), best-suited first: likes, dislikes and so on.
+      lunches: (l => pick(l, Math.min(7, l.length), [r], house, rnd, new Set()))(myLunches.filter(d => !r.kid || d.packable)),
     };
     if (!myDinners.length) forAdmin.push('No dinners in the library suit ' + r.name + '’s needs. Their meals will need adding by hand in Edit plan.');
   }
