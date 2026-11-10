@@ -89,6 +89,8 @@
         { "id": "schedule", "label": "What does a normal week look like?", "type": "long", "placeholder": "e.g. work 7 to 3:30 Mon to Fri, school drop-off at 8:30, footy Saturday mornings" },
         { "id": "packed_lunch", "label": "Do you need lunches you can take with you?", "type": "choice",
           "options": ["Yes, most days", "Some days", "No, I eat at home", "Work or school provides lunch"] },
+        { "id": "lunch_provided", "label": "Which days does work or school provide lunch?", "type": "multi",
+          "options": ["Mon", "Tue", "Wed", "Thu", "Fri", "None"], "help": "The plan won't pack a lunch on those days." },
         { "id": "cook_time", "label": "Time for cooking on a weeknight", "type": "choice",
           "options": ["15 minutes or less", "About 30 minutes", "Up to an hour", "I don't cook"] },
         { "id": "eat_out", "label": "How often do you buy takeaway or eat out?", "type": "choice",
@@ -105,7 +107,7 @@
         { "id": "exercise_time", "label": "How much time could you give exercise on most days?", "type": "choice",
           "options": ["Less than 15 minutes", "15 to 30 minutes", "30 to 60 minutes", "More than an hour"] },
         { "id": "equipment", "label": "What can you use?", "type": "multi",
-          "options": ["Gym membership", "Dumbbells", "Resistance bands", "Exercise bike", "Rowing machine", "Treadmill", "Pool", "Bike", "None"] },
+          "options": ["Gym membership", "Dumbbells", "Resistance bands", "Exercise bike", "Rowing machine", "Treadmill", "Pool at home", "Public pool or swim centre", "Bike", "None"] },
         { "id": "exercise_likes", "label": "Exercise you enjoy, or want to avoid", "type": "long" }
       ]
     },

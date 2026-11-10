@@ -204,3 +204,27 @@ test('a snack matching a food someone loves is picked for them', () => {
     assert.ok(snacks.some(s => s.includes('hummus')), 'no hummus snack with seed ' + seed + ': ' + snacks.join(', '));
   }
 });
+
+test('on days school or work provides lunch, the plan packs none', () => {
+  const plan = build([{ age: 40, lunch_provided: ['Mon'] }, { age: 10, packed_lunch: 'Some days', lunch_provided: ['Fri'] }]);
+  const [adult, child] = Object.keys(plan.people);
+  assert.equal(plan.people[child].weekday.Fri.lunch, 'School provides lunch');
+  assert.notEqual(plan.people[child].weekday.Thu.lunch, 'School provides lunch');
+  for (const week of plan.weeks.filter(w => w.meals)) {
+    const mon = week.meals.find(m => m.day === 'Mon');
+    assert.equal(((mon.people || {})[adult] || {}).lunch, 'Work provides lunch');
+  }
+});
+
+test('"Work or school provides lunch" without days means Monday to Friday', () => {
+  const plan = build([{ age: 40 }, { age: 9, packed_lunch: 'Work or school provides lunch' }]);
+  const child = Object.keys(plan.people)[1];
+  for (const d of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']) assert.equal(plan.people[child].weekday[d].lunch, 'School provides lunch');
+});
+
+test('both pool answers, and the older "Pool", count as having a pool', () => {
+  const cardio = equipment => JSON.stringify(build([{ age: 40, equipment, exercise_likes: 'swimming' }]).weeks.map(w => w.exercise));
+  assert.match(cardio(['Pool at home']), /Swim/);
+  assert.match(cardio(['Public pool or swim centre']), /Swim at the pool/);
+  assert.match(cardio(['Pool']), /Swim/);
+});

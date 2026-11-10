@@ -3,6 +3,21 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.5.0 (2026-11-10)
+
+Two About me questions made clearer, from testing a real family plan. Restart the api after
+updating (`docker restart shopping-list-api`).
+
+- **New question: "Which days does work or school provide lunch?"** Plans no longer pack a lunch on
+  those days: children's school days say "School provides lunch", and adults get "Work provides
+  lunch" with nothing added to the shopping list. Answering "Work or school provides lunch" without
+  picking days means Monday to Friday. AI-drafted plans are told the same.
+- **"Pool" is now "Pool at home" or "Public pool or swim centre"**, so plans know whether a swim
+  means a trip out. AI-drafted plans are asked to plan fewer, longer sessions at a public pool, and
+  the built-in builder says "Swim at the pool". Older "Pool" answers still count, but tick the new
+  option in About me so it shows.
+- Three new tests.
+
 ## v1.4.5 (2026-11-10)
 
 More variety in snacks from the built-in plan builder. Restart the api after updating

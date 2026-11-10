@@ -156,12 +156,12 @@ Structure:
 - Add a top-level "notesForAdmin": two to five short sentences on how the plan fits the family (it is removed before saving).
 
 Food:
-- Strictly respect every allergy, intolerance, diet and food someone won't eat. Keep each person's safe foods in their plan. Avoid textures people listed as hard. Fit cooking time, kitchen equipment, packed lunches and budget to their answers.
+- Strictly respect every allergy, intolerance, diet and food someone won't eat. Keep each person's safe foods in their plan. Avoid textures people listed as hard. Fit cooking time, kitchen equipment, packed lunches and budget to their answers. On the days someone said work or school provides lunch (lunch_provided), don't plan or shop for their lunch: for a child, set that weekday's lunch to "School provides lunch".
 - Shared family dinners where possible, with a different dish for one person (meals[].people) only when needed. Reuse ingredients across the week to cut waste and cost, and use leftovers for lunches.
 - Children: normal growing portions, never weight-loss. No very low energy intakes, crash diets or supplements.
 
 Exercise:
-- Fit each adult's goals, time, equipment, current activity and anything they said about injuries or health. Start gently and build over the 4 weeks. Children: play-based, about an hour of activity a day counting school and sport.
+- Fit each adult's goals, time, equipment, current activity and anything they said about injuries or health. Start gently and build over the 4 weeks. A pool at home suits short or frequent sessions; a public pool or swim centre means travel and opening hours, so plan fewer, longer pool sessions there and say "at the pool". Children: play-based, about an hour of activity a day counting school and sport.
 - Workouts (exercise.workouts) describe how to do a session and stay the same every week, so don't put a fixed length or distance in them (no "a 5 km walk takes 55 minutes"). Put each day's amount in that day's session instead ("Workout F: Easy walk, 25 minutes."), building up over the weeks. The app shows the day's amount at the top of the workout.
 
 Health wording (important):
