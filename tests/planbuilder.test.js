@@ -305,6 +305,43 @@ test('one person disliking vegetables doesn’t lower them for everyone else', (
   }
 });
 
+test('the three answers to "How much should the plan change what you eat?" each mean a different pace', () => {
+  const find = node => Array.isArray(node) ? node.map(find).find(Boolean)
+    : node && typeof node === 'object' ? (node.id === 'eating_change' ? node : find(Object.values(node))) : null;
+  const options = find(require('../site/questions.json')).options;
+  assert.deepEqual(options.map(o => ht.paceFor({ eating_change: o })), ['full', 'build', 'own']);
+  assert.equal(ht.paceFor({}), 'full', 'no answer means from week 1');
+});
+
+test('someone building up gets less added in weeks 1 and 2, and reaches their serves by weeks 3 and 4', () => {
+  const child = { age: 10, sex: 'Female', dislikes: 'most veggies, fruit', eating_change: 'Build up to them over the 4 weeks' };
+  let eased = 0;
+  for (let seed = 1; seed <= 6; seed++) {
+    const { plan, review } = reviewOf([{ age: 40, sex: 'Male' }, child], seed);
+    assert.deepEqual(review[1].short, [], 'the child got ' + review[1].veg + ' veg and ' + review[1].fruit + ' fruit in weeks 3 and 4 with seed ' + seed);
+    for (const snack of plan.people.p1.snacks) {
+      if (!snack.weeks) continue;
+      eased++;
+      assert.ok(snack.weeks.length < 4 && snack.weeks.every(n => n >= 1 && n <= 4), JSON.stringify(snack));
+    }
+    const early = ht.dailyAverage(plan, 'p1', [1]), late = ht.dailyAverage(plan, 'p1', [3, 4]);
+    assert.ok(early.veg + early.fruit <= late.veg + late.fruit + 1.5, 'week 1 has more than weeks 3 and 4 with seed ' + seed);
+  }
+  assert.ok(eased > 0, 'nothing was added for only some weeks');
+});
+
+test('someone keeping close to what they eat now gets nothing added, and isn’t reported as short', () => {
+  const own = { age: 10, dislikes: 'most veggies, fruit', eating_change: 'Keep it close to what I eat now' };
+  for (let seed = 1; seed <= 6; seed++) {
+    const people = [{ key: 'p0', name: 'Person 0', answers: { age: 40 } }, { key: 'p1', name: 'Person 1', answers: own }];
+    const built = pb.build(people, { seed });
+    for (const snack of built.plan.people.p1.snacks) assert.doesNotMatch(snack.when, /^With |^After dinner$/);
+    assert.deepEqual(ht.review(built.plan, people)[1].short, []);
+    assert.doesNotMatch(built.notesForAdmin, /Person 1’s days average/);
+    assert.match(built.plan.people.p1.tips.join(' '), /You chose to keep close to what you eat now/);
+  }
+});
+
 test('vegetable sides are only added as sides, never as an ordinary or school snack', () => {
   const sides = new Set(LIB.snacks.filter(s => s.kind === 'side').map(s => s.what));
   assert.ok(sides.size >= 3, 'the library has vegetable sides');

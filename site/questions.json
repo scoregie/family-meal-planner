@@ -9,7 +9,10 @@
           "options": ["Lose weight", "Keep my weight steady", "Gain weight", "Build muscle", "More energy", "Eat healthier", "Save money on food", "Manage a health condition"] },
         { "id": "goal_detail", "label": "Anything more about your goal?", "type": "long", "placeholder": "e.g. fit back into my work clothes, get ready for a fun run" },
         { "id": "pace", "label": "How fast would you like to go?", "type": "choice",
-          "options": ["Slow and steady", "A moderate pace", "As fast as is safe"], "help": "Slower changes are easier to keep." }
+          "options": ["Slow and steady", "A moderate pace", "As fast as is safe"], "help": "Slower changes are easier to keep." },
+        { "id": "eating_change", "label": "How much should the plan change what you eat?", "type": "choice",
+          "options": ["Reach the healthy-eating guidelines from week 1", "Build up to them over the 4 weeks", "Keep it close to what I eat now"],
+          "help": "The guidelines are the serves of vegetables and fruit a day for your age. Pick the last one if you're here for the planning and shopping. You can change this later and draft the plan again. For a child, an adult chooses." }
       ]
     },
     {
@@ -70,6 +73,8 @@
           "options": ["Vegetarian", "Vegan", "Pescatarian", "Halal", "Kosher", "No pork", "No beef", "None"] },
         { "id": "dislikes", "label": "Foods you won't eat", "type": "long", "placeholder": "e.g. mushrooms, coriander, spicy food" },
         { "id": "likes", "label": "Foods and meals you love", "type": "long", "placeholder": "e.g. stir-fries, roast chicken, curries" },
+        { "id": "usual_day", "label": "What do you usually eat in a day at the moment?", "type": "long", "placeholder": "e.g. toast for breakfast, a sandwich at lunch, pasta or a stir-fry for dinner, biscuits in the afternoon",
+          "help": "The plan can start close to this and change a little at a time." },
         { "id": "cuisines", "label": "Kinds of food you'd like more of", "type": "multi",
           "options": ["Australian classics", "Italian", "Mexican", "Indian", "Chinese", "Japanese", "Korean", "Thai", "Vietnamese", "Middle Eastern", "Greek", "British", "French"] },
         { "id": "breakfast", "label": "What's breakfast like for you?", "type": "choice",

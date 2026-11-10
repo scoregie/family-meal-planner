@@ -386,7 +386,10 @@ function renderReview() {
     var list = el("ul");
     if (p.health) {
       // Their average serves a day in this draft, against the guideline amounts for their age.
-      list.appendChild(el("li", null, "Vegetables: about " + p.health.veg + " of " + p.health.target.veg + " serves a day. Fruit: about " + p.health.fruit + " of " + p.health.target.fruit + "." + (p.health.short.length ? " This is under the guideline amount." : "")));
+      // How they chose to eat (About me): building up is measured on weeks 3 and 4.
+      var pace = p.health.pace === "build" ? " They chose to build up, so this is weeks 3 and 4."
+        : p.health.pace === "own" ? " They chose to keep close to what they eat now, so nothing was added to reach the guideline amounts." : "";
+      list.appendChild(el("li", null, "Vegetables: about " + p.health.veg + " of " + p.health.target.veg + " serves a day. Fruit: about " + p.health.fruit + " of " + p.health.target.fruit + "." + (p.health.short.length ? " This is under the guideline amount." : "") + pace));
     }
     if (p.focus) list.appendChild(el("li", null, "Exercise: " + p.focus));
     p.snacks.forEach(function (t) { list.appendChild(el("li", null, "Snack: " + t)); });

@@ -150,6 +150,12 @@ test('targets: a plan is measured the way the Macros tab does it', () => {
   };
   // Monday: soup for lunch (1) and stew (4), at half a portion = 2.5. Tuesday: salad (2) and soup (1) = 1.5.
   assert.deepEqual(ht.dailyAverage(plan, 'kid'), { veg: 2, fruit: 1 });
+  // A snack with "weeks" only counts in those meal weeks (stock-up weeks aren't counted as weeks).
+  plan.people.kid.snacks[0].weeks = [2];
+  assert.equal(ht.dailyAverage(plan, 'kid').fruit, 0);
+  plan.people.kid.snacks[0].weeks = [1];
+  assert.equal(ht.dailyAverage(plan, 'kid').fruit, 1);
+  delete plan.people.kid.snacks[0].weeks;
   const review = ht.review(plan, [{ key: 'kid', name: 'Kid', answers: { age: 10 } }]);
   assert.deepEqual(review[0].short, ['veg', 'fruit']);
   assert.match(ht.shortNote(plan, [{ key: 'kid', name: 'Kid', answers: { age: 10 } }]), /Kid’s days average about 2 of 5 serves of vegetables/);

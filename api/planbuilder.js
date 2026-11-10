@@ -10,6 +10,7 @@
 //   - Health comes before likes: everyone's days are topped up with vegetable sides and fruit until
 //     they reach the guideline serves for their age and sex (healthtargets.js). What people find
 //     hard to eat decides the form (soft, blended), and likes choose between dishes that fit.
+//     Each person picks the pace in About me: from week 1, building up by week 3, or no change.
 //   - Shopping lists add up every recipe's amounts for the people eating them, in whole packs.
 //     Things that keep (pantry, freezer, cheese) carry over between weeks so nothing is bought twice.
 //   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
@@ -224,6 +225,7 @@ function rulesFor(p) {
     avoidWords: [],       // foods they won't eat
     avoidTexture: new Set(),
     likeWords: words(a.likes).concat(words(a.safe_foods)),
+    usualWords: words(a.usual_day),   // what they eat now, so the plan can start near it
     cuisines: new Set(list(a.cuisines).map(c => CUISINE[c] || c)),
     cookLimit: COOK_LIMIT[a.cook_time] || null,
     cooks: a.cook_time !== "I don't cook",
@@ -260,8 +262,11 @@ function rulesFor(p) {
   // Vegetables or fruit as a whole in their dislikes: serve them soft, cooked in or blended.
   r.gentleVeg = /\b(veg|veggies|vegies|vegetables?|greens)\b/i.test(String(a.dislikes || ''));
   r.gentleFruit = /\bfruits?\b/i.test(String(a.dislikes || ''));
-  // The serves of vegetables and fruit a day to aim for, from their age and sex.
+  // The serves of vegetables and fruit a day to aim for, from their age and sex, and how fast
+  // they chose to get there: "full" (from week 1), "build" (by week 3) or "own" (no change).
   r.target = TARGETS.targetFor(a);
+  r.pace = TARGETS.paceFor(a);
+  r.weekTarget = n => TARGETS.weekTarget(a, n);
   if (r.sensory.has('Spicy food')) r.diet.add('spicy');
   if (r.sensory.has('Lumpy or mixed textures (like stews)')) r.avoidTexture.add('mixed');
   if (r.sensory.has('Mushy or soft textures')) r.avoidTexture.add('soft');
@@ -327,6 +332,8 @@ function score(d, eaters, house, rnd) {
     if (!allowed(d, r)) { s -= 10; continue; }   // they'll get their own dinner that night
     if (d.meal === 'lunch' && r.packed && !d.packable) s -= 4;
     for (const w of r.likeWords) if (w && text.includes(w)) s += 3;
+    // Dishes like what they eat now score higher for people easing in or keeping to their own food.
+    if (r.pace !== 'full') for (const w of r.usualWords) if (w && text.includes(w)) s += 2;
     if (r.cuisines.has(d.cuisine)) s += 2;
     // Dishes with more vegetables score a little higher (up to 3 serves), for everyone. Anything
     // still missing is added as sides afterwards (see topUp).
@@ -882,7 +889,13 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     const r = rules[i];
     const p = planPeople[people[i].key];
     p.snacks = snacksFor(r, exercise[people[i].key], rnd);
-    topUp(r, people[i].key, planPeople, weeks, used);
+    // Top up to their serves at the pace they chose. Building up: weeks 1 and 2 aim lower than
+    // weeks 3 and 4, so anything added only for the later weeks is marked with those weeks.
+    if (r.pace === 'full') topUp(r, people[i].key, planPeople, weeks, used, null);
+    else if (r.pace === 'build') {
+      [[1], [2], [3, 4]].forEach(stage => topUp(r, people[i].key, planPeople, weeks, used, stage));
+      p.snacks = mergeWeeks(p.snacks);
+    }
     for (let w = 0; w < 4; w++) {
       const exWeek = exercise[people[i].key][w];
       for (const s of p.snacks) {
@@ -890,6 +903,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
         if (!lib) continue;
         const days = DAYS.filter(d => {
           if (s.days && !s.days.includes(d)) return false;
+          if (s.weeks && !s.weeks.includes(w + 1)) return false;
           const exDay = exWeek.days.find(x => x.day === d) || {};
           if (s.exercise === 'strength') return !!exDay.strength;
           if (s.exercise === 'rest') return !exDay.strength;
@@ -1018,6 +1032,19 @@ function groupsSoFar(used) {
   return groups;
 }
 
+// Tidies snacks added week by week: the same snack at the same time in several weeks becomes one
+// entry listing those weeks, and one that ends up in all four weeks loses its "weeks" list.
+function mergeWeeks(snacks) {
+  const out = [];
+  for (const s of snacks) {
+    const twin = s.weeks && out.find(x => x.weeks && x.when === s.when && x.what === s.what && String(x.days) === String(s.days));
+    if (twin) twin.weeks = [...new Set(twin.weeks.concat(s.weeks))].sort();
+    else out.push(Object.assign({}, s));
+  }
+  for (const s of out) if (s.weeks && s.weeks.length >= 4) delete s.weeks;
+  return out;
+}
+
 // The builder stops topping up once someone's days are within a quarter of a serve of their target.
 const NEAR_ENOUGH = 0.25;
 
@@ -1026,10 +1053,17 @@ const NEAR_ENOUGH = 0.25;
 // Sides go with dinner first, then lunch; fruit goes with breakfast, then after dinner. Only
 // foods their allergies, diet, textures and named dislikes allow are used, so someone whose
 // answers rule out every option stays short, and build() tells the admin.
-function topUp(r, key, planPeople, weeks, used) {
+// `stage` is the meal weeks to top up, like [3, 4] (what's added is marked with those weeks), or
+// null for all four weeks at once.
+function topUp(r, key, planPeople, weeks, used, stage) {
   const p = planPeople[key];
-  const measure = () => TARGETS.dailyAverage({ weeks, people: planPeople, groups: groupsSoFar(used) }, key);
-  const fits = s => available(s) && allowed(s, r) && (!r.kid || s.kids) && !p.snacks.some(x => x.what === s.what);
+  const target = stage ? r.weekTarget(stage[0]) : r.target;
+  const measure = () => TARGETS.dailyAverage({ weeks, people: planPeople, groups: groupsSoFar(used) }, key, stage);
+  // Something they don't already have in these weeks.
+  const sameWeeks = x => !stage || !x.weeks || x.weeks.some(n => stage.includes(n));
+  const fits = s => available(s) && allowed(s, r) && (!r.kid || s.kids) && !p.snacks.some(x => x.what === s.what && sameWeeks(x));
+  // Adds a side or fruit to their days, marked with the stage's weeks when it isn't every week.
+  const add = entry => { if (stage) entry.weeks = stage; p.snacks.push(entry); };
   // What one of a snack or side costs, from its ingredients' pack prices.
   const costOf = s => s.per.reduce((n, [k, amount]) => n + (ING[k].pack ? ING[k].price / ING[k].pack * amount : 0), 0);
   // The option whose amount is closest to what's missing: gentle forms first when that matters,
@@ -1043,22 +1077,22 @@ function topUp(r, key, planPeople, weeks, used) {
   const lunchDays = r.kid ? ['Sat', 'Sun'] : DAYS.filter(d => !r.lunchProvided.has(d));
   const vegSlots = [{ when: 'With dinner', kind: 'side' }, { when: 'With lunch', kind: 'side', days: lunchDays }, { when: 'Afternoon', kind: 'veg' }];
   for (const slot of vegSlots) {
-    const gap = r.target.veg - measure().veg;
+    const gap = target.veg - measure().veg;
     if (gap <= NEAR_ENOUGH) break;
     if (slot.days && !slot.days.length) continue;   // no lunches at home to add a side to
     const s = closest(LIB.snacks.filter(x => x.kind === slot.kind && fits(x)), 'veg', gap, r.gentleVeg);
     if (!s) continue;
     const entry = { when: slot.when, what: s.what };
     if (slot.days && slot.days.length < 7) entry.days = slot.days;
-    p.snacks.push(entry);
+    add(entry);
   }
   // Fruit: with breakfast, then after dinner.
   for (const when of ['With breakfast', 'After dinner']) {
-    const gap = r.target.fruit - measure().fruit;
+    const gap = target.fruit - measure().fruit;
     if (gap <= NEAR_ENOUGH) break;
     const s = closest(LIB.snacks.filter(x => x.kind === 'fruit' && fits(x)), 'fruit', gap, r.gentleFruit);
     if (!s) break;
-    p.snacks.push({ when, what: s.what });
+    add({ when, what: s.what });
   }
 }
 
@@ -1110,8 +1144,12 @@ function guideFor(r, p) {
   if (r.conditions.has('Coeliac disease')) tips.push('You said you have coeliac disease: check every label for gluten, including sauces and stock.');
   if (r.conditions.has('Reflux')) tips.push('You mentioned reflux: smaller dinners earlier in the evening may help.');
   if (r.conditions.has('Irritable bowel (IBS)')) tips.push('You mentioned IBS: if some foods (like onion, garlic or beans) bother you, add them to “Foods you won’t eat” in About me and rebuild the plan.');
-  tips.push('This plan aims for about ' + r.target.veg + ' serves of vegetables and ' + r.target.fruit + ' of fruit a day, the guideline amounts for your age. A serve is about half a cup of cooked vegetables or a medium piece of fruit. What your GP or dietitian says comes first.');
-  if (r.gentleVeg || r.gentleFruit) {
+  const serves = 'about ' + r.target.veg + ' serves of vegetables and ' + r.target.fruit + ' of fruit a day, the guideline amounts for your age';
+  const aServe = ' A serve is about half a cup of cooked vegetables or a medium piece of fruit. What your GP or dietitian says comes first.';
+  if (r.pace === 'full') tips.push('This plan aims for ' + serves + '.' + aServe);
+  else if (r.pace === 'build') tips.push('You chose to build up over the 4 weeks, so weeks 1 and 2 start part of the way and weeks 3 and 4 aim for ' + serves + '.' + aServe);
+  else tips.push('You chose to keep close to what you eat now, so nothing has been added to reach the guideline amounts (' + serves + '). The Macros tab shows how your week compares, and you can change this in About me and draft the plan again.');
+  if (r.pace !== 'own' && (r.gentleVeg || r.gentleFruit)) {
     const what = r.gentleVeg && r.gentleFruit ? 'vegetables and fruit aren’t' : r.gentleVeg ? 'most vegetables aren’t' : 'fruit isn’t';
     tips.push('You said ' + what + ' a favourite, so where possible they come cooked into meals, soft or blended. Starting with small amounts and building up may be easier, and a GP or dietitian can suggest what suits.');
   }

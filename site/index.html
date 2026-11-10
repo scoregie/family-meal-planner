@@ -2328,13 +2328,22 @@ function isActiveDay(exDay) {
   return !!exDay && EXSLOTS.some(function (slot) { return exDay[slot[0]] && !/^optional|^rest/i.test(exDay[slot[0]]); });
 }
 
+// Which meal week (1 to 4) the week at `weekIndex` is, not counting the stock-up weeks before it.
+function mealWeekNumber(weekIndex) {
+  var n = 0;
+  for (var i = 0; i <= weekIndex && i < PLAN.weeks.length; i++) if (Array.isArray(PLAN.weeks[i].meals)) n++;
+  return n;
+}
+
 // True if a snack is eaten on `day`: its "days" list includes the day (or it has no list), and
 // its "exercise" fits that day's exercise: "strength" (weights days only), "rest" (days without
 // weights), "active" (days with any session) or "inactive". Without an exercise plan for the
-// person, the exercise rule is ignored.
+// person, the exercise rule is ignored. A snack with a "weeks" list (like [3, 4]) is only eaten
+// in those meal weeks: used when someone builds up to more vegetables and fruit over the plan.
 function snackOn(snack, day, personKey, weekIndex) {
   day = short(day);
   if (Array.isArray(snack.days) && snack.days.indexOf(day) < 0) return false;
+  if (Array.isArray(snack.weeks) && weekIndex != null && weekIndex >= 0 && snack.weeks.indexOf(mealWeekNumber(weekIndex)) < 0) return false;
   if (!snack.exercise || !personKey || weekIndex == null) return true;
   var exDay = exDayOf(weekIndex, personKey, day);
   if (!exDay) return true;

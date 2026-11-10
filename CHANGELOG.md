@@ -3,6 +3,25 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.7.0 (2026-11-10)
+
+Each person chooses how much the plan changes what they eat.
+
+- **New About me question: "How much should the plan change what you eat?"** Some people use the
+  app to eat healthier, others for the planning and shopping. Three answers:
+  - *Reach the healthy-eating guidelines from week 1* (also used if the question isn't answered);
+  - *Build up to them over the 4 weeks*: weeks 1 and 2 aim for about 70% and 85% of the serves of
+    vegetables and fruit, and weeks 3 and 4 reach them;
+  - *Keep it close to what I eat now*: nothing is added to reach the serves. The Macros tab still
+    shows how the week compares, and the plan isn't reported as short.
+  For a child, an adult chooses. Allergies, diets and medicine rules apply whatever the answer.
+- **New About me question: "What do you usually eat in a day at the moment?"** People building up
+  or keeping to their own food get dishes closer to it.
+- **Snacks and sides can run in only some weeks** (`"weeks": [3, 4]` in plan.json), which is how
+  building up is written. The Meals page, Today and the Macros tab follow it.
+- AI-written plans get each person's choice in their instructions, and Plan setup says which
+  choice a draft's numbers are for.
+
 ## v1.6.0 (2026-11-10)
 
 Health targets now come before likes when a plan is made.
