@@ -14,16 +14,19 @@
 //   - Exercise builds gently over the 4 weeks from each person's time, equipment and health notes.
 //
 // The result goes through the same review and approval as a plan drafted by AI (plandraft.js).
-const LIB = require('./library.json');
-const EXERCISES = require('./exercises.json').exercises;
+// The data files. On the server they're loaded here with require(). The phone app has no
+// require(), so its local-api.js loads them itself and passes them in with useData().
+const ON_SERVER = typeof require === 'function';
+let LIB = ON_SERVER ? require('./library.json') : null;
+let EXERCISES = ON_SERVER ? require('./exercises.json').exercises : [];
 
 // Local shop names, pack sizes and prices for other countries (made by tools/build_prices.py).
 // Australia's are in library.json. A copy of the app without the file prices everything in AUD.
 let PRICES = { countries: {}, words: {} };
-try { PRICES = require('./library-prices.json'); } catch (e) { /* Australian prices only */ }
+try { if (ON_SERVER) PRICES = require('./library-prices.json'); } catch (e) { /* Australian prices only */ }
 
 // The country this build is for, set by useCountry() at the start of build().
-let ING = LIB.ingredients;   // ingredients with this country's names, packs and prices
+let ING = LIB ? LIB.ingredients : {};   // ingredients with this country's names, packs and prices
 let MISSING = new Set();     // ingredients that are hard to find there
 let CURRENCY = 'AUD';
 let LOCALE = 'en-AU';
@@ -595,6 +598,15 @@ function build(people, opts) {
   return { plan, notesForAdmin: forAdmin.join(' ') };
 }
 
+// When no breakfast (or lunch) in the library suits the family, the plan says "your own choice"
+// for that meal instead of failing, and tells the admin. Returns the dishes, or that one stand-in.
+function orOwnChoice(dishes, meal, forAdmin) {
+  if (dishes.length) return dishes;
+  if (forAdmin) forAdmin.push('No ' + meal + ' in the app’s library suits everyone’s allergies and diets, so ' + meal + ' is left to each person’s own choice. You can add one in Edit plan.');
+  return [{ name: 'Your own choice of ' + meal, meal, ownChoice: true, per: [], tags: [], kit: [], steps: [], minutes: 0,
+    macros: { p: 0, c: 0, f: 0, kj: 0 }, groups: {}, cost: 0 }];
+}
+
 // One try at a whole plan: picks dinners, lunches, breakfasts and snacks for each week, makes the
 // recipes and shopping lists, and adds exercise. build() calls this again (cheaper) if it's over budget.
 function attempt(people, rules, house, rnd, repeat, forAdmin) {
@@ -628,10 +640,10 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     week.forEach(d => recent.add(d.name));
     // Breakfasts: three that suit everyone, rotated.
     const bShared = breakfasts.filter(everyone);
-    const bPick = pick(bShared.length ? bShared : breakfasts, 3, rules, house, rnd, new Set());
+    const bPick = orOwnChoice(pick(bShared.length ? bShared : breakfasts, 3, rules, house, rnd, new Set()), 'breakfast', w ? null : forAdmin);
     // Lunches at home (adults): two that suit everyone, plus leftovers.
     const lShared = lunches.filter(everyone);
-    const lPick = pick(lShared.length ? lShared : lunches, 2, rules.filter(r => !r.kid), house, rnd, new Set());
+    const lPick = orOwnChoice(pick(lShared.length ? lShared : lunches, 2, rules.filter(r => !r.kid), house, rnd, new Set()), 'lunch', w ? null : forAdmin);
 
     const days = DAYS.map((day, i) => {
       const dinner = week[i];
@@ -698,7 +710,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
         }
       });
       m.breakfast = day.breakfast.name;
-      addNeed(day.breakfast, bServes); addCooked(day.breakfast, bServes); used.set(day.breakfast.name, day.breakfast);
+      if (!day.breakfast.ownChoice) { addNeed(day.breakfast, bServes); addCooked(day.breakfast, bServes); used.set(day.breakfast.name, day.breakfast); }
       // Dinner (and extra for tomorrow's leftovers).
       let dServes = 0;
       rules.forEach(r => {
@@ -734,7 +746,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
         });
       } else {
         m.lunch = day.lunch.name;
-        used.set(day.lunch.name, day.lunch);
+        if (!day.lunch.ownChoice) used.set(day.lunch.name, day.lunch);
         let lServes = 0;
         rules.forEach(r => {
           if (r.kid && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(day.day)) return;
@@ -747,7 +759,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
             }
           }
         });
-        addNeed(day.lunch, lServes); addCooked(day.lunch, lServes);
+        if (!day.lunch.ownChoice) { addNeed(day.lunch, lServes); addCooked(day.lunch, lServes); }
       }
       if (Object.keys(overrides).length) m.people = overrides;
       return m;
@@ -936,7 +948,7 @@ function guideFor(r, p) {
   else if (Math.abs(r.portion - 1) >= 0.05) bits.push('Serves are about ' + Math.round(Math.abs(r.portion - 1) * 100) + '% ' + (r.portion > 1 ? 'bigger' : 'smaller') + ' than average, worked out from your age, size, activity and goal.');
   else bits.push('Serves are about average for your age, size, activity and goal.');
   const left = [...r.hard].map(t => ALLERGY_WORDS[t] || t);
-  if (left.length) bits.push('Your meals leave out ' + left.join(', ') + '. Always check labels too.');
+  if (left.length) bits.push('Your meals leave out ' + left.join(', ') + '. Check labels too.');
   if (r.diet.has('meat') && r.diet.has('animal')) bits.push('All your meals are vegan.');
   else if (r.diet.has('meat') && r.diet.has('fish')) bits.push('All your meals are vegetarian.');
   else if (r.diet.has('meat')) bits.push('Your meals have no meat (fish is fine).');
@@ -947,7 +959,7 @@ function guideFor(r, p) {
   if (r.help.has('Ready-to-eat options for low-energy days')) tips.push('On a low-energy day, a sandwich, Weet-Bix or cheese and crackers is a fine dinner.');
   if (r.help.has('Cooking a batch on a good day')) tips.push('Dinners that freeze well (chilli, bolognese, curries, soups) can be doubled on a good day.');
   const safe = String((p.answers || {}).safe_foods || '').trim();
-  if (safe) tips.push('Your safe foods (' + safe.slice(0, 120) + ') are always fine on a hard day.');
+  if (safe) tips.push('Your safe foods (' + safe.slice(0, 120) + ') are kept in for hard days.');
   for (const m of r.meds) if (MEDS[m] && MEDS[m].food) tips.push(MEDS[m].food);
   if (r.conditions.has('Coeliac disease')) tips.push('You said you have coeliac disease: check every label for gluten, including sauces and stock.');
   if (r.conditions.has('Reflux')) tips.push('You mentioned reflux: smaller dinners earlier in the evening may help.');
@@ -1002,4 +1014,19 @@ function shoppingFor(needs) {
   return { weekly: bought.map(toList), stock: stockBought.map(toList) };
 }
 
-module.exports = { build, rulesFor, portionFor, allowed, exerciseFits, EXERCISES, LIB };
+// Gives the builder its data where require() isn't available (the phone app):
+// {library: library.json, exercises: exercises.json, prices: library-prices.json}.
+function useData(data) {
+  LIB = data.library;
+  EXERCISES = data.exercises.exercises || data.exercises;
+  if (data.prices) PRICES = data.prices;
+  ING = LIB.ingredients;
+}
+
+const PlanBuilder = {
+  build, rulesFor, portionFor, allowed, exerciseFits, useData,
+  get EXERCISES() { return EXERCISES; },
+  get LIB() { return LIB; },
+};
+if (typeof module === 'object' && module.exports) module.exports = PlanBuilder;
+else window.PlanBuilder = PlanBuilder;

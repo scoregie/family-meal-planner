@@ -5382,6 +5382,306 @@
    "cost": 2.15
   },
   {
+   "name": "Greek yoghurt with berries and banana",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 3,
+   "kit": [],
+   "per": [
+    [
+     "greek yoghurt",
+     170
+    ],
+    [
+     "frozen berries",
+     70
+    ],
+    [
+     "banana",
+     60
+    ]
+   ],
+   "steps": [
+    "Thaw the berries in the fridge overnight, or give them 30 seconds in the microwave.",
+    "Spoon the yoghurt into a bowl and top with the berries and sliced banana."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 16,
+    "c": 29,
+    "f": 9,
+    "kj": 1060
+   },
+   "groups": {
+    "fruit": 0.9,
+    "dairy": 0.8,
+    "fv": 130,
+    "ca": 170
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "milk"
+   ],
+   "cost": 1.89
+  },
+  {
+   "name": "Scrambled eggs with spinach and tomato",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 10,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "egg",
+     2
+    ],
+    [
+     "spinach",
+     30
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "oil",
+     3
+    ]
+   ],
+   "steps": [
+    "Wilt the spinach in a pan with the oil for a minute.",
+    "Pour in the beaten eggs and stir gently over low heat until just set.",
+    "Serve with the sliced tomato."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 15,
+    "c": 5,
+    "f": 14,
+    "kj": 850
+   },
+   "groups": {
+    "veg": 1.4,
+    "protein": 1.1,
+    "fv": 105,
+    "side": 105,
+    "mp": 14
+   },
+   "tags": [
+    "animal",
+    "egg"
+   ],
+   "cost": 2.28
+  },
+  {
+   "name": "Potato, capsicum and egg hash",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 20,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "potato",
+     150
+    ],
+    [
+     "capsicum",
+     0.3
+    ],
+    [
+     "onion",
+     30
+    ],
+    [
+     "egg",
+     1
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Dice the potato small and fry it in the oil, covered, for 10 minutes, turning now and then.",
+    "Add the chopped capsicum and onion and cook 5 minutes more until golden.",
+    "Make a gap, crack in the egg and cook it the way you like."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 11,
+    "c": 33,
+    "f": 11,
+    "kj": 1110
+   },
+   "groups": {
+    "veg": 3.1,
+    "protein": 0.6,
+    "fv": 84,
+    "side": 234,
+    "mp": 7
+   },
+   "tags": [
+    "animal",
+    "egg"
+   ],
+   "cost": 1.55
+  },
+  {
+   "name": "Bean, avocado and tomato breakfast plate",
+   "meal": "breakfast",
+   "cuisine": "Mexican",
+   "minutes": 8,
+   "kit": [
+    "microwave"
+   ],
+   "per": [
+    [
+     "black beans",
+     100
+    ],
+    [
+     "avocado",
+     0.4
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "corn",
+     40
+    ],
+    [
+     "lemon",
+     0.1
+    ]
+   ],
+   "steps": [
+    "Warm the drained beans and corn in the microwave for a minute.",
+    "Serve with sliced avocado and tomato, and a squeeze of lemon."
+   ],
+   "separate": true,
+   "macros": {
+    "p": 9,
+    "c": 32,
+    "f": 11,
+    "kj": 1020
+   },
+   "groups": {
+    "veg": 2.4,
+    "protein": 0.7,
+    "fv": 183,
+    "leg": 100,
+    "side": 183,
+    "mp": 6
+   },
+   "tags": [],
+   "cost": 2.09
+  },
+  {
+   "name": "Creamy rice porridge with banana",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 10,
+   "kit": [
+    "microwave"
+   ],
+   "per": [
+    [
+     "rice",
+     40
+    ],
+    [
+     "milk",
+     200
+    ],
+    [
+     "banana",
+     60
+    ]
+   ],
+   "steps": [
+    "Use rice cooked the day before (or cook a little extra at dinner).",
+    "Microwave the rice with the milk for 3 to 4 minutes, stirring twice, until thick and creamy.",
+    "Top with sliced banana."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 10,
+    "c": 55,
+    "f": 7,
+    "kj": 1340
+   },
+   "groups": {
+    "fruit": 0.4,
+    "grain": 1.3,
+    "dairy": 0.8,
+    "fv": 60,
+    "gc": 32,
+    "ca": 226
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "milk"
+   ],
+   "cost": 0.69
+  },
+  {
+   "name": "Cottage cheese with apple and almonds",
+   "meal": "breakfast",
+   "cuisine": "Australian",
+   "minutes": 3,
+   "kit": [],
+   "per": [
+    [
+     "cottage cheese",
+     120
+    ],
+    [
+     "apple",
+     120
+    ],
+    [
+     "almonds",
+     15
+    ]
+   ],
+   "steps": [
+    "Chop the apple and roughly chop the almonds.",
+    "Spoon the cottage cheese into a bowl and scatter them over."
+   ],
+   "macros": {
+    "p": 17,
+    "c": 24,
+    "f": 13,
+    "kj": 1120
+   },
+   "groups": {
+    "fruit": 0.8,
+    "protein": 0.5,
+    "dairy": 1.0,
+    "fv": 120,
+    "ca": 100
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "milk",
+    "treenut"
+   ],
+   "cost": 2.58
+  },
+  {
    "name": "Chicken salad wrap",
    "meal": "lunch",
    "cuisine": "Australian",
@@ -5971,6 +6271,353 @@
     "soy"
    ],
    "cost": 1.89
+  },
+  {
+   "name": "Tuna, rice and corn salad",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 10,
+   "kit": [],
+   "per": [
+    [
+     "tuna",
+     95
+    ],
+    [
+     "rice",
+     60
+    ],
+    [
+     "corn",
+     50
+    ],
+    [
+     "cucumber",
+     0.3
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "lemon",
+     0.15
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Use rice cooked the day before.",
+    "Mix it with the drained tuna and corn, and the diced cucumber and tomato.",
+    "Dress with the lemon juice and oil."
+   ],
+   "packable": true,
+   "macros": {
+    "p": 31,
+    "c": 61,
+    "f": 7,
+    "kj": 1800
+   },
+   "groups": {
+    "veg": 2.4,
+    "grain": 2.0,
+    "protein": 0.8,
+    "fv": 179,
+    "fish": 95,
+    "side": 179,
+    "gc": 48,
+    "mp": 24
+   },
+   "tags": [
+    "animal",
+    "fish"
+   ],
+   "cost": 3.0
+  },
+  {
+   "name": "Egg and potato salad",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 25,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "potato",
+     150
+    ],
+    [
+     "egg",
+     2
+    ],
+    [
+     "mayonnaise",
+     15
+    ],
+    [
+     "spring onion",
+     0.2
+    ],
+    [
+     "salad leaves",
+     30
+    ]
+   ],
+   "steps": [
+    "Boil the diced potato for 10 to 12 minutes until tender. Hard-boil the eggs for 9 minutes.",
+    "Cool both, chop the eggs, and mix with the potato, mayonnaise and sliced spring onion.",
+    "Serve on the salad leaves."
+   ],
+   "packable": true,
+   "batch": true,
+   "macros": {
+    "p": 18,
+    "c": 29,
+    "f": 22,
+    "kj": 1610
+   },
+   "groups": {
+    "veg": 2.7,
+    "protein": 1.1,
+    "fv": 50,
+    "side": 200,
+    "mp": 14
+   },
+   "tags": [
+    "animal",
+    "egg"
+   ],
+   "cost": 2.97
+  },
+  {
+   "name": "Chickpea, feta and cucumber salad",
+   "meal": "lunch",
+   "cuisine": "Greek",
+   "minutes": 10,
+   "kit": [],
+   "per": [
+    [
+     "chickpeas",
+     120
+    ],
+    [
+     "feta",
+     30
+    ],
+    [
+     "cucumber",
+     0.3
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "lemon",
+     0.15
+    ],
+    [
+     "oil",
+     5
+    ]
+   ],
+   "steps": [
+    "Rinse and drain the chickpeas.",
+    "Mix them with the diced cucumber and tomato and crumbled feta.",
+    "Dress with the lemon juice and oil."
+   ],
+   "packable": true,
+   "macros": {
+    "p": 14,
+    "c": 34,
+    "f": 15,
+    "kj": 1310
+   },
+   "groups": {
+    "veg": 1.7,
+    "protein": 0.8,
+    "dairy": 0.8,
+    "fv": 129,
+    "leg": 120,
+    "side": 129,
+    "mp": 8,
+    "ca": 148
+   },
+   "tags": [
+    "animal",
+    "milk"
+   ],
+   "cost": 2.31
+  },
+  {
+   "name": "Baked potato with beans and cheese",
+   "meal": "lunch",
+   "cuisine": "British",
+   "minutes": 12,
+   "kit": [
+    "microwave"
+   ],
+   "per": [
+    [
+     "potato",
+     250
+    ],
+    [
+     "baked beans",
+     150
+    ],
+    [
+     "cheddar",
+     20
+    ]
+   ],
+   "steps": [
+    "Prick the potato with a fork and microwave it for 8 to 10 minutes, turning halfway, until soft.",
+    "Split it open, spoon over the warmed beans and sprinkle with grated cheese."
+   ],
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 17,
+    "c": 76,
+    "f": 8,
+    "kj": 1740
+   },
+   "groups": {
+    "veg": 3.3,
+    "protein": 1.0,
+    "dairy": 0.5,
+    "leg": 150,
+    "side": 250,
+    "mp": 7,
+    "ca": 142
+   },
+   "tags": [
+    "animal",
+    "milk"
+   ],
+   "cost": 1.5
+  },
+  {
+   "name": "Chicken, avocado and rice bowl",
+   "meal": "lunch",
+   "cuisine": "Australian",
+   "minutes": 15,
+   "kit": [
+    "stovetop"
+   ],
+   "per": [
+    [
+     "chicken breast",
+     90
+    ],
+    [
+     "rice",
+     60
+    ],
+    [
+     "avocado",
+     0.3
+    ],
+    [
+     "corn",
+     40
+    ],
+    [
+     "lettuce",
+     0.08
+    ],
+    [
+     "lemon",
+     0.1
+    ],
+    [
+     "oil",
+     3
+    ]
+   ],
+   "steps": [
+    "Use rice cooked the day before, and leftover chicken or a chicken breast pan-fried in the oil and sliced.",
+    "Top the rice with the chicken, shredded lettuce, corn and sliced avocado, and squeeze over the lemon."
+   ],
+   "packable": true,
+   "separate": true,
+   "macros": {
+    "p": 27,
+    "c": 60,
+    "f": 14,
+    "kj": 1970
+   },
+   "groups": {
+    "veg": 1.6,
+    "grain": 2.0,
+    "protein": 0.9,
+    "fv": 123,
+    "side": 123,
+    "gc": 48,
+    "mp": 20
+   },
+   "tags": [
+    "meat",
+    "poultry"
+   ],
+   "cost": 2.44
+  },
+  {
+   "name": "Hummus, rice crackers and vegetable sticks",
+   "meal": "lunch",
+   "cuisine": "Middle Eastern",
+   "minutes": 5,
+   "kit": [],
+   "per": [
+    [
+     "hummus",
+     60
+    ],
+    [
+     "rice crackers",
+     30
+    ],
+    [
+     "carrot",
+     80
+    ],
+    [
+     "cucumber",
+     0.3
+    ],
+    [
+     "tomato",
+     0.4
+    ]
+   ],
+   "steps": [
+    "Cut the carrot and cucumber into sticks and halve the tomato.",
+    "Serve with the hummus and rice crackers for dipping."
+   ],
+   "packable": true,
+   "separate": true,
+   "macros": {
+    "p": 9,
+    "c": 45,
+    "f": 13,
+    "kj": 1320
+   },
+   "groups": {
+    "veg": 2.6,
+    "grain": 0.9,
+    "fv": 194,
+    "side": 194,
+    "gc": 25
+   },
+   "tags": [
+    "sesame"
+   ],
+   "cost": 2.55
   }
  ],
  "snacks": [

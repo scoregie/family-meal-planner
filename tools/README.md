@@ -11,6 +11,7 @@ Scripts you run by hand, from the project folder. The Python ones need Python 3 
 | `build_prices.py` | Builds `api/library-prices.json`: local shop names, pack sizes and prices for each country. Edit its tables and run it again. | No (writes the price list) |
 | `claude-code-plan.sh` | Lets Claude Code draft the family's plan (`prompt`, then `submit`). See CLAUDE.md. | No (makes a draft to approve) |
 | `library-pr.sh` | Shares new library meals and exercises with everyone through a GitHub pull request. | No |
+| `test.sh` | Runs the automated tests in `tests/` (see `tests/README.md`). Uses a throwaway container; your data isn't touched. | Never |
 | `offsite-backup.sh` | Encrypts the whole app folder and uploads it to a private GitHub repository. See the README. | No |
 
 ## estimate_macros.py

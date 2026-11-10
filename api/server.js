@@ -22,6 +22,7 @@ const plandraft = require('./plandraft');   // getting the family's plan ready, 
 const healthsync = require('./healthsync'); // daily numbers from an iPhone Shortcut (Apple Health)
 const exercises = require('./exercises');   // the exercise library: browse, leave out, swap
 const libraryUpdates = require('./libraryupdates'); // new meals and exercises every 2 weeks
+const { toKey } = require('./names');             // "Alex Smith" -> "alex-smith"
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
 const DATA_DIR = process.env.DATA_DIR || '/data';
@@ -37,18 +38,6 @@ const BACKUPS_TO_KEEP = 30;
 // ---------------------------------------------------------------------------
 // People
 // ---------------------------------------------------------------------------
-
-// Turns a name into a simple key: "Alex Smith" becomes "alex-smith". A name with no a-z or 0-9 at
-// all (like "ゆき" or "민준") gets "p-" and a short code made from it, the same every time.
-// site/appearance.js (personKey) does the same in the browser.
-function toKey(name) {
-  const key = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  if (/[a-z0-9]/.test(key) || !/[\p{L}\p{N}]/u.test(String(name || ''))) return key;
-  let h = 0x811c9dc5;   // FNV-1a over the name's UTF-16 code units
-  const s = String(name).trim();
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
-  return 'p-' + h.toString(16).padStart(8, '0');
-}
 
 // Remembers the last list of people, so the plan file is only re-read when it changes.
 let peopleCache = { file: '', modified: 0, list: [] };

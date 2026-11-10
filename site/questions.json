@@ -36,10 +36,10 @@
         { "id": "conditions_other", "label": "Any other health conditions?", "type": "long" },
         { "id": "medicine_types", "label": "Do you take any of these medicines?", "type": "multi",
           "options": ["Blood thinner (like warfarin)", "Insulin, or diabetes tablets that can cause low blood sugar", "Weight-loss or diabetes injection (like Ozempic or Mounjaro)", "Blood pressure or heart medicine", "Fluid tablets (diuretics)", "Cholesterol medicine (statin)", "Thyroid medicine", "Steroid tablets (like prednisolone)", "ADHD stimulant medicine", "An MAOI antidepressant", "Iron or calcium supplements", "Other medicines", "None of these"],
-          "help": "Some medicines change what to eat or how to exercise. This only adds things for you to check with your doctor or pharmacist. Never change your medicines because of this plan." },
+          "help": "Some medicines change what to eat or how to exercise. This only adds things for you to check with your doctor or pharmacist. Please talk to your doctor or pharmacist before changing any medicine." },
         { "id": "medicines", "label": "Which medicines or supplements, and anything you were told about food with them", "type": "long", "placeholder": "e.g. warfarin: keep leafy greens steady. Iron tablets." },
         { "id": "injuries", "label": "Injuries or pain that affect exercise", "type": "long", "placeholder": "e.g. sore left knee on stairs" },
-        { "id": "gp", "label": "Has a doctor or dietitian given you advice about food or exercise?", "type": "long", "help": "Their advice comes first. The plan works around it." }
+        { "id": "gp", "label": "Has a doctor or dietitian given you advice about food or exercise?", "type": "long", "help": "What they told you comes first. The plan works around it." }
       ]
     },
     {

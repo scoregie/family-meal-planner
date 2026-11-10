@@ -101,6 +101,7 @@ ticks and files are all stored under that key (`toKey` in `api/server.js`).
 | `secrets.js` | Locks (encrypts) saved AI keys before they go in the database. |
 | `handoff-cli.js` | Lets Claude Code draft the plan (see CLAUDE.md). |
 | `hash-password.js` | Makes a password hash for the older `.env` logins. |
+| `names.js` | Turns a person's name into their key (`toKey`). |
 
 Data files: `library.json` (the builder's ingredients, meals and snacks), `library-prices.json`
 (local names and prices for other countries), `library-community.json` (shared new meals),
@@ -142,9 +143,11 @@ make offsite backups, and let Claude Code draft a plan.
 2. **Read the comments** at the top of the file and above the function you're changing.
 3. **Change a page** (`site/`): save, then reload the page in your browser.
    **Change the server** (`api/`): save, then run `docker restart shopping-list-api`.
-4. **If something breaks**, the server's messages are in `docker logs shopping-list-api`, and the
+4. **Run the tests**: `tools/test.sh` checks logins, the plan builder, allergies and more in a
+   few seconds (see `tests/README.md`). Every line should show ✔.
+5. **If something breaks**, the server's messages are in `docker logs shopping-list-api`, and the
    browser's are in its developer tools (F12, then Console).
-5. **Undo** with git: `git diff` shows what changed, and `git checkout -- <file>` puts a file back.
+6. **Undo** with git: `git diff` shows what changed, and `git checkout -- <file>` puts a file back.
 
 Health wording has its own rules (see CLAUDE.md): health notes say "considerations", never
 "advice", report what people said, and defer to their GP, dietitian or physio.
