@@ -3,6 +3,24 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.3.0 (2026-11-10)
+
+- **Countries:** the planner now works outside Australia. Choose your country when you create the
+  first account, or later on Plan setup. There are 22: Australia, New Zealand, the UK, Ireland, the
+  US, Canada, Japan, South Korea, Singapore, Germany, France, the Netherlands, Belgium, Spain,
+  Italy, Portugal, Austria, Switzerland, Sweden, Norway, Denmark and Finland.
+- The country sets:
+  - **grocery stores** for the shopping list links (122 stores, for example Tesco, Walmart,
+    Albert Heijn and Aeon);
+  - **currency** and the date and number style;
+  - **kilojoules or Calories** to start with;
+  - **healthy-eating guidelines** shown first.
+- AI-written plans, Ask AI and AI-written library meals use your country's stores, spelling,
+  currency and local ingredients.
+- Prices show in the plan's own currency. Plans from the built-in builder are still priced in
+  Australian dollars (shown as A$ outside Australia); local price lists are planned next.
+- Existing servers stay on Australia with the same stores and choices.
+
 ## v1.2.0 (2026-11-10)
 
 - **New meals and exercises every 2 weeks** for the built-in plan builder (Plan setup → New meals

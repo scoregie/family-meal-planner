@@ -64,6 +64,7 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
 .privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
 [hidden]{display:none!important}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -257,7 +258,12 @@ function questionField(q) {
     };
     // Money goes before the number, other units after it.
     if (q.unit === "$") {
-      var money = el("span", null, "$ ");
+      // The household's currency symbol: "$", "£", "€", "¥"...
+      var symbol = "$";
+      try {
+        new Intl.NumberFormat(Appearance.locale(), { style: "currency", currency: Appearance.region().currency }).formatToParts(0).forEach(function (part) { if (part.type === "currency") symbol = part.value; });
+      } catch (e) { /* keep "$" */ }
+      var money = el("span", null, symbol + " ");
       wrap.appendChild(money);
       wrap.appendChild(number);
     } else {

@@ -25,6 +25,7 @@ span.err{color:var(--low)}
 .tips .bul{margin:.2rem 0 .4rem;padding-left:1.2rem}
 details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.3rem 0}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -186,7 +187,7 @@ function status(text, isError) {
 
 function when(ms) {
   var d = new Date(ms);
-  return d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleDateString(Appearance.locale(), { weekday: "short", day: "numeric", month: "short" }) + ", " + d.toLocaleTimeString(Appearance.locale(), { hour: "numeric", minute: "2-digit" });
 }
 
 // A line with a value and a Copy button.

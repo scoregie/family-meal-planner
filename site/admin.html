@@ -92,6 +92,7 @@ tr.missing td.dish::before{content:"";display:inline-block;width:.45rem;height:.
 label.check{display:flex;gap:.45rem;align-items:center;font-size:.9rem}
 [hidden]{display:none!important}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -456,7 +457,7 @@ function kjOf(v) {
 
 // A kJ number for the table, like "1,234", or "–" when there are no macros.
 function kjText(entry) {
-  return entry ? Math.round(kjOf(entry.v)).toLocaleString("en-AU") : "–";
+  return entry ? Math.round(kjOf(entry.v)).toLocaleString(Appearance.locale()) : "–";
 }
 
 // Draws the Macros tab: a filter and search box, then a table of dishes with
@@ -621,7 +622,7 @@ function weekTotal(week) {
 
 // A price as "$12.50".
 function money(n) {
-  return "$" + (+n).toFixed(2);
+  return Appearance.money(n, PLAN && PLAN.currency);
 }
 
 // Draws the Shopping tab: a week picker and total, then one card per section with
@@ -877,7 +878,7 @@ function prettyBackup(name) {
   var m = name.match(/^plan-(\d{4})-(\d\d)-(\d\d)T(\d\d)-(\d\d)-(\d\d)/);
   if (!m) return name;
   var date = new Date(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]));   // months count from 0
-  return date.toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return date.toLocaleString(Appearance.locale(), { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 // Lists the saved backups, each with a Restore button.
@@ -943,7 +944,7 @@ function peopleApi(method, url, body) {
 
 // A date like "8 Nov 2026".
 function shortDate(ms) {
-  return new Date(ms).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(ms).toLocaleDateString(Appearance.locale(), { day: "numeric", month: "short", year: "numeric" });
 }
 
 // Lists everyone in the plan with their logins and whether they have answered the About me

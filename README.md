@@ -37,7 +37,7 @@ It runs on your own server (two small Docker containers, for example in a Proxmo
 **Things to know**
 
 - It's a planning tool, not medical advice. Health notes are written as what people reported, and a GP, dietitian or physio comes first.
-- Prices are estimates. Coles and Woolworths don't let other apps add to a cart, so the app links to each item instead.
+- Prices are estimates. Supermarkets don't let other apps add to a cart, so the app links to each item instead.
 - AI features need an API key from the AI company you choose (you pay them for what you use), or a local Ollama server. Everything else, including drafting a plan with the built-in builder, works without one. If you have Claude Code on the server, it can draft the plan on your Claude subscription instead (see [Drafting the plan with Claude Code](#drafting-the-plan-with-claude-code)).
 
 Built with [Claude Code](https://claude.com/claude-code).
@@ -359,7 +359,8 @@ With Claude, if Anthropic's safety checks decline a request, it is automatically
 - **For everyone (admins):** the household's colour, font and text size, used by anyone who hasn't chosen their own. Saved in `data/app.db`.
 - **App icon (admins):** pick a picture (or type up to two letters or an emoji) and a background colour. The icon is drawn in the browser and saved as `site/icon-512.png`, `site/icon-192.png` and `site/apple-touch-icon.png`. Old icons are kept in `data/icon-backups/`, and **Back to the original icon** restores the first one. On iPhone, remove the app from the home screen and add it again to see a new icon.
 
-- **Where you shop:** everyone picks their supermarkets (Coles, Woolworths, Aldi, IGA, Foodland, Spudshed, Drakes, or a mix), and admins pick the household's default. The shopping list shows a search link for each. Coles and Woolworths open their own search; IGA, Foodland, Spudshed and Drakes run their online shops store by store, so their links search the store's website; Aldi has no online shop. Plan prices are Coles estimates.
+- **Country** (Plan setup, admins; also asked when the first account is made): sets the currency, date and number style, the energy unit to start with (kJ in Australia and New Zealand, Calories elsewhere), the healthy-eating guidelines shown first, the grocery stores on offer, and what AI-written plans assume. There are 22 countries: Australia, New Zealand, the UK, Ireland, the US, Canada, Japan, South Korea, Singapore and 13 in Europe. The list and each store's search address are in `site/regions.js`.
+- **Where you shop:** everyone picks their supermarkets from those in the household's country (in Australia: Coles, Woolworths, Aldi, IGA, Foodland, Spudshed, Drakes, or a mix), and admins pick the household's default. The shopping list shows a search link for each. Most stores open their own search; shops that run online store by store get a link that searches their website; in-store-only shops (like Aldi and Lidl in most countries) have no link.
 - **Kilojoules or Calories:** each person chooses how food and exercise energy is shown; admins set the household default.
 - **Your AI key:** anyone with an email login can add their own Claude, OpenAI or Gemini API key and choose its model, so Ask AI and their plan drafts use it (see [Choosing an AI](#choosing-an-ai)).
 
@@ -449,4 +450,4 @@ Back up `.env` (logins), `site/plan.json` (your plan) and `data/` (ticks, rating
 ## Notes
 
 - The page loads a font from Google Fonts and falls back to a system font without it.
-- Prices are rough estimates for Coles in Australia. The store links open a search for each item, or the pinned product.
+- Prices are rough estimates. Plans written by an AI are priced in your country's currency; plans from the built-in builder are priced in Australian dollars for now (shown as A$ outside Australia). The store links open a search for each item, or the pinned product.

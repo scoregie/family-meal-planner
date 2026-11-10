@@ -52,6 +52,7 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(-
 .pend .row{margin-top:.4rem}
 .warn{border-left:4px solid var(--mid,#8a5a00);padding:.5rem .8rem;background:var(--bg);border-radius:.3rem;font-size:.92rem;margin:.6rem 0}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -62,6 +63,12 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(-
   </div>
   <div id="msg"></div>
   <div id="app" hidden>
+    <section class="card" id="countryCard">
+      <h2>Your country</h2>
+      <label for="country" class="note">Sets the currency, date style, energy unit and grocery stores for everyone. AI-written plans use local stores and prices.</label>
+      <div><select id="country"></select></div>
+      <p class="note" id="countryNote"></p>
+    </section>
     <section class="card">
       <h2><span class="step">1</span>Everyone’s About me answers</h2>
       <p class="note">Each person answers the About me questions and taps “I’m finished”. For someone without a login (like a young child), you can answer for them.</p>
@@ -152,7 +159,7 @@ function status(text, isError) {
 }
 
 function money(n) {
-  return "$" + Math.round(n || 0);
+  return Appearance.money(n, DATA && DATA.draft && DATA.draft.currency, true);
 }
 
 // Step 1: everyone in the plan and how far through About me they are.
@@ -421,7 +428,7 @@ function loadLibrary() {
 
 function when(ms) {
   if (!ms) return "never";
-  return new Date(ms).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  return new Date(ms).toLocaleString(Appearance.locale(), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 }
 
 function libSwitch(label, on, change) {
@@ -449,7 +456,7 @@ function libPost(path, body, done) {
   }).catch(function (e) { status(e.message, true); renderLibrary(); });
 }
 
-function kjOf(m) { return m ? Math.round(m.kj).toLocaleString("en-AU") + " kJ" : ""; }
+function kjOf(m) { return m ? Math.round(m.kj).toLocaleString(Appearance.locale()) + " kJ" : ""; }
 
 // One waiting addition, folded: what it is, then its ingredients and steps (or how-to).
 function pendingItem(p) {
@@ -457,7 +464,7 @@ function pendingItem(p) {
   var sum = el("summary");
   var it = p.item;
   var title = p.kind === "dish" ? it.name : p.kind === "snack" ? it.what : it.name;
-  var meta = p.kind === "dish" ? cap(it.meal) + " · " + it.cuisine + " · " + it.minutes + " min · " + kjOf(it.macros) + " · about $" + Number(it.cost).toFixed(2) + " a serve"
+  var meta = p.kind === "dish" ? cap(it.meal) + " · " + it.cuisine + " · " + it.minutes + " min · " + kjOf(it.macros) + " · about " + Appearance.money(it.cost, "AUD") + " a serve"
     : p.kind === "snack" ? "Snack · " + kjOf(it.macros)
     : "Exercise · " + it.type + " · " + it.equipment + " · level " + it.level;
   sum.appendChild(el("b", null, title));
@@ -557,10 +564,38 @@ function renderLibrary() {
   }
 }
 
+// The household's country. Saved straight away.
+function renderCountry() {
+  var R = Appearance.REGIONS;
+  var sel = $("country");
+  if (!sel.options.length) {
+    R.order.slice().sort(function (a, b) { return R.countries[a].name.localeCompare(R.countries[b].name); }).forEach(function (id) {
+      var o = el("option", null, R.countries[id].name);
+      o.value = id;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () {
+      api("PUT", "/api/appearance/country", { country: sel.value }).then(function (got) {
+        Appearance.setCountry(got.country);
+        if (got.stores) Appearance.setStores(got.stores);
+        if (got.energy) Appearance.setEnergy(got.energy);
+        renderCountry();
+        renderReview();
+        status("Saved. Shopping links now use stores in " + Appearance.region().where + ".");
+      }).catch(function (e) { status(e.message, true); sel.value = Appearance.country(); });
+    });
+  }
+  sel.value = Appearance.country();
+  var r = Appearance.region();
+  $("countryNote").textContent = r.currency === "AUD" ? "" :
+    "Plans built without AI still price things in Australian dollars for now; AI-written plans use " + r.currency + ".";
+}
+
 function load() {
   return api("GET", "/api/plan/setup").then(function (d) {
     DATA = d;
     $("app").hidden = false;
+    renderCountry();
     renderPeople();
     renderAI();
     renderDraft();
@@ -595,6 +630,8 @@ $("addForm").addEventListener("submit", function (e) {
   }).catch(function (err) { status(err.message, true); });
 });
 
+// The household's country arrives from the server just after the page opens.
+window.addEventListener("stores-changed", function () { if (DATA) renderCountry(); });
 load();
 </script>
 </body>

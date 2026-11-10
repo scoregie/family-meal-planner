@@ -166,6 +166,8 @@ async function register(req, res, ctx) {
   // Check again just before saving, in case two people registered at the same moment.
   if (!needsSetup()) return send(res, 403, { error: 'This family already has an account.' });
   const id = db.addAccount({ email, hash: auth.hash(b.password), person, role: 'owner', createdBy: 'register' });
+  // The household's country, chosen on the first-account form (it can be changed on Plan setup).
+  require('./appearance').setCountry(String(b.country || ''));
   return send(res, 200, { ok: true }, auth.loginCookie(req, 'acct-' + id));
 }
 

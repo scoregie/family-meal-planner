@@ -767,7 +767,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   plan.title = 'Meal and exercise plan';
   const f1 = plan.weeks.slice(0, 3).reduce((n, w) => n + w.cost, 0);
   const f2 = plan.weeks.slice(3, 6).reduce((n, w) => n + w.cost, 0);
-  plan.subtitle = 'Built by the app from everyone’s answers. Fortnight 1 about $' + Math.round(f1) + ', fortnight 2 about $' + Math.round(f2) + '. Prices are estimates.';
+  plan.subtitle = 'Built by the app from everyone’s answers. Fortnight 1 about $' + Math.round(f1) + ', fortnight 2 about $' + Math.round(f2) + '. Prices are estimates in Australian dollars.';
+  plan.currency = 'AUD';   // the library's prices are Australian (local price lists come later)
   plan.people = planPeople;
   plan.exercise = topExercise;
   plan.macros = macros;

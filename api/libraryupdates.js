@@ -400,11 +400,12 @@ function exerciseGaps() {
 }
 
 function systemText() {
+  const country = require('./appearance').region().where;
   const ingredients = Object.entries(LIB.ingredients).map(([key, i]) =>
     '- "' + key + '": ' + i.name + ' (' + (i.unit === 'each' ? 'amount is a count; one is about ' + i.each + ' g' : 'amount in ' + i.unit) + (i.tags && i.tags.length ? '; ' + i.tags.join(', ') : '') + ')').join('\n');
   const example = LIB.dishes.find(d => d.meal === 'dinner' && d.leftovers);
   const ex = { name: example.name, meal: example.meal, cuisine: example.cuisine, minutes: example.minutes, kit: example.kit, per: example.per, steps: example.steps, leftovers: true, separate: example.separate || false, kid: example.kid };
-  return `You add new recipes, snacks and exercises to a family meal planner's built-in library (used when the family plans without AI). The family is in Australia. Reply with one JSON object and nothing else.
+  return `You add new recipes, snacks and exercises to a family meal planner's built-in library (used when the family plans without AI). The family is in ${country}. Reply with one JSON object and nothing else.
 
 Recipes:
 - Write every recipe in your own words. Don't copy recipes from websites or books.
@@ -413,7 +414,7 @@ ${ingredients}
 - 5 ingredients or fewer is ideal (not counting oil and seasonings); at most 10.
 - "meal": breakfast, lunch or dinner. "kit" from: ${KITS.join(', ')}. "minutes": total time.
 - Optional true/false flags: "leftovers" (makes lunch for tomorrow), "separate" (parts can be served separately for fussy eaters), "packable" (fine cold in a lunchbox), "onepan", "batch" (freezes well), "spicy". Optional "texture": any of ${TEXTURES.join(', ')} when it fits. Optional "kid": one short tip for serving it to children.
-- Plain Australian English, metric units, 2 to 6 short steps.
+- Plain English as written in ${country}, metric units, 2 to 6 short steps. Dishes people in ${country} would know and enjoy.
 - Example: ${JSON.stringify(ex)}
 
 Snacks: {"what": "short description with amounts", "per": [[key, amount]], "kind": one of ${SNACK_KINDS.join(', ')}, "kids": true or false}.

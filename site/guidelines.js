@@ -9,6 +9,7 @@ var Guidelines = (function () {
   var data = null;        // guidelines.json, once loaded
   var loading = null;     // the fetch of guidelines.json, so it only happens once
   var profiles = {};      // person key -> their About me answers (or {} if we can't see them)
+  function LOC() { return window.Appearance ? Appearance.locale() : "en-AU"; }
 
   // Makes a new element, with an optional class name and text.
   function el(tag, cls, txt) {
@@ -249,8 +250,8 @@ var Guidelines = (function () {
       var kj = avg(days, "kj");
       var band = japanBand(country, kj);
       intro.textContent = "Daily average this week, in servings (SV) of the Spinning Top for about " +
-        Math.round(band.kcal[0]).toLocaleString("en-AU") + " to " + Math.round(band.kcal[1]).toLocaleString("en-AU") + " kcal a day (this week’s plan: about " +
-        Math.round(kj / 4.184).toLocaleString("en-AU") + " kcal).";
+        Math.round(band.kcal[0]).toLocaleString(LOC()) + " to " + Math.round(band.kcal[1]).toLocaleString(LOC()) + " kcal a day (this week’s plan: about " +
+        Math.round(kj / 4.184).toLocaleString(LOC()) + " kcal).";
       country.groups.forEach(function (g) {
         var r = groupRow(data.groups[g].short, avg(days, measure[g]), band[g][0], band[g][1], "SV");
         rows.appendChild(r);
@@ -339,7 +340,7 @@ var Guidelines = (function () {
       var fromAnswers = chosen.map(function (name) {
         return data.countries.filter(function (c) { return c.name === name; })[0];
       }).filter(Boolean)[0];
-      fill(box, o, saved || (fromAnswers && fromAnswers.id) || "au", answers);
+      fill(box, o, saved || (fromAnswers && fromAnswers.id) || (window.Appearance ? Appearance.region().guidelines : "au"), answers);
     }).catch(function (e) {
       box.textContent = "";
       box.appendChild(el("p", "mac-note", "Could not load the healthy-eating guidelines: " + e.message));

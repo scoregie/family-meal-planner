@@ -90,6 +90,7 @@ section.card{background:var(--card);border:1px solid var(--line);border-radius:.
 [hidden]{display:none!important}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
+<script src="regions.js"></script>
 <script src="appearance.js"></script>
 </head>
 <body>
@@ -181,8 +182,8 @@ function api(method, url, body) {
 function when(ms) {
   var d = new Date(ms);
   var today = new Date();
-  if (d.toDateString() === today.toDateString()) return d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
-  return d.toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+  if (d.toDateString() === today.toDateString()) return d.toLocaleTimeString(Appearance.locale(), { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleDateString(Appearance.locale(), { day: "numeric", month: "short" });
 }
 
 // ---------- The AI's text, as safe HTML ----------
