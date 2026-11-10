@@ -43,6 +43,9 @@ KINDS = {
     'onion': ('veg', 75), 'carrot': ('veg', 75), 'capsicum': ('veg', 75), 'cucumber': ('veg', 75),
     'sweet potato': ('veg', 75), 'peas': ('veg', 75), 'stir-fry veg': ('veg', 75), 'mixed veg': ('veg', 75),
     'cos lettuce': ('veg', 75), 'corn': ('veg', 75), 'salsa': ('veg', 150),   # salsa is about half vegetables
+    'zucchini': ('veg', 75), 'bok choy': ('veg', 75), 'mushrooms': ('veg', 75), 'pumpkin': ('veg', 75),
+    'broccoli': ('veg', 75), 'coleslaw': ('veg', 75), 'lettuce': ('veg', 75), 'cabbage': ('veg', 75),
+    'avocado': ('veg', 75), 'mandarin': ('fruit', 150), 'strawberries': ('fruit', 150),
     'potato': ('potato', 75),
     'berries': ('fruit', 150), 'apple': ('fruit', 150), 'banana': ('fruit', 150), 'dried fruit': ('fruit', 30),
     'oats': ('grain', 30), 'bread': ('grain', 40), 'rice': ('grain', 30), 'pasta': ('grain', 30),
@@ -156,6 +159,10 @@ SNACK_WORDS = [
     (r'toast|slices? .*bread', 'bread', 40, 40),
     (r'peanut butter', 'peanut butter', 20, None),
     (r'banana', 'banana', 120, 120),
+    (r'mandarins?', 'mandarin', 100, 100),
+    (r'strawberr', 'strawberries', 150, None),
+    (r'handful of berries', 'berries', 50, None),
+    (r'berries', 'berries', 50, None),
     (r'apple slices', 'apple', 75, None),       # part of an apple
     (r'apple', 'apple', 150, 150),
     (r'dried mango|dried fruit|sultanas|raisins', 'dried fruit', 30, None),

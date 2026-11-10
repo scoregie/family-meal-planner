@@ -3,6 +3,17 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.5.2 (2026-11-10)
+
+- **Fixed: food groups were undercounted** by `tools/estimate_groups.py` (and macros by
+  `tools/estimate_macros.py`) for many everyday foods: zucchini, bok choy, mushrooms, pumpkin,
+  broccoli, coleslaw mix, lettuce, cabbage, avocado, mandarins, strawberries, beef, chicken thighs
+  and drumsticks, ham, grated cheese, tofu, Weet-Bix biscuits, croissants, tortillas, spaghetti,
+  rice pouches, udon and jars of sauce. Ingredients written like "zucchini, grated" or "wholemeal
+  wraps" weren't matched either. A real family plan showed about half its vegetables and fruit on
+  the Macros tab because of this. Rerun `python3 tools/estimate_groups.py site/plan.json --write`
+  to correct an existing plan.
+
 ## v1.5.1 (2026-11-10)
 
 Fixes to the built-in plan builder (no AI), found by testing a real family plan. Restart the api

@@ -43,6 +43,13 @@ NUTRITION = {
     'mixed veg': (3.0, 8.0, 0.4), 'cos lettuce': (1.2, 1.5, 0.3), 'salsa': (1.3, 7.0, 0.2),
     'peanut butter': (25.0, 12.0, 50.0), 'soy sauce': (7.0, 6.0, 0.0), 'curry paste': (2.0, 10.0, 8.0),
     'butter chicken sauce': (1.6, 9.0, 7.5), 'taco seasoning': (6.0, 60.0, 3.0),
+    # More vegetables, fruit and everyday foods (raw weights).
+    'zucchini': (1.2, 3.1, 0.3), 'bok choy': (1.5, 2.2, 0.2), 'mushrooms': (3.1, 0.5, 0.3),
+    'pumpkin': (1.0, 6.5, 0.1), 'broccoli': (2.8, 4.0, 0.4), 'coleslaw': (1.2, 5.0, 0.2),
+    'lettuce': (1.0, 2.0, 0.2), 'cabbage': (1.3, 3.0, 0.1), 'avocado': (2.0, 1.8, 15.0),
+    'mandarin': (0.8, 11.5, 0.3), 'strawberries': (0.7, 6.0, 0.3),
+    'beef': (21.0, 0.0, 8.0), 'ham': (17.0, 1.5, 4.0), 'tofu': (12.0, 2.0, 7.0),
+    'croissant': (8.0, 45.0, 21.0),
 }
 
 # Matching rules, checked in order: (pattern in the item label, food above, grams for each one).
@@ -58,12 +65,25 @@ RULES = [
     (r'cans? tuna', 'tuna', 95),
     (r'slices? .*bread', 'bread', 40),
     (r'^eggs?$', 'egg', 50),                      # the part you eat
-    (r'^wraps?$', 'wrap', 42),
+    (r'\bwraps?$', 'wrap', 42),                   # "wholemeal wraps" too
     (r'cheese slices?', 'cheese slice', 21),
     (r'sausages?', 'sausage', 70),
-    (r'^tomato(es)?$', 'tomato', 120),
+    (r'^tomato(es)?\b', 'tomato', 120),             # "tomatoes, diced" too
     (r'^cucumbers?$', 'cucumber', 300),
-    (r'^capsicums?$', 'capsicum', 160),
+    (r'^(extra )?capsicums?\b', 'capsicum', 160),
+    (r'^zucchinis?\b', 'zucchini', 200),
+    (r'^carrots?\b', 'carrot', 120),
+    (r'^(brown |red )?onions?\b', 'onion', 150),
+    (r'bok choy', 'bok choy', 250),                # a bunch
+    (r'wombok|chinese cabbage', 'cabbage', 1000),
+    (r'^avocados?\b', 'avocado', 140),              # the part you eat
+    (r'^mandarins?\b', 'mandarin', 100),
+    (r'weet-bix$', 'weet-bix bites', 17),          # one biscuit
+    (r'^croissants?\b', 'croissant', 60),
+    (r'tortillas?', 'wrap', 42),
+    (r'microwave rice', 'rice', 85),               # a 250 g pouch is about 85 g dry rice
+    (r'udon', 'noodles', 70),
+    (r'jar .*butter chicken', 'butter chicken sauce', 485),                      # a 200 g packet is about 70 g dry noodles
     (r'^limes?$', 'lime', 60),
     (r'^lemons?$', 'lemon', 60),
     (r'cos lettuce', 'cos lettuce', 300),         # one pack of hearts
@@ -79,13 +99,25 @@ RULES = [
     (r'^(g|ml) .*pork', 'pork', None),
     (r'^(g|ml) .*chicken breast', 'chicken', None),
     (r'^(g|ml) .*butter chicken', 'butter chicken sauce', None),
+    (r'^(g|ml) .*chicken(?! stock)', 'chicken', None),   # thighs, drumsticks, cooked chicken
+    (r'^(g|ml) .*beef', 'beef', None),
+    (r'^(g|ml) .*ham\b', 'ham', None),
+    (r'^(g|ml) .*(grated|sliced) cheese|^(g|ml) .*cheddar', 'tasty cheese', None),
+    (r'^(g|ml) .*tofu', 'tofu', None),
+    (r'^(g|ml) .*zucchini', 'zucchini', None),
+    (r'^(g|ml) .*mushrooms?', 'mushrooms', None),
+    (r'^(g|ml) .*pumpkin', 'pumpkin', None),
+    (r'^(g|ml) .*broccoli', 'broccoli', None),
+    (r'^(g|ml) .*coleslaw', 'coleslaw', None),
+    (r'^(g|ml) .*(lettuce|salad leaves)', 'lettuce', None),
+    (r'^(g|ml) .*strawberr', 'strawberries', None),
     (r'^(g|ml) .*bacon', 'bacon', None),
     (r'^(g|ml) .*basa', 'basa', None),
     (r'^(g|ml) .*milk', 'milk', None),
     (r'^(g|ml) .*mozzarella', 'mozzarella', None),
     (r'^(g|ml) .*tasty', 'tasty cheese', None),
     (r'^(g|ml) .*rice', 'rice', None),
-    (r'^(g|ml) .*(pasta|macaroni)', 'pasta', None),
+    (r'^(g|ml) .*(pasta|macaroni|spaghetti)', 'pasta', None),
     (r'^(g|ml) .*noodles', 'noodles', None),
     (r'^(g|ml) .*breadcrumbs', 'breadcrumbs', None),
     (r'^(g|ml) .*red lentils', 'red lentils', None),
