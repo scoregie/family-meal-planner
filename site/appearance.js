@@ -254,8 +254,21 @@
   }
   refresh();
 
+  // A person's key from their name, the same way as the server (toKey in api/server.js).
+  function personKey(name) {
+    var key = String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    var letter;
+    try { letter = new RegExp("[\\p{L}\\p{N}]", "u"); } catch (e) { letter = /\S/; }
+    if (/[a-z0-9]/.test(key) || !letter.test(String(name || ""))) return key;
+    var h = 0x811c9dc5;
+    var s = String(name).trim();
+    for (var i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
+    return "p-" + ("0000000" + h.toString(16)).slice(-8);
+  }
+
   // For the Settings page.
   window.Appearance = {
+    personKey: personKey,
     COLOURS: COLOURS,
     FONTS: FONTS,
     SIZES: SIZES,

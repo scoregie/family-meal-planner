@@ -29,9 +29,12 @@ function parseWhen(when) {
   const [, startHour, startMin, startAmPm, endHour, endMin, endAmPm] = m;
   // If only one side says am or pm, use it for both ("6:30 to 7:30 am").
   let start = to24(startHour, startMin, startAmPm || endAmPm);
-  const end = endHour ? to24(endHour, endMin, endAmPm || startAmPm) : start + 30;
+  let end = endHour ? to24(endHour, endMin, endAmPm || startAmPm) : start + 30;
+  if (endHour && end === 0) end = 24 * 60;                    // "11 pm to 12 am" ends at midnight
   if (end <= start && endHour) start -= 12 * 60;   // "11:30 to 12:30 pm" means 11:30 am
-  if (start < 0 || end > 24 * 60) return null;
+  if (start < 0 || start >= 24 * 60 || end <= start) return null;
+  // Calendar files can't say 24:00, so an event that runs to midnight ends at 11:59 pm.
+  end = Math.min(end, 24 * 60 - 1);
   return { start, end };
 }
 

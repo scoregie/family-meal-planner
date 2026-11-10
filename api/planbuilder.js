@@ -427,13 +427,24 @@ function exerciseFor(p, r, rnd) {
 }
 
 // Words in someone's injuries (or what their doctor said) -> exercise flags to leave out.
+// Whole words only ("discussed" isn't a disc, "beforehand" isn't a hand), and not when just
+// before it they said it's fine ("no knee problems"). Hips have no flag of their own, so they
+// leave out the deep knee-bend moves (squats and lunges), which load the hips too.
 const INJURY_FLAGS = [
-  [/knee|acl|menisc|patell/, 'knees', 'knees'],
-  [/back|spine|spinal|disc|sciatica|lumbar/, 'back', 'back'],
-  [/shoulder|rotator/, 'shoulders', 'shoulders'],
-  [/wrist|carpal|thumb|hand/, 'wrists', 'wrists or hands'],
-  [/balance|fall|dizz|vertigo/, 'balance', 'balance'],
+  [/\b(knees?|acl|menisc\w*|patell\w*)\b/g, ['knees'], 'knees'],
+  [/\b(hips?|hip replacement)\b/g, ['knees'], 'hips'],
+  [/\b(spine|spinal|discs?|sciatica|lumbar|(?:lower|upper|bad|sore|injured|hurt|weak) back|back (?:pain|injur\w*|problems?|issues?|surgery|spasms?))\b/g, ['back'], 'back'],
+  [/\b(shoulders?|rotator)\b/g, ['shoulders'], 'shoulders'],
+  [/\b(wrists?|carpal|thumbs?|hands?)\b/g, ['wrists'], 'wrists or hands'],
+  [/\b(balance|falls?|fell|dizz\w*|vertigo)\b/g, ['balance'], 'balance'],
 ];
+const NOT_A_PROBLEM = /\b(no|not|never|without|none|don['’]?t|haven['’]?t|isn['’]?t)\b(\s+\S+){0,2}\s*$/;
+// Whether a pattern is mentioned as a problem somewhere in the text.
+function mentions(re, text) {
+  re.lastIndex = 0;
+  for (let m; (m = re.exec(text));) if (!NOT_A_PROBLEM.test(text.slice(0, m.index))) return true;
+  return false;
+}
 
 // Which exercises suit someone: {usable(e), why: [body parts mentioned]}. `o` has seated,
 // pregnant and injuries (their injuries and what their doctor said).
@@ -449,8 +460,12 @@ function exerciseRules(p, o) {
   const skip = new Set();
   const why = [];
   const text = String(o.injuries || '').toLowerCase();
-  for (const [re, flag, words] of INJURY_FLAGS) if (re.test(text)) { skip.add(flag); why.push(words); }
-  if (o.pregnant) ['supine', 'prone', 'impact'].forEach(f => skip.add(f));
+  for (const [re, flags, words] of INJURY_FLAGS) if (mentions(re, text)) { flags.forEach(f => skip.add(f)); why.push(words); }
+  // Pregnant (and not exercising seated): bodyweight only, as the medical note says, and nothing lying flat.
+  if (o.pregnant) {
+    ['supine', 'prone', 'impact'].forEach(f => skip.add(f));
+    if (!o.seated) { have.clear(); have.add('none'); }
+  }
   const disliked = new Set(Array.isArray(p.avoid) ? p.avoid : []);
   const usable = e => have.has(e.equipment) && !disliked.has(e.id)
     && !e.flags.some(f => skip.has(f)) && (!o.seated || e.flags.includes('seated'));

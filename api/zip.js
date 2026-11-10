@@ -8,6 +8,10 @@
 // We read that list first, then jump straight to the file we want.
 const fs = require('fs');
 const zlib = require('zlib');
+const { Readable } = require('stream');
+
+const MAX_DIRECTORY = 64e6;   // the list of files inside; real exports are a few MB at most
+const MAX_LINE = 10e6;        // one line of a file read line by line
 
 // Lists the files in a zip: [{name, method, compressedSize, size, offset}].
 function list(zipPath) {
@@ -27,6 +31,8 @@ function list(zipPath) {
     const dirSize = tail.readUInt32LE(end + 12);
     const dirOffset = tail.readUInt32LE(end + 16);
     if (dirOffset === 0xffffffff || count === 0xffff) throw new Error('this zip is too large to read (zip64)');
+    // The sizes come from the file itself, so check them before trusting them.
+    if (dirSize > MAX_DIRECTORY || dirOffset + dirSize > fileSize) throw new Error('damaged zip file');
 
     const dir = Buffer.alloc(dirSize);
     fs.readSync(fd, dir, 0, dirSize, dirOffset);
@@ -82,9 +88,14 @@ function stream(zipPath, entry, maxBytes) {
   // The local header repeats the name and has its own "extra" field, so read its length first.
   const fd = fs.openSync(zipPath, 'r');
   const header = Buffer.alloc(30);
-  fs.readSync(fd, header, 0, 30, entry.offset);
-  fs.closeSync(fd);
+  try {
+    fs.readSync(fd, header, 0, 30, entry.offset);
+  } finally {
+    fs.closeSync(fd);
+  }
   if (header.readUInt32LE(0) !== 0x04034b50) throw new Error('damaged zip file');
+  // An empty file: nothing to read (a read stream can't be given an empty range).
+  if (!entry.compressedSize) return Readable.from([]);
   const dataStart = entry.offset + 30 + header.readUInt16LE(26) + header.readUInt16LE(28);
   const raw = fs.createReadStream(zipPath, { start: dataStart, end: dataStart + entry.compressedSize - 1 });
 
@@ -93,6 +104,8 @@ function stream(zipPath, entry, maxBytes) {
   else if (entry.method === 8) out = raw.pipe(zlib.createInflateRaw());
   else throw new Error('unsupported zip compression in ' + entry.name);
 
+  // When the output stops (finished, too big or failed), stop reading the zip too.
+  if (out !== raw) out.on('close', () => raw.destroy());
   let total = 0;
   out.on('data', chunk => {
     total += chunk.length;
@@ -121,6 +134,7 @@ function eachLine(zipPath, entry, onLine, maxBytes = 4e9) {
     s.on('data', chunk => {
       const lines = (rest + chunk).split('\n');
       rest = lines.pop();
+      if (rest.length > MAX_LINE) return s.destroy(new Error(entry.name + ' has a line that is far too long'));
       for (const line of lines) onLine(line);
     });
     s.on('end', () => {

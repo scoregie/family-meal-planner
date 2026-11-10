@@ -7,6 +7,9 @@
 		# Trust X-Forwarded-* from a reverse proxy on your network (e.g. Nginx Proxy Manager),
 		# so the login cookie is marked Secure when people use HTTPS.
 		trusted_proxies static private_ranges
+		# Work out the visitor's address from the right of X-Forwarded-For, skipping trusted
+		# proxies, so a visitor can't pick their own address by sending that header.
+		trusted_proxies_strict
 	}
 }
 
@@ -15,11 +18,14 @@
 
 	# Login, logout and the login check.
 	handle /auth/* {
-		reverse_proxy api:3000
+		reverse_proxy api:3000 {
+			# The visitor's real address, for the login attempt limit.
+			header_up X-Real-IP {client_ip}
+		}
 	}
 
 	# Files anyone can load: the login page and what it (and the home-screen app) needs.
-	@public path /login /login.html /sw.js /appearance.js /logo.svg /manifest.webmanifest /icon-192.png /icon-512.png /apple-touch-icon.png
+	@public path /login /login.html /sw.js /regions.js /appearance.js /logo.svg /manifest.webmanifest /icon-192.png /icon-512.png /apple-touch-icon.png
 	handle @public {
 		rewrite /login /login.html
 		root * /srv
@@ -30,9 +36,12 @@
 	handle {
 		forward_auth api:3000 {
 			uri /auth/check
+			header_up X-Real-IP {client_ip}
 		}
 		handle /api/* {
-			reverse_proxy api:3000
+			reverse_proxy api:3000 {
+				header_up X-Real-IP {client_ip}
+			}
 		}
 		handle {
 			root * /srv

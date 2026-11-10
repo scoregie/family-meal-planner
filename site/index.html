@@ -903,7 +903,7 @@ function validate(p) {
 
 // Turns a name into a simple key: "Alex" becomes "alex".
 function ukey(name) {
-  return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return Appearance.personKey(name);
 }
 
 // The display name for a key: "alex" gives "Alex".

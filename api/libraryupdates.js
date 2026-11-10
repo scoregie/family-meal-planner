@@ -308,7 +308,8 @@ function apply() {
 
 async function checkCommunity() {
   const at = Date.now();
-  setSetting('lastCheck', at);
+  // lastCheck is only saved when the download works, so a failed one is tried again at the next
+  // 6-hourly tick instead of in 2 weeks.
   try {
     const res = await fetch(UPDATE_URL, { signal: AbortSignal.timeout(20000), headers: { 'User-Agent': 'family-health-planner' } });
     if (!res.ok) throw new Error('GitHub said ' + res.status);
@@ -320,6 +321,7 @@ async function checkCommunity() {
     if (version <= applied.version) {
       const result = { at, ok: true, text: 'Up to date (version ' + applied.version + ').' };
       setSetting('lastResult', result);
+      setSetting('lastCheck', at);
       return result;
     }
     // Check it in full before keeping it.
@@ -342,6 +344,7 @@ async function checkCommunity() {
         (ok.rejected.length ? ' ' + ok.rejected.length + ' left out because ' + (ok.rejected.length === 1 ? 'it' : 'they') + ' didn’t pass the checks.' : ''),
     };
     setSetting('lastResult', result);
+    setSetting('lastCheck', at);
     return result;
   } catch (e) {
     const result = { at, ok: false, text: 'Couldn’t get new meals and exercises: ' + String(e.message || e).slice(0, 200) };
