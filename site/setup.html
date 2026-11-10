@@ -27,6 +27,9 @@
 textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .65rem;width:100%;min-height:5rem;resize:vertical}
 .bar{height:.6rem;background:var(--line);border-radius:1rem;overflow:hidden;margin:.6rem 0 .3rem}
 .bar i{display:block;height:100%;background:var(--accent);border-radius:1rem;transition:width .6s}
+.bar.waiting i{width:30%!important;animation:slide 1.6s ease-in-out infinite alternate}
+@keyframes slide{from{margin-left:0}to{margin-left:70%}}
+@media (prefers-reduced-motion:reduce){.bar.waiting i{animation:none}}
 .wk{border-top:1px solid var(--line);padding:.5rem 0}
 .wk:first-of-type{border-top:0}
 .wk summary{cursor:pointer;display:flex;justify-content:space-between;gap:.5rem;font-weight:700}
@@ -351,7 +354,14 @@ function renderDraft() {
     fill.style.width = Math.round((job.progress || 0.02) * 100) + "%";
     bar.appendChild(fill);
     box.appendChild(bar);
-    box.appendChild(el("p", "note", "This usually takes 5 to 10 minutes. You can close this page; the draft keeps going and shows up here when it’s ready."));
+    // How long it has been going, and what is happening while the bar hasn't moved yet: the AI
+    // reads everything and thinks first, which can take several minutes before any plan appears.
+    var minutes = job.started ? Math.floor((Date.now() - job.started) / 60000) : 0;
+    var thinking = !job.progress || job.progress < 0.01;
+    if (thinking) bar.className = "bar waiting";
+    box.appendChild(el("p", "note", (minutes < 1 ? "Started just now. " : "Started " + minutes + (minutes === 1 ? " minute" : " minutes") + " ago. ") +
+      (thinking ? "It is reading everyone’s answers and thinking the plan through. The bar starts moving when it begins writing, often after a few minutes. " : "") +
+      "The whole thing usually takes 5 to 15 minutes. You can close this page; the draft keeps going and shows up here when it’s ready."));
     clearTimeout(pollTimer);
     pollTimer = setTimeout(load, 4000);
     return;

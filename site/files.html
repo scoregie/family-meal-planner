@@ -85,6 +85,7 @@ var ME = null;      // who is logged in: {user, person, admin}
 var PERSON = null;  // whose files are shown (admins can switch)
 var DATA = null;    // the last answer from the server: {person, people, categories}
 var BUSY = 0;       // how many uploads are running right now
+var SHARES = null;  // true if this person said yes to plans reading their blood tests (null: not known)
 
 // Shortcut for document.getElementById.
 function $(id) {
@@ -141,8 +142,12 @@ function load() {
   return api("GET", "/api/uploads?" + q({ person: PERSON })).then(function (data) {
     DATA = data;
     PERSON = data.person;
-    render();
-  });
+    // Their About me answer to "May the plan writer read your blood test results?"
+    return fetch("/api/profile?person=" + encodeURIComponent(PERSON), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (profile) { SHARES = profile ? /^Yes/.test(String((profile.answers || {}).share_results || "")) : null; })
+      .catch(function () { SHARES = null; });
+  }).then(render);
 }
 
 // Draws the whole page from DATA: the person picker (admins only), then one box per kind of file.
@@ -196,6 +201,16 @@ function catCard(c) {
   text.appendChild(heading);
   text.appendChild(el("p", "hint", c.hint));
   text.appendChild(el("p", "where", "Saved in uploads/" + PERSON + "/" + c.id + "/"));
+  // Blood tests: say whether plans read them (the About me question), with a link to change it.
+  if (c.id === "blood-tests" && SHARES !== null) {
+    var used = el("p", "hint", SHARES
+      ? "Used when the plan is written: the newest 3 files (PDF, JPG, PNG or text) are read by the AI. "
+      : "Not used when the plan is written. To have the AI read them, say yes under Health in About me. ");
+    var change = el("a", null, SHARES ? "Change this in About me" : "Open About me");
+    change.href = "profile.html?person=" + encodeURIComponent(PERSON);
+    used.appendChild(change);
+    text.appendChild(used);
+  }
   head.appendChild(text);
 
   // The Upload button is a <label> for a hidden file picker, so tapping it opens the picker.

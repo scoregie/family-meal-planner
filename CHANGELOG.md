@@ -37,6 +37,9 @@ Plans now listen to what people said and logged, and help fussy eaters one small
   one on the server), or "No AI" with a button to add a key. A choice only appears when the
   server has keys to choose between. "Have your AI write new ones for your family" now works
   with your own key too (before, the switch stayed greyed out unless the server had a key).
+- **Clearer waiting and wording.** While an AI drafts, Plan setup says how long it has been going
+  and that the bar only moves once the AI starts writing. My files says whether blood tests are
+  used in plans, with a link to change it.
 
 ## v1.7.0 (2026-11-10)
 
