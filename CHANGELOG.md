@@ -3,6 +3,35 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.6.0 (2026-11-10)
+
+Health targets now come before likes when a plan is made.
+
+- **An order of importance for every plan**, whoever writes it (the built-in builder or an AI):
+  1. allergies, diets and medicine rules, which are never traded away;
+  2. each person's serves of vegetables and fruit for their age and sex (the Australian guideline
+     amounts the Macros tab shows), children included;
+  3. safe foods and textures, which decide the form food comes in, not whether it is there;
+  4. likes and dislikes, which choose between dishes that already fit.
+- **The built-in builder tops each person's days up** with a vegetable side (with dinner, then
+  lunch) and fruit (with breakfast, then after dinner) until they reach their serves. Before, it
+  never looked at the guideline amounts.
+- **"Most veggies" from a child is no longer a reason for fewer vegetables.** Since v1.5.1 one
+  person's dislike lowered the vegetables in the whole family's shared dinners. Now a sweeping
+  dislike (vegetables or fruit as a whole) changes the form: cooked into meals, soft or blended
+  (mashed pumpkin, steamed vegetables, a smoothie), with a tip about starting small. A food
+  someone names ("corn", "pumpkin") is still left out, at any age.
+- **New in the library**: five vegetable sides (steamed mixed vegetables, peas, broccoli, mashed
+  pumpkin, a side salad) and four more fruit options (a cup or half a cup of berries, a mandarin,
+  a banana and berry smoothie). Crunchy snacks (apples, crackers, carrot sticks, almonds) are now
+  marked crunchy, so people who find that texture hard no longer get them.
+- **AI-written plans** (including ones written with Claude Code) get the same order of importance
+  and each person's targets in their instructions.
+- **Plan setup shows how a draft measures up** before you approve it: each person's average
+  serves of vegetables and fruit a day against their target, and a note if anyone is short.
+- These are estimates worked out from the plan's food groups. What a GP or dietitian says comes
+  first.
+
 ## v1.5.2 (2026-11-10)
 
 - **Fixed: food groups were undercounted** by `tools/estimate_groups.py` (and macros by

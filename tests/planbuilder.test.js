@@ -5,6 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const pb = require('../api/planbuilder');
+const ht = require('../api/healthtargets');
 const PRICES = require('../api/library-prices.json');
 
 const LIB = pb.LIB;
@@ -166,6 +167,8 @@ test('the builder also works without require(), as in the phone app', () => {
   const read = f => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'api', f), 'utf8'));
   const page = { window: {} };
   vm.createContext(page);
+  // The targets file is loaded first, on the same page, as the phone app does.
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'api', 'healthtargets.js'), 'utf8'), page);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'api', 'planbuilder.js'), 'utf8'), page);
   const app = page.window.PlanBuilder;
   app.useData({ library: read('library.json'), exercises: read('exercises.json'), prices: read('library-prices.json') });
@@ -254,17 +257,62 @@ test('a foot injury swaps walks for the pool or bike, and leaves out calf raises
   assert.doesNotMatch(workouts, /calf raise|lunge/);
 });
 
-test('someone who dislikes most veggies gets lunches with fewer vegetables', () => {
-  const vegIn = dislikes => {
-    let total = 0;
-    for (let seed = 1; seed <= 8; seed++) {
-      const plan = build([{ age: 40 }, { age: 10, packed_lunch: 'Yes, most days', dislikes }], { seed });
-      for (const day of Object.values(Object.values(plan.people)[1].weekday)) {
-        const dish = LIB.dishes.find(d => d.name === day.lunch);
-        if (dish) total += dish.groups.veg || 0;
-      }
+// ---------------------------------------------------------------------------
+// Health targets come before likes (api/healthtargets.js)
+// ---------------------------------------------------------------------------
+
+// Builds a plan and measures everyone's average vegetable and fruit serves a day against their
+// targets: [{key, veg, fruit, target, short}].
+function reviewOf(answersList, seed) {
+  const people = answersList.map((answers, i) => ({ key: 'p' + i, name: 'Person ' + i, answers }));
+  const plan = pb.build(people, { seed }).plan;
+  return { plan, review: ht.review(plan, people) };
+}
+
+test('everyone’s days reach the guideline serves of vegetables and fruit', () => {
+  for (let seed = 1; seed <= 6; seed++) {
+    const { review } = reviewOf([{ age: 40, sex: 'Male' }, { age: 38, sex: 'Female' }, { age: 9, sex: 'Female' }], seed);
+    for (const r of review) assert.deepEqual(r.short, [], r.key + ' got ' + r.veg + ' veg and ' + r.fruit + ' fruit with seed ' + seed);
+  }
+});
+
+test('a child who dislikes most veggies and fruit still reaches their targets, in soft or blended forms', () => {
+  const child = { age: 10, sex: 'Female', dislikes: 'Spicy food, most veggies, fruit', sensory: ['Crunchy or hard textures'], packed_lunch: 'Some days' };
+  for (let seed = 1; seed <= 6; seed++) {
+    const { plan, review } = reviewOf([{ age: 40, sex: 'Male' }, child], seed);
+    assert.deepEqual(review[1].short, [], 'the child got ' + review[1].veg + ' veg and ' + review[1].fruit + ' fruit with seed ' + seed);
+    // Nothing crunchy among their snacks and sides, because they said crunchy textures are hard.
+    for (const snack of plan.people.p1.snacks) {
+      const s = LIB.snacks.find(x => x.what === snack.what);
+      assert.ok(!(s.texture || []).includes('crunchy'), snack.what + ' is crunchy');
     }
-    return total;
-  };
-  assert.ok(vegIn('most veggies') < vegIn(''), 'no fewer vegetables');
+  }
+});
+
+test('a child’s sweeping dislikes aren’t a ban, but a food they name still is', () => {
+  const child = pb.rulesFor({ key: 'c', name: 'C', answers: { age: 10, dislikes: 'most veggies, fruit, pumpkin' } });
+  assert.deepEqual(child.avoidWords, ['pumpkin']);
+  assert.ok(child.gentleVeg && child.gentleFruit);
+  // An adult's own words are kept as they wrote them.
+  const adult = pb.rulesFor({ key: 'a', name: 'A', answers: { age: 40, dislikes: 'most veggies, pumpkin' } });
+  assert.deepEqual(adult.avoidWords, ['most veggy', 'pumpkin']);
+});
+
+test('one person disliking vegetables doesn’t lower them for everyone else', () => {
+  for (let seed = 1; seed <= 6; seed++) {
+    const { review } = reviewOf([{ age: 40, sex: 'Male' }, { age: 10, dislikes: 'most veggies' }], seed);
+    assert.ok(review[0].veg >= review[0].target.veg - ht.CLOSE, 'the adult got ' + review[0].veg + ' veg with seed ' + seed);
+  }
+});
+
+test('vegetable sides are only added as sides, never as an ordinary or school snack', () => {
+  const sides = new Set(LIB.snacks.filter(s => s.kind === 'side').map(s => s.what));
+  assert.ok(sides.size >= 3, 'the library has vegetable sides');
+  for (let seed = 1; seed <= 6; seed++) {
+    const plan = build([{ age: 40 }, { age: 9, packed_lunch: 'Yes, most days' }], { seed });
+    for (const person of Object.values(plan.people)) {
+      for (const snack of person.snacks) if (sides.has(snack.what)) assert.match(snack.when, /^With (dinner|lunch)$/);
+      for (const day of Object.values(person.weekday || {})) assert.ok(!sides.has(day.snack), day.snack + ' as a school snack');
+    }
+  }
 });

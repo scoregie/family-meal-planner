@@ -6712,6 +6712,9 @@
    ],
    "kind": "protein",
    "kids": false,
+   "texture": [
+    "crunchy"
+   ],
    "macros": {
     "p": 12,
     "c": 24,
@@ -6744,6 +6747,9 @@
    ],
    "kind": "protein",
    "kids": false,
+   "texture": [
+    "crunchy"
+   ],
    "macros": {
     "p": 26,
     "c": 15,
@@ -6798,6 +6804,9 @@
    ],
    "kind": "fruit",
    "kids": true,
+   "texture": [
+    "crunchy"
+   ],
    "macros": {
     "p": 0,
     "c": 21,
@@ -6872,6 +6881,9 @@
    ],
    "kind": "veg",
    "kids": true,
+   "texture": [
+    "crunchy"
+   ],
    "macros": {
     "p": 3,
     "c": 12,
@@ -6901,6 +6913,9 @@
    ],
    "kind": "other",
    "kids": true,
+   "texture": [
+    "crunchy"
+   ],
    "macros": {
     "p": 8,
     "c": 15,
@@ -6929,6 +6944,9 @@
    ],
    "kind": "other",
    "kids": false,
+   "texture": [
+    "crunchy"
+   ],
    "macros": {
     "p": 6,
     "c": 6,
@@ -6956,6 +6974,9 @@
    ],
    "kind": "other",
    "kids": true,
+   "texture": [
+    "crunchy"
+   ],
    "macros": {
     "p": 5,
     "c": 20,
@@ -7041,6 +7062,9 @@
    ],
    "kind": "other",
    "kids": true,
+   "texture": [
+    "crunchy"
+   ],
    "macros": {
     "p": 5,
     "c": 21,
@@ -7057,6 +7081,254 @@
     "animal",
     "milk"
    ]
+  },
+  {
+   "what": "A cup of berries",
+   "per": [
+    [
+     "frozen berries",
+     150
+    ]
+   ],
+   "kind": "fruit",
+   "kids": true,
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 1,
+    "c": 18,
+    "f": 1,
+    "kj": 320
+   },
+   "groups": {
+    "fruit": 1,
+    "fv": 150
+   },
+   "tags": []
+  },
+  {
+   "what": "Banana and berry smoothie",
+   "per": [
+    [
+     "banana",
+     120
+    ],
+    [
+     "frozen berries",
+     75
+    ],
+    [
+     "milk",
+     200
+    ]
+   ],
+   "kind": "fruit",
+   "kids": true,
+   "blended": true,
+   "macros": {
+    "p": 8,
+    "c": 46,
+    "f": 7,
+    "kj": 1120
+   },
+   "groups": {
+    "fruit": 1.3,
+    "dairy": 0.8,
+    "fv": 195,
+    "ca": 226
+   },
+   "tags": [
+    "animal",
+    "lactose",
+    "milk"
+   ]
+  },
+  {
+   "what": "A mandarin",
+   "per": [
+    [
+     "mandarin",
+     75
+    ]
+   ],
+   "kind": "fruit",
+   "kids": true,
+   "macros": {
+    "p": 1,
+    "c": 10,
+    "f": 0,
+    "kj": 170
+   },
+   "groups": {
+    "fruit": 0.5,
+    "fv": 75
+   },
+   "tags": []
+  },
+  {
+   "what": "Half a cup of berries",
+   "per": [
+    [
+     "frozen berries",
+     75
+    ]
+   ],
+   "kind": "fruit",
+   "kids": true,
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 0,
+    "c": 9,
+    "f": 0,
+    "kj": 160
+   },
+   "groups": {
+    "fruit": 0.5,
+    "fv": 75
+   },
+   "tags": []
+  },
+  {
+   "what": "A cup of steamed mixed vegetables",
+   "per": [
+    [
+     "frozen veg",
+     150
+    ]
+   ],
+   "kind": "side",
+   "kids": true,
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 5,
+    "c": 20,
+    "f": 1,
+    "kj": 450
+   },
+   "groups": {
+    "veg": 2,
+    "fv": 150,
+    "side": 150
+   },
+   "tags": []
+  },
+  {
+   "what": "Half a cup of steamed peas",
+   "per": [
+    [
+     "frozen peas",
+     75
+    ]
+   ],
+   "kind": "side",
+   "kids": true,
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 4,
+    "c": 10,
+    "f": 0,
+    "kj": 240
+   },
+   "groups": {
+    "veg": 1,
+    "fv": 75,
+    "side": 75
+   },
+   "tags": []
+  },
+  {
+   "what": "Steamed broccoli",
+   "per": [
+    [
+     "broccoli",
+     0.4
+    ]
+   ],
+   "kind": "side",
+   "kids": true,
+   "texture": [
+    "soft"
+   ],
+   "macros": {
+    "p": 4,
+    "c": 9,
+    "f": 1,
+    "kj": 200
+   },
+   "groups": {
+    "veg": 1.9,
+    "fv": 140,
+    "side": 140
+   },
+   "tags": []
+  },
+  {
+   "what": "Mashed pumpkin",
+   "per": [
+    [
+     "pumpkin",
+     150
+    ]
+   ],
+   "kind": "side",
+   "kids": true,
+   "texture": [
+    "soft"
+   ],
+   "blended": true,
+   "macros": {
+    "p": 2,
+    "c": 10,
+    "f": 0,
+    "kj": 160
+   },
+   "groups": {
+    "veg": 2,
+    "fv": 150,
+    "side": 150
+   },
+   "tags": []
+  },
+  {
+   "what": "A side salad",
+   "per": [
+    [
+     "salad leaves",
+     40
+    ],
+    [
+     "tomato",
+     0.5
+    ],
+    [
+     "cucumber",
+     0.4
+    ]
+   ],
+   "kind": "side",
+   "kids": true,
+   "texture": [
+    "crunchy"
+   ],
+   "macros": {
+    "p": 2,
+    "c": 6,
+    "f": 0,
+    "kj": 110
+   },
+   "groups": {
+    "veg": 2.5,
+    "fv": 187,
+    "side": 187
+   },
+   "tags": []
   }
  ],
  "workouts": {

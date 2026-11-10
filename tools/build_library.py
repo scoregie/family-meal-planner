@@ -498,27 +498,45 @@ dish('Hummus, rice crackers and vegetable sticks', 'lunch', 'Middle Eastern', 5,
 S = []
 
 
-# Adds a snack to the snack list (S).
-def snack(what, per, kind, kids=True):
-    S.append(dict(what=what, per=per, kind=kind, kids=kids))
+# Adds a snack to the snack list (S). kind is protein, fruit, veg, other, or "side" (a vegetable
+# side dish the builder adds to a meal when someone's days are short of vegetables). texture is
+# "crunchy" or "soft", for people who find those hard; blended marks smooth forms (mash, smoothies)
+# that suit people who aren't keen on vegetables or fruit.
+def snack(what, per, kind, kids=True, texture=None, blended=False):
+    s = dict(what=what, per=per, kind=kind, kids=kids)
+    if texture:
+        s['texture'] = [texture]
+    if blended:
+        s['blended'] = True
+    S.append(s)
 
 
 snack('170 g Greek yoghurt', [('greek yoghurt', 170)], 'protein')
 snack('300 ml glass of milk', [('milk', 300)], 'protein')
 snack('2 boiled eggs', [('egg', 2)], 'protein')
-snack('100 g cottage cheese with an apple', [('cottage cheese', 100), ('apple', 150)], 'protein', kids=False)
-snack('Tuna and crackers', [('tuna', 95), ('crackers', 20)], 'protein', kids=False)
+snack('100 g cottage cheese with an apple', [('cottage cheese', 100), ('apple', 150)], 'protein', kids=False, texture='crunchy')
+snack('Tuna and crackers', [('tuna', 95), ('crackers', 20)], 'protein', kids=False, texture='crunchy')
 snack('100 g edamame', [('edamame', 100)], 'protein')
-snack('An apple', [('apple', 150)], 'fruit')
+snack('An apple', [('apple', 150)], 'fruit', texture='crunchy')
 snack('A banana', [('banana', 120)], 'fruit')
 snack('2 mandarins', [('mandarin', 150)], 'fruit')
-snack('Carrot and cucumber sticks with hummus', [('carrot', 60), ('cucumber', 0.4), ('hummus', 30)], 'veg')
-snack('Cheese and crackers', [('cheddar', 25), ('crackers', 20)], 'other')
-snack('30 g almonds', [('almonds', 30)], 'other', kids=False)
-snack('Rice crackers with peanut butter', [('rice crackers', 20), ('peanut butter', 15)], 'other')
+snack('Carrot and cucumber sticks with hummus', [('carrot', 60), ('cucumber', 0.4), ('hummus', 30)], 'veg', texture='crunchy')
+snack('Cheese and crackers', [('cheddar', 25), ('crackers', 20)], 'other', texture='crunchy')
+snack('30 g almonds', [('almonds', 30)], 'other', kids=False, texture='crunchy')
+snack('Rice crackers with peanut butter', [('rice crackers', 20), ('peanut butter', 15)], 'other', texture='crunchy')
 snack('A slice of fruit bread', [('fruit bread', 40)], 'other')
 snack('Yoghurt with berries', [('greek yoghurt', 100), ('frozen berries', 60)], 'protein')
-snack('A cheese stick and an apple', [('cheddar', 20), ('apple', 150)], 'other')
+snack('A cheese stick and an apple', [('cheddar', 20), ('apple', 150)], 'other', texture='crunchy')
+snack('A cup of berries', [('frozen berries', 150)], 'fruit', texture='soft')
+snack('Banana and berry smoothie', [('banana', 120), ('frozen berries', 75), ('milk', 200)], 'fruit', blended=True)
+snack('A mandarin', [('mandarin', 75)], 'fruit')
+snack('Half a cup of berries', [('frozen berries', 75)], 'fruit', texture='soft')
+# Vegetable sides: added to dinner or lunch by the builder to reach the guideline serves.
+snack('A cup of steamed mixed vegetables', [('frozen veg', 150)], 'side', texture='soft')
+snack('Half a cup of steamed peas', [('frozen peas', 75)], 'side', texture='soft')
+snack('Steamed broccoli', [('broccoli', 0.4)], 'side', texture='soft')
+snack('Mashed pumpkin', [('pumpkin', 150)], 'side', texture='soft', blended=True)
+snack('A side salad', [('salad leaves', 40), ('tomato', 0.5), ('cucumber', 0.4)], 'side', texture='crunchy')
 
 # ---------------------------------------------------------------------------
 # Exercise library

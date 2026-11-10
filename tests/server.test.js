@@ -72,6 +72,10 @@ test('the built-in builder drafts a plan, and approving it makes it the plan', a
 
   const setup = await server.request('GET', '/api/plan/setup');
   assert.ok(setup.json.draft, 'a draft is waiting');
+  // The preview shows how each person's vegetables and fruit measure up against their targets.
+  const health = setup.json.draft.people[0].health;
+  assert.ok(health && health.veg > 0 && health.target.veg >= 5, JSON.stringify(health));
+  assert.deepEqual(health.short, []);
   const approve = await server.request('POST', '/api/requests/' + setup.json.draft.id + '/approve', {});
   assert.equal(approve.status, 200, approve.text);
 
@@ -79,6 +83,13 @@ test('the built-in builder drafts a plan, and approving it makes it the plan', a
   assert.equal(plan.currency, 'NZD', 'priced in the household’s country');
   assert.ok(plan.weeks.length >= 4);
   assert.ok(plan.people['alex-smith'] || Object.values(plan.people).some(p => p.name === 'Alex Smith'));
+});
+
+test('the instructions for an AI-written plan give each person’s vegetable and fruit targets', async () => {
+  const handoff = await server.request('GET', '/api/plan/handoff');
+  assert.equal(handoff.status, 200, handoff.text);
+  assert.match(handoff.json.user, /target at least \d(\.5)? serves of vegetables and \d(\.5)? of fruit a day/);
+  assert.match(handoff.json.system, /order of importance/);
 });
 
 test('a tick on the shopping list is saved for everyone', async () => {
