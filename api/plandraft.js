@@ -115,8 +115,22 @@ function questionCount() {
 }
 
 // Everyone in the plan, with how far through About me they are and whether they can log in.
+// True while the family is still on the example plan the app comes with.
+function isExamplePlan(plan) {
+  return !(plan || {}).people || /^example/i.test(String((plan || {}).id || ''));
+}
+
+// The people a new plan is written for: everyone in the household except the example plan's
+// made-up people (see "example" in household, below).
+function planners(ctx) {
+  return household(ctx).filter(p => !p.example);
+}
+
 function household(ctx) {
   const plan = ctx.readPlan() || {};
+  const onExample = isExamplePlan(plan);
+  // People who have been sent an invite but haven't joined yet.
+  const invited = new Set(db.listInvites().map(i => i.person));
   const accounts = db.listAccounts();
   // Older username logins (from .env or the old Admin page) that haven't become accounts.
   const older = new Set(auth.users().concat(db.listLogins().map(l => l.username))
@@ -134,6 +148,10 @@ function household(ctx) {
         login: account ? account.role : older.has(person) ? 'username' : null,
         answered: Object.keys(answers).length,
         finished: !!(profile && profile.finished_at),
+        // One of the example plan's made-up people (Alex, Sam, Riley) that the family hasn't taken
+        // over: no login and no About me answers. They are shown on Plan setup but left out of the
+        // family's own plan, so it doesn't cook and shop for people who aren't there.
+        example: onExample && /^(adult\d*|kid\d*)$/.test(key) && !account && !older.has(person) && !invited.has(person) && !Object.keys(answers).length,
         updated: profile ? profile.updated_at : null,
         answers,
         // What else the plan writer is told about them (planextras.js): their feedback on earlier
@@ -202,7 +220,7 @@ The plan must follow the format guide below exactly, because the app reads it di
 Structure:
 - "weeks" has six entries in this order: "Stock-up 1" (kind "stockup": pantry and freezer items for weeks 1 and 2), "Week 1", "Week 2", "Stock-up 2" (for weeks 3 and 4), "Week 3", "Week 4". Each meal week has "meals" (Mon to Sun), full "recipes" (with "items" amounts for the whole household), "shopping" (fresh food for that week; sections named like "Fruit and veg", "Meat and fish", "Dairy and eggs", "Bread and pantry top-ups"), "exercise" (one plan per person key, with "focus", "targets" and "days"), and "cost".
 - Shopping prices are estimates in ${r.currency} for the family's supermarkets in ${r.where}, as plain numbers. Each week's "cost" is the sum of its items. Set the top-level "currency" to "${r.currency}". Use ingredient names and pack sizes found in supermarkets in ${r.where}.
-- "people": use exactly the person keys and names given, with "portion" (1.0 is an average adult serve; children smaller), "guide", "tips", and "snacks". Tie snacks to exercise where it makes sense with "exercise": "strength" (e.g. a glass of milk after weights) or "rest". Add "times" (suggested eating times) when the person's routine is known.
+- "people": use exactly the person keys and names given, with "portion" (1.0 is an average adult serve; children smaller), "guide", "tips", and "snacks". Tie snacks to exercise where it makes sense with "exercise": "strength" (e.g. a glass of milk after weights) or "rest". Add "times" (suggested eating times) when the person's routine is known, and for anyone who asked for eating reminders (reminders in About me), fitted to their week (schedule) where they gave it.
 - "exercise" at the top level: per person key, "workouts" (named like "Strength A: ..." so the day plan can mention "Strength A"), "notes" and "medical".
 - "macros" and "groups": an entry for every dish and snack name used, per average serve (your best estimate).
 - "id": a new id like "family-plan-YYYY-MM-DD". "title": "Meal and exercise plan". "subtitle": the fortnightly cost summary.
@@ -363,7 +381,7 @@ function cutOffMessage(written) {
 
 async function runDraft(me, ready, ctx, note) {
   const mine = job;   // this run's progress record (a later run gets its own)
-  const people = household(ctx);
+  const people = planners(ctx);
   const known = new Set(people.map(p => p.key));
   let text = '';
   try {
@@ -652,14 +670,14 @@ async function handle(req, res, urlPath, url, me, ctx) {
         progress: job.state === 'running' ? Math.min(0.97, (job.chars || 0) / EXPECTED_CHARS) : null } : null,
       draft: pending ? draftPreview(pending) : null,
       kitchen: kitchenList(),
-      isExample: !(ctx.readPlan() || {}).people || /^example/i.test(String((ctx.readPlan() || {}).id || '')),
+      isExample: isExamplePlan(ctx.readPlan()),
     });
     return true;
   }
 
   // Claude Code (on the user's own subscription) writes the plan instead of the app's AI.
   if (urlPath === '/api/plan/handoff' && req.method === 'GET') {
-    const people = household(ctx);
+    const people = planners(ctx);
     if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
     send(res, 200, { system: systemText(), user: userText(ctx, people, String(url.searchParams.get('note') || '').slice(0, 2000), 'folder') });
     return true;
@@ -671,7 +689,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     }
     let text;
     try { text = await readBig(req); } catch (e) { send(res, 400, { error: 'The plan is too big (over 3 MB).' }); return true; }
-    const people = household(ctx);
+    const people = planners(ctx);
     try {
       // A Claude Code session isn't sent back automatically: it is told what the checks found.
       const problems = await finishDraft(me, ctx, people, new Set(people.map(p => p.key)), text, 'Claude Code', planextras.skippedNote(people));
@@ -701,7 +719,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       return true;
     }
     if (body.how === 'builtin') {
-      const people = household(ctx);
+      const people = planners(ctx);
       if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
       try {
         const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale, pantry: kitchenList(), rated: dishRatings() });
@@ -719,7 +737,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       send(res, 400, { error: ready.reason || 'Claude isn’t set up.' });
       return true;
     }
-    if (!household(ctx).length) {
+    if (!planners(ctx).length) {
       send(res, 400, { error: 'Add the people in your family first.' });
       return true;
     }

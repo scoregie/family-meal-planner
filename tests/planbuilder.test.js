@@ -583,3 +583,14 @@ test('someone who finds lumpy or mixed textures hard gets no chunky soups or ste
   const eaten = plan.weeks.filter(w => w.meals).flatMap((w, i) => w.meals.flatMap(m => ht.eatenOn(w, m, plan.people.p1, 'p1', i + 1))).map(r => r.name);
   assert.deepEqual(eaten.filter(n => mixed.has(n)), []);
 });
+
+test('someone who asked for eating reminders gets suggested eating times the calendar can read', () => {
+  // "Yes, remind me to eat" used to do nothing with a built-in plan, because it had no times.
+  const plan = build([{ age: 40, reminders: 'Yes, remind me to eat' }, { age: 38, reminders: 'No thanks' }, { age: 36 }]);
+  const times = plan.people.p0.times;
+  assert.deepEqual(times.map(t => t.what.split(/[.:]/)[0]), ['Breakfast', 'Mid-morning snack', 'Lunch', 'Dinner']);
+  for (const t of times) assert.match(t.when, /^\d{1,2}:\d{2} (am|pm)/);
+  assert.match(plan.people.p0.timesNote, /Shift them/);
+  assert.equal(plan.people.p1.times, undefined);
+  assert.equal(plan.people.p2.times, undefined);
+});

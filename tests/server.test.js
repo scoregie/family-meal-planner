@@ -67,6 +67,10 @@ test('About me answers are saved and read back', async () => {
 });
 
 test('the built-in builder drafts a plan, and approving it makes it the plan', async () => {
+  // A new family starts on the example plan. Its made-up people show on Plan setup, marked as examples.
+  const before = await server.request('GET', '/api/plan/setup');
+  assert.deepEqual(before.json.people.filter(p => p.example).map(p => p.name).sort(), ['Alex', 'Riley', 'Sam']);
+  assert.equal(before.json.people.find(p => p.name === 'Alex Smith').example, false);
   const draft = await server.request('POST', '/api/plan/draft', { how: 'builtin' });
   assert.equal(draft.status, 200, draft.text);
 
@@ -83,6 +87,8 @@ test('the built-in builder drafts a plan, and approving it makes it the plan', a
   assert.equal(plan.currency, 'NZD', 'priced in the household’s country');
   assert.ok(plan.weeks.length >= 4);
   assert.ok(plan.people['alex-smith'] || Object.values(plan.people).some(p => p.name === 'Alex Smith'));
+  // The family's own plan is only for the family: the example people were left out of it.
+  assert.deepEqual(Object.values(plan.people).map(p => p.name), ['Alex Smith']);
 });
 
 test('the instructions for an AI-written plan give each person’s vegetable and fruit targets', async () => {

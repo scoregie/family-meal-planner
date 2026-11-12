@@ -40,6 +40,14 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
   - **The home page starts on your own day.** An admin's home page opened on the first person in
     the plan, not themselves. It now starts on the person logged in, and still remembers an
     admin's choice of someone else on that device.
+- **Eating reminders now work with a built-in plan.** Anyone who answered "Yes, remind me to eat"
+  gets suggested eating times in their plan (breakfast, snacks, lunch and dinner at ordinary
+  times to shift), so the reminder links on About me and the Meals tab have times to use. An
+  AI-written plan is asked to do the same, fitted to their week.
+- **A new family's first plan is only for the family.** The example plan's made-up people (Alex,
+  Sam and Riley) used to be cooked and shopped for in the first real plan. They are now left out
+  unless someone answers About me for them, has a login or has been invited, and Plan setup says
+  so beside their names.
 
 ## v1.8.0 (2026-11-10)
 

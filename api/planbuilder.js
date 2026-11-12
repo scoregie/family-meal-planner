@@ -23,6 +23,8 @@
 //   - People who aren't keen on vegetables or fruit get one small new food to try each week,
 //     a short step on from a food they already like ("small steps").
 //   - Fresh food likely to be left at the end of a week is listed so it gets used up.
+//   - Anyone who asked for eating reminders gets suggested eating times (ordinary ones to shift),
+//     so the reminders on About me and the Meals tab have something to use.
 //   - Supplements people already take add things to check, and an adult's protein powder is
 //     counted as a snack in place of another one. The builder never suggests starting any.
 //   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
@@ -333,6 +335,7 @@ function rulesFor(p) {
     meds: new Set(list(a.medicine_types).filter(m => m !== 'None of these')),
     supps: new Set(list(a.supplements).filter(s => s !== 'None of these')),   // supplements they already take
     minor: age !== null && age < 18,   // supplements are noted, not counted, for under-18s
+    remind: /remind me to eat/i.test(String(a.reminders || '')),   // they asked for eating reminders
     packed: /Yes|Some/.test(String(a.packed_lunch || '')),
     lunchProvided: providedDays(a),
     budget: num(a.budget),
@@ -1149,6 +1152,10 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
         for (const [k, amount] of lib.per) if (LIB.ingredients[k].aisle !== 'assumed') needs[w][k] = (needs[w][k] || 0) + amount * days * (s.optional ? 0.5 : 1);
       }
     }
+    if (r.remind) {
+      p.times = timesFor(p.snacks);
+      p.timesNote = 'You asked for eating reminders, so these are ordinary times to start from. Shift them to suit your day.';
+    }
     Object.assign(p, guideFor(r, people[i]));
     const steps = smallSteps(r, people[i]);
     if (steps.length) p.steps = steps;
@@ -1372,6 +1379,22 @@ function snacksFor(r, exWeeks, rnd) {
   }
   // Now and then: listed as "if you have it", which the Macros totals leave out.
   if (shake === 'sometimes') out.push({ when: 'If you have it', what: SHAKE, optional: true });
+  return out;
+}
+
+// Suggested eating times for someone who asked for eating reminders in About me, so the
+// reminders have times to use. The builder can't read their week, so these are ordinary times
+// for them to shift. Snacks tied to exercise are left out, because sessions move around.
+function timesFor(snacks) {
+  const steady = s => !s.exercise && !s.optional && !s.weeks && !/^With /.test(s.when);
+  const morning = snacks.find(s => steady(s) && /morning/i.test(s.when));
+  const afternoon = snacks.find(s => steady(s) && /afternoon|after school/i.test(s.when));
+  const days = s => (s.days && s.days.join() === 'Mon,Tue,Wed,Thu,Fri' ? ' (Mon to Fri)' : '');
+  const out = [{ when: '7:30 am', what: 'Breakfast.' }];
+  if (morning) out.push({ when: '10:00 am' + days(morning), what: 'Mid-morning snack: ' + morning.what + '.' });
+  out.push({ when: '12:30 pm', what: 'Lunch.' });
+  if (afternoon) out.push({ when: '3:30 pm' + days(afternoon), what: 'Afternoon snack: ' + afternoon.what + '.' });
+  out.push({ when: '6:30 pm', what: 'Dinner.' });
   return out;
 }
 

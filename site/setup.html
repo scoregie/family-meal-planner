@@ -176,6 +176,7 @@ function renderPeople() {
     text.appendChild(h);
     if (p.finished) text.appendChild(el("small", "ok", "✓ Finished"));
     else if (p.answered) text.appendChild(el("small", null, p.answered + " of " + DATA.questions + " answered, not marked finished yet"));
+    else if (p.example) text.appendChild(el("small", null, "From the example plan. Left out of your plan unless you answer for them."));
     else text.appendChild(el("small", null, "Not started"));
     // Blood test files in My files, and whether they said yes in About me to a plan reading them.
     if (p.results && p.results.count) {
@@ -329,8 +330,10 @@ function renderDraft() {
   var box = $("draftBody");
   box.textContent = "";
   var job = DATA.job;
-  var finished = DATA.people.filter(function (p) { return p.finished; }).length;
-  var all = DATA.people.length;
+  // The example plan's made-up people aren't waited for: they are left out of the family's plan.
+  var real = DATA.people.filter(function (p) { return !p.example; });
+  var finished = real.filter(function (p) { return p.finished; }).length;
+  var all = real.length;
   $("draftTitle").textContent = DATA.isExample ? "Draft the plan" : "Draft a new plan";
 
   if (job && job.state === "running") {
