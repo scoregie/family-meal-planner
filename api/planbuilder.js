@@ -537,10 +537,16 @@ function ingredientFor(food) {
 // of library ingredients. Returns {stock: {ingredient key: [{amount, until}]}, counted: [names],
 // unknown: [what it couldn't match]}. "until" is the last meal week (0 to 3) the food keeps for.
 // No amount means one pack; a number without a unit means that many (eggs) or that many packs.
+//
+// A line can also be {text, place}, where place is "pantry", "fridge", "freezer" or "other" (the
+// Current food page). Where food is kept changes how long it counts for: anything in the freezer
+// lasts the whole plan, even meat that would only keep a few days in the fridge.
 function kitchenStock(lines) {
   const stock = {}, counted = [], unknown = [];
-  for (const line of list(lines).slice(0, 200)) {
-    for (const part of String(line).split(/[,;\n]/)) {
+  const all = Array.isArray(lines) ? lines : lines ? [lines] : [];
+  for (const line of all.slice(0, 400)) {
+    const place = line && typeof line === 'object' ? line.place : '';
+    for (const part of String(line && typeof line === 'object' ? line.text : line).split(/[,;\n]/)) {
       const text = part.trim().toLowerCase();
       if (!text) continue;
       const m = text.match(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|l|litres?|liters?)?\b/);
@@ -555,12 +561,24 @@ function kitchenStock(lines) {
       if (number && unit && ing.unit !== 'each') amount = number * (m[2] === 'kg' || unit === 'l' ? 1000 : 1);
       else if (number) amount = ing.unit === 'each' ? number : number * ing.pack;
       const keeps = KEEPS_ITEM[key] || KEEPS[ing.aisle] || 5;
-      const longLife = ing.aisle === 'pantry' || ing.aisle === 'frozen';
-      (stock[key] = stock[key] || []).push({ amount, until: longLife ? 3 : Math.min(3, Math.floor(keeps / 7)) });
+      // The last meal week (0 to 3) it still counts in.
+      let until = ing.aisle === 'pantry' || ing.aisle === 'frozen' ? 3 : Math.min(3, Math.floor(keeps / 7));
+      if (place === 'freezer') until = 3;                                  // frozen: the whole plan
+      if (place === 'fridge' && ing.aisle === 'frozen') until = 0;         // thawed: use it this week
+      (stock[key] = stock[key] || []).push({ amount, until });
       if (!counted.includes(ing.name)) counted.push(ing.name);
     }
   }
   return { stock, counted, unknown };
+}
+
+// Where a food from an older kitchen list most likely lives: "pantry", "fridge", "freezer", or
+// "other" if it isn't in the meal library. Used once, to sort an older list into places.
+function kitchenPlace(line) {
+  const key = Object.keys(kitchenStock([line]).stock)[0];
+  if (!key) return 'other';
+  const aisle = ING[key].aisle;
+  return aisle === 'frozen' ? 'freezer' : aisle === 'pantry' || aisle === 'bread' ? 'pantry' : 'fridge';
 }
 
 // ---------------------------------------------------------------------------
@@ -970,7 +988,7 @@ function build(people, opts) {
   if (wrote.length) forAdmin.push('The plan builder can’t read written answers either, so check these About me answers against the new plan: ' + wrote.slice(0, 12).join('; ') + '. (An AI-written plan reads them.)');
   const loggedBy = people.filter(p => p.measured && p.measured.weight).map(p => p.name);
   if (loggedBy.length) forAdmin.push('Serves for ' + loggedBy.join(', ') + ' use their latest logged weight in place of the one in About me.');
-  if (kitchen.counted.length) forAdmin.push('From your kitchen list, the plan counts: ' + kitchen.counted.join(', ') + '. Meals that use them were preferred, and what they cover is left off the shopping lists.');
+  if (kitchen.counted.length) forAdmin.push('From Current food, the plan counts: ' + kitchen.counted.join(', ') + '. Meals that use them were preferred, and what they cover is left off the shopping lists.');
   if (kitchen.unknown.length) forAdmin.push('Not matched to anything in the meal library, so not counted: ' + kitchen.unknown.join(', ') + '.');
   // Anyone still short of their vegetable or fruit serves (their answers ruled out the options).
   const shortNote = TARGETS.shortNote(plan, people);
@@ -1791,7 +1809,7 @@ function useData(data) {
 }
 
 const PlanBuilder = {
-  build, rulesFor, portionFor, allowed, exerciseFits, useData, kitchenStock,
+  build, rulesFor, portionFor, allowed, exerciseFits, useData, kitchenStock, kitchenPlace,
   get EXERCISES() { return EXERCISES; },
   get LIB() { return LIB; },
 };

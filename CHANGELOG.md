@@ -5,6 +5,20 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
 
 ## Unreleased
 
+- **New page: Current food (in More).** Anyone in the family can list the food already at home,
+  sorted into Pantry, Fridge, Freezer and Other, adding and removing one thing at a time. It
+  replaces the "What's already in your kitchen?" box on Plan setup, which now shows how many
+  things are listed and links to the page. A list typed there before is sorted into the four
+  places the first time it is read.
+  - **Where food is kept changes how long it counts.** Freezer food counts for the whole 4 weeks;
+    fridge food for as long as it usually keeps; something from the freezer aisle kept in the
+    fridge for the first week.
+  - The page says which things the built-in builder has no meals for (an AI-written plan can
+    still use them), and an AI-written plan is told where each thing is kept.
+  - **An AI-written plan is checked for using it.** If nothing in the plan uses something on
+    Current food, the AI is sent back to fit it in, and anything still unused is listed in the
+    note for the admin on the draft. Claude Code drafts get the same check.
+
 - **Supplements in About me.** The Health section now asks which supplements people already take
   (protein powder, creatine, pre-workout or caffeine tablets, electrolytes, meal replacement
   shakes, multivitamin, vitamin D, fish oil, magnesium, fibre) and, for protein powder, when they

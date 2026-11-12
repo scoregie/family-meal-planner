@@ -357,6 +357,26 @@ test('the kitchen list is read into ingredients and amounts, and says what it co
   assert.deepEqual(pb.kitchenStock(null), { stock: {}, counted: [], unknown: [] });
 });
 
+test('where food is kept changes how long the plan counts it for', () => {
+  // "until" is the last week (0 to 3) the food still counts in.
+  const until = (text, place) => pb.kitchenStock([{ text, place }]).stock;
+  assert.equal(until('chicken breast 500 g', 'fridge')['chicken breast'][0].until, 0, 'fresh meat: this week');
+  assert.equal(until('chicken breast 500 g', 'freezer')['chicken breast'][0].until, 3, 'frozen: the whole plan');
+  assert.equal(until('peas', 'freezer')['frozen peas'][0].until, 3);
+  assert.equal(until('peas', 'fridge')['frozen peas'][0].until, 0, 'thawed: this week');
+  assert.equal(until('rice 2 kg', 'pantry').rice[0].until, 3);
+  assert.equal(until('rice 2 kg', 'other').rice[0].until, 3);
+  // A plain line, as older lists were written, still works.
+  assert.equal(pb.kitchenStock(['chicken breast 500 g']).stock['chicken breast'][0].until, 0);
+});
+
+test('an older kitchen list is sorted into pantry, fridge, freezer and other', () => {
+  assert.equal(pb.kitchenPlace('rice 2 kg'), 'pantry');
+  assert.equal(pb.kitchenPlace('6 eggs'), 'fridge');
+  assert.equal(pb.kitchenPlace('frozen peas'), 'freezer');
+  assert.equal(pb.kitchenPlace('dragon fruit'), 'other');
+});
+
 test('food already in the kitchen is left off the shopping lists, and meals that use it are preferred', () => {
   const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
   const shop = plan => plan.weeks.flatMap(w => Object.values(w.shopping).flat());
@@ -371,7 +391,7 @@ test('food already in the kitchen is left off the shopping lists, and meals that
     const built = pb.build(people, { seed, pantry: ['rice 5 kg', 'frozen peas 3 kg'] });
     withList += riceDinners(built.plan);
     assert.ok(!shop(built.plan).some(item => /^(Jasmine rice|Frozen peas)/.test(item[0])), 'rice or peas were bought with seed ' + seed);
-    assert.match(built.notesForAdmin, /From your kitchen list, the plan counts: Jasmine rice 1 kg, Frozen peas 1 kg/);
+    assert.match(built.notesForAdmin, /From Current food, the plan counts: Jasmine rice 1 kg, Frozen peas 1 kg/);
   }
   assert.ok(withList > withoutList, withList + ' rice dinners with the list, ' + withoutList + ' without');
 });
