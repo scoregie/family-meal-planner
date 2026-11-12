@@ -376,6 +376,21 @@ test('food already in the kitchen is left off the shopping lists, and meals that
   assert.ok(withList > withoutList, withList + ' rice dinners with the list, ' + withoutList + ' without');
 });
 
+test('a kitchen food stops being preferred once the meals have used it up', () => {
+  // A dozen eggs at home used to tilt all four weeks towards egg dishes, so the plan bought about
+  // twice as many eggs as it did with an empty kitchen.
+  const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
+  const eggPacks = plan => plan.weeks.flatMap(w => Object.values(w.shopping).flat())
+    .filter(item => /^Eggs/.test(item[0]))
+    .reduce((n, item) => n + Number((item[0].match(/× (\d+)/) || [0, 1])[1]), 0);
+  let empty = 0, withEggs = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    empty += eggPacks(pb.build(people, { seed }).plan);
+    withEggs += eggPacks(pb.build(people, { seed, pantry: ['12 eggs'] }).plan);
+  }
+  assert.ok(withEggs <= empty * 1.3, 'egg packs bought with a dozen at home: ' + withEggs + ', with none: ' + empty);
+});
+
 test('dinners the family rated well come back more often, and ones they rated poorly less often', () => {
   const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
   // How many times each dinner turns up over several plans: {name: count}.
@@ -473,4 +488,70 @@ test('vegetable sides are only added as sides, never as an ordinary or school sn
       for (const day of Object.values(person.weekday || {})) assert.ok(!sides.has(day.snack), day.snack + ' as a school snack');
     }
   }
+});
+
+// Supplements people already take (About me). The words match the options in site/questions.json.
+const SHAKE = 'Protein shake (1 scoop of your own powder)';
+
+test('protein powder every day is a counted snack in place of the protein snack, with macros', () => {
+  const plan = build([{ age: 35, supplements: ['Protein powder'], protein_powder_when: 'Every day' }]);
+  const snacks = plan.people.p0.snacks;
+  const shake = snacks.find(s => s.what === SHAKE);
+  assert.ok(shake && !shake.optional && !shake.exercise, 'the shake is there every day');
+  assert.equal(plan.macros[SHAKE].p, 24);
+  assert.deepEqual(plan.groups[SHAKE], {});
+  // No library protein snack on top of it.
+  const proteinSnacks = new Set(LIB.snacks.filter(s => s.kind === 'protein').map(s => s.what));
+  assert.deepEqual(snacks.filter(s => proteinSnacks.has(s.what) && !/^With /.test(s.when)), []);
+  assert.ok(plan.people.p0.tips.some(t => /protein powder every day/.test(t) && /Edit plan/.test(t)));
+  // It's their own powder, so it isn't on a shopping list.
+  const bought = plan.weeks.flatMap(w => Object.values(w.shopping).flat().map(i => i[0])).join(' ');
+  assert.doesNotMatch(bought, /protein (powder|shake)/i);
+});
+
+test('protein powder follows the days they said: exercise days, strength days, or now and then', () => {
+  const shakeFor = when => build([{ age: 35, supplements: ['Protein powder'], protein_powder_when: when }]).people.p0.snacks.find(s => s.what === SHAKE);
+  assert.equal(shakeFor('On days I exercise').exercise, 'active');
+  assert.equal(shakeFor('After strength training').exercise, 'strength');
+  assert.equal(shakeFor('Now and then').optional, true);
+  // No answer to "when" is treated as now and then, and the tip says how to have it counted.
+  const plan = build([{ age: 35, supplements: ['Protein powder'] }]);
+  assert.equal(plan.people.p0.snacks.find(s => s.what === SHAKE).optional, true);
+  assert.ok(plan.people.p0.tips.some(t => /say when you usually have it/.test(t)));
+});
+
+test('someone who takes no supplements gets no shake and no supplement notes', () => {
+  const plan = build([{ age: 35, supplements: ['None of these'] }]);
+  assert.ok(!plan.people.p0.snacks.some(s => s.what === SHAKE));
+  assert.equal(plan.macros[SHAKE], undefined);
+  assert.ok(!plan.people.p0.tips.some(t => /supplement|protein powder|creatine/i.test(t)));
+});
+
+test('under-18s: supplements are noted with a pointer to their GP, and never counted', () => {
+  const plan = build([{ age: 40 }, { age: 15, supplements: ['Protein powder', 'Creatine'], protein_powder_when: 'Every day' }]);
+  assert.ok(!plan.people.p1.snacks.some(s => s.what === SHAKE));
+  const notes = plan.people.p1.tips.filter(t => /protein powder|creatine/i.test(t));
+  assert.equal(notes.length, 1);
+  assert.match(notes[0], /under 18/);
+  assert.match(notes[0], /GP/);
+});
+
+test('supplements add considerations, and extra ones where they meet a condition or medicine', () => {
+  const plan = build([{
+    age: 50, conditions: ['Kidney condition', 'High blood pressure'], medicine_types: ['Blood thinner (like warfarin)', 'Thyroid medicine'],
+    supplements: ['Protein powder', 'Creatine', 'Pre-workout or caffeine tablets', 'Electrolyte drinks or tablets', 'Fish oil', 'Magnesium', 'Vitamin D'],
+    protein_powder_when: 'After strength training',
+  }]);
+  const tips = plan.people.p0.tips.join('\n');
+  const medical = plan.exercise.p0.medical.join('\n');
+  assert.match(tips, /You said you take creatine/);
+  assert.match(tips, /kidney condition and take protein powder and creatine/);
+  assert.match(tips, /Electrolyte drinks and tablets add salt/);
+  assert.match(tips, /fish oil and a blood thinner/);
+  assert.match(tips, /Thyroid medicine is often taken a few hours apart from magnesium/);
+  assert.match(tips, /You said you take fish oil, magnesium and vitamin D\. Your pharmacist/);
+  assert.match(medical, /pre-workout or caffeine tablets/);
+  assert.match(medical, /asking your GP or pharmacist whether they suit you/);
+  // The builder only notes what they take: it doesn't tell anyone to start or stop one.
+  assert.doesNotMatch(tips + medical, /\b(start|stop) taking\b/i);
 });

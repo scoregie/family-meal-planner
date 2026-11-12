@@ -23,6 +23,8 @@
 //   - People who aren't keen on vegetables or fruit get one small new food to try each week,
 //     a short step on from a food they already like ("small steps").
 //   - Fresh food likely to be left at the end of a week is listed so it gets used up.
+//   - Supplements people already take add things to check, and an adult's protein powder is
+//     counted as a snack in place of another one. The builder never suggests starting any.
 //   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
 //     (opts.country), and recipe words change to the local ones ("capsicum" to "pepper").
 //   - Exercise builds gently over the 4 weeks from each person's time, equipment and health notes.
@@ -202,6 +204,88 @@ const MEDS = {
   },
 };
 
+// Supplements people said they already take (About me). The plan never suggests starting one:
+// it adds things to check, and counts an adult's protein powder as a snack so their day adds up.
+// Supplements without an entry here share one general note (see supplementNotes).
+const SUPPS = {
+  'Creatine': {
+    food: 'You said you take creatine. Drinking water through the day may help with it. Some people find it adds a little water weight in the first few weeks, which can show on the scales.',
+  },
+  'Pre-workout or caffeine tablets': {
+    food: 'You said you use pre-workout or caffeine tablets. They add to the caffeine from coffee, tea and energy drinks, and later in the day they may affect sleep.',
+    exercise: 'You said you use pre-workout or caffeine tablets. They can raise your heart rate, so consider going by how hard a session feels (you should be able to talk) rather than heart rate.',
+  },
+  'Electrolyte drinks or tablets': {
+    food: 'You said you use electrolyte drinks or tablets. Some are high in salt or sugar, so the label may be worth a look. Water is often enough for sessions under an hour.',
+  },
+  'Meal replacement shakes': {
+    food: 'You said you have meal replacement shakes. This plan has a meal in every slot and doesn’t count the shakes, so on a day a shake takes the place of a meal, the Macros tab will show more than you had. If a doctor or dietitian set them up, what they said comes first.',
+  },
+  'Fibre supplement': {
+    food: 'You said you take a fibre supplement. Drinking water with it may help. Some medicines are taken a couple of hours apart from fibre, and your pharmacist can say what applies to you.',
+  },
+};
+
+// An adult's own protein powder, written as a snack. The numbers are a typical 30 g scoop mixed
+// with water; an admin can change them to match the tub on the Macros tab of Edit plan.
+const SHAKE = 'Protein shake (1 scoop of your own powder)';
+const SHAKE_MACROS = { p: 24, c: 2, f: 2, kj: 510 };
+// The answers to "when do you usually have it?" -> how the snack is tied to their days.
+const SHAKE_WHEN = { 'Every day': 'daily', 'On days I exercise': 'active', 'After strength training': 'strength', 'Now and then': 'sometimes' };
+
+// A supplement's name as it reads in the middle of a sentence: "Vitamin D" -> "vitamin D",
+// "Multivitamin" -> "a multivitamin".
+function lowerFirst(name) {
+  const text = name.charAt(0).toLowerCase() + name.slice(1);
+  return name === 'Multivitamin' || name === 'Fibre supplement' ? 'a ' + text : text;
+}
+
+// A list as words: ["a", "b", "c"] -> "a, b and c".
+function andList(items) {
+  return items.length < 2 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+}
+
+// The considerations for the supplements someone said they take: {food: [...], exercise: [...]}.
+// Under-18s get one note and nothing is counted. Adults get a note for each supplement, plus
+// extra ones where a supplement meets a condition or medicine they also listed.
+function supplementNotes(r) {
+  const food = [], exercise = [];
+  if (!r.supps.size) return { food, exercise };
+  const names = andList([...r.supps].map(lowerFirst));
+  if (r.minor) {
+    food.push('You said you take ' + names + '. This plan doesn’t count or plan around supplements for anyone under 18. If a GP or dietitian suggested them, what they said comes first. If not, it may be worth asking your GP about them.');
+    return { food, exercise };
+  }
+  const has = s => r.supps.has(s);
+  const cond = c => r.conditions.has(c);
+  const med = m => r.meds.has(m);
+  if (has('Protein powder')) {
+    const counted = { daily: 'every day', active: 'on days you exercise', strength: 'after strength training' }[r.shake];
+    if (counted) food.push('You said you have protein powder ' + counted + '. It’s in your snacks as one scoop mixed with water (about ' + SHAKE_MACROS.p + ' g of protein) and counted on the Macros tab, in place of another snack. If your tub’s label says something different, an admin can change the numbers in Edit plan.');
+    else food.push('You said you have protein powder' + (r.shakeAnswered ? ' now and then' : '') + '. It’s listed as an optional snack and left out of your Macros totals.' + (r.shakeAnswered ? '' : ' To have it counted, say when you usually have it in About me and draft the plan again.'));
+  }
+  for (const s of r.supps) {
+    if (SUPPS[s] && SUPPS[s].food) food.push(SUPPS[s].food);
+    if (SUPPS[s] && SUPPS[s].exercise) exercise.push(SUPPS[s].exercise);
+  }
+  const general = [...r.supps].filter(s => s !== 'Protein powder' && !SUPPS[s]).map(lowerFirst);
+  if (general.length) food.push('You said you take ' + andList(general) + '. Your pharmacist can say whether ' + (general.length > 1 ? 'any of these overlap' : 'it overlaps') + ' with anything else you take, and whether to take ' + (general.length > 1 ? 'them' : 'it') + ' apart from any medicines.');
+
+  // Where a supplement meets a condition or medicine they also listed.
+  const kidney = ['Protein powder', 'Creatine'].filter(has).map(lowerFirst);
+  if (cond('Kidney condition') && kidney.length) food.push('You said you have a kidney condition and take ' + andList(kidney) + '. Protein needs can differ with kidney conditions, so it may be worth checking with your doctor or dietitian that ' + (kidney.length > 1 ? 'they suit' : 'it suits') + ' you.');
+  if (has('Pre-workout or caffeine tablets') && (cond('High blood pressure') || cond('Heart condition') || med('Blood pressure or heart medicine') || med('ADHD stimulant medicine') || med('An MAOI antidepressant'))) {
+    exercise.push('Pre-workout and caffeine tablets can raise heart rate and blood pressure. With what you said about your heart, blood pressure or medicines, it may be worth asking your GP or pharmacist whether they suit you.');
+  }
+  if (has('Electrolyte drinks or tablets') && (cond('High blood pressure') || cond('Heart condition') || cond('Kidney condition') || med('Blood pressure or heart medicine') || med('Fluid tablets (diuretics)'))) {
+    food.push('Electrolyte drinks and tablets add salt, and some add potassium. With what you said about your blood pressure, heart, kidneys or medicines, it may be worth asking your GP or pharmacist about them.');
+  }
+  if (has('Fish oil') && med('Blood thinner (like warfarin)')) food.push('You said you take fish oil and a blood thinner. It may be worth asking your doctor or pharmacist about taking them together.');
+  if ((has('Magnesium') || has('Multivitamin')) && med('Thyroid medicine')) food.push('Thyroid medicine is often taken a few hours apart from magnesium and from multivitamins with iron or calcium. Your pharmacist can say how to time them.');
+  if (cond('Pregnant or breastfeeding')) food.push('You said you’re pregnant or breastfeeding. It may be worth going over your supplements with your GP, midwife or pharmacist.');
+  return { food, exercise };
+}
+
 // About me cuisine choices whose wording differs from the cuisine names in the meal library.
 const CUISINE = { 'Australian classics': 'Australian' };
 
@@ -247,6 +331,8 @@ function rulesFor(p) {
     support: new Set(list(a.support_needs)),
     conditions: new Set(list(a.conditions)),
     meds: new Set(list(a.medicine_types).filter(m => m !== 'None of these')),
+    supps: new Set(list(a.supplements).filter(s => s !== 'None of these')),   // supplements they already take
+    minor: age !== null && age < 18,   // supplements are noted, not counted, for under-18s
     packed: /Yes|Some/.test(String(a.packed_lunch || '')),
     lunchProvided: providedDays(a),
     budget: num(a.budget),
@@ -254,6 +340,10 @@ function rulesFor(p) {
   };
   for (const x of list(a.allergies)) if (ALLERGY[x]) r.hard.add(ALLERGY[x]);
   if (r.conditions.has('Coeliac disease')) r.hard.add('gluten');
+  // An adult's protein powder: how it's tied to their days ("daily", "active", "strength" or
+  // "sometimes"), or null if they don't have any. No answer to "when" counts as "sometimes".
+  r.shakeAnswered = !!SHAKE_WHEN[a.protein_powder_when];
+  r.shake = r.supps.has('Protein powder') && !r.minor ? SHAKE_WHEN[a.protein_powder_when] || 'sometimes' : null;
   // MAOIs: foods high in tyramine can raise blood pressure, so leave out the obvious ones.
   if (r.meds.has('An MAOI antidepressant')) r.avoidWords.push(...MAOI_FOODS);
   r.avoidWords.push(...words(a.allergies_other));
@@ -550,6 +640,7 @@ function exerciseFor(p, r, rnd) {
   };
   for (const c of r.conditions) if (C[c]) medical.push(C[c]);
   for (const m of r.meds) if (MEDS[m] && MEDS[m].exercise) medical.push(MEDS[m].exercise);
+  medical.push(...supplementNotes(r).exercise);
   if (r.meds.size) medical.push('Because you take medicines, consider checking this exercise plan with your GP before you start.');
   if (gentle) medical.push('You mentioned low energy or chronic pain. On harder days, consider a shorter session or just a walk. Any movement counts.');
 
@@ -821,8 +912,16 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
 
   const mealWeeks = [];
   let fixedDinners = null;
-  // The kitchen foods that still keep in meal week `w` (fresh food only counts for the first weeks).
-  const ownedIn = w => new Set(Object.keys(house.stock || {}).filter(k => house.stock[k].some(x => x.until >= w)));
+  // How much of each kitchen food is left as the weeks are planned ({ingredient: amount}). Each
+  // week's meals take their share off, so a food stops being preferred once it has been used up
+  // (a dozen eggs at home shouldn't fill all four weeks with egg dishes).
+  const left = {};
+  for (const [k, shelf] of Object.entries(house.stock || {})) left[k] = shelf.reduce((n, x) => n + x.amount, 0);
+  const householdServes = rules.reduce((n, r) => n + r.portion, 0);
+  const useUp = dish => { for (const [k, amount] of (dish && dish.per) || []) if (k in left) left[k] -= amount * householdServes; };
+  // The kitchen foods that still keep in meal week `w` (fresh food only counts for the first
+  // weeks) and haven't been used up by the weeks before it.
+  const ownedIn = w => new Set(Object.keys(house.stock || {}).filter(k => left[k] > 0 && house.stock[k].some(x => x.until >= w)));
   for (let w = 0; w < 4; w++) {
     house.ownedNow = ownedIn(w);
     // Dinners for the week.
@@ -851,6 +950,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       return { day, dinner, breakfast, lunch };
     });
     mealWeeks.push(days);
+    // Take this week's meals off what's left in the kitchen (a leftover lunch was cooked as dinner).
+    for (const day of days) { useUp(day.dinner); useUp(day.breakfast); useUp(day.lunch.leftover || day.lunch); }
   }
 
   // Per-person swaps: anyone a shared dish doesn't suit gets one that does.
@@ -1031,6 +1132,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
           const exDay = exWeek.days.find(x => x.day === d) || {};
           if (s.exercise === 'strength') return !!exDay.strength;
           if (s.exercise === 'rest') return !exDay.strength;
+          if (s.exercise === 'active') return !!(exDay.strength || exDay.cardio);
+          if (s.exercise === 'inactive') return !(exDay.strength || exDay.cardio);
           return true;
         }).length;
         for (const [k, amount] of lib.per) if (LIB.ingredients[k].aisle !== 'assumed') needs[w][k] = (needs[w][k] || 0) + amount * days * (s.optional ? 0.5 : 1);
@@ -1067,6 +1170,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     for (const s of p.snacks || []) {
       const lib = LIB.snacks.find(x => x.what === s.what);
       if (lib) { macros[s.what] = lib.macros; groups[s.what] = lib.groups; }
+      // Their own protein powder isn't in the library: it has macros, and no food-group serves.
+      if (s.what === SHAKE) { macros[SHAKE] = SHAKE_MACROS; groups[SHAKE] = {}; }
     }
     for (const wd of Object.values(p.weekday || {})) {
       const lib = wd.snack && LIB.snacks.find(x => x.what === wd.snack);
@@ -1238,14 +1343,25 @@ function snacksFor(r, exWeeks, rnd) {
     return out;
   }
   if (fruit[0]) out.push({ when: 'Mid-morning', what: fruit[0].what });
-  if (lifts && protein.length) {
-    out.push({ when: 'After strength', what: protein.find(s => /milk|yoghurt/.test(s.what))?.what || protein[0].what, exercise: 'strength' });
+  // Their own protein powder takes the place of the protein snack, so it isn't planned twice.
+  // "After strength training" with no strength sessions in the plan is treated as now and then.
+  const shake = r.shake === 'strength' && !lifts ? 'sometimes' : r.shake;
+  if (shake === 'daily') {
+    out.push({ when: lifts ? 'After exercise, or in the afternoon' : 'Afternoon', what: SHAKE });
+  } else if (shake === 'active') {
+    out.push({ when: 'After exercise', what: SHAKE, exercise: 'active' });
+    const rest = other[0] || fruit[1] || protein[0];
+    if (rest) out.push({ when: 'Afternoon', what: rest.what, exercise: 'inactive' });
+  } else if (lifts && (protein.length || shake === 'strength')) {
+    out.push({ when: 'After strength', what: shake === 'strength' ? SHAKE : protein.find(s => /milk|yoghurt/.test(s.what))?.what || protein[0].what, exercise: 'strength' });
     const rest = other[0] || fruit[1] || protein[1];
     if (rest) out.push({ when: 'Afternoon', what: rest.what, exercise: 'rest' });
   } else {
     const s = protein[0] || other[0];
     if (s) out.push({ when: 'Afternoon', what: s.what });
   }
+  // Now and then: listed as "if you have it", which the Macros totals leave out.
+  if (shake === 'sometimes') out.push({ when: 'If you have it', what: SHAKE, optional: true });
   return out;
 }
 
@@ -1339,6 +1455,7 @@ function guideFor(r, p) {
   const safe = String((p.answers || {}).safe_foods || '').trim();
   if (safe) tips.push('Your safe foods (' + safe.slice(0, 120) + ') are kept in for hard days.');
   for (const m of r.meds) if (MEDS[m] && MEDS[m].food) tips.push(MEDS[m].food);
+  tips.push(...supplementNotes(r).food);
   if (r.conditions.has('Coeliac disease')) tips.push('You said you have coeliac disease: check every label for gluten, including sauces and stock.');
   if (r.conditions.has('Reflux')) tips.push('You mentioned reflux: smaller dinners earlier in the evening may help.');
   if (r.conditions.has('Irritable bowel (IBS)')) tips.push('You mentioned IBS: if some foods (like onion, garlic or beans) bother you, add them to “Foods you won’t eat” in About me and rebuild the plan.');

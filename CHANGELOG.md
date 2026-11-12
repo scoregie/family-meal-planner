@@ -3,6 +3,31 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## Unreleased
+
+- **Supplements in About me.** The Health section now asks which supplements people already take
+  (protein powder, creatine, pre-workout or caffeine tablets, electrolytes, meal replacement
+  shakes, multivitamin, vitamin D, fish oil, magnesium, fibre) and, for protein powder, when they
+  have it. The plan doesn't suggest starting, stopping or changing any of them.
+  - **Protein powder is counted.** For an adult it goes in their snacks as "Protein shake (1 scoop
+    of your own powder)" in place of another protein snack: every day, on exercise days, or after
+    strength sessions, as they said. It is counted on the Macros tab as one scoop mixed with water
+    (24 g protein, 510 kJ), which an admin can change in Edit plan to match the tub. "Now and
+    then", or no answer, lists it as an optional snack that the totals leave out. It isn't put on
+    a shopping list.
+  - **Considerations for the others**, such as drinking water with creatine and pre-workout adding
+    to the day's caffeine, with extra ones where a supplement meets a condition or medicine the
+    person also listed (for example protein powder or creatine with a kidney condition, fish oil
+    with a blood thinner), each pointing to their GP or pharmacist.
+  - **Under 18:** supplements are noted with a pointer to their GP, and not counted or planned
+    around.
+  - The built-in builder, AI-written plans, Claude Code drafts and Ask AI all follow the same
+    rules, and the app's check of an AI-written plan now looks for the protein shake.
+- **Fixed: a food on the kitchen list could make the plan buy more of it.** The built-in builder
+  kept preferring meals that use a food you have for as long as it would keep, even after the
+  meals had used it up, so a dozen eggs at home filled four weeks with egg dishes. It now stops
+  preferring a food once the planned meals have used what you have.
+
 ## v1.8.0 (2026-11-10)
 
 Plans now listen to what people said and logged, and help fussy eaters one small step at a time.

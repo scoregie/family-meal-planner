@@ -236,6 +236,25 @@ test('plan check: finds a plan short of vegetables, a food someone won’t eat, 
   assert.match(ask, /Reply with one JSON object of corrections/);
 });
 
+test('plan check: an adult’s protein powder is a counted snack, and an under-18 has none', () => {
+  const check = require('../api/plancheck');
+  const shake = 'Protein shake (1 scoop of your own powder)';
+  const who = answers => [{ key: 'sam', name: 'Sam', answers: { eating_change: 'Keep it close to what I eat now', ...answers } }];
+  const withSnacks = (snacks, macros) => { const plan = smallPlan(); plan.people.sam.snacks = snacks; plan.people.sam.tips = []; plan.macros = macros || {}; return plan; };
+  const adult = who({ age: '40', supplements: ['Protein powder'], protein_powder_when: 'Every day' });
+  assert.match(check.problems(withSnacks([]), adult).join('\n'), /isn’t a counted snack/);
+  assert.match(check.problems(withSnacks([{ when: 'Afternoon', what: shake, optional: true }]), adult).join('\n'), /isn’t a counted snack/);
+  assert.match(check.problems(withSnacks([{ when: 'Afternoon', what: shake }]), adult).join('\n'), /has no "macros" entry/);
+  assert.deepEqual(check.problems(withSnacks([{ when: 'Afternoon', what: shake }], { [shake]: { p: 24, c: 2, f: 2 } }), adult), []);
+  // Now and then needs nothing, and a teenager's is taken out.
+  assert.deepEqual(check.problems(withSnacks([]), who({ age: '40', supplements: ['Protein powder'], protein_powder_when: 'Now and then' })), []);
+  const teen = who({ age: '15', supplements: ['Protein powder'], protein_powder_when: 'Every day' });
+  assert.match(check.problems(withSnacks([{ when: 'Afternoon', what: shake }]), teen).join('\n'), /under 18/);
+  assert.deepEqual(check.problems(withSnacks([]), teen), []);
+  // The follow-up for the AI lists the supplements with everything else they said.
+  assert.match(check.fixRequest(withSnacks([]), adult), /supplements they already take: Protein powder \(protein powder: Every day\)/);
+});
+
 test('plan check: the AI’s corrections are applied, and a bad reply keeps the first draft', async () => {
   const check = require('../api/plancheck');
   const fixes = {

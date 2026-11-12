@@ -104,13 +104,33 @@ function absoluteWords(plan, p) {
   return out;
 }
 
+// Protein powder that isn't where the person's answers say it should be, as sentences. An adult
+// who has it on set days gets it as a counted snack; anyone under 18 gets none.
+function proteinPowder(plan, p) {
+  const a = p.answers || {};
+  const person = (plan.people || {})[p.key] || {};
+  const shakes = (person.snacks || []).filter(s => s && /protein (shake|powder)/i.test(String(s.what || '')));
+  const takes = Array.isArray(a.supplements) && a.supplements.includes('Protein powder');
+  const age = a.age === undefined || a.age === null || a.age === '' ? null : Number(a.age);
+  if (age !== null && age < 18) {
+    return shakes.length ? [p.name + ' is under 18 and has a protein shake in their snacks. Take it out: supplements aren’t counted or planned for under-18s.'] : [];
+  }
+  const setDays = ['Every day', 'On days I exercise', 'After strength training'].includes(a.protein_powder_when);
+  if (!takes || !setDays) return [];
+  const counted = shakes.filter(s => !s.optional);
+  if (!counted.length) return [p.name + ' said they have protein powder (' + a.protein_powder_when.toLowerCase() + '), and it isn’t a counted snack in their plan. Add "Protein shake (1 scoop of your own powder)" to their snacks in place of another protein snack, with a "macros" entry.'];
+  const macros = Object.keys(plan.macros || {}).map(healthtargets.nameKey);
+  const missing = counted.find(s => !macros.includes(healthtargets.nameKey(s.what)));
+  return missing ? [p.name + '’s snack "' + missing.what + '" has no "macros" entry, so it isn’t counted. Add one (about 24 g protein, 2 g carbs, 2 g fat, 510 kJ for a scoop mixed with water).'] : [];
+}
+
 // Everything the app itself can find wrong with a plan, as a list of sentences for the plan
 // writer (empty when it finds nothing). `people` is a list of {key, name, answers}.
 function problems(plan, people) {
   const out = [];
   for (const p of people) {
     if (!plan.people || !plan.people[p.key]) continue;
-    out.push(...shortWeeks(plan, p), ...dislikedFoods(plan, p), ...absoluteWords(plan, p));
+    out.push(...shortWeeks(plan, p), ...dislikedFoods(plan, p), ...absoluteWords(plan, p), ...proteinPowder(plan, p));
   }
   return out;
 }
@@ -124,6 +144,7 @@ function saidLines(people) {
     const bits = [];
     if (list(a.conditions).length || a.conditions_other) bits.push('conditions: ' + [...list(a.conditions), a.conditions_other].filter(Boolean).join('; '));
     if (list(a.medicine_types).length || a.medicines) bits.push('medicines: ' + [...list(a.medicine_types), a.medicines].filter(Boolean).join('; '));
+    if (list(a.supplements).length) bits.push('supplements they already take: ' + list(a.supplements).join('; ') + (a.protein_powder_when ? ' (protein powder: ' + a.protein_powder_when + ')' : ''));
     if (list(a.allergies).length || a.allergies_other) bits.push('allergies: ' + [...list(a.allergies), a.allergies_other].filter(Boolean).join('; '));
     if (a.dislikes) bits.push('won’t eat: ' + a.dislikes);
     if (list(a.sensory).length) bits.push('hard textures: ' + list(a.sensory).join('; '));
@@ -145,7 +166,7 @@ function fixRequest(plan, people) {
     'Then check these yourself, person by person, against what they said:',
     ...saidLines(people),
     '1. No dish, snack or recipe a person is given contains a food they are allergic to or named as one they won’t eat.',
-    '2. Every condition and medicine above has a hedged consideration in that person’s tips (food) or exercise medical list (exercise), with a pointer to their GP or other health professional.',
+    '2. Every condition, medicine and supplement above has a hedged consideration in that person’s tips (food) or exercise medical list (exercise), with a pointer to their GP or other health professional. Nothing suggests starting, stopping or changing a supplement, and under-18s’ supplements are noted, not counted.',
     '3. Snacks and sides avoid the textures that person finds hard.',
     '4. Anything said about blood test results matches the newest date on the report: a flag belongs only to the date it is printed under, so don’t carry over flags from earlier dates.',
     '5. Health text reports what the person said, calls itself considerations (not advice), and has no "always", "never" or "must".',
