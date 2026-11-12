@@ -555,3 +555,31 @@ test('supplements add considerations, and extra ones where they meet a condition
   // The builder only notes what they take: it doesn't tell anyone to start or stop one.
   assert.doesNotMatch(tips + medical, /\b(start|stop) taking\b/i);
 });
+
+test('a health condition written in their own words is shown back with a pointer to their GP', () => {
+  // "Any other health conditions?" used to be dropped by the built-in builder without a word.
+  const plan = build([{ age: 40, conditions_other: 'Mild asthma' }, { age: 38, conditions_other: 'none' }]);
+  assert.ok(plan.exercise.p0.medical.some(t => /another health condition: “Mild asthma”/.test(t) && /GP/.test(t)));
+  assert.ok(!plan.exercise.p1.medical.some(t => /another health condition/.test(t)));
+});
+
+test('written About me answers the builder can’t read are passed on to the admin', () => {
+  const people = [{ key: 'a', name: 'Alex', answers: { age: 40, schedule: 'Night shifts on Fridays', anything_else: 'We shop on Sundays', likes: 'curries' } }];
+  const notes = pb.build(people, { seed: 1 }).notesForAdmin;
+  assert.match(notes, /Alex \(week\): “Night shifts on Fridays”/);
+  assert.match(notes, /Alex \(anything else\): “We shop on Sundays”/);
+  assert.doesNotMatch(notes, /curries/);
+});
+
+test('someone who finds lumpy or mixed textures hard gets no chunky soups or stews', () => {
+  // The chicken and the lentil soups were tagged "soft" only, so a child who said mixed textures
+  // are hard was given lentil soup eight times in a plan.
+  const mixed = new Set(pb.LIB.dishes.filter(d => (d.texture || []).includes('mixed')).map(d => d.name));
+  for (const name of ['Chicken and vegetable soup', 'Minestrone soup with bread']) assert.ok(mixed.has(name), name + ' is tagged mixed');
+  // The lentil soup comes from the community library, which the server adds when it starts.
+  const lentil = require('../api/library-community.json').dishes.find(d => d.name === 'Lentil and vegetable soup with bread');
+  assert.ok(lentil.texture.includes('mixed'), 'Lentil and vegetable soup with bread is tagged mixed');
+  const plan = build([{ age: 40 }, { age: 9, sensory: ['Lumpy or mixed textures (like stews)'] }]);
+  const eaten = plan.weeks.filter(w => w.meals).flatMap((w, i) => w.meals.flatMap(m => ht.eatenOn(w, m, plan.people.p1, 'p1', i + 1))).map(r => r.name);
+  assert.deepEqual(eaten.filter(n => mixed.has(n)), []);
+});

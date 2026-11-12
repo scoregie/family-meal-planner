@@ -27,6 +27,19 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
   kept preferring meals that use a food you have for as long as it would keep, even after the
   meals had used it up, so a dozen eggs at home filled four weeks with egg dishes. It now stops
   preferring a food once the planned meals have used what you have.
+- **Fixes from signing up as a new family and filling everything in:**
+  - **Lumpy or mixed textures:** the chicken and vegetable soup and the lentil and vegetable soup
+    were marked as soft only, so someone who finds mixed textures hard was still given them. Both
+    are now marked as mixed and left out for those people.
+  - **"Any other health conditions?"** was dropped by the built-in builder. What the person wrote
+    is now shown back in their exercise considerations, saying the plan wasn't changed for it and
+    pointing to their GP.
+  - **Written answers the built-in builder can't read** (their goal in their own words, their
+    week, the exercise they do now, what would help, anything else) are now listed for the admin
+    with the draft, as written feedback notes already were.
+  - **The home page starts on your own day.** An admin's home page opened on the first person in
+    the plan, not themselves. It now starts on the person logged in, and still remembers an
+    admin's choice of someone else on that device.
 
 ## v1.8.0 (2026-11-10)
 

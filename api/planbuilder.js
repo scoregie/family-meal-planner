@@ -627,6 +627,9 @@ function exerciseFor(p, r, rnd) {
   const injuries = String(a.injuries || '').trim();
   const gp = String(a.gp || '').trim();
   const medicines = String(a.medicines || '').trim();
+  const otherConditions = String(a.conditions_other || '').trim();
+  // A health condition they wrote in their own words can't be read by rules, so the plan says so.
+  if (otherConditions && !/^(no|none|nil|n\/a)\.?$/i.test(otherConditions)) medical.push('You mentioned another health condition: “' + otherConditions.slice(0, 300) + '”. This plan wasn’t changed for it, so it may be worth checking the meals and exercise with your GP.');
   if (injuries && !/^(no|none|nil|n\/a)\.?$/i.test(injuries)) medical.push('You mentioned: “' + injuries.slice(0, 300) + '”. Consider checking with your GP or physio which exercises suit you, and stop any exercise that causes pain.');
   if (gp && !/^(no|none|nil|n\/a)\.?$/i.test(gp)) medical.push('You said a doctor or dietitian told you: “' + gp.slice(0, 300) + '”. What they told you comes first. If this plan doesn’t fit it, go with what they said and let an admin know.');
   if (medicines && !/^(no|none|nil|n\/a)\.?$/i.test(medicines)) medical.push('You mentioned medicines or supplements: “' + medicines.slice(0, 200) + '”. It may be worth asking your pharmacist whether any foods or exercise affect them.');
@@ -872,6 +875,13 @@ function build(people, opts) {
   if (scored.length) forAdmin.push('Meal scores from ' + scored.join(', ') + ' were used: meals they scored well come back more often, and ones they scored poorly less often.');
   const said = people.flatMap(p => ((p.feedback && p.feedback.notes) || []).slice(0, 5).map(n => p.name + ' on ' + n.dish + ': “' + n.note + '”'));
   if (said.length) forAdmin.push('The plan builder can’t read written notes, so check these against the new plan: ' + said.slice(0, 10).join('; ') + '. (An AI-written plan reads them.)');
+  // Written About me answers the rules can't read (their week, their goal in their own words and
+  // so on): the admin gets them too. Ones with their own handling (injuries, what a doctor said,
+  // medicines, likes and dislikes) aren't repeated here.
+  const WRITTEN = { goal_detail: 'goal', schedule: 'week', exercise_now: 'exercise now', support_other: 'what would help', anything_else: 'anything else' };
+  const wrote = people.flatMap(p => Object.keys(WRITTEN).filter(id => String((p.answers || {})[id] || '').trim())
+    .map(id => p.name + ' (' + WRITTEN[id] + '): “' + String(p.answers[id]).trim().slice(0, 160) + '”'));
+  if (wrote.length) forAdmin.push('The plan builder can’t read written answers either, so check these About me answers against the new plan: ' + wrote.slice(0, 12).join('; ') + '. (An AI-written plan reads them.)');
   const loggedBy = people.filter(p => p.measured && p.measured.weight).map(p => p.name);
   if (loggedBy.length) forAdmin.push('Serves for ' + loggedBy.join(', ') + ' use their latest logged weight in place of the one in About me.');
   if (kitchen.counted.length) forAdmin.push('From your kitchen list, the plan counts: ' + kitchen.counted.join(', ') + '. Meals that use them were preferred, and what they cover is left off the shopping lists.');

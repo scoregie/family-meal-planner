@@ -956,8 +956,10 @@ function kidName() {
 // Picks whose ticks to show, and loads them from this device. Non-admins always see their own.
 function loadUser() {
   var remembered = lsGet("coles-plan-user");
-  if (USERS.indexOf(remembered) > -1) USER = remembered;
-  if (ME && !ME.admin) {
+  var picked = USERS.indexOf(remembered) > -1;
+  if (picked) USER = remembered;
+  // Start on your own name. An admin who has picked someone else on this device stays on them.
+  if (ME && ME.person && (!ME.admin || !picked)) {
     var mine = nameOf(ME.person);
     if (USERS.indexOf(mine) > -1) USER = mine;
   }

@@ -322,7 +322,7 @@ dish('Chicken and vegetable soup', 'dinner', 'Australian', 40, ['stovetop'],
      [('chicken breast', 110), ('carrot', 60), ('celery', 0.1), ('onion', 40), ('potato', 100), ('stock', 350), ('pasta', 25), ('bread', 40)],
      ['Simmer the chicken in the stock for 15 minutes, then take it out and shred it.',
       'Add the chopped vegetables and pasta to the stock and simmer for 15 minutes.', 'Return the chicken and serve with bread.'],
-     leftovers=True, texture=['soft'], batch=True)
+     leftovers=True, texture=['mixed', 'soft'], batch=True)
 dish('Oven fish and chips with salad', 'dinner', 'British', 30, ['oven'],
      [('crumbed fish', 140), ('potato', 220), ('salad leaves', 40), ('tomato', 0.4), ('lemon', 0.2), ('oil', 5)],
      ['Heat the oven to 220 °C. Cut the potatoes into wedges, toss with the oil and bake for 30 minutes.',

@@ -4313,6 +4313,7 @@
    ],
    "leftovers": true,
    "texture": [
+    "mixed",
     "soft"
    ],
    "batch": true,
