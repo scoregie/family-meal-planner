@@ -956,8 +956,10 @@ function kidName() {
 // Picks whose ticks to show, and loads them from this device. Non-admins always see their own.
 function loadUser() {
   var remembered = lsGet("coles-plan-user");
-  if (USERS.indexOf(remembered) > -1) USER = remembered;
-  if (ME && !ME.admin) {
+  var picked = USERS.indexOf(remembered) > -1;
+  if (picked) USER = remembered;
+  // Start on your own name. An admin who has picked someone else on this device stays on them.
+  if (ME && ME.person && (!ME.admin || !picked)) {
     var mine = nameOf(ME.person);
     if (USERS.indexOf(mine) > -1) USER = mine;
   }
@@ -1736,6 +1738,18 @@ function mealRows(day, person, personKey) {
   return rows.concat(extra).filter(function (row) { return row[1]; });
 }
 
+// True if a meal slot says the person goes without that meal on a fast day.
+function isFasting(dish) {
+  return String(dish || "").trim().toLowerCase() === "fasting";
+}
+
+// "Fast day: no breakfast or lunch." for the meals someone goes without, or "" if there are none.
+function fastingLine(meals) {
+  if (!meals || !meals.length) return "";
+  var last = meals[meals.length - 1];
+  return "Fast day: no " + (meals.length > 1 ? meals.slice(0, -1).join(", ") + " or " + last : last) + ".";
+}
+
 // ---------- macros ----------
 // Macros come from the plan's "macros" block: {"Dish name": {"p": protein g, "c": carbs g, "f": fat g}}
 // for one average serve. A person's numbers are scaled by their portion.
@@ -1973,6 +1987,10 @@ function mealDays(w, person, who, withSnacks) {
   var portion = person && +person.portion > 0 ? +person.portion : 1;
   return w.meals.map(function (day) {
     var rows = mealRows(day, person, person ? who : "");
+    // Meals this person goes without on a fast day ("Fasting" in the plan) aren't meals to tick,
+    // rate or count: they are listed on their own line.
+    var fasting = person ? rows.filter(function (row) { return isFasting(row[1]); }).map(function (row) { return row[0].toLowerCase(); }) : [];
+    if (person) rows = rows.filter(function (row) { return !isFasting(row[1]); });
     var tot = { p: 0, c: 0, f: 0, kj: 0 };
     var known = 0;    // meals with macros
     var miss = 0;     // meals without
@@ -2009,7 +2027,7 @@ function mealDays(w, person, who, withSnacks) {
         }
       });
     }
-    return { d: day, rows: rows.concat(optional), tot: tot, known: known, miss: miss };
+    return { d: day, rows: rows.concat(optional), tot: tot, known: known, miss: miss, fasting: fasting };
   });
 }
 
@@ -2472,6 +2490,7 @@ function renderMeals() {
   dayInfo.rows.forEach(function (row) {
     mealRow(card, day, row, person, ppl, updateEaten);
   });
+  if (dayInfo.fasting.length) card.appendChild(el("p", "note2", fastingLine(dayInfo.fasting)));
   updateEaten();
   panel.appendChild(card);
   swipeDays(card, nav.step);
@@ -2485,7 +2504,9 @@ function renderMeals() {
     if (exDay) {
       var sessions = sessionLines(exDay);
       lines.push(sessions.length ? "Exercise today: " + sessions.join("; ") : "No exercise planned today: a rest day.");
-      var tied = (person.snacks || []).filter(function (s) { return s && s.exercise === "strength"; });
+      // Snacks that follow strength training, leaving out any not eaten on this day of the week
+      // (someone who goes without snacks on a fast day).
+      var tied = (person.snacks || []).filter(function (s) { return s && s.exercise === "strength" && (!Array.isArray(s.days) || s.days.indexOf(short(day.day)) > -1); });
       if (tied.length) {
         lines.push(isWeightsDay(exDay)
           ? "Strength day: " + tied.map(function (s) { return s.what; }).join(", ") + " is in today’s snacks, after training."
@@ -3279,6 +3300,7 @@ function renderToday() {
       line.appendChild(text);
       meals.body.appendChild(line);
     });
+    if (info.fasting.length) meals.body.appendChild(el("p", "note2", fastingLine(info.fasting)));
     if (!person && ppl) meals.body.appendChild(el("p", "note2", "Pick a person in “Ticks for” to see their snacks and portion."));
     meals.body.appendChild(energyLine);
     if (info.d.note) meals.body.appendChild(el("p", "note2", info.d.note));

@@ -3,6 +3,70 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## Unreleased
+
+- **Supplements in About me.** The Health section now asks which supplements people already take
+  (protein powder, creatine, pre-workout or caffeine tablets, electrolytes, meal replacement
+  shakes, multivitamin, vitamin D, fish oil, magnesium, fibre) and, for protein powder, when they
+  have it. The plan doesn't suggest starting, stopping or changing any of them.
+  - **Protein powder is counted.** For an adult it goes in their snacks as "Protein shake (1 scoop
+    of your own powder)" in place of another protein snack: every day, on exercise days, or after
+    strength sessions, as they said. It is counted on the Macros tab as one scoop mixed with water
+    (24 g protein, 510 kJ), which an admin can change in Edit plan to match the tub. "Now and
+    then", or no answer, lists it as an optional snack that the totals leave out. It isn't put on
+    a shopping list.
+  - **Considerations for the others**, such as drinking water with creatine and pre-workout adding
+    to the day's caffeine, with extra ones where a supplement meets a condition or medicine the
+    person also listed (for example protein powder or creatine with a kidney condition, fish oil
+    with a blood thinner), each pointing to their GP or pharmacist.
+  - **Under 18:** supplements are noted with a pointer to their GP, and not counted or planned
+    around.
+  - The built-in builder, AI-written plans, Claude Code drafts and Ask AI all follow the same
+    rules, and the app's check of an AI-written plan now looks for the protein shake.
+- **Fixed: a food on the kitchen list could make the plan buy more of it.** The built-in builder
+  kept preferring meals that use a food you have for as long as it would keep, even after the
+  meals had used it up, so a dozen eggs at home filled four weeks with egg dishes. It now stops
+  preferring a food once the planned meals have used what you have.
+- **Fixes from signing up as a new family and filling everything in:**
+  - **Lumpy or mixed textures:** the chicken and vegetable soup and the lentil and vegetable soup
+    were marked as soft only, so someone who finds mixed textures hard was still given them. Both
+    are now marked as mixed and left out for those people.
+  - **"Any other health conditions?"** was dropped by the built-in builder. What the person wrote
+    is now shown back in their exercise considerations, saying the plan wasn't changed for it and
+    pointing to their GP.
+  - **Written answers the built-in builder can't read** (their goal in their own words, their
+    week, the exercise they do now, what would help, anything else) are now listed for the admin
+    with the draft, as written feedback notes already were.
+  - **The home page starts on your own day.** An admin's home page opened on the first person in
+    the plan, not themselves. It now starts on the person logged in, and still remembers an
+    admin's choice of someone else on that device.
+- **Eating reminders now work with a built-in plan.** Anyone who answered "Yes, remind me to eat"
+  gets suggested eating times in their plan (breakfast, snacks, lunch and dinner at ordinary
+  times to shift), so the reminder links on About me and the Meals tab have times to use. An
+  AI-written plan is asked to do the same, fitted to their week.
+- **A new family's first plan is only for the family.** The example plan's made-up people (Alex,
+  Sam and Riley) used to be cooked and shopped for in the first real plan. They are now left out
+  unless someone answers About me for them, has a login or has been invited, and Plan setup says
+  so beside their names.
+- **Fasting people already do.** About me has a new Fasting part. The plan fits around the
+  fasting someone describes and doesn't suggest fasting to anyone.
+  - **A daily fast** (overnight, or an eating window): how many hours, when the first meal is and
+    how firm it is. The plan keeps the same meals, snacks and serve sizes and sets suggested
+    eating times inside the eating window. A flexible fast is described that way ("on days it
+    doesn't suit, eat as usual"), and a snack that follows exercise gets a line saying to have it
+    with the nearest meal if the session is outside the window.
+  - **Fast days each week:** which days, and which of breakfast, lunch, dinner and snacks they go
+    without. Those show as "Fasting" for that person on those days and aren't shopped for. The
+    plan doesn't set how much to eat on a fast day or add more on other days.
+  - **Sunrise to sunset (like Ramadan):** which weeks of the next plan. The same food is kept
+    and named as the meal before dawn, the meal at sunset and food later in the evening.
+  - **Giving up some foods (like Lent or an Orthodox fast):** no meat, no meat or fish, or no
+    meat, fish, dairy or eggs, on chosen days and weeks. That person's meals change on those
+    days only, with their own dish where the family's meal doesn't fit. This applies at any age.
+  - Fasting with type 1 diabetes, diabetes medicine that can cause lows, other medicines, or
+    while pregnant or breastfeeding adds a consideration to check with their health
+    professional. Going without food isn't applied to anyone under 18.
+
 ## v1.8.0 (2026-11-10)
 
 Plans now listen to what people said and logged, and help fussy eaters one small step at a time.

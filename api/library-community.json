@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "about": "Meals, snacks and exercises added to the built-in plan builder's library after it shipped, in the same shape as library.json and exercises.json (dishes only use ingredients from library.json; the app works out their nutrition, tags and cost). Families' servers download this every 2 weeks. New entries arrive by pull request (tools/library-pr.sh).",
  "dishes": [
   {
@@ -568,6 +568,7 @@
    "leftovers": true,
    "packable": true,
    "texture": [
+    "mixed",
     "soft"
    ],
    "kid": "Blend it smooth if lumps are a problem."

@@ -376,6 +376,21 @@ test('food already in the kitchen is left off the shopping lists, and meals that
   assert.ok(withList > withoutList, withList + ' rice dinners with the list, ' + withoutList + ' without');
 });
 
+test('a kitchen food stops being preferred once the meals have used it up', () => {
+  // A dozen eggs at home used to tilt all four weeks towards egg dishes, so the plan bought about
+  // twice as many eggs as it did with an empty kitchen.
+  const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
+  const eggPacks = plan => plan.weeks.flatMap(w => Object.values(w.shopping).flat())
+    .filter(item => /^Eggs/.test(item[0]))
+    .reduce((n, item) => n + Number((item[0].match(/× (\d+)/) || [0, 1])[1]), 0);
+  let empty = 0, withEggs = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    empty += eggPacks(pb.build(people, { seed }).plan);
+    withEggs += eggPacks(pb.build(people, { seed, pantry: ['12 eggs'] }).plan);
+  }
+  assert.ok(withEggs <= empty * 1.3, 'egg packs bought with a dozen at home: ' + withEggs + ', with none: ' + empty);
+});
+
 test('dinners the family rated well come back more often, and ones they rated poorly less often', () => {
   const people = [{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'b', name: 'B', answers: { age: 38 } }];
   // How many times each dinner turns up over several plans: {name: count}.
@@ -473,4 +488,237 @@ test('vegetable sides are only added as sides, never as an ordinary or school sn
       for (const day of Object.values(person.weekday || {})) assert.ok(!sides.has(day.snack), day.snack + ' as a school snack');
     }
   }
+});
+
+// Supplements people already take (About me). The words match the options in site/questions.json.
+const SHAKE = 'Protein shake (1 scoop of your own powder)';
+
+test('protein powder every day is a counted snack in place of the protein snack, with macros', () => {
+  const plan = build([{ age: 35, supplements: ['Protein powder'], protein_powder_when: 'Every day' }]);
+  const snacks = plan.people.p0.snacks;
+  const shake = snacks.find(s => s.what === SHAKE);
+  assert.ok(shake && !shake.optional && !shake.exercise, 'the shake is there every day');
+  assert.equal(plan.macros[SHAKE].p, 24);
+  assert.deepEqual(plan.groups[SHAKE], {});
+  // No library protein snack on top of it.
+  const proteinSnacks = new Set(LIB.snacks.filter(s => s.kind === 'protein').map(s => s.what));
+  assert.deepEqual(snacks.filter(s => proteinSnacks.has(s.what) && !/^With /.test(s.when)), []);
+  assert.ok(plan.people.p0.tips.some(t => /protein powder every day/.test(t) && /Edit plan/.test(t)));
+  // It's their own powder, so it isn't on a shopping list.
+  const bought = plan.weeks.flatMap(w => Object.values(w.shopping).flat().map(i => i[0])).join(' ');
+  assert.doesNotMatch(bought, /protein (powder|shake)/i);
+});
+
+test('protein powder follows the days they said: exercise days, strength days, or now and then', () => {
+  const shakeFor = when => build([{ age: 35, supplements: ['Protein powder'], protein_powder_when: when }]).people.p0.snacks.find(s => s.what === SHAKE);
+  assert.equal(shakeFor('On days I exercise').exercise, 'active');
+  assert.equal(shakeFor('After strength training').exercise, 'strength');
+  assert.equal(shakeFor('Now and then').optional, true);
+  // No answer to "when" is treated as now and then, and the tip says how to have it counted.
+  const plan = build([{ age: 35, supplements: ['Protein powder'] }]);
+  assert.equal(plan.people.p0.snacks.find(s => s.what === SHAKE).optional, true);
+  assert.ok(plan.people.p0.tips.some(t => /say when you usually have it/.test(t)));
+});
+
+test('someone who takes no supplements gets no shake and no supplement notes', () => {
+  const plan = build([{ age: 35, supplements: ['None of these'] }]);
+  assert.ok(!plan.people.p0.snacks.some(s => s.what === SHAKE));
+  assert.equal(plan.macros[SHAKE], undefined);
+  assert.ok(!plan.people.p0.tips.some(t => /supplement|protein powder|creatine/i.test(t)));
+});
+
+test('under-18s: supplements are noted with a pointer to their GP, and never counted', () => {
+  const plan = build([{ age: 40 }, { age: 15, supplements: ['Protein powder', 'Creatine'], protein_powder_when: 'Every day' }]);
+  assert.ok(!plan.people.p1.snacks.some(s => s.what === SHAKE));
+  const notes = plan.people.p1.tips.filter(t => /protein powder|creatine/i.test(t));
+  assert.equal(notes.length, 1);
+  assert.match(notes[0], /under 18/);
+  assert.match(notes[0], /GP/);
+});
+
+test('supplements add considerations, and extra ones where they meet a condition or medicine', () => {
+  const plan = build([{
+    age: 50, conditions: ['Kidney condition', 'High blood pressure'], medicine_types: ['Blood thinner (like warfarin)', 'Thyroid medicine'],
+    supplements: ['Protein powder', 'Creatine', 'Pre-workout or caffeine tablets', 'Electrolyte drinks or tablets', 'Fish oil', 'Magnesium', 'Vitamin D'],
+    protein_powder_when: 'After strength training',
+  }]);
+  const tips = plan.people.p0.tips.join('\n');
+  const medical = plan.exercise.p0.medical.join('\n');
+  assert.match(tips, /You said you take creatine/);
+  assert.match(tips, /kidney condition and take protein powder and creatine/);
+  assert.match(tips, /Electrolyte drinks and tablets add salt/);
+  assert.match(tips, /fish oil and a blood thinner/);
+  assert.match(tips, /Thyroid medicine is often taken a few hours apart from magnesium/);
+  assert.match(tips, /You said you take fish oil, magnesium and vitamin D\. Your pharmacist/);
+  assert.match(medical, /pre-workout or caffeine tablets/);
+  assert.match(medical, /asking your GP or pharmacist whether they suit you/);
+  // The builder only notes what they take: it doesn't tell anyone to start or stop one.
+  assert.doesNotMatch(tips + medical, /\b(start|stop) taking\b/i);
+});
+
+test('a health condition written in their own words is shown back with a pointer to their GP', () => {
+  // "Any other health conditions?" used to be dropped by the built-in builder without a word.
+  const plan = build([{ age: 40, conditions_other: 'Mild asthma' }, { age: 38, conditions_other: 'none' }]);
+  assert.ok(plan.exercise.p0.medical.some(t => /another health condition: “Mild asthma”/.test(t) && /GP/.test(t)));
+  assert.ok(!plan.exercise.p1.medical.some(t => /another health condition/.test(t)));
+});
+
+test('written About me answers the builder can’t read are passed on to the admin', () => {
+  const people = [{ key: 'a', name: 'Alex', answers: { age: 40, schedule: 'Night shifts on Fridays', anything_else: 'We shop on Sundays', likes: 'curries' } }];
+  const notes = pb.build(people, { seed: 1 }).notesForAdmin;
+  assert.match(notes, /Alex \(week\): “Night shifts on Fridays”/);
+  assert.match(notes, /Alex \(anything else\): “We shop on Sundays”/);
+  assert.doesNotMatch(notes, /curries/);
+});
+
+test('someone who finds lumpy or mixed textures hard gets no chunky soups or stews', () => {
+  // The chicken and the lentil soups were tagged "soft" only, so a child who said mixed textures
+  // are hard was given lentil soup eight times in a plan.
+  const mixed = new Set(pb.LIB.dishes.filter(d => (d.texture || []).includes('mixed')).map(d => d.name));
+  for (const name of ['Chicken and vegetable soup', 'Minestrone soup with bread']) assert.ok(mixed.has(name), name + ' is tagged mixed');
+  // The lentil soup comes from the community library, which the server adds when it starts.
+  const lentil = require('../api/library-community.json').dishes.find(d => d.name === 'Lentil and vegetable soup with bread');
+  assert.ok(lentil.texture.includes('mixed'), 'Lentil and vegetable soup with bread is tagged mixed');
+  const plan = build([{ age: 40 }, { age: 9, sensory: ['Lumpy or mixed textures (like stews)'] }]);
+  const eaten = plan.weeks.filter(w => w.meals).flatMap((w, i) => w.meals.flatMap(m => ht.eatenOn(w, m, plan.people.p1, 'p1', i + 1))).map(r => r.name);
+  assert.deepEqual(eaten.filter(n => mixed.has(n)), []);
+});
+
+test('someone who asked for eating reminders gets suggested eating times the calendar can read', () => {
+  // "Yes, remind me to eat" used to do nothing with a built-in plan, because it had no times.
+  const plan = build([{ age: 40, reminders: 'Yes, remind me to eat' }, { age: 38, reminders: 'No thanks' }, { age: 36 }]);
+  const times = plan.people.p0.times;
+  assert.deepEqual(times.map(t => t.what.split(/[.:]/)[0]), ['Breakfast', 'Mid-morning snack', 'Lunch', 'Dinner']);
+  for (const t of times) assert.match(t.when, /^\d{1,2}:\d{2} (am|pm)/);
+  assert.match(plan.people.p0.timesNote, /Shift them/);
+  assert.equal(plan.people.p1.times, undefined);
+  assert.equal(plan.people.p2.times, undefined);
+});
+
+// Fasting people already do (About me). The plan fits around it and takes no food away.
+test('a 13-hour overnight fast keeps every meal and snack, with eating times inside the window', () => {
+  const answers = { age: 40, fast_hours: 13, fast_first_meal: 'About 8 am', fast_firm: 'Flexible: I skip it when I need to' };
+  const plan = build([answers]);
+  const same = build([{ age: 40 }]);
+  // The food is the same as without the fast: only the times and the tip are new.
+  assert.deepEqual(plan.weeks.map(w => w.meals), same.weeks.map(w => w.meals));
+  assert.deepEqual(plan.people.p0.snacks, same.people.p0.snacks);
+  assert.equal(plan.people.p0.portion, same.people.p0.portion);
+  const times = plan.people.p0.times;
+  assert.equal(times[0].when, '8:00 am');
+  assert.deepEqual(times.filter(t => /\d/.test(t.when)).map(t => t.when.replace(/ \(.*/, '')), ['8:00 am', '10:30 am', '1:00 pm', '6:00 pm']);
+  // Snacks that follow exercise have no clock time: a line says to keep them inside the window.
+  const after = times.find(t => t.when === 'After a strength session');
+  assert.match(after.what, /inside your eating window\. If the session is before 8:00 am or after 7:00 pm, have it with the nearest meal/);
+  const tip = plan.people.p0.tips.find(t => /13 hours without food/.test(t));
+  assert.match(tip, /from about 8:00 am to 7:00 pm/);
+  assert.match(tip, /amount of food is the same/);
+  assert.match(tip, /flexible, so on days it doesn’t suit, eat as usual/);
+});
+
+test('a fast without a first-meal time closes the eating window at about 7:30 pm', () => {
+  const r = pb.rulesFor({ key: 'a', name: 'A', answers: { age: 40, fast_hours: 16 } });
+  assert.deepEqual([r.fast.open, r.fast.close], [11.5, 19.5]);
+  // Answers outside 10 to 20 hours aren't treated as a fast.
+  assert.equal(pb.rulesFor({ key: 'a', name: 'A', answers: { age: 40, fast_hours: 9 } }).fast, null);
+  assert.equal(pb.rulesFor({ key: 'a', name: 'A', answers: { age: 40 } }).fast, null);
+});
+
+test('fasting isn’t applied to under-18s, and fasting with diabetes medicine points to the diabetes team', () => {
+  const plan = build([
+    { age: 45, fast_hours: 14, medicine_types: ['Insulin, or diabetes tablets that can cause low blood sugar'] },
+    { age: 15, fast_hours: 16, fast_first_meal: 'About noon' },
+  ]);
+  assert.ok(plan.people.p0.tips.some(t => /checking your fasting with your diabetes team/.test(t)));
+  assert.equal(plan.people.p1.times, undefined);
+  const teen = plan.people.p1.tips.filter(t => /fast/i.test(t));
+  assert.equal(teen.length, 1);
+  assert.match(teen[0], /doesn’t apply going without food to anyone under 18/);
+  assert.match(teen[0], /GP/);
+});
+
+// Every dish and snack one person is given, by meal week (1 to 4) and day, as library entries.
+function givenTo(plan, key) {
+  const byName = new Map(LIB.dishes.map(d => [d.name.toLowerCase(), d]));
+  const bySnack = new Map(LIB.snacks.map(x => [x.what.toLowerCase(), x]));
+  const out = [];
+  plan.weeks.filter(w => w.meals).forEach((w, i) => w.meals.forEach(m => {
+    for (const row of ht.eatenOn(w, m, plan.people[key], key, i + 1)) {
+      const name = row.name.replace(/^Leftovers: /, '').toLowerCase();
+      out.push({ week: i + 1, day: m.day, name: row.name, snack: row.snack, entry: byName.get(name) || bySnack.get(name) || null });
+    }
+  }));
+  return out;
+}
+
+test('set fast days: the meals they go without are left out on those days only, with no snacks', () => {
+  const faster = { age: 40, fast_days: ['Mon', 'Thu'], fast_day_skip: ['Breakfast', 'Lunch', 'Snacks'] };
+  const plan = build([faster, { age: 38 }]);
+  for (const week of plan.weeks.filter(w => w.meals)) {
+    for (const m of week.meals) {
+      const mine = (m.people || {}).p0 || {};
+      if (['Mon', 'Thu'].includes(m.day)) assert.deepEqual([mine.breakfast, mine.lunch, mine.dinner], ['Fasting', 'Fasting', undefined], week.name + ' ' + m.day);
+      else assert.ok(mine.breakfast !== 'Fasting' && mine.lunch !== 'Fasting' && mine.dinner !== 'Fasting', week.name + ' ' + m.day);
+      assert.equal(((m.people || {}).p1 || {}).breakfast, undefined, 'the other person is not affected');
+    }
+  }
+  const given = givenTo(plan, 'p0');
+  assert.deepEqual(given.filter(g => g.snack && ['Mon', 'Thu'].includes(g.day)), []);
+  assert.ok(given.some(g => g.snack && g.day === 'Tue'));
+  assert.deepEqual(plan.macros.Fasting, { p: 0, c: 0, f: 0, kj: 0 });
+  assert.ok(plan.people.p0.tips.some(t => /fast on Mon and Thu and go without breakfast, lunch and snacks/.test(t) && /doesn’t set how much to eat/.test(t)));
+  assert.ok(plan.exercise.p0.medical.some(t => /easier sessions on those days/.test(t)));
+  // Less food is bought than for the same two people without the fast days.
+  const cost = p => p.weeks.reduce((n, w) => n + w.cost, 0);
+  assert.ok(cost(plan) < cost(build([{ age: 40 }, { age: 38 }])));
+});
+
+test('fast days without saying what they go without change nothing, and the tip says how', () => {
+  const plan = build([{ age: 40, fast_days: ['Wed'] }]);
+  assert.ok(!JSON.stringify(plan.weeks).includes('"Fasting"'));
+  assert.ok(plan.people.p0.tips.some(t => /say what you go without in About me/.test(t)));
+});
+
+test('giving up meat on Fridays changes that person’s Fridays only', () => {
+  const plan = build([{ age: 40, fast_food: 'No meat (fish is fine)', fast_food_days: ['Fri'] }, { age: 38 }]);
+  const given = givenTo(plan, 'p0').filter(g => g.entry);
+  const meaty = g => (g.entry.tags || []).includes('meat');
+  assert.deepEqual(given.filter(g => g.day === 'Fri' && meaty(g)).map(g => g.name), []);
+  assert.ok(given.some(g => g.day !== 'Fri' && meaty(g)), 'meat on other days');
+  assert.ok(plan.people.p0.tips.some(t => /go without meat on Fri\./.test(t)));
+});
+
+test('giving up meat, fish, dairy and eggs in weeks 2 and 3 leaves the other weeks alone, at any age', () => {
+  const plan = build([{ age: 40 }, { age: 10, fast_food: 'No meat, fish, dairy or eggs', fast_food_weeks: ['Week 2', 'Week 3'] }]);
+  const given = givenTo(plan, 'p1').filter(g => g.entry && !g.snack);
+  const banned = g => (g.entry.tags || []).some(t => ['meat', 'fish', 'shellfish', 'animal', 'milk', 'egg'].includes(t));
+  // Home meals in the fasting weeks fit (school lunches fit on every day, so they do too).
+  assert.deepEqual(given.filter(g => [2, 3].includes(g.week) && banned(g)).map(g => g.week + g.day + ' ' + g.name), []);
+  assert.ok(given.some(g => [1, 4].includes(g.week) && banned(g)), 'ordinary meals in weeks 1 and 4');
+  assert.ok(plan.people.p1.tips.some(t => /every day in weeks 2 and 3/.test(t)));
+});
+
+test('sunrise-to-sunset weeks keep the same food and name the meals by when they are eaten', () => {
+  const plan = build([{ age: 40, fast_sun_weeks: ['Week 2', 'Week 3'], reminders: 'Yes, remind me to eat' }]);
+  const same = build([{ age: 40, reminders: 'Yes, remind me to eat' }]);
+  assert.deepEqual(plan.weeks.map(w => w.meals), same.weeks.map(w => w.meals));
+  assert.deepEqual(plan.people.p0.snacks, same.people.p0.snacks);
+  const times = plan.people.p0.times;
+  assert.deepEqual(times.slice(-3).map(t => t.when), ['Before dawn', 'At sunset', 'Later in the evening']);
+  assert.match(times[times.length - 1].what, /^In weeks 2 and 3: the plan’s lunch, and your snacks/);
+  assert.ok(times.length > 3, 'the ordinary times stay for the other weeks');
+  // No digits in "when", so the calendar reminders don't mistake them for clock times.
+  for (const t of times.slice(-3)) assert.doesNotMatch(t.when, /\d/);
+  assert.ok(plan.people.p0.tips.some(t => /sunrise to sunset in weeks 2 and 3/.test(t) && /keeps the same food/.test(t)));
+  // The whole plan: only the three named moments.
+  const all = build([{ age: 40, fast_sun_weeks: ['Week 1', 'Week 2', 'Week 3', 'Week 4'] }]);
+  assert.deepEqual(all.people.p0.times.map(t => t.when), ['Before dawn', 'At sunset', 'Later in the evening']);
+});
+
+test('going without food isn’t applied to a teenager, whichever kind of fast they ticked', () => {
+  const teen = { age: 16, fast_days: ['Mon'], fast_day_skip: ['Breakfast', 'Lunch'], fast_sun_weeks: ['Week 1'] };
+  const plan = build([{ age: 40 }, teen]);
+  assert.ok(!JSON.stringify(plan.weeks).includes('"Fasting"'));
+  assert.equal(plan.people.p1.times, undefined);
+  assert.equal(plan.people.p1.tips.filter(t => /fast/i.test(t)).length, 1);
 });

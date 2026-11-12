@@ -67,6 +67,10 @@ test('About me answers are saved and read back', async () => {
 });
 
 test('the built-in builder drafts a plan, and approving it makes it the plan', async () => {
+  // A new family starts on the example plan. Its made-up people show on Plan setup, marked as examples.
+  const before = await server.request('GET', '/api/plan/setup');
+  assert.deepEqual(before.json.people.filter(p => p.example).map(p => p.name).sort(), ['Alex', 'Riley', 'Sam']);
+  assert.equal(before.json.people.find(p => p.name === 'Alex Smith').example, false);
   const draft = await server.request('POST', '/api/plan/draft', { how: 'builtin' });
   assert.equal(draft.status, 200, draft.text);
 
@@ -83,6 +87,8 @@ test('the built-in builder drafts a plan, and approving it makes it the plan', a
   assert.equal(plan.currency, 'NZD', 'priced in the household’s country');
   assert.ok(plan.weeks.length >= 4);
   assert.ok(plan.people['alex-smith'] || Object.values(plan.people).some(p => p.name === 'Alex Smith'));
+  // The family's own plan is only for the family: the example people were left out of it.
+  assert.deepEqual(Object.values(plan.people).map(p => p.name), ['Alex Smith']);
 });
 
 test('the instructions for an AI-written plan give each person’s vegetable and fruit targets', async () => {
@@ -188,6 +194,31 @@ test('the "AI writes new meals" switch says it needs a key when there is none', 
   const write = await server.request('POST', '/api/library/updates/write', {});
   assert.equal(write.status, 400);
   assert.match(write.json.error, /API key/);
+});
+
+test('fasting answers are saved, and a plan with fast days and foods given up is accepted', async () => {
+  const answers = { age: '41', fast_hours: 13, fast_first_meal: 'About 8 am', fast_firm: 'Flexible: I skip it when I need to',
+    fast_days: ['Mon'], fast_day_skip: ['Breakfast', 'Snacks'], fast_sun_weeks: ['Week 4'], fast_food: 'No meat (fish is fine)', fast_food_days: ['Fri'] };
+  const saved = await server.request('PUT', '/api/profile?person=alex-smith', { answers });
+  assert.equal(saved.status, 200, saved.text);
+  assert.deepEqual(saved.json.answers.fast_days, ['Mon']);
+  assert.equal(saved.json.answers.fast_hours, 13);
+
+  const draft = await server.request('POST', '/api/plan/draft', { how: 'builtin' });
+  assert.equal(draft.status, 200, draft.text);
+  const setup = await server.request('GET', '/api/plan/setup');
+  assert.ok(setup.json.draft.people[0].tips.some(t => /13 hours without food/.test(t)));
+  const approve = await server.request('POST', '/api/requests/' + setup.json.draft.id + '/approve', {});
+  assert.equal(approve.status, 200, approve.text);
+  const plan = JSON.parse(fs.readFileSync(path.join(server.dir, 'site', 'plan.json'), 'utf8'));
+  const key = Object.keys(plan.people)[0];
+  const monday = plan.weeks.find(w => w.meals).meals.find(m => m.day === 'Mon');
+  assert.equal(monday.people[key].breakfast, 'Fasting');
+  assert.ok(plan.people[key].times.some(t => t.when === 'Before dawn'));
+  // The calendar file has the clock times and leaves out the ones named by sunrise and sunset.
+  const cal = await server.request('GET', '/api/calendar/' + key + '.json');
+  assert.equal(cal.status, 200, cal.text);
+  assert.doesNotMatch(cal.text, /Before dawn|At sunset/);
 });
 
 test('a tick on the shopping list is saved for everyone', async () => {
