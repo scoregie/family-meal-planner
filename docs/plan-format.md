@@ -186,6 +186,7 @@ For example, 230 g of yoghurt for Alex (portion 1.1) with `units` 2.3 is 230 × 
 | `times` | Suggested eating or exercise times, each with `when` and `what`. These can be added to a phone calendar. A `when` like `"6:30 to 7:30 am (Mon to Fri)"` repeats on weekdays only. |
 | `timesNote` | A note shown under the times. |
 | `tips` | A list of tips, shown under "Cravings and energy". |
+| Fast days | For someone who goes without a meal on a fast day, that day's `people` entry sets the meal to `"Fasting"` (for example `"people": { "adult1": { "lunch": "Fasting" } }`), and `macros` has a `"Fasting"` entry of zeros so the totals stay right. |
 | `breakfast` | Optional. A breakfast this person always has instead of the shared one. |
 | `weekday` | Optional, for a child at school. Monday to Friday, each with a packed `lunch` and a school `snack`. A lunch starting with "School" (for example "School provides lunch") is not marked "(packed)". |
 

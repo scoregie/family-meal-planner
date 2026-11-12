@@ -48,6 +48,24 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
   Sam and Riley) used to be cooked and shopped for in the first real plan. They are now left out
   unless someone answers About me for them, has a login or has been invited, and Plan setup says
   so beside their names.
+- **Fasting people already do.** About me has a new Fasting part. The plan fits around the
+  fasting someone describes and doesn't suggest fasting to anyone.
+  - **A daily fast** (overnight, or an eating window): how many hours, when the first meal is and
+    how firm it is. The plan keeps the same meals, snacks and serve sizes and sets suggested
+    eating times inside the eating window. A flexible fast is described that way ("on days it
+    doesn't suit, eat as usual"), and a snack that follows exercise gets a line saying to have it
+    with the nearest meal if the session is outside the window.
+  - **Fast days each week:** which days, and which of breakfast, lunch, dinner and snacks they go
+    without. Those show as "Fasting" for that person on those days and aren't shopped for. The
+    plan doesn't set how much to eat on a fast day or add more on other days.
+  - **Sunrise to sunset (like Ramadan):** which weeks of the next plan. The same food is kept
+    and named as the meal before dawn, the meal at sunset and food later in the evening.
+  - **Giving up some foods (like Lent or an Orthodox fast):** no meat, no meat or fish, or no
+    meat, fish, dairy or eggs, on chosen days and weeks. That person's meals change on those
+    days only, with their own dish where the family's meal doesn't fit. This applies at any age.
+  - Fasting with type 1 diabetes, diabetes medicine that can cause lows, other medicines, or
+    while pregnant or breastfeeding adds a consideration to check with their health
+    professional. Going without food isn't applied to anyone under 18.
 
 ## v1.8.0 (2026-11-10)
 

@@ -196,6 +196,31 @@ test('the "AI writes new meals" switch says it needs a key when there is none', 
   assert.match(write.json.error, /API key/);
 });
 
+test('fasting answers are saved, and a plan with fast days and foods given up is accepted', async () => {
+  const answers = { age: '41', fast_hours: 13, fast_first_meal: 'About 8 am', fast_firm: 'Flexible: I skip it when I need to',
+    fast_days: ['Mon'], fast_day_skip: ['Breakfast', 'Snacks'], fast_sun_weeks: ['Week 4'], fast_food: 'No meat (fish is fine)', fast_food_days: ['Fri'] };
+  const saved = await server.request('PUT', '/api/profile?person=alex-smith', { answers });
+  assert.equal(saved.status, 200, saved.text);
+  assert.deepEqual(saved.json.answers.fast_days, ['Mon']);
+  assert.equal(saved.json.answers.fast_hours, 13);
+
+  const draft = await server.request('POST', '/api/plan/draft', { how: 'builtin' });
+  assert.equal(draft.status, 200, draft.text);
+  const setup = await server.request('GET', '/api/plan/setup');
+  assert.ok(setup.json.draft.people[0].tips.some(t => /13 hours without food/.test(t)));
+  const approve = await server.request('POST', '/api/requests/' + setup.json.draft.id + '/approve', {});
+  assert.equal(approve.status, 200, approve.text);
+  const plan = JSON.parse(fs.readFileSync(path.join(server.dir, 'site', 'plan.json'), 'utf8'));
+  const key = Object.keys(plan.people)[0];
+  const monday = plan.weeks.find(w => w.meals).meals.find(m => m.day === 'Mon');
+  assert.equal(monday.people[key].breakfast, 'Fasting');
+  assert.ok(plan.people[key].times.some(t => t.when === 'Before dawn'));
+  // The calendar file has the clock times and leaves out the ones named by sunrise and sunset.
+  const cal = await server.request('GET', '/api/calendar/' + key + '.json');
+  assert.equal(cal.status, 200, cal.text);
+  assert.doesNotMatch(cal.text, /Before dawn|At sunset/);
+});
+
 test('a tick on the shopping list is saved for everyone', async () => {
   const put = await server.request('PUT', '/api/shared', { ticks: { 0: ['milk'] } });
   assert.equal(put.status, 200, put.text);

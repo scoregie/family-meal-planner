@@ -25,6 +25,11 @@
 //   - Fresh food likely to be left at the end of a week is listed so it gets used up.
 //   - Anyone who asked for eating reminders gets suggested eating times (ordinary ones to shift),
 //     so the reminders on About me and the Meals tab have something to use.
+//   - Fasting people already do is fitted around, never suggested. A daily fast (overnight, or
+//     an eating window) keeps the same meals, with eating times inside the window. Set fast days
+//     each week leave out the meals they go without. Weeks of fasting from sunrise to sunset keep
+//     the same food, moved to before dawn and after sunset. Giving up some foods (like meat in
+//     Lent) changes their meals on those days. Going without food isn't applied to under-18s.
 //   - Supplements people already take add things to check, and an adult's protein powder is
 //     counted as a snack in place of another one. The builder never suggests starting any.
 //   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
@@ -309,6 +314,76 @@ const hasPool = equipment => ['Pool', 'Pool at home', 'Public pool or swim centr
 // "most veggy" (from "most veggies"), "vegetable", "fruit", "greens".
 const BROAD_DISLIKE = /^(most |all |any )?(veg|veggy|vegy|veggie|vegie|vegetable|fruit|green|salad stuff|healthy food)$/;
 
+// What a meal slot says for someone who goes without that meal on a fast day.
+const FASTING = 'Fasting';
+
+// The first-meal answers in About me, as hours on a 24-hour clock.
+const FIRST_MEAL = { 'About 6 am': 6, 'About 7 am': 7, 'About 8 am': 8, 'About 9 am': 9, 'About 10 am': 10, 'About 11 am': 11, 'About noon': 12, 'About 1 pm': 13, 'About 2 pm': 14 };
+
+// The daily fast someone said they keep (About me): {hours, open, close, firm}, where open and
+// close are the start and end of their eating window as hours on a 24-hour clock. Null if they
+// don't fast, or are under 18 (fasting isn't applied to children and teenagers). Without a
+// first-meal answer, the window is placed so that it closes at about 7:30 pm.
+function fastFor(a, age) {
+  const hours = num(a.fast_hours);
+  if (hours === null || hours < 10 || hours > 20 || (age !== null && age < 18)) return null;
+  const eating = 24 - hours;
+  const open = FIRST_MEAL[a.fast_first_meal] || Math.max(6, Math.round((19.5 - eating) * 2) / 2);
+  const firm = /Flexible/.test(String(a.fast_firm || '')) ? 'flexible' : /every day/.test(String(a.fast_firm || '')) ? 'daily' : /most days/.test(String(a.fast_firm || '')) ? 'most' : '';
+  return { hours, open, close: Math.min(open + eating, 23.5), firm };
+}
+
+// "Week 2" and "Week 3" (About me) as numbers: [2, 3].
+function weekNumbers(answer) {
+  return list(answer).map(x => Number(String(x).replace(/\D/g, ''))).filter(n => n >= 1 && n <= 4);
+}
+
+// Fast days someone keeps each week (About me): {days: Set of "Mon"..., skip: Set of "breakfast",
+// "lunch", "dinner", snacks: true if they go without snacks too}. Null if they don't, or are
+// under 18. The plan leaves those meals out for them on those days; it doesn't set how much to
+// eat on a fast day.
+function weeklyFastFor(a, age) {
+  const days = new Set(list(a.fast_days).filter(d => DAYS.includes(d)));
+  if (!days.size || (age !== null && age < 18)) return null;
+  const without = list(a.fast_day_skip).map(x => String(x).toLowerCase());
+  return { days, skip: new Set(without.filter(x => x !== 'snacks')), snacks: without.includes('snacks') };
+}
+
+// Foods someone gives up on fast days or in a fasting season, like Lent (About me): the tags
+// left out, in words, and when. An empty set of days or weeks means every day or every week.
+const FOOD_FAST = {
+  'No meat (fish is fine)': { tags: ['meat'], words: 'meat' },
+  'No meat or fish': { tags: ['meat', 'fish', 'shellfish'], words: 'meat and fish' },
+  'No meat, fish, dairy or eggs': { tags: ['meat', 'fish', 'shellfish', 'animal', 'milk', 'egg', 'lactose'], words: 'meat, fish, dairy and eggs' },
+};
+function foodFastFor(a) {
+  const kind = FOOD_FAST[a.fast_food];
+  if (!kind) return null;
+  return { tags: kind.tags, words: kind.words, days: new Set(list(a.fast_food_days).filter(d => DAYS.includes(d))), weeks: new Set(weekNumbers(a.fast_food_weeks)) };
+}
+
+// How someone's fasting changes one day of the plan: {food: true if they give up some foods that
+// day, skip: the meals ("breakfast", "lunch", "dinner") they go without that day}.
+// `week` is the meal week number (1 to 4) and `day` is "Mon" to "Sun".
+function fastingOn(r, week, day) {
+  const f = r.foodFast;
+  const food = !!f && (!f.weeks.size || f.weeks.has(week)) && (!f.days.size || f.days.has(day));
+  const skip = r.fastDays && r.fastDays.days.has(day) ? r.fastDays.skip : new Set();
+  return { food, skip };
+}
+
+// Weeks or days as words: [2, 3] -> "weeks 2 and 3"; every one -> the `all` text.
+function weeksText(weeks) {
+  return weeks.length >= 4 ? 'every week of this plan' : (weeks.length === 1 ? 'week ' : 'weeks ') + andList(weeks.map(String));
+}
+
+// A time as people write it: 7.5 -> "7:30 am", 13 -> "1:00 pm". Rounded to the half hour.
+function clock(hour) {
+  const half = Math.round(hour * 2) / 2;
+  const h = Math.floor(half), m = half % 1 ? '30' : '00';
+  return ((h + 11) % 12 + 1) + ':' + m + ' ' + (h % 24 < 12 ? 'am' : 'pm');
+}
+
 // Turns one person's About me answers into rules for the builder: allergies and diets, foods they
 // won't eat, how they like to eat, cooking time, budget, health conditions and so on.
 function rulesFor(p) {
@@ -336,6 +411,10 @@ function rulesFor(p) {
     supps: new Set(list(a.supplements).filter(s => s !== 'None of these')),   // supplements they already take
     minor: age !== null && age < 18,   // supplements are noted, not counted, for under-18s
     remind: /remind me to eat/i.test(String(a.reminders || '')),   // they asked for eating reminders
+    fast: fastFor(a, age),   // the daily fast they said they keep (adults only), or null
+    fastDays: weeklyFastFor(a, age),   // set fast days each week (adults only), or null
+    sunWeeks: age !== null && age < 18 ? [] : weekNumbers(a.fast_sun_weeks),   // meal weeks fasting sunrise to sunset
+    foodFast: foodFastFor(a),   // foods given up on some days or weeks (any age), or null
     packed: /Yes|Some/.test(String(a.packed_lunch || '')),
     lunchProvided: providedDays(a),
     budget: num(a.budget),
@@ -408,7 +487,8 @@ function portionFor(p, r) {
   if (goals.has('Lose weight') && !pregnant) kcal *= { 'Slow and steady': 0.9, 'A moderate pace': 0.85, 'As fast as is safe': 0.8 }[a.pace] || 0.85;
   else if (goals.has('Gain weight') || goals.has('Build muscle')) kcal *= 1.1;
   if (pregnant) kcal += 350;
-  return Math.min(1.5, Math.max(0.7, round(kcal * 4.184 / 8700, 0.05)));
+  // Rounded to the nearest 0.05, then tidied to 2 decimal places (so 1.2 isn't 1.2000000000000002).
+  return Math.round(Math.min(1.5, Math.max(0.7, round(kcal * 4.184 / 8700, 0.05))) * 100) / 100;
 }
 
 // ---------------------------------------------------------------------------
@@ -495,8 +575,10 @@ function dishWords(d) {
 }
 
 // Whether a dish or snack is allowed for a person (allergies, diet, foods they won't eat, textures).
-function allowed(d, r) {
+function allowed(d, r, fasting) {
   for (const t of d.tags || []) if (r.hard.has(t) || r.diet.has(t)) return false;
+  // On the days they give up some foods (see foodFastFor), those are left out too.
+  if (fasting && r.foodFast) for (const t of d.tags || []) if (r.foodFast.tags.includes(t)) return false;
   for (const t of d.texture || []) if (r.avoidTexture.has(t)) return false;
   const text = d.what ? (d.what + ' ' + d.per.map(x => x[0]).join(' ')).toLowerCase() : dishWords(d);
   for (const w of r.avoidWords) if (w && text.includes(w)) return false;
@@ -647,6 +729,7 @@ function exerciseFor(p, r, rnd) {
   for (const c of r.conditions) if (C[c]) medical.push(C[c]);
   for (const m of r.meds) if (MEDS[m] && MEDS[m].exercise) medical.push(MEDS[m].exercise);
   medical.push(...supplementNotes(r).exercise);
+  medical.push(...fastNotes(r, a).exercise);
   if (r.meds.size) medical.push('Because you take medicines, consider checking this exercise plan with your GP before you start.');
   if (gentle) medical.push('You mentioned low energy or chronic pain. On harder days, consider a shorter session or just a walk. Any movement counts.');
 
@@ -969,19 +1052,23 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
 
   // Per-person swaps: anyone a shared dish doesn't suit gets one that does.
   house.ownedNow = ownedIn(0);
-  const own = {};   // person key -> {dinner: [dishes], breakfast, lunch}
-  for (const r of rules) {
-    const myDinners = dinners.filter(d => allowed(d, r));
-    const myBreakfasts = breakfasts.filter(d => allowed(d, r));
-    const myLunches = lunches.filter(d => allowed(d, r));
-    own[r.key] = {
+  const own = {};       // person key -> {dinners: [dishes], breakfast, lunches}
+  const ownFast = {};   // the same, for the days they give up some foods (people with a food fast)
+  // One person's own meals. `fasting` is true for the days they give up some foods.
+  const ownMeals = (r, fasting) => {
+    const myDinners = dinners.filter(d => allowed(d, r, fasting));
+    const myBreakfasts = breakfasts.filter(d => allowed(d, r, fasting));
+    const myLunches = lunches.filter(d => allowed(d, r, fasting));
+    if (!myDinners.length) forAdmin.push('No dinners in the library suit ' + r.name + '’s needs' + (fasting ? ' on the days they give up ' + r.foodFast.words : '') + '. Their meals will need adding by hand in Edit plan.');
+    return {
       dinners: pick(myDinners, 7, [r], house, rnd, new Set()),
       breakfast: myBreakfasts.length ? pick(myBreakfasts, 1, [r], house, rnd, new Set())[0] : null,
       // Their own lunches (packable for children), best-suited first: likes, dislikes and so on.
       lunches: (l => pick(l, Math.min(7, l.length), [r], house, rnd, new Set()))(myLunches.filter(d => !r.kid || d.packable)),
     };
-    if (!myDinners.length) forAdmin.push('No dinners in the library suit ' + r.name + '’s needs. Their meals will need adding by hand in Edit plan.');
-  }
+  };
+  for (const r of rules) own[r.key] = ownMeals(r, false);
+  for (const r of rules) if (r.foodFast) ownFast[r.key] = ownMeals(r, true);
 
   const planPeople = {};
   for (let i = 0; i < people.length; i++) {
@@ -1014,13 +1101,29 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     const meals = days.map((day, i) => {
       const m = { day: day.day };
       const overrides = {};
+      // How each person's fasting changes today: foods given up, and meals they go without.
+      const today = {}, next = {};
+      rules.forEach(r => {
+        today[r.key] = fastingOn(r, w + 1, day.day);
+        next[r.key] = days[i + 1] ? fastingOn(r, w + 1, days[i + 1].day) : { food: false, skip: new Set() };
+      });
+      const fits = (dish, r) => allowed(dish, r, today[r.key].food);
+      const mine = r => (today[r.key].food ? ownFast[r.key] : own[r.key]);
+      // Marks a meal someone goes without today. Returns true if they do.
+      const skipped = (r, slot) => {
+        if (!today[r.key].skip.has(slot)) return false;
+        overrides[r.key] = Object.assign(overrides[r.key] || {}, { [slot]: FASTING });
+        return true;
+      };
       // Breakfast.
       let bServes = 0;
       rules.forEach(r => {
-        if (allowed(day.breakfast, r)) bServes += r.portion;
-        else if (own[r.key].breakfast) {
-          overrides[r.key] = Object.assign(overrides[r.key] || {}, { breakfast: own[r.key].breakfast.name });
-          addNeed(own[r.key].breakfast, r.portion); addCooked(own[r.key].breakfast, r.portion); used.set(own[r.key].breakfast.name, own[r.key].breakfast);
+        if (skipped(r, 'breakfast')) return;
+        const alt = mine(r).breakfast;
+        if (fits(day.breakfast, r)) bServes += r.portion;
+        else if (alt) {
+          overrides[r.key] = Object.assign(overrides[r.key] || {}, { breakfast: alt.name });
+          addNeed(alt, r.portion); addCooked(alt, r.portion); used.set(alt.name, alt);
         }
       });
       m.breakfast = day.breakfast.name;
@@ -1028,9 +1131,10 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       // Dinner (and extra for tomorrow's leftovers).
       let dServes = 0;
       rules.forEach(r => {
-        if (allowed(day.dinner, r)) dServes += r.portion;
-        else if (own[r.key].dinners.length) {
-          const alt = own[r.key].dinners[i % own[r.key].dinners.length];
+        if (skipped(r, 'dinner')) return;
+        if (fits(day.dinner, r)) dServes += r.portion;
+        else if (mine(r).dinners.length) {
+          const alt = mine(r).dinners[i % mine(r).dinners.length];
           overrides[r.key] = Object.assign(overrides[r.key] || {}, { dinner: alt.name });
           addNeed(alt, r.portion); addCooked(alt, r.portion); used.set(alt.name, alt);
         }
@@ -1038,7 +1142,9 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       m.dinner = day.dinner.name;
       used.set(day.dinner.name, day.dinner);
       const tomorrow = days[i + 1];
-      const leftoverFor = tomorrow && tomorrow.lunch.leftover === day.dinner ? rules.filter(r => !r.kid && allowed(day.dinner, r) && !r.lunchProvided.has(tomorrow.day)) : [];
+      // Leftovers are packed for the adults who can have them for lunch tomorrow (not for someone
+      // who gives up that food tomorrow, or goes without lunch).
+      const leftoverFor = tomorrow && tomorrow.lunch.leftover === day.dinner ? rules.filter(r => !r.kid && allowed(day.dinner, r, next[r.key].food) && !r.lunchProvided.has(tomorrow.day) && !next[r.key].skip.has('lunch')) : [];
       const extra = leftoverFor.reduce((n, r) => n + r.portion, 0);
       addNeed(day.dinner, dServes + extra); addCooked(day.dinner, dServes + extra);
       if (extra) m.note = 'Cook extra tonight: pack ' + (leftoverFor.length === 1 ? 'a serve' : leftoverFor.length + ' serves') + ' for tomorrow’s lunch.';
@@ -1055,9 +1161,10 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
         used.set(m.lunch, Object.assign({}, day.lunch.leftover, { name: m.lunch, leftoverOf: day.lunch.leftover.name }));
         rules.forEach(r => {
           if (r.kid && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(day.day)) return;   // school lunch, below
+          if (skipped(r, 'lunch')) return;
           if (providedLunch(r)) return;
-          if (!allowed(day.lunch.leftover, r) || r.kid) {
-            const alt = own[r.key].lunches[i % Math.max(1, own[r.key].lunches.length)];
+          if (!fits(day.lunch.leftover, r) || r.kid) {
+            const alt = mine(r).lunches[i % Math.max(1, mine(r).lunches.length)];
             if (alt) {
               overrides[r.key] = Object.assign(overrides[r.key] || {}, { lunch: alt.name });
               addNeed(alt, r.portion); addCooked(alt, r.portion); used.set(alt.name, alt);
@@ -1070,10 +1177,11 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
         let lServes = 0;
         rules.forEach(r => {
           if (r.kid && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(day.day)) return;
+          if (skipped(r, 'lunch')) return;
           if (providedLunch(r)) return;
-          if (allowed(day.lunch, r)) lServes += r.portion;
+          if (fits(day.lunch, r)) lServes += r.portion;
           else {
-            const alt = own[r.key].lunches[i % Math.max(1, own[r.key].lunches.length)];
+            const alt = mine(r).lunches[i % Math.max(1, mine(r).lunches.length)];
             if (alt) {
               overrides[r.key] = Object.assign(overrides[r.key] || {}, { lunch: alt.name });
               addNeed(alt, r.portion); addCooked(alt, r.portion); used.set(alt.name, alt);
@@ -1090,8 +1198,10 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     rules.filter(r => r.kid).forEach(r => {
       const p = planPeople[r.key];
       if (!p.weekday) {
-        const packs = own[r.key].lunches.filter(d => d.packable);
-        const kidSnacks = snackOrder(LIB.snacks.filter(s => s.kids && s.kind !== 'side' && available(s) && allowed(s, r)), r, rnd);
+        // A child who gives up some foods on some days gets school lunches and snacks that fit
+        // on every day, because the school week is the same each week.
+        const packs = (r.foodFast ? ownFast : own)[r.key].lunches.filter(d => d.packable);
+        const kidSnacks = snackOrder(LIB.snacks.filter(s => s.kids && s.kind !== 'side' && available(s) && allowed(s, r, true)), r, rnd);
         p.weekday = {};
         DAYS.slice(0, 5).forEach((d, i) => {
           const l = packs[i % Math.max(1, packs.length)];
@@ -1126,7 +1236,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   for (let i = 0; i < people.length; i++) {
     const r = rules[i];
     const p = planPeople[people[i].key];
-    p.snacks = snacksFor(r, exercise[people[i].key], rnd);
+    p.snacks = snacksFor(r, exercise[people[i].key], rnd).map(s => offFastDays(s, r));
     // Top up to their serves at the pace they chose. Building up: weeks 1 and 2 aim lower than
     // weeks 3 and 4, so anything added only for the later weeks is marked with those weeks.
     if (r.pace === 'full') topUp(r, people[i].key, planPeople, weeks, used, null);
@@ -1152,9 +1262,21 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
         for (const [k, amount] of lib.per) if (LIB.ingredients[k].aisle !== 'assumed') needs[w][k] = (needs[w][k] || 0) + amount * days * (s.optional ? 0.5 : 1);
       }
     }
-    if (r.remind) {
+    // Suggested eating times: for anyone who asked for reminders, and for anyone who keeps a
+    // daily fast (their meals are spread through their eating window, with a line for each
+    // snack that follows exercise).
+    if (r.fast) {
+      p.times = timesFor(p.snacks, r.fast).concat(exerciseSnackTimes(p.snacks, r.fast));
+      p.timesNote = 'These times fit the fast you said you aim for (about ' + r.fast.hours + ' hours without food). Shift them to suit your day.';
+    } else if (r.remind) {
       p.times = timesFor(p.snacks);
       p.timesNote = 'You asked for eating reminders, so these are ordinary times to start from. Shift them to suit your day.';
+    }
+    // Weeks of fasting from sunrise to sunset: in place of the usual times when it's the whole
+    // plan, or listed after them when it's only some weeks.
+    if (r.sunWeeks.length) {
+      p.times = (r.sunWeeks.length >= 4 ? [] : p.times || []).concat(sunTimes(r.sunWeeks));
+      if (r.sunWeeks.length >= 4 || !p.timesNote) p.timesNote = 'Sunrise and sunset change with where you live and the time of year, so these have no clock times.';
     }
     Object.assign(p, guideFor(r, people[i]));
     const steps = smallSteps(r, people[i]);
@@ -1182,6 +1304,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
 
   // Macros and food groups for every dish and snack used.
   const macros = {}, groups = {};
+  // A meal someone goes without counts as nothing, rather than as a dish with no numbers yet.
+  if (rules.some(r => r.fastDays && r.fastDays.skip.size)) { macros[FASTING] = { p: 0, c: 0, f: 0, kj: 0 }; groups[FASTING] = {}; }
   for (const [name, d] of used) { macros[name] = d.macros; groups[name] = d.groups; }
   for (const p of Object.values(planPeople)) {
     for (const s of p.snacks || []) {
@@ -1311,9 +1435,9 @@ function topUp(r, key, planPeople, weeks, used, stage) {
   const measure = () => TARGETS.dailyAverage({ weeks, people: planPeople, groups: groupsSoFar(used) }, key, stage);
   // Something they don't already have in these weeks.
   const sameWeeks = x => !stage || !x.weeks || x.weeks.some(n => stage.includes(n));
-  const fits = s => available(s) && allowed(s, r) && (!r.kid || s.kids) && !p.snacks.some(x => x.what === s.what && sameWeeks(x));
+  const fits = s => available(s) && allowed(s, r, true) && (!r.kid || s.kids) && !p.snacks.some(x => x.what === s.what && sameWeeks(x));
   // Adds a side or fruit to their days, marked with the stage's weeks when it isn't every week.
-  const add = entry => { if (stage) entry.weeks = stage; p.snacks.push(entry); };
+  const add = entry => { if (stage) entry.weeks = stage; p.snacks.push(offFastDays(entry, r)); };
   // What one of a snack or side costs, from its ingredients' pack prices.
   const costOf = s => s.per.reduce((n, [k, amount]) => n + (ING[k].pack ? ING[k].price / ING[k].pack * amount : 0), 0);
   // The option whose amount is closest to what's missing: gentle forms first when that matters,
@@ -1346,10 +1470,19 @@ function topUp(r, key, planPeople, weeks, used, stage) {
   }
 }
 
+// Someone who goes without snacks on their weekly fast days: limits a snack or side to their
+// other days. Everyone else's snacks are returned unchanged.
+function offFastDays(snack, r) {
+  if (!r.fastDays || !r.fastDays.snacks) return snack;
+  const days = (snack.days || DAYS).filter(d => !r.fastDays.days.has(d));
+  return Object.assign({}, snack, { days });
+}
+
 // Two snacks a day for each person, tied to exercise where it helps. Snacks are shuffled, so
 // different people and different plans get a variety rather than always the first in the library.
 function snacksFor(r, exWeeks, rnd) {
-  const ok = snackOrder(LIB.snacks.filter(s => available(s) && allowed(s, r) && (!r.kid || s.kids)), r, rnd);
+  // Snacks fit the foods they give up on every day, so one list of snacks works all week.
+  const ok = snackOrder(LIB.snacks.filter(s => available(s) && allowed(s, r, true) && (!r.kid || s.kids)), r, rnd);
   const by = kind => ok.filter(s => s.kind === kind);
   const protein = by('protein'), fruit = gentleFirst(by('fruit'), r.gentleFruit), other = ok.filter(s => s.kind === 'other' || s.kind === 'veg');
   const out = [];
@@ -1385,17 +1518,96 @@ function snacksFor(r, exWeeks, rnd) {
 // Suggested eating times for someone who asked for eating reminders in About me, so the
 // reminders have times to use. The builder can't read their week, so these are ordinary times
 // for them to shift. Snacks tied to exercise are left out, because sessions move around.
-function timesFor(snacks) {
+//
+// `fast` (optional) is their daily fast, from fastFor: the same meals are then spread through
+// their eating window, with dinner starting an hour before it closes. A snack only gets a time
+// when there are at least three hours between the meals either side of it.
+function timesFor(snacks, fast) {
   const steady = s => !s.exercise && !s.optional && !s.weeks && !/^With /.test(s.when);
   const morning = snacks.find(s => steady(s) && /morning/i.test(s.when));
   const afternoon = snacks.find(s => steady(s) && /afternoon|after school/i.test(s.when));
   const days = s => (s.days && s.days.join() === 'Mon,Tue,Wed,Thu,Fri' ? ' (Mon to Fri)' : '');
-  const out = [{ when: '7:30 am', what: 'Breakfast.' }];
-  if (morning) out.push({ when: '10:00 am' + days(morning), what: 'Mid-morning snack: ' + morning.what + '.' });
-  out.push({ when: '12:30 pm', what: 'Lunch.' });
-  if (afternoon) out.push({ when: '3:30 pm' + days(afternoon), what: 'Afternoon snack: ' + afternoon.what + '.' });
-  out.push({ when: '6:30 pm', what: 'Dinner.' });
+  // Hours on a 24-hour clock: 7.5 is 7:30 am.
+  const breakfast = fast ? fast.open : 7.5;
+  const dinner = fast ? fast.close - 1 : 18.5;
+  const lunch = fast ? (breakfast + dinner) / 2 : 12.5;
+  const room = (from, to) => !fast || to - from >= 3;
+  // A first meal at 11 am or later isn't really "breakfast", so the meals are named by their order.
+  const late = !!fast && fast.open >= 11;
+  const out = [{ when: clock(breakfast), what: late ? 'First meal: the plan’s breakfast.' : 'Breakfast.' }];
+  if (morning && room(breakfast, lunch)) out.push({ when: clock(fast ? (breakfast + lunch) / 2 : 10) + days(morning), what: (late ? 'Snack: ' : 'Mid-morning snack: ') + morning.what + '.' });
+  out.push({ when: clock(lunch), what: late ? 'Second meal: the plan’s lunch.' : 'Lunch.' });
+  if (afternoon && room(lunch, dinner)) out.push({ when: clock(fast ? (lunch + dinner) / 2 : 15.5) + days(afternoon), what: (late ? 'Snack: ' : 'Afternoon snack: ') + afternoon.what + '.' });
+  out.push({ when: clock(dinner), what: 'Dinner.' });
   return out;
+}
+
+// The considerations for someone's fasting (About me): {food: [...] for their tips, exercise:
+// [...] for their exercise notes}. The plan fits around fasting they already do; it doesn't
+// suggest any, and a daily or sunrise-to-sunset fast doesn't take food away.
+function fastNotes(r, answers) {
+  const a = answers || {};
+  const food = [], exercise = [];
+  // Giving up some foods is a change of diet, so it applies at any age.
+  if (r.foodFast) {
+    const f = r.foodFast;
+    const when = (f.days.size ? 'on ' + andList(DAYS.filter(d => f.days.has(d))) : 'every day') + (f.weeks.size ? ' in ' + weeksText([...f.weeks].sort()) : '');
+    food.push('You said you go without ' + f.words + ' ' + when + '. Your meals leave ' + (f.tags.length > 1 ? 'them' : 'it') + ' out then, and where the family’s meal doesn’t fit, you have your own. Your snacks fit on every day.');
+  }
+  // Going without food isn't applied to under-18s: one note, and regular meals.
+  const hours = num(a.fast_hours);
+  const asked = (hours !== null && hours >= 10) || list(a.fast_days).length || list(a.fast_sun_weeks).length;
+  if (r.minor) {
+    if (asked) food.push('About me says you fast. This plan doesn’t apply going without food to anyone under 18: it keeps regular meals and snacks through the day. It may be worth talking it over with your GP.');
+    return { food, exercise };
+  }
+  if (r.fast) {
+    const f = r.fast;
+    const firm = { flexible: ' You said it’s flexible, so on days it doesn’t suit, eat as usual.', most: ' You said you keep to it most days, so on the other days, eat as usual.', daily: '' }[f.firm] || '';
+    food.push('You said you aim to go about ' + f.hours + ' hours without food each day. Your suggested eating times run from about ' + clock(f.open) + ' to ' + clock(f.close) + '. The amount of food is the same as without the fast; only the timing changes.' + firm);
+    if (f.hours >= 16) food.push('With an eating window of about ' + (24 - f.hours) + ' hours, three meals and snacks sit close together. If it feels like too much at once, an admin can move or merge meals in Edit plan, and a dietitian can suggest what suits.');
+  }
+  if (r.fastDays) {
+    const d = r.fastDays;
+    const days = andList(DAYS.filter(x => d.days.has(x)));
+    const without = ['breakfast', 'lunch', 'dinner'].filter(x => d.skip.has(x)).concat(d.snacks ? ['snacks'] : []);
+    if (without.length) food.push('You said you fast on ' + days + ' and go without ' + andList(without) + ' then. ' + (without.length > 1 ? 'Those are' : 'That is') + ' left out for you on those days and not shopped for. The plan doesn’t set how much to eat on a fast day, and it doesn’t add more on other days. What your GP or dietitian says comes first.');
+    else food.push('You said you fast on ' + days + '. Your meals are unchanged on those days: to have some left out, say what you go without in About me and draft the plan again.');
+    exercise.push('You said you fast on ' + days + '. Consider easier sessions on those days, and stopping if you feel faint or dizzy.');
+  }
+  if (r.sunWeeks.length) {
+    const weeks = weeksText(r.sunWeeks);
+    food.push('You said you’ll be fasting from sunrise to sunset in ' + weeks + '. The plan keeps the same food then and moves it: its breakfast is your meal before dawn, its dinner is your meal at sunset, and its lunch and your snacks are for later in the evening. If that is more than you want at night, an admin can change those weeks in Edit plan. Drinking water between sunset and dawn may help.');
+    exercise.push('You said you’ll be fasting from sunrise to sunset in ' + weeks + '. Consider easier sessions then, after your meal at sunset, and drinking water through the evening.');
+  }
+  // Where fasting meets a condition or medicine they also listed.
+  if (r.fast || r.fastDays || r.sunWeeks.length) {
+    const lows = r.meds.has('Insulin, or diabetes tablets that can cause low blood sugar') || r.conditions.has('Type 1 diabetes');
+    if (lows) food.push('You said you fast and that you have type 1 diabetes or take diabetes medicine that can cause low blood sugar. It may be worth checking your fasting with your diabetes team before you keep to it, and having fast-acting carbs handy.');
+    else if (r.meds.size) food.push('Some medicines are taken with food or at set times. Your pharmacist can say whether fasting changes when to take yours.');
+    if (r.conditions.has('Pregnant or breastfeeding')) food.push('You said you’re pregnant or breastfeeding and that you fast. It may be worth checking your fasting with your GP or midwife.');
+  }
+  return { food, exercise };
+}
+
+// Suggested eating times for the weeks someone fasts from sunrise to sunset. Sunrise and sunset
+// depend on where they live and the time of year, so these are named moments, not clock times
+// (the calendar reminders leave them out).
+function sunTimes(weeks) {
+  const lead = weeks.length >= 4 ? '' : 'In ' + weeksText(weeks) + ': ';
+  return [
+    { when: 'Before dawn', what: lead + 'the plan’s breakfast.' },
+    { when: 'At sunset', what: lead + 'the plan’s dinner.' },
+    { when: 'Later in the evening', what: lead + 'the plan’s lunch, and your snacks.' },
+  ];
+}
+
+// Lines for someone's snacks that are tied to exercise, for a person with a daily eating window:
+// sessions move around, so these say where the snack goes, not a clock time.
+function exerciseSnackTimes(snacks, fast) {
+  const label = { strength: 'After a strength session', active: 'After exercise' };
+  return snacks.filter(s => s.exercise && !s.optional && label[s.exercise])
+    .map(s => ({ when: label[s.exercise], what: s.what + ', inside your eating window. If the session is before ' + clock(fast.open) + ' or after ' + clock(fast.close) + ', have it with the nearest meal.' }));
 }
 
 // "Small steps": new foods to try, each a short step on from a food someone already likes (the
@@ -1489,6 +1701,7 @@ function guideFor(r, p) {
   if (safe) tips.push('Your safe foods (' + safe.slice(0, 120) + ') are kept in for hard days.');
   for (const m of r.meds) if (MEDS[m] && MEDS[m].food) tips.push(MEDS[m].food);
   tips.push(...supplementNotes(r).food);
+  tips.push(...fastNotes(r, p.answers).food);
   if (r.conditions.has('Coeliac disease')) tips.push('You said you have coeliac disease: check every label for gluten, including sauces and stock.');
   if (r.conditions.has('Reflux')) tips.push('You mentioned reflux: smaller dinners earlier in the evening may help.');
   if (r.conditions.has('Irritable bowel (IBS)')) tips.push('You mentioned IBS: if some foods (like onion, garlic or beans) bother you, add them to “Foods you won’t eat” in About me and rebuild the plan.');

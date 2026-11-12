@@ -536,7 +536,7 @@ function rememberDishes(plan) {
   const found = new Map();
   const add = (name, recipe) => {
     const key = dishKey(name);
-    if (!key || key === 'school provides lunch') return;
+    if (!key || key === 'school provides lunch' || key === 'fasting') return;
     if (!found.has(key)) found.set(key, { name: String(name).replace(/\s*\(packed\)\s*$/i, '').trim(), recipe: null });
     if (recipe && !found.get(key).recipe) found.get(key).recipe = recipe;
   };

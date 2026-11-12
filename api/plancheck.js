@@ -145,6 +145,10 @@ function saidLines(people) {
     if (list(a.conditions).length || a.conditions_other) bits.push('conditions: ' + [...list(a.conditions), a.conditions_other].filter(Boolean).join('; '));
     if (list(a.medicine_types).length || a.medicines) bits.push('medicines: ' + [...list(a.medicine_types), a.medicines].filter(Boolean).join('; '));
     if (list(a.supplements).length) bits.push('supplements they already take: ' + list(a.supplements).join('; ') + (a.protein_powder_when ? ' (protein powder: ' + a.protein_powder_when + ')' : ''));
+    if (a.fast_hours) bits.push('fasts about ' + a.fast_hours + ' hours a day' + (a.fast_first_meal ? ', first meal ' + String(a.fast_first_meal).toLowerCase() : '') + (a.fast_firm ? ' (' + a.fast_firm + ')' : ''));
+    if (list(a.fast_days).length) bits.push('fast days each week: ' + list(a.fast_days).join(', ') + (list(a.fast_day_skip).length ? ', going without ' + list(a.fast_day_skip).join(', ').toLowerCase() : ''));
+    if (list(a.fast_sun_weeks).length) bits.push('fasting from sunrise to sunset in ' + list(a.fast_sun_weeks).join(', '));
+    if (a.fast_food) bits.push('gives up food: ' + a.fast_food + (list(a.fast_food_days).length ? ' on ' + list(a.fast_food_days).join(', ') : ' every day') + (list(a.fast_food_weeks).length ? ' in ' + list(a.fast_food_weeks).join(', ') : ''));
     if (list(a.allergies).length || a.allergies_other) bits.push('allergies: ' + [...list(a.allergies), a.allergies_other].filter(Boolean).join('; '));
     if (a.dislikes) bits.push('won’t eat: ' + a.dislikes);
     if (list(a.sensory).length) bits.push('hard textures: ' + list(a.sensory).join('; '));
@@ -168,6 +172,7 @@ function fixRequest(plan, people) {
     '1. No dish, snack or recipe a person is given contains a food they are allergic to or named as one they won’t eat.',
     '2. Every condition, medicine and supplement above has a hedged consideration in that person’s tips (food) or exercise medical list (exercise), with a pointer to their GP or other health professional. Nothing suggests starting, stopping or changing a supplement, and under-18s’ supplements are noted, not counted.',
     '3. Snacks and sides avoid the textures that person finds hard.',
+    '3b. Fasting is fitted around as each person described it, with a tip that says what was done: a daily fast or sunrise-to-sunset weeks keep the same amount of food with the timing changed; fast days leave out only the meals they said they go without; foods they give up are out of their meals and snacks on those days. Nothing suggests or praises fasting, and going without food isn’t applied to under-18s.',
     '4. Anything said about blood test results matches the newest date on the report: a flag belongs only to the date it is printed under, so don’t carry over flags from earlier dates.',
     '5. Health text reports what the person said, calls itself considerations (not advice), and has no "always", "never" or "must".',
     '6. Every snack and dish name used has an entry in "groups" and "macros", and anything you add is on a shopping list.',

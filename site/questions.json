@@ -97,6 +97,31 @@
       ]
     },
     {
+      "id": "fasting",
+      "title": "Fasting",
+      "intro": "Optional. Skip this part if you don't fast. It is only about fasting you already do: the plan fits around it and won't suggest fasting to anyone. Apart from giving up some foods, fasting isn't applied for anyone under 18.",
+      "questions": [
+        { "id": "fast_hours", "label": "If you fast overnight or keep a daily eating window, about how many hours do you go without food?", "type": "number", "unit": "hours", "min": 10, "max": 20,
+          "help": "Leave it blank if you don't. This only changes when your meals are suggested, not how much food is in them." },
+        { "id": "fast_first_meal", "label": "On those days, when is your first meal?", "type": "choice",
+          "options": ["About 6 am", "About 7 am", "About 8 am", "About 9 am", "About 10 am", "About 11 am", "About noon", "About 1 pm", "About 2 pm"] },
+        { "id": "fast_firm", "label": "How firm is it?", "type": "choice",
+          "options": ["Flexible: I skip it when I need to", "I keep to it most days", "I keep to it every day"] },
+        { "id": "fast_days", "label": "Do you fast on set days each week? Which days?", "type": "multi",
+          "options": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], "help": "Leave it blank if you don't." },
+        { "id": "fast_day_skip", "label": "On those days, what do you go without?", "type": "multi",
+          "options": ["Breakfast", "Lunch", "Dinner", "Snacks"], "help": "These are left out for you on those days and not shopped for. The plan doesn't set how much to eat on a fast day." },
+        { "id": "fast_sun_weeks", "label": "Will you be fasting from sunrise to sunset (like Ramadan) during the next plan? Which weeks?", "type": "multi",
+          "options": ["Week 1", "Week 2", "Week 3", "Week 4"], "help": "Tick the weeks before an admin drafts the plan, and clear them when the fast is over. The same food is kept and moved to before dawn and after sunset." },
+        { "id": "fast_food", "label": "Do you give up some foods on fast days or in a fasting season (like Lent or an Orthodox fast)?", "type": "choice",
+          "options": ["No meat (fish is fine)", "No meat or fish", "No meat, fish, dairy or eggs"] },
+        { "id": "fast_food_days", "label": "On which days do you give them up?", "type": "multi",
+          "options": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], "help": "Leave it blank for every day." },
+        { "id": "fast_food_weeks", "label": "In which weeks of the next plan?", "type": "multi",
+          "options": ["Week 1", "Week 2", "Week 3", "Week 4"], "help": "Leave it blank for every week." }
+      ]
+    },
+    {
       "id": "routine",
       "title": "Your week",
       "questions": [
