@@ -124,14 +124,53 @@ function proteinPowder(plan, p) {
   return missing ? [p.name + '’s snack "' + missing.what + '" has no "macros" entry, so it isn’t counted. Add one (about 24 g protein, 2 g carbs, 2 g fat, 510 kJ for a scoop mixed with water).'] : [];
 }
 
+// The food in a Current food line, without the amount or the pack: "2 tins diced tomatoes" is
+// "diced tomatoes", "rice 2 kg" is "rice".
+function foodName(text) {
+  return String(text || '').toLowerCase()
+    .replace(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|l|litres?|liters?)?\b/g, ' ')
+    .replace(/\b(tins?|cans?|packs?|packets?|bags?|boxe?s?|bottles?|jars?|cartons?|tubs?|loaf|loaves|bunch(es)?|heads?|pieces?|of|a|an|some|half|dozen|about|x)\b/g, ' ')
+    .replace(/[^a-z\u00c0-\u024f' -]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Words in a food's name that don't say which food it is ("frozen peas" is about the peas).
+const PLAIN_WORDS = new Set(['frozen', 'fresh', 'dried', 'canned', 'tinned', 'diced', 'sliced', 'chopped', 'whole', 'raw', 'cooked',
+  'fillet', 'fillets', 'fruit', 'vegetable', 'vegetables', 'veg', 'mixed', 'free', 'range', 'lean', 'large', 'small', 'big', 'and', 'the', 'with']);
+
+// The things on Current food that no meal, recipe or snack in the plan uses, as they were typed.
+// `food` is a list of {text, place}. A food counts as used if its name, or any telling word in
+// its name ("salmon" for "salmon fillets"), turns up, so this only reports clear misses.
+function unusedFood(plan, food) {
+  const weeks = mealWeeks(plan);
+  const text = textOf([weeks.map(w => [w.meals, w.recipes]), Object.values(plan.people || {}).map(p => p && p.snacks)]);
+  const named = term => mentions(text, term) || (/oes$/.test(term) && mentions(text, term.slice(0, -2)));
+  const out = [];
+  for (const item of Array.isArray(food) ? food : []) {
+    const name = foodName(item && item.text);
+    if (!name) continue;
+    const words = name.split(' ').filter(w => w.length > 2 && !PLAIN_WORDS.has(w));
+    if (!named(name) && !words.some(named)) out.push(String(item.text));
+  }
+  return out;
+}
+
+// Current food the plan doesn't use, as one sentence for the plan writer (none: an empty list).
+function foodProblems(plan, food) {
+  const unused = unusedFood(plan, food);
+  if (!unused.length) return [];
+  return ['The family already has these at home (Current food) and no meal, recipe or snack uses them: ' + unused.slice(0, 30).join('; ') + '. Where it suits everyone’s answers, use them in a meal or as a side, and take what they cover off the shopping lists.'];
+}
+
 // Everything the app itself can find wrong with a plan, as a list of sentences for the plan
-// writer (empty when it finds nothing). `people` is a list of {key, name, answers}.
-function problems(plan, people) {
+// writer (empty when it finds nothing). `people` is a list of {key, name, answers}. `food`
+// (optional) is the Current food list, as [{text, place}].
+function problems(plan, people, food) {
   const out = [];
   for (const p of people) {
     if (!plan.people || !plan.people[p.key]) continue;
     out.push(...shortWeeks(plan, p), ...dislikedFoods(plan, p), ...absoluteWords(plan, p), ...proteinPowder(plan, p));
   }
+  out.push(...foodProblems(plan, food));
   return out;
 }
 
@@ -159,8 +198,8 @@ function saidLines(people) {
 
 // The message that sends the AI back over its own plan: what the app measured, a checklist, and
 // the shape of the corrections to reply with.
-function fixRequest(plan, people) {
-  const found = problems(plan, people);
+function fixRequest(plan, people, food) {
+  const found = problems(plan, people, food);
   return [
     'The app has checked the plan you just wrote. Go back over it once more before the family sees it.',
     '',
@@ -295,9 +334,9 @@ function applyFixes(plan, fixes, known) {
 // AI's note for the admin (rewritten by the corrections, if it sent one). `note` is a sentence
 // from the app about how the check went. The first draft is kept whenever the corrections can't
 // be read, break the plan's shape, or measure worse.
-async function improve(plan, people, notes, ask, checkPlan) {
-  const before = problems(plan, people);
-  const reply = await ask(fixRequest(plan, people));
+async function improve(plan, people, notes, ask, checkPlan, food) {
+  const before = problems(plan, people, food);
+  const reply = await ask(fixRequest(plan, people, food));
   const asWritten = note => ({ plan, notes, note });
   if (!reply) return asWritten('The second check of this plan couldn’t be finished, so this is the first draft as written.');
   let fixed;
@@ -312,10 +351,10 @@ async function improve(plan, people, notes, ask, checkPlan) {
   if (!fixed.changed) return { plan, notes: newNotes, note: '' };
   let broken;
   try { broken = checkPlan(fixed.plan); } catch (e) { broken = String(e.message || e); }
-  const after = broken ? before : problems(fixed.plan, people);
+  const after = broken ? before : problems(fixed.plan, people, food);
   if (broken || after.length > before.length) return asWritten('The corrections from the second check didn’t fit the plan, so this is the first draft as written.');
   const count = before.length ? ' (the app’s own checks found ' + before.length + ' thing' + (before.length === 1 ? '' : 's') + ' to fix)' : '';
   return { plan: fixed.plan, notes: newNotes, changed: true, note: 'The AI went back over this plan and made corrections' + count + '.' };
 }
 
-module.exports = { problems, fixRequest, parseFixes, applyFixes, improve, namedDislikes, mentions };
+module.exports = { problems, fixRequest, parseFixes, applyFixes, improve, namedDislikes, mentions, unusedFood };

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<!--
+  Current food: what the family already has at home, sorted into pantry, fridge, freezer and
+  other. Anyone in the family can add things and take them off. The next plan uses this food
+  first and leaves what it covers off the shopping lists.
+  How this file is laid out: the style section at the top sets the look, the body is the
+  layout, and the script section near the end makes it work (asking the server for data with
+  fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
+-->
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Current food</title>
+<link href="fonts/fonts.css" rel="stylesheet">
+<style>
+:root{--low:#b3261e;--mid:#8a5a00;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--chip:#e3f1ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;color-scheme:dark}}
+:root[data-theme="dark"]{--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--chip:#1d3a31;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.45}
+main{max-width:46rem;margin:0 auto;padding:1.25rem 1rem calc(3rem + env(safe-area-inset-bottom,0px))}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:0 0 .8rem}
+.sub{color:var(--mute);margin:0;font-size:.95rem}
+.note{color:var(--mute);font-size:.85rem;margin:.3rem 0 .9rem}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.75rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem}
+.card h2{font-size:1.1rem;margin:0 0 .1rem;display:flex;justify-content:space-between;align-items:baseline;gap:.5rem}
+.card h2 small{font-weight:400;color:var(--mute);font-size:.8rem}
+.hint{color:var(--mute);font-size:.85rem;margin:0 0 .5rem}
+.items{list-style:none;margin:0 0 .5rem;padding:0}
+.items li{display:flex;align-items:center;gap:.5rem;border-top:1px solid var(--line);padding:.3rem 0;min-height:2.75rem}
+.items li:first-child{border-top:0}
+.items .what{flex:1;min-width:0;overflow-wrap:anywhere}
+.items .ai{display:block;color:var(--mute);font-size:.8rem}
+.remove{font:inherit;font-size:.85rem;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:.5rem;min-width:2.75rem;min-height:2.75rem;padding:0 .7rem;cursor:pointer}
+.remove:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.none{color:var(--mute);font-size:.9rem;margin:0 0 .5rem}
+.add{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap}
+.add div{flex:1;min-width:11rem}
+.add label{display:block;font-size:.85rem;font-weight:700;margin:0 0 .2rem}
+.add input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .6rem;min-height:2.75rem;width:100%}
+.clear{font:inherit;font-size:.8rem;color:var(--mute);background:none;border:0;padding:.6rem 0;min-height:2.75rem;text-decoration:underline;cursor:pointer}
+.msg{border-radius:.6rem;padding:.6rem .8rem;margin:0 0 .8rem;font-size:.9rem;background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
+.status{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(1rem + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:2rem;padding:.4rem 1rem;font-size:.9rem}
+[hidden]{display:none!important}
+</style>
+<script src="regions.js"></script>
+<script src="appearance.js"></script>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>Current food</h1><p class="sub">What you already have at home</p></div>
+    <a class="btn" id="back" href="./">← Back</a>
+  </div>
+  <div id="msg" role="alert"></div>
+  <p class="note">Add what’s in your kitchen, with an amount if you know it (like “rice 2 kg” or “6 eggs”). Everyone in the family shares this list. The next plan that’s drafted uses this food first and leaves what it covers off the shopping lists, so it’s worth updating before a new plan is made.</p>
+  <div id="places" hidden></div>
+</main>
+<div class="status" id="status" role="status" hidden></div>
+<script>
+// The Current food page. It shows four lists (pantry, fridge, freezer, other) from
+// GET /api/food, and adds or removes one item at a time with POST and DELETE /api/food
+// (api/currentfood.js), so two people adding things at once don't undo each other.
+"use strict";
+
+// What each place is called, an example for its box, and how long its food counts for.
+var PLACES = {
+  pantry: ["Pantry", "e.g. rice 2 kg", "Tins, rice, pasta and other dry food count for the whole 4 weeks."],
+  fridge: ["Fridge", "e.g. 6 eggs", "Fresh food counts for as long as it usually keeps: about a week for most, longer for eggs and cheese. Something from the freezer aisle kept here counts for the first week."],
+  freezer: ["Freezer", "e.g. chicken thighs 500 g", "Counts for the whole 4 weeks."],
+  other: ["Other", "e.g. potatoes 2 kg", "Anything kept somewhere else, like the fruit bowl or the bench."]
+};
+var FOOD = null;      // {pantry: [{text, known}], fridge: [...], freezer: [...], other: [...]}
+var ORDER = [];       // the places, in the order the server lists them
+var statusTimer = 0;  // hides the "Added" message after a moment
+
+// Shortcut for document.getElementById.
+function $(id) { return document.getElementById(id); }
+
+// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
+function el(tag, cls, txt) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (txt != null) n.textContent = txt;
+  return n;
+}
+
+// Asks the server for something (or sends it a change) and waits for the answer. Returns a
+// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
+function api(method, url, body) {
+  var o = { method: method, headers: { "X-Requested-With": "app" }, cache: "no-store" };
+  if (body) { o.headers["Content-Type"] = "application/json"; o.body = JSON.stringify(body); }
+  return fetch(url, o).then(function (r) {
+    if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent("/food.html"); throw new Error("login needed"); }
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      if (!r.ok) throw new Error(d.error || "Something went wrong. Try again.");
+      return d;
+    });
+  });
+}
+
+// Shows an error message at the top (or clears it when text is empty).
+function showErr(text) {
+  $("msg").textContent = "";
+  if (text) $("msg").appendChild(el("div", "msg", text));
+}
+
+// Shows a short message at the bottom ("Added") for a couple of seconds.
+function status(text) {
+  var s = $("status");
+  s.textContent = text;
+  s.hidden = false;
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(function () { s.hidden = true; }, 2000);
+}
+
+// Keeps the answer from the server and draws the lists again. `focus` is the place whose box
+// gets the cursor back, so several things can be added one after another.
+function show(data, focus) {
+  FOOD = data.food;
+  ORDER = data.places;
+  draw();
+  if (focus && $("add-" + focus)) $("add-" + focus).focus();
+}
+
+// Adds what's typed in a place's box.
+function addItem(place) {
+  var box = $("add-" + place);
+  var text = box.value.trim();
+  if (!text) { box.focus(); return; }
+  showErr("");
+  api("POST", "/api/food", { place: place, text: text })
+    .then(function (d) { show(d, place); status("Added"); })
+    .catch(function (e) { showErr("That wasn’t added: " + e.message); });
+}
+
+// Takes one item off a place's list.
+function removeItem(place, text) {
+  showErr("");
+  api("DELETE", "/api/food", { place: place, text: text })
+    .then(function (d) { show(d); status("Removed"); })
+    .catch(function (e) { showErr("That wasn’t removed: " + e.message); });
+}
+
+// Empties a place's list, after checking.
+function clearPlace(place) {
+  var name = PLACES[place][0].toLowerCase();
+  if (!confirm("Remove everything from the " + name + " list? This can’t be undone.")) return;
+  showErr("");
+  api("DELETE", "/api/food", { place: place })
+    .then(function (d) { show(d); status("Removed"); })
+    .catch(function (e) { showErr("The list wasn’t cleared: " + e.message); });
+}
+
+// One place's card: its name, how long its food counts, the items, and a box to add another.
+function placeCard(place) {
+  var info = PLACES[place] || [place, "", ""];
+  var items = FOOD[place] || [];
+  var card = el("section", "card");
+  var h = el("h2", null, info[0]);
+  h.appendChild(el("small", null, items.length === 1 ? "1 thing" : items.length + " things"));
+  card.appendChild(h);
+  card.appendChild(el("p", "hint", info[2]));
+
+  if (items.length) {
+    var list = el("ul", "items");
+    items.forEach(function (item) {
+      var li = el("li");
+      var what = el("span", "what", item.text);
+      // The built-in plan builder only knows the foods in its own recipes.
+      if (!item.known) what.appendChild(el("span", "ai", "Not in the plan builder’s recipes, so only an AI-written plan can use it."));
+      li.appendChild(what);
+      var remove = el("button", "remove", "Remove");
+      remove.type = "button";
+      remove.setAttribute("aria-label", "Remove " + item.text + " from " + info[0].toLowerCase());
+      remove.onclick = function () { removeItem(place, item.text); };
+      li.appendChild(remove);
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+  } else {
+    card.appendChild(el("p", "none", "Nothing listed yet."));
+  }
+
+  // The box and button for adding one more. Pressing Enter in the box adds it too.
+  var form = el("form", "add");
+  var field = el("div");
+  var label = el("label", null, "Add to " + info[0].toLowerCase());
+  label.htmlFor = "add-" + place;
+  var box = el("input");
+  box.id = "add-" + place;
+  box.type = "text";
+  box.maxLength = 80;
+  box.autocomplete = "off";
+  box.placeholder = info[1];
+  field.appendChild(label);
+  field.appendChild(box);
+  form.appendChild(field);
+  var add = el("button", "btn primary", "Add");
+  add.type = "submit";
+  form.appendChild(add);
+  form.onsubmit = function (event) { event.preventDefault(); addItem(place); };
+  card.appendChild(form);
+
+  if (items.length > 1) {
+    var clear = el("button", "clear", "Remove everything from " + info[0].toLowerCase());
+    clear.type = "button";
+    clear.onclick = function () { clearPlace(place); };
+    card.appendChild(clear);
+  }
+  return card;
+}
+
+// Draws every place's card.
+function draw() {
+  var box = $("places");
+  box.textContent = "";
+  ORDER.forEach(function (place) { box.appendChild(placeCard(place)); });
+  box.hidden = false;
+}
+
+// Back to More, in the week the app was last on.
+try {
+  var last = /^#week-(\d+)/.exec(localStorage.getItem("coles-plan-place") || "");
+  $("back").href = "./#week-" + (last ? last[1] : "1") + "-more";
+} catch (e) {}
+
+// Start: load the lists.
+api("GET", "/api/food").then(function (d) { show(d); }).catch(function (e) {
+  if (e.message !== "login needed") showErr("The lists couldn’t be loaded: " + e.message);
+});
+</script>
+</body>
+</html>

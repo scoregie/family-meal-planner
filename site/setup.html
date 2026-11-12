@@ -91,12 +91,10 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(-
     </section>
 
     <section class="card" id="kitchenCard">
-      <h2>What’s already in your kitchen? (optional)</h2>
-      <p class="note">List the food you’d like used up, one thing per line, with an amount if you know it. The next plan you draft prefers meals that use it and leaves what it covers off the shopping lists. It’s a starting point, not a stocktake: the main things in the fridge, freezer and pantry are enough.</p>
-      <label class="f" for="kitchen">Food at home</label>
-      <textarea id="kitchen" rows="6" maxlength="8000" placeholder="rice 2 kg&#10;6 eggs&#10;frozen peas&#10;2 tins diced tomatoes&#10;chicken thighs 500 g"></textarea>
-      <div class="row"><button class="btn" type="button" id="kitchenSave">Save the list</button></div>
+      <h2>What’s already in your kitchen?</h2>
+      <p class="note">The family lists the food at home on the Current food page, sorted into pantry, fridge, freezer and other. The next plan you draft prefers meals that use it and leaves what it covers off the shopping lists.</p>
       <p class="note" id="kitchenNote"></p>
+      <div class="row"><a class="btn" href="food.html">Open Current food</a></div>
     </section>
 
     <section class="card" id="draftCard">
@@ -376,7 +374,7 @@ function renderDraft() {
   var more = el("details");
   more.appendChild(el("summary", "note", "What happens?"));
   more.appendChild(el("p", "note", useAI
-    ? name + " writes the meals, snacks, recipes, shopping lists and exercise for everyone, using their About me answers, what they logged and rated, the kitchen list and the stores you shop at. It uses " + (DATA.claude.own ? "your own " + name + " key" : "the family’s " + name + " key") + (DATA.claude.model ? " and the model " + DATA.claude.model + (DATA.claude.own ? " (change it in Settings for a cheaper one)" : "") : "") + ": one long request, so it costs more than a chat. You can cancel while it is writing."
+    ? name + " writes the meals, snacks, recipes, shopping lists and exercise for everyone, using their About me answers, what they logged and rated, the food on the Current food page and the stores you shop at. It uses " + (DATA.claude.own ? "your own " + name + " key" : "the family’s " + name + " key") + (DATA.claude.model ? " and the model " + DATA.claude.model + (DATA.claude.own ? " (change it in Settings for a cheaper one)" : "") : "") + ": one long request, so it costs more than a chat. You can cancel while it is writing."
     : "The plan builder picks meals from its recipe library to fit everyone’s answers (allergies, diets, foods they won’t eat, cooking time, budget and portions), adds up the shopping lists, and builds a gentle exercise plan."));
   if (!DATA.isExample) more.appendChild(el("p", "note", "Approving a new plan replaces the current one (it’s backed up first) and everyone’s ticks start fresh."));
   box.appendChild(more);
@@ -512,28 +510,12 @@ function renderReview() {
 
 // ---------- the kitchen list ----------
 
-var kitchenShown = false;   // the saved list is put in the box once, so reloading doesn't wipe typing
-
-// Puts the saved kitchen list in its box the first time the page loads.
+// Says how many things are on the Current food page (the family edits them there).
 function renderKitchen() {
-  if (kitchenShown) return;
-  kitchenShown = true;
-  $("kitchen").value = (DATA.kitchen || []).join("\n");
+  var count = (DATA.kitchen || []).length;
+  $("kitchenNote").textContent = count === 0 ? "Nothing is listed yet, so nothing is counted."
+    : (count === 1 ? "1 thing is listed." : count + " things are listed.") + " Draft or rebuild the plan to use them.";
 }
-
-// Says what the plan builder understood from the list, and what it couldn't match.
-function kitchenResult(d) {
-  var bits = [];
-  if (d.counted.length) bits.push("The plan builder will count: " + d.counted.join(", ") + ".");
-  if (d.unknown.length) bits.push("It has no meals that use: " + d.unknown.join(", ") + " (an AI-written plan can still use these).");
-  if (!d.kitchen.length) bits.push("The list is empty, so nothing is counted.");
-  $("kitchenNote").textContent = "Saved. " + bits.join(" ") + " Draft or rebuild the plan to use it.";
-}
-
-$("kitchenSave").addEventListener("click", function () {
-  var items = $("kitchen").value.split("\n").map(function (line) { return line.trim(); }).filter(Boolean);
-  api("PUT", "/api/plan/kitchen", { items: items }).then(kitchenResult).catch(function (e) { status(e.message, true); });
-});
 
 // Gets everything the page shows from the server, then draws each step.
 function load() {

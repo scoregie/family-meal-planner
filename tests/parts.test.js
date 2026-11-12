@@ -218,6 +218,25 @@ function smallPlan() {
 }
 const SAM = [{ key: 'sam', name: 'Sam', answers: { age: '40', sex: 'Female', dislikes: 'Long green beans, most veggies', conditions: ['Type 2 diabetes or pre-diabetes'] } }];
 
+test('plan check: food on Current food that no meal uses is reported', () => {
+  const check = require('../api/plancheck');
+  const food = [
+    { text: '2 tins diced tomatoes', place: 'pantry' }, { text: 'broccoli', place: 'fridge' },
+    { text: 'salmon fillets 400 g', place: 'freezer' }, { text: '6 eggs', place: 'fridge' },
+  ];
+  // The small plan has salmon and "green beans or broccoli"; nothing uses tomatoes or eggs.
+  assert.deepEqual(check.unusedFood(smallPlan(), food), ['2 tins diced tomatoes', '6 eggs']);
+  const found = check.problems(smallPlan(), [], food);
+  assert.equal(found.length, 1);
+  assert.match(found[0], /already has these at home \(Current food\).*2 tins diced tomatoes; 6 eggs/);
+  assert.match(check.fixRequest(smallPlan(), [], food), /2 tins diced tomatoes; 6 eggs/);
+  // A singular in the plan matches a plural on the list, and no list means nothing to report.
+  const plan = smallPlan();
+  plan.weeks[1].meals[0].breakfast = 'Egg and tomato on toast';
+  assert.deepEqual(check.unusedFood(plan, food), []);
+  assert.deepEqual(check.problems(smallPlan(), []), []);
+});
+
 test('plan check: finds a plan short of vegetables, a food someone won’t eat, and "must"', () => {
   const check = require('../api/plancheck');
   const found = check.problems(smallPlan(), SAM).join('\n');

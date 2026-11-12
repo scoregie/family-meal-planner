@@ -6,8 +6,6 @@
 //                            AI choice, and the draft (running, failed, or waiting to be approved)
 //   PUT  /api/plan/ai        admins: the family's AI {provider, model} ("none" for no AI)
 //   GET  /api/plan/ai/models?provider=   admins: the models the family's key for it can use
-//   PUT  /api/plan/kitchen   admins: {items} the food already in the kitchen, one per line
-//                            ("rice 2 kg", "6 eggs"). The next draft uses it first.
 //   POST /api/plan/draft     admins: start a draft {how: "ai" | "builtin", note}. With AI it runs
 //                            in the background and takes several minutes; built-in takes a moment.
 //   GET  /api/plan/handoff?note=   admins: the exact prompt the AI would get {system, user}, so a
@@ -34,6 +32,7 @@ const planbuilder = require('./planbuilder');
 const healthtargets = require('./healthtargets');
 const planextras = require('./planextras');
 const plancheck = require('./plancheck');
+const currentFood = require('./currentfood');   // the food the family already has
 
 const QUESTIONS_FILE = process.env.QUESTIONS_FILE || '/site/questions.json';
 const EXAMPLE_FILE = process.env.PLAN_EXAMPLE || '/site/plan.example.json';
@@ -50,15 +49,10 @@ try {
   // assistant.setup() explains what's missing.
 }
 
-// The family's kitchen list: food they already have, as the lines they typed on Plan setup.
-// The next plan uses these first and leaves what they cover off the shopping lists.
+// The food the family already has (the Current food page, currentfood.js), as [{text, place}].
+// The next plan uses it first and leaves what it covers off the shopping lists.
 function kitchenList() {
-  try {
-    const items = JSON.parse(db.getSetting('kitchen-list') || '[]');
-    return Array.isArray(items) ? items.filter(x => typeof x === 'string') : [];
-  } catch (e) {
-    return [];
-  }
+  try { return currentFood.items(); } catch (e) { return []; }
 }
 
 // What the family thought of meals they've rated: {"lower-case dish name": average score out of
@@ -320,8 +314,8 @@ function userText(ctx, people, note, results) {
   }
   const kitchen = kitchenList();
   if (kitchen.length) {
-    lines.push('', 'Food the family already has at home. Use it up first (fresh food in week 1, pantry and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists:',
-      '<kitchen>' + kitchen.join('\n') + '</kitchen>');
+    lines.push('', 'Food the family already has at home, with where it is kept. Use it up first (fridge food in week 1, pantry and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists:',
+      '<kitchen>' + currentFood.lines().join('\n') + '</kitchen>');
   }
   // Meals from earlier plans that the family rated well or poorly (averages out of 10).
   const rated = Object.entries(dishRatings());
@@ -527,11 +521,12 @@ async function finishDraft(me, ctx, people, known, text, who, filesNote, again) 
       // Logins, answers and history are matched by name, so each person keeps the name they have now.
       plan.people[p.key].name = p.name;
     }
+    const food = kitchenList();   // Current food: the plan is checked for using it
     // Send the AI back over its plan once, and keep its corrections if they make it better.
     let checkNote = '';
     let changed = false;
     if (again) {
-      const checked = await plancheck.improve(plan, people, forAdmin, again, ctx.checkPlan);
+      const checked = await plancheck.improve(plan, people, forAdmin, again, ctx.checkPlan, food);
       plan = checked.plan;
       forAdmin = checked.notes;
       checkNote = checked.note;
@@ -542,10 +537,13 @@ async function finishDraft(me, ctx, people, known, text, who, filesNote, again) 
     if (changed) plan.subtitle = costSubtitle({ ...plan, currency: /^[A-Z]{3}$/.test(String(plan.currency || '')) ? plan.currency : 'AUD' });
     // Tell the admin if anyone's days are short of their vegetable or fruit serves.
     const shortNote = healthtargets.shortNote(plan, people);
-    saveDraft(me, ctx, people, plan, [forAdmin, checkNote, shortNote, filesNote].filter(Boolean).join(' '), 'New 4-week plan for the family (' + who + ')');
+    // Tell the admin about anything on Current food that the plan doesn't use.
+    const unused = plancheck.unusedFood(plan, food);
+    const foodNote = unused.length ? 'On Current food and not used in this plan: ' + unused.slice(0, 30).join(', ') + '.' : '';
+    saveDraft(me, ctx, people, plan, [forAdmin, checkNote, shortNote, foodNote, filesNote].filter(Boolean).join(' '), 'New 4-week plan for the family (' + who + ')');
     // Done: clear the progress (or an old failure, which no longer matters now there's a new draft).
     if (who !== 'Claude Code' || (job && job.state === 'failed')) job = null;
-    return plancheck.problems(plan, people);
+    return plancheck.problems(plan, people, food);
 }
 
 // Reads a whole plan sent by tools/claude-code-plan.sh (up to 3 MB).
@@ -613,7 +611,7 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
 // ---------------------------------------------------------------------------
 
 async function handle(req, res, urlPath, url, me, ctx) {
-  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/kitchen'].includes(urlPath)) return false;
+  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;
   if (!me.admin) {
     send(res, 403, { error: 'Only an admin can set up the family’s plan.' });
     return true;
@@ -648,19 +646,6 @@ async function handle(req, res, urlPath, url, me, ctx) {
     return true;
   }
 
-  if (urlPath === '/api/plan/kitchen' && req.method === 'PUT') {
-    let b;
-    try { b = await readBody(req); } catch (e) { send(res, 400, { error: 'That list is too long. Keep it to the main things.' }); return true; }
-    if (!Array.isArray(b.items)) { send(res, 400, { error: 'bad request' }); return true; }
-    // Tidy the lines: no blanks, at most 80 characters each and 200 lines.
-    const items = b.items.filter(x => typeof x === 'string').map(x => x.replace(/[<>]/g, '').trim().slice(0, 80)).filter(Boolean).slice(0, 200);
-    db.setSetting('kitchen-list', JSON.stringify(items));
-    // Say what the plan builder understands, so they can reword anything it missed.
-    const read = planbuilder.kitchenStock(items);
-    send(res, 200, { ok: true, kitchen: items, counted: read.counted, unknown: read.unknown });
-    return true;
-  }
-
   if (urlPath === '/api/plan/setup' && req.method === 'GET') {
     const ready = assistant.setup(me);
     const pending = pendingDraft();
@@ -674,7 +659,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       job: job ? { state: job.state, by: job.by, started: job.started, stage: job.stage || '', error: job.error || null, heard: job.heard || null,
         progress: job.state === 'running' ? Math.min(0.97, (job.chars || 0) / EXPECTED_CHARS) : null } : null,
       draft: pending ? draftPreview(pending) : null,
-      kitchen: kitchenList(),
+      kitchen: kitchenList().map(item => item.text),   // just the names, for the count on Plan setup
       isExample: isExamplePlan(ctx.readPlan()),
     });
     return true;

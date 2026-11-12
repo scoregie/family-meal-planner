@@ -98,15 +98,50 @@ test('the instructions for an AI-written plan give each person’s vegetable and
   assert.match(handoff.json.system, /order of importance/);
 });
 
-test('the kitchen list is saved, read back, and given to an AI-written plan', async () => {
-  const saved = await server.request('PUT', '/api/plan/kitchen', { items: ['rice 2 kg', '  ', '6 eggs', 'dragon fruit'] });
-  assert.equal(saved.status, 200, saved.text);
-  assert.deepEqual(saved.json.kitchen, ['rice 2 kg', '6 eggs', 'dragon fruit']);
-  assert.deepEqual(saved.json.unknown, ['dragon fruit']);
+test('Current food: things are added to and removed from each place, and given to an AI-written plan', async () => {
+  const start = await server.request('GET', '/api/food');
+  assert.deepEqual(start.json.places, ['pantry', 'fridge', 'freezer', 'other']);
+  assert.deepEqual(start.json.food, { pantry: [], fridge: [], freezer: [], other: [] });
+
+  await server.request('POST', '/api/food', { place: 'pantry', text: '  rice   2 kg ' });
+  await server.request('POST', '/api/food', { place: 'fridge', text: '6 eggs' });
+  await server.request('POST', '/api/food', { place: 'fridge', text: '6 Eggs' });   // the same thing again
+  await server.request('POST', '/api/food', { place: 'freezer', text: 'chicken breast 500 g' });
+  const added = await server.request('POST', '/api/food', { place: 'other', text: 'dragon fruit' });
+  assert.equal(added.status, 200, added.text);
+  assert.deepEqual(added.json.food, {
+    pantry: [{ text: 'rice 2 kg', known: true }],
+    fridge: [{ text: '6 eggs', known: true }],
+    freezer: [{ text: 'chicken breast 500 g', known: true }],
+    other: [{ text: 'dragon fruit', known: false }],   // the built-in builder has no meals with it
+  });
+
+  // Somewhere that isn't a place, nothing typed, or a change that didn't come from the app.
+  assert.equal((await server.request('POST', '/api/food', { place: 'shed', text: 'rice' })).status, 400);
+  assert.equal((await server.request('POST', '/api/food', { place: 'pantry', text: '   ' })).status, 400);
+  assert.equal((await server.request('POST', '/api/food', { place: 'pantry', text: 'oats' }, { 'X-Requested-With': 'elsewhere' })).status, 403);
+
   const setup = await server.request('GET', '/api/plan/setup');
-  assert.deepEqual(setup.json.kitchen, ['rice 2 kg', '6 eggs', 'dragon fruit']);
+  assert.deepEqual(setup.json.kitchen, ['rice 2 kg', '6 eggs', 'chicken breast 500 g', 'dragon fruit']);
   const handoff = await server.request('GET', '/api/plan/handoff');
-  assert.match(handoff.json.user, /<kitchen>rice 2 kg\n6 eggs\ndragon fruit<\/kitchen>/);
+  assert.match(handoff.json.user, /<kitchen>Pantry: rice 2 kg\nFridge: 6 eggs\nFreezer: chicken breast 500 g\nOther: dragon fruit<\/kitchen>/);
+
+  // Remove one thing, then empty a place.
+  const removed = await server.request('DELETE', '/api/food', { place: 'other', text: 'dragon fruit' });
+  assert.deepEqual(removed.json.food.other, []);
+  assert.equal(removed.json.food.fridge.length, 1);
+  await server.request('POST', '/api/food', { place: 'fridge', text: 'milk 2 L' });
+  const emptied = await server.request('DELETE', '/api/food', { place: 'fridge' });
+  assert.deepEqual(emptied.json.food.fridge, []);
+  assert.equal(emptied.json.food.pantry.length, 1, 'the other places are left alone');
+
+  // Without a login there is nothing to see.
+  const mine = await server.request('GET', '/api/food');
+  server.forgetCookie();
+  assert.equal((await server.request('GET', '/api/food')).status, 401);
+  const back = await server.request('POST', '/auth/login', new URLSearchParams({ username: OWNER.email, password: OWNER.password, next: '/' }));
+  assert.equal(back.status, 303, back.text);
+  assert.deepEqual((await server.request('GET', '/api/food')).json, mine.json);
 });
 
 test('small steps: how a new food went is saved and read back', async () => {
@@ -172,6 +207,13 @@ test('a plan sent by a Claude Code session is saved, and the answer lists what t
   const sent = await server.request('POST', '/api/plan/handoff', plan);
   assert.equal(sent.status, 200, sent.text);
   assert.ok(sent.json.problems.some(p => /serves of vegetables a day and the aim that week/.test(p)), JSON.stringify(sent.json.problems));
+  // Something on Current food that the plan never uses is reported too, and the admin is told.
+  await server.request('POST', '/api/food', { place: 'other', text: 'dragon fruit' });
+  const again = await server.request('POST', '/api/plan/handoff', plan);
+  assert.ok(again.json.problems.some(p => /Current food.*dragon fruit/.test(p)), JSON.stringify(again.json.problems));
+  const waiting = await server.request('GET', '/api/plan/setup');
+  assert.match(JSON.stringify(waiting.json.draft), /On Current food and not used in this plan: [^"]*dragon fruit/);
+  await server.request('DELETE', '/api/food', { place: 'other', text: 'dragon fruit' });
   // Put a clean draft back for the tests that follow.
   await server.request('POST', '/api/plan/draft', { how: 'builtin' });
 });

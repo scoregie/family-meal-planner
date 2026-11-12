@@ -9,7 +9,7 @@ It runs on your own server (two small Docker containers, for example in a Proxmo
 **Getting started**
 
 - **About me:** each person answers questions about their goals, health, food likes and dislikes, budget, week, exercise and any support needs (for example ADHD or autism-friendly routines). Adults can answer for kids.
-- **What's already in your kitchen:** on Plan setup, list the food you'd like used up. The next plan prefers meals that use it and leaves it off the shopping lists.
+- **Current food:** in More, anyone in the family lists the food already at home, sorted into pantry, fridge, freezer and other. The next plan prefers meals that use it and leaves it off the shopping lists.
 - **Plan setup:** an admin chooses the family's AI (Claude, OpenAI, Google Gemini, a local Ollama model, or no AI). When everyone is finished, they tap **Draft our plan**: the AI (or the built-in plan builder) writes 4 weeks of meals, snacks, recipes, priced shopping lists and an exercise plan for each person. The admin reviews it, then approves or discards it, and can rebuild it any time answers change.
 
 **Every day**
