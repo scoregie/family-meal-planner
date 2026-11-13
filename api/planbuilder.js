@@ -89,6 +89,7 @@ function reword(value, pairs) {
   if (!pairs || !pairs.length) return value;
   const res = pairs.map(([from, to]) => [new RegExp('\\b' + from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), to]);
   const fix = text => res.reduce((t, [re, to]) => t.replace(re, m => (m[0] === m[0].toUpperCase() && m[0] !== m[0].toLowerCase() ? to[0].toUpperCase() + to.slice(1) : to)), text);
+  // Goes through every piece of text inside a value (text, list or object) and rewords it.
   const walk = v => {
     if (typeof v === 'string') return fix(v);
     if (Array.isArray(v)) return v.map(walk);
@@ -119,6 +120,7 @@ const COOK_LIMIT = { '15 minutes or less': 20, 'About 30 minutes': 35, 'Up to an
 // Small helpers
 // ---------------------------------------------------------------------------
 
+// An answer as a list of text: a list stays a list, one value becomes a list of one, nothing is empty.
 function list(v) {
   if (Array.isArray(v)) return v.map(String);
   return v ? [String(v)] : [];
@@ -356,6 +358,7 @@ const FOOD_FAST = {
   'No meat or fish': { tags: ['meat', 'fish', 'shellfish'], words: 'meat and fish' },
   'No meat, fish, dairy or eggs': { tags: ['meat', 'fish', 'shellfish', 'animal', 'milk', 'egg', 'lactose'], words: 'meat, fish, dairy and eggs' },
 };
+// The foods someone gives up, and on which days and weeks, from their About me answers (or null).
 function foodFastFor(a) {
   const kind = FOOD_FAST[a.fast_food];
   if (!kind) return null;
@@ -498,12 +501,26 @@ function portionFor(p, r) {
 // Words in a kitchen list that describe the packaging, not the food.
 const PACK_WORDS = /\b(tins?|cans?|packs?|packets?|bags?|boxe?s?|bottles?|jars?|cartons?|tubs?|loaf|loaves|bunch(es)?|heads?|pieces?|of|a|an|some|half|dozen|about|x)\b/g;
 
+// Words on a Current food item that say only part of a pack is left, and about how much of it.
+const PART_WORDS = [[/\b(nearly|almost) (empty|gone|finished)\b|\ba (little|bit)\b|\bdregs\b/, 0.2], [/\b(a )?quarter\b/, 0.25],
+  [/\b(a )?third\b/, 0.33], [/\bthree[- ]quarters?\b/, 0.75], [/\bhalf\b/, 0.5]];
+
+// Whether a part of a Current food item only says how much there is ("2 jars", "opened"), with
+// no food named in it ("cauliflower and broccoli 1 kg" names food).
+const HOW_MUCH_WORDS = /\d+(\.\d+)?\s*(kg|g|grams?|ml|l|litres?|liters?)?\b|\b(tins?|cans?|packs?|packets?|bags?|boxe?s?|bottles?|jars?|cartons?|tubs?|punnets?|containers?|loaf|loaves|bunch(es)?|about|half|quarter|quarters|three|third|little|bit|few|some|nearly|almost|opened|unopened|left|full|empty|large|small|medium|big|more|refill|part|plus|and|one|two|of|in|a|an|x)\b/g;
+const HOW_MUCH = { test: bit => !/[a-z]{3,}/.test(String(bit).toLowerCase().replace(HOW_MUCH_WORDS, ' ')) };
+
+// A count of packs on a Current food item ("3 bags", "2 tins").
+const PACK_COUNT = /\d\s*(?:x\s*)?(tins?|cans?|packs?|packets?|bags?|boxe?s?|bottles?|jars?|cartons?|tubs?|punnets?|loaf|loaves|bunch(es)?)\b/;
+
 // Everyday names for library ingredients, as people write them on a kitchen list (plurals removed).
 const KITCHEN_NAMES = { cheese: 'cheddar', spaghetti: 'pasta', penne: 'pasta', macaroni: 'pasta', noodle: 'egg noodles',
   yoghurt: 'greek yoghurt', yogurt: 'greek yoghurt', chicken: 'chicken breast', mince: 'beef mince', sausage: 'beef sausages',
   steak: 'beef steak', fish: 'white fish', lentil: 'red lentils', bean: 'baked beans', vegetable: 'frozen veg' };
 // Words that make it a different food ("tomato sauce" isn't tomatoes), or name no food by themselves.
-const DIFFERENT_FOOD = ['sauce', 'paste', 'soup', 'juice', 'powder', 'chip', 'flavour', 'flavoured', 'cake', 'biscuit'];
+const DIFFERENT_FOOD = ['sauce', 'paste', 'soup', 'juice', 'powder', 'chip', 'flavour', 'flavoured', 'cake', 'biscuit',
+  'cracker', 'cordial', 'bar', 'meal', 'pickled', 'base', 'kit', 'pie', 'dumpling', 'seasoning', 'dressing', 'salad', 'cup',
+  'spread', 'drink', 'essence', 'flake', 'seed', 'pocket', 'crumbed', 'pouch', 'pizza', 'popping', 'goujon', 'block', 'mix', 'ground'];
 const TOO_VAGUE = ['fruit', 'frozen', 'canned', 'tinned', 'fresh', 'food', 'meat', 'milk powder'];
 
 // The library ingredient a food on the kitchen list means, or null: "eggs" is "egg", "peas" is
@@ -538,28 +555,59 @@ function ingredientFor(food) {
 // unknown: [what it couldn't match]}. "until" is the last meal week (0 to 3) the food keeps for.
 // No amount means one pack; a number without a unit means that many (eggs) or that many packs.
 //
-// A line can also be {text, place}, where place is "pantry", "fridge", "freezer" or "other" (the
-// Current food page). Where food is kept changes how long it counts for: anything in the freezer
-// lasts the whole plan, even meat that would only keep a few days in the fridge.
+// A line can also be {text, place}, where place is "pantry", "spices", "fridge", "freezer",
+// "bench" or "other" (the Current food page). Where food is kept changes how long it counts
+// for: anything in the freezer lasts the whole plan, even meat that would only keep a few days
+// in the fridge.
+//
+// An item from the Current food page is one food, so its commas aren't split: the food is the
+// part before the first comma, and the rest says how much ("Mango chunks, 750 g, 2 bags" is
+// 1.5 kg of mango; "Frozen peas, a little left" is a quarter of a pack). A typed list from an
+// older plan (plain text) can hold several foods on a line, so that is still split at commas.
 function kitchenStock(lines) {
   const stock = {}, counted = [], unknown = [];
   const all = Array.isArray(lines) ? lines : lines ? [lines] : [];
+  const AMOUNT = /(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|l|litres?|liters?)?\b/;
   for (const line of all.slice(0, 400)) {
-    const place = line && typeof line === 'object' ? line.place : '';
-    for (const part of String(line && typeof line === 'object' ? line.text : line).split(/[,;\n]/)) {
-      const text = part.trim().toLowerCase();
+    const item = line && typeof line === 'object';
+    const place = item ? line.place : '';
+    const whole = String(item ? line.text : line);
+    for (const part of item ? [whole] : whole.split(/[,;\n]/)) {
+      // Brackets hold brands and dates ("(Wonder)", "(use by 20 Nov)"), which aren't amounts.
+      const text = part.replace(/\([^)]*\)/g, ' ').trim().toLowerCase();
       if (!text) continue;
-      const m = text.match(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|l|litres?|liters?)?\b/);
-      const food = text.replace(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|l|litres?|liters?)?\b/g, ' ').replace(PACK_WORDS, ' ');
-      const key = ingredientFor(food);
+      // The food's name is the text before the first part that says how much there is:
+      // "wholemeal bread" of "wholemeal bread, 1 loaf", and all of "carrot, cauliflower and broccoli".
+      const bits = item ? text.split(',') : [text];
+      let named = 1;
+      while (named < bits.length && !HOW_MUCH.test(bits[named])) named++;
+      const name = bits.slice(0, named).join(' ');
+      const rest = bits.slice(named).join(',');              // "1 loaf"
+      const food = name.replace(new RegExp(AMOUNT.source, 'g'), ' ').replace(PACK_WORDS, ' ');
+      // "Butter chicken with rice" and "pesto pasta and fetta" are made dishes, not butter or pesto.
+      const key = /\b(with|and)\b/.test(food) ? null : ingredientFor(food);
       if (!key) { unknown.push(part.trim().slice(0, 60)); continue; }
       const ing = ING[key];
       if (ing.aisle === 'assumed' || !ing.pack) continue;   // oil, salt, spices: never on the list anyway
+      // A weight or volume ("750 g") wins; otherwise a count ("2 bags", "6 eggs") or one pack.
+      const sized = (text.match(new RegExp(AMOUNT.source, 'g')) || []).map(x => x.match(AMOUNT)).find(x => x[2]);
+      const m = sized || name.match(AMOUNT) || rest.match(AMOUNT);
       const number = m ? parseFloat(m[1]) : null;
       const unit = m && m[2] ? m[2][0] : '';
       let amount = ing.pack;                                   // no amount given: one pack
-      if (number && unit && ing.unit !== 'each') amount = number * (m[2] === 'kg' || unit === 'l' ? 1000 : 1);
-      else if (number) amount = ing.unit === 'each' ? number : number * ing.pack;
+      if (number && unit && ing.unit !== 'each') {
+        amount = number * (m[2] === 'kg' || unit === 'l' ? 1000 : 1);
+        // "750 g, 2 bags": that many of them.
+        const packs = rest.replace(m[0], ' ').match(/(\d+)\s*(?:x\s*)?(?:tins?|cans?|packs?|packets?|bags?|boxe?s?|bottles?|jars?|cartons?|tubs?|punnets?)\b/);
+        if (packs) amount *= Math.min(20, parseInt(packs[1], 10));
+      } else if (number) {
+        // "Apples, 4" is four apples (about 150 g each), not four bags; "3 bags" is three packs.
+        const loose = item && ing.aisle === 'fresh' && !PACK_COUNT.test(text);
+        amount = ing.unit === 'each' ? number : loose ? Math.min(number * 150, 3 * ing.pack) : number * ing.pack;
+      }
+      // Part of it is left ("half a loaf", "a little left", "2 L, three-quarters full").
+      const share = PART_WORDS.find(([words]) => words.test(text));
+      if (share) amount = (number && unit && ing.unit !== 'each' ? amount : ing.pack) * share[1];
       const keeps = KEEPS_ITEM[key] || KEEPS[ing.aisle] || 5;
       // The last meal week (0 to 3) it still counts in.
       let until = ing.aisle === 'pantry' || ing.aisle === 'frozen' ? 3 : Math.min(3, Math.floor(keeps / 7));
@@ -643,9 +691,14 @@ function score(d, eaters, house, rnd) {
   }
   // Food already in the kitchen: dishes that use it score higher, and it costs nothing to use,
   // so its price comes off what the dish costs.
+  // Only as much as is left counts: 100 g of mince at home doesn't pay for a whole dinner.
   const owned = house.ownedNow ? d.per.filter(x => house.ownedNow.has(x[0])) : [];
-  const ownedCost = owned.reduce((n, [k, amount]) => n + ING[k].price / ING[k].pack * amount, 0);
-  s += Math.min(owned.length, 3) * 0.5 + ownedCost;
+  const ownedCost = owned.reduce((n, [k, amount]) => {
+    const have = house.leftNow && house.serves ? Math.min(1, Math.max(0, house.leftNow[k] || 0) / (amount * house.serves)) : 1;
+    return n + ING[k].price / ING[k].pack * amount * have;
+  }, 0);
+  // A small nudge towards using it up; the saving itself counts through the cost, below.
+  s += Math.min(owned.length, 3) * 0.5 + (house.budget ? 0 : ownedCost);
   if (house.cookLimit && d.minutes > house.cookLimit) s -= (d.minutes - house.cookLimit) / 5;
   if (house.budget) s -= (d.cost - ownedCost) * house.costWeight;
   return s;
@@ -701,6 +754,7 @@ function arrange(dishes) {
 // Exercise
 // ---------------------------------------------------------------------------
 
+// One person's exercise for the 4 weeks: their workouts, each week's days and targets, notes and medical considerations.
 function exerciseFor(p, r, rnd) {
   const a = p.answers || {};
   const equipment = new Set(list(a.equipment));
@@ -939,6 +993,7 @@ function strengthWorkouts(p, r, o, rnd) {
 // Building the plan
 // ---------------------------------------------------------------------------
 
+// Builds a whole 4-week plan for the people given. Returns {plan, notesForAdmin}. Tries again, cheaper, if it is over budget.
 function build(people, opts) {
   const local = useCountry(opts && opts.country, opts && opts.locale);
   const rnd = random(opts && opts.seed || Date.now());
@@ -967,7 +1022,10 @@ function build(people, opts) {
     plan = attempt(people, rules, house, rnd, repeat, forAdmin);
     tries++;
     const weekly = plan.weeks.reduce((n, w) => n + w.cost, 0) / 4;
-    if (!house.budget || weekly <= house.budget * 1.1 || tries >= 4) {
+    // The meals are judged on what they are worth (the shopping plus the food at home they use),
+    // so food at home makes the shopping cheaper; it isn't spent on dearer meals up to the budget.
+    const worth = weekly + (house.saved || 0) / 4;
+    if (!house.budget || worth <= house.budget * 1.1 || tries >= 4) {
       if (house.budget && weekly > house.budget * 1.1) forAdmin.push('The cheapest plan that fits everyone’s needs is about ' + priceText(weekly) + ' a week, over the ' + priceText(house.budget) + ' budget from About me. Swapping a couple of meat dinners for vegetarian ones would bring it down.');
       break;
     }
@@ -989,7 +1047,9 @@ function build(people, opts) {
   const loggedBy = people.filter(p => p.measured && p.measured.weight).map(p => p.name);
   if (loggedBy.length) forAdmin.push('Serves for ' + loggedBy.join(', ') + ' use their latest logged weight in place of the one in About me.');
   if (kitchen.counted.length) forAdmin.push('From Current food, the plan counts: ' + kitchen.counted.join(', ') + '. Meals that use them were preferred, and what they cover is left off the shopping lists.');
-  if (kitchen.unknown.length) forAdmin.push('Not matched to anything in the meal library, so not counted: ' + kitchen.unknown.join(', ') + '.');
+  if (house.saved >= 1) forAdmin.push('Food already at home covers about ' + priceText(house.saved) + ' of this plan’s shopping.');
+  // Only the first few: a full pantry has dozens of sauces and spices the meal library doesn't use.
+  if (kitchen.unknown.length) forAdmin.push(kitchen.unknown.length + ' Current food ' + (kitchen.unknown.length === 1 ? 'item isn’t' : 'items aren’t') + ' in the meal library, so the plan builder can’t plan meals around them (an AI-written plan can), for example: ' + kitchen.unknown.slice(0, 12).join('; ') + '.');
   // Anyone still short of their vegetable or fruit serves (their answers ruled out the options).
   const shortNote = TARGETS.shortNote(plan, people);
   if (shortNote) forAdmin.push(shortNote);
@@ -1032,6 +1092,8 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   const left = {};
   for (const [k, shelf] of Object.entries(house.stock || {})) left[k] = shelf.reduce((n, x) => n + x.amount, 0);
   const householdServes = rules.reduce((n, r) => n + r.portion, 0);
+  house.leftNow = left;
+  house.serves = householdServes;
   const useUp = dish => { for (const [k, amount] of (dish && dish.per) || []) if (k in left) left[k] -= amount * householdServes; };
   // The kitchen foods that still keep in meal week `w` (fresh food only counts for the first
   // weeks) and haven't been used up by the weeks before it.
@@ -1107,6 +1169,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
   const needs = [];   // per meal week: {ingredient key: amount}
   mealWeeks.forEach((days, w) => {
     const need = {};
+    // Adds what a dish needs for that many serves to this week's ingredient totals.
     const addNeed = (dish, serves) => {
       for (const [k, amount] of dish.per) {
         const ing = ING[k];
@@ -1303,6 +1366,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
 
   // Shopping: buy in whole packs, carrying over what keeps.
   const shopping = shoppingFor(needs, house.stock);
+  house.saved = shopping.saved;   // what the food at home was worth to this plan (see build)
   const plan = { weeks: [] };
   for (let f = 0; f < 2; f++) {
     plan.weeks.push({ name: 'Stock-up ' + (f + 1), kind: 'stockup', shopping: shopping.stock[f] });
@@ -1739,14 +1803,16 @@ function guideFor(r, p) {
 
 // The shopping lists: what each meal week needs, in whole packs. Pantry and freezer things go on
 // the stock-up list before each fortnight. Leftover pack amounts carry over while they keep.
-// Also returns "useUp": for each meal week, the fresh food likely to be left at the end of it.
+// Also returns "useUp": for each meal week, the fresh food likely to be left at the end of it,
+// and "saved": what the food from home that the meals used would have cost to buy.
 // `inKitchen` is the food the family already has ({key: [{amount, until}]}, from kitchenStock):
 // it is used up before anything is bought.
 function shoppingFor(needs, inKitchen) {
   const weekly = needs.map(() => ({}));
   const stock = [{}, {}];
   const onHand = {};   // key -> [{amount, until (week index)}]
-  for (const [k, shelf] of Object.entries(inKitchen || {})) onHand[k] = shelf.map(x => ({ amount: x.amount, until: x.until }));
+  for (const [k, shelf] of Object.entries(inKitchen || {})) onHand[k] = shelf.map(x => ({ amount: x.amount, until: x.until, home: true }));
+  let saved = 0;       // what the food from home that the meals used would have cost to buy
   const useUp = [];    // per meal week: fresh food likely to be left at the end of it
   const bought = needs.map(() => ({}));
   const stockBought = [{}, {}];
@@ -1759,6 +1825,7 @@ function shoppingFor(needs, inKitchen) {
       for (const x of shelf) {
         const use = Math.min(x.amount, want);
         x.amount -= use; want -= use;
+        if (x.home) saved += use * ing.price / ing.pack;
       }
       onHand[k] = shelf.filter(x => x.amount > 0.01);
       if (want <= 0.01) continue;
@@ -1784,6 +1851,7 @@ function shoppingFor(needs, inKitchen) {
     }
     useUp.push(left.sort((a, b) => b.share - a.share).slice(0, 6).map(x => x.text));
   });
+  // Turns pack counts into a shopping list: sections in shop order, each item with its name and price.
   const toList = counts => {
     const out = {};
     for (const [k, packs] of Object.entries(counts)) {
@@ -1796,7 +1864,7 @@ function shoppingFor(needs, inKitchen) {
     for (const s of Object.values(SECTION)) if (out[s]) ordered[s] = out[s].sort((a, b) => a[0].localeCompare(b[0]));
     return ordered;
   };
-  return { weekly: bought.map(toList), stock: stockBought.map(toList), useUp };
+  return { weekly: bought.map(toList), stock: stockBought.map(toList), useUp, saved: money(saved) };
 }
 
 // Gives the builder its data where require() isn't available (the phone app):
@@ -1809,7 +1877,7 @@ function useData(data) {
 }
 
 const PlanBuilder = {
-  build, rulesFor, portionFor, allowed, exerciseFits, useData, kitchenStock, kitchenPlace,
+  build, rulesFor, portionFor, allowed, exerciseFits, useData, kitchenStock, kitchenPlace, HOW_MUCH,
   get EXERCISES() { return EXERCISES; },
   get LIB() { return LIB; },
 };

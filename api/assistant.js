@@ -317,6 +317,7 @@ function runTool(name, input, chat, ctx) {
       ['breakfast', 'lunch', 'dinner'].forEach(m => { if (day[m]) dishes.add(day[m]); });
       Object.values(day.people || {}).forEach(own => ['breakfast', 'lunch', 'dinner'].forEach(m => { if (own && own[m]) dishes.add(own[m]); }));
     });
+    // Finds a dish's entry in a block like macros or groups, whatever capitals its name was typed with.
     const lookup = (block, dish) => {
       const want = db.dishKey(dish);
       const found = Object.keys(block || {}).find(k => db.dishKey(k) === want);
@@ -612,6 +613,7 @@ function forDisplay(chat) {
 // Requests: send, withdraw, approve, decline
 // ---------------------------------------------------------------------------
 
+// Withdraws, approves or declines one request for a change to the plan, after checking who may.
 function requestAction(res, me, id, action, b, ctx) {
   const r = db.getRequest(id);
   if (!r) return send(res, 404, { error: 'That request was not found.' });
@@ -650,6 +652,7 @@ function requestAction(res, me, id, action, b, ctx) {
 // Routes
 // ---------------------------------------------------------------------------
 
+// Answers the assistant's and the requests' pages. Returns true if it answered, false to let the next file try.
 async function handle(req, res, urlPath, url, me, ctx) {
   if (!urlPath.startsWith('/api/assistant') && !urlPath.startsWith('/api/requests')) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {

@@ -120,6 +120,7 @@ function planners(ctx) {
   return household(ctx).filter(p => !p.example);
 }
 
+// Everyone in the plan with what a plan writer needs to know: answers, logins, feedback, logged numbers and blood test files.
 function household(ctx) {
   const plan = ctx.readPlan() || {};
   const onExample = isExamplePlan(plan);
@@ -201,6 +202,7 @@ function draftPreview(r) {
 // The prompt
 // ---------------------------------------------------------------------------
 
+// The instructions every plan writer gets (the AI, or a Claude Code session): the rules, the format guide and an example plan.
 function systemText() {
   const r = appearance.region();
   let docs = '';
@@ -259,6 +261,7 @@ Check before you reply (the app runs these checks too, and sends the plan back i
 - Every condition, medicine and supplement a person listed has a hedged consideration in their tips or exercise medical list.
 - An adult's protein powder is in their snacks with a "macros" entry (optional if they have it now and then), and no under-18 has one.
 - Snacks avoid the textures that person finds hard.
+- If the family listed food they already have at home: go through the Stock-up 1 and Week 1 shopping lists item by item against it. Nothing that is at home is bought again unless weeks 1 and 2 use more than is there, and then only the extra. Meat, ready meals and vegetables in the freezer are cooked before more are bought.
 
 Style: plain English as written in ${r.where}, metric units. Energy numbers in the plan (macros, guides) are always kilojoules (kJ); the app converts them for people who prefer Calories.
 
@@ -314,7 +317,7 @@ function userText(ctx, people, note, results) {
   }
   const kitchen = kitchenList();
   if (kitchen.length) {
-    lines.push('', 'Food the family already has at home, with where it is kept. Use it up first (fridge food in week 1, pantry and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists:',
+    lines.push('', 'Food the family already has at home, with where it is kept. Use it up first (fridge, fruit bowl and bench food in week 1; pantry, spices and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists: buy only what the recipes need beyond what is here, so the first shopping lists are the smallest and the cost builds up as the food at home runs down. Drinks (tea, coffee, cordial) and baking things (sugar, flour, yeast) aren’t for meals, so they don’t need using:',
       '<kitchen>' + currentFood.lines().join('\n') + '</kitchen>');
   }
   // Meals from earlier plans that the family rated well or poorly (averages out of 10).
@@ -378,6 +381,7 @@ function cutOffMessage(written) {
 // Running a draft
 // ---------------------------------------------------------------------------
 
+// Asks the chosen AI to write the plan, follows its progress, and saves the result as a draft (or the reason it failed).
 async function runDraft(me, ready, ctx, note) {
   const mine = job;   // this run's progress record (a later run gets its own)
   const people = planners(ctx);
@@ -405,6 +409,7 @@ async function runDraft(me, ready, ctx, note) {
       if (message.stop_reason === 'refusal') throw new Error(ready.name + ' couldn’t write this plan. Check the About me answers and try again.');
       // The follow-up that sends the AI back over its own plan (plancheck.js).
       const asked = userText(ctx, people, note);
+      // Sends the AI one follow-up message (what the app's checks found) and gives back its reply.
       const again = async fix => {
         mine.stage = 'Checking the plan against everyone’s answers';
         try {
@@ -610,6 +615,7 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
 // Routes
 // ---------------------------------------------------------------------------
 
+// Answers Plan setup's requests. Returns true if it answered, false to let the next file try.
 async function handle(req, res, urlPath, url, me, ctx) {
   if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;
   if (!me.admin) {

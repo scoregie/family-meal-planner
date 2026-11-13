@@ -275,6 +275,7 @@ function syncMeals(person, plan, round, eaten, ratings, toKey) {
 
   // Every meal slot that is eaten or rated now: "week|Day|Slot" -> {week, day, slot, eaten, rating}
   const current = new Map();
+  // The record for one meal slot ("Mon|dinner" in a week), made the first time it is asked for.
   const slotFor = (week, id) => {
     const [day, slot] = String(id).split('|');
     if (!day || !slot) return null;
@@ -428,6 +429,7 @@ function sessionsSince(person, sinceMs) {
 
 // ---------- the Claude assistant: chats, requests for changes, and daily usage ----------
 
+// One saved chat with the assistant, with its messages, or null.
 function getChat(id) {
   const row = open().prepare('SELECT * FROM chats WHERE id = ?').get(id);
   return row ? Object.assign({}, row, { messages: JSON.parse(row.messages) }) : null;
@@ -508,6 +510,7 @@ function usage(user, day) {
 
 // ---------- settings (small values the app remembers) ----------
 
+// A saved setting's value (text), or null if it was never saved.
 function getSetting(key) {
   const row = open().prepare('SELECT value FROM settings WHERE key = ?').get(key);
   return row ? row.value : null;
@@ -534,6 +537,7 @@ function rememberDishes(plan) {
 
   // name -> recipe (or null). The first recipe with a name wins, like on the Meals tab.
   const found = new Map();
+  // Notes a dish by name, with its recipe if it has one, unless it's already noted.
   const add = (name, recipe) => {
     const key = dishKey(name);
     if (!key || key === 'school provides lunch' || key === 'fasting') return;
@@ -706,6 +710,7 @@ function forgetPerson(person, user) {
 // ---------- invite and password-reset links ----------
 // Only a hash of each link's secret is stored, so someone who reads the database can't use the links.
 
+// Saves an invite link (only the hash of its secret) and gives back its id.
 function addInvite(i) {
   return Number(open().prepare('INSERT INTO invites (token_hash, email, name, person, role, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
     .run(i.tokenHash, i.email || null, i.name, i.person, i.role, i.createdBy || null, Date.now(), i.expiresAt).lastInsertRowid);

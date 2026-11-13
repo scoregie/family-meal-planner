@@ -72,6 +72,7 @@ function isKcal(unit, value) {
 // The sync itself (public)
 // ---------------------------------------------------------------------------
 
+// Takes one sync from the phone: checks the key, reads each number, saves the ones that make sense.
 async function sync(req, res) {
   const ip = auth.clientIp(req);
   if (auth.recent(ip).length >= auth.LIMIT) return send(res, 429, { error: 'Too many wrong keys from here. Wait 15 minutes.' });
@@ -100,6 +101,7 @@ async function sync(req, res) {
 
   const rows = [];
   const skipped = [];   // values that came but couldn't be used, like 'Move ("abc")', so the person can see why
+  // Keeps one number if it is sensible; otherwise notes what was sent, so the person can see why.
   const add = (kind, value, unit, raw, day) => {
     if (value !== null && sensible(kind, value, day || date)) rows.push({ date: day || date, kind, value: Math.round(value * 100) / 100, unit });
     else if (raw !== undefined && raw !== null && String(raw).trim() !== '') skipped.push(NAMES[kind] + ' ("' + String(raw).slice(0, 40) + '")');

@@ -85,7 +85,7 @@ ticks and files are all stored under that key (`toKey` in `api/server.js`).
 | `db.js` | Every database read and write. Each function does one small job, like "get this account". |
 | `appearance.js` | The household's look, country, stores, energy unit and pinned products. |
 | `plandraft.js` | Plan setup: who has finished About me, which AI to use, and drafting a new plan. |
-| `currentfood.js` | Current food: the food the family already has, in pantry, fridge, freezer and other. The next plan uses it first. |
+| `currentfood.js` | Current food: the food the family already has, sorted by where it is kept (pantry, spices and seasonings, fridge, freezer, fruit bowl and bench, other). The next plan uses it first. |
 | `planbuilder.js` | The built-in plan builder: makes a whole plan from everyone's answers, with no AI. |
 | `plancheck.js` | Checks a plan an AI has just written (serves of vegetables and fruit, foods someone won't eat, wording) and sends the AI back to correct it before the draft is saved. |
 | `planextras.js` | What the plan writer is told about each person besides About me: their meal scores and notes, the health numbers they've logged or uploaded, their "small steps" record, and (if they said yes in About me) their blood test files from My files. |

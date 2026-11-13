@@ -549,7 +549,7 @@ async function handleRequest(req, res) {
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
     if (await plandraft.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, toKey, people })) return;
     if (await planextras.handle(req, res, urlPath, url, me, { people })) return;
-    if (await currentFood.handle(req, res, urlPath)) return;
+    if (await currentFood.handle(req, res, urlPath, me)) return;
     if (healthsync.handle(req, res, urlPath, url, me, { people })) return;
     if (await exercises.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await libraryUpdates.handle(req, res, urlPath, url, me, { readPlan, toKey, people })) return;

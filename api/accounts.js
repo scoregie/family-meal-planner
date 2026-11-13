@@ -163,6 +163,7 @@ function nameOf(person, ctx) {
 // Public routes
 // ---------------------------------------------------------------------------
 
+// Makes the family's first account (the owner). Only works while the family has no account yet.
 async function register(req, res, ctx) {
   if (!needsSetup()) return send(res, 403, { error: 'This family already has an account. Ask its owner for an invite.' });
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
@@ -454,6 +455,7 @@ async function aiKey(req, res, me) {
 // The family (admins)
 // ---------------------------------------------------------------------------
 
+// Lists everyone in the family for the admins: their accounts, older logins and open invites.
 function family(res, me, ctx) {
   const accounts = db.listAccounts().map(a => Object.assign({}, a, { name: nameOf(a.person, ctx) }));
   const linked = new Set(accounts.map(a => a.legacy_user).filter(Boolean));

@@ -144,6 +144,7 @@ async function readLoseIt(file) {
   const entries = zip.list(file);
   const find = name => entries.find(e => e.name === name || e.name.endsWith('/' + name));
   const rows = [];
+  // Keeps one number for one day if it is sensible (no negative weights or impossible step counts).
   const add = (date, kind, value, unit) => {
     if (sensible(kind, value, date)) rows.push({ date, kind, value: Math.round(value * 100) / 100, unit });
   };
@@ -216,6 +217,7 @@ async function readAppleHealth(file) {
   });
 
   const rows = [];
+  // Keeps one number for one day if it is sensible (no negative weights or impossible step counts).
   const add = (date, kind, value, unit) => {
     if (sensible(kind, value, date)) rows.push({ date, kind, value: Math.round(value * 100) / 100, unit });
   };

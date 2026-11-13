@@ -1,5 +1,5 @@
 // Network first, falls back to the saved copy so the lists still open with no signal.
-var CACHE="shopping-list-v20";
+var CACHE="shopping-list-v22";
 var ASSETS=["./","index.html","plan.json","guidelines.js","regions.js","appearance.js","fonts/fonts.css","guidelines.json","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png","logo.svg"];
 self.addEventListener("install",function(e){
   // Skips anything that redirected (to the login page) so that never gets saved as the app.
