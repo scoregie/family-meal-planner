@@ -116,7 +116,10 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 
 | File | The page |
 | --- | --- |
-| `index.html` | The main app: Today, Meals, Shopping, Exercise and More. The biggest file. |
+| `index.html` | The main app: Today, Meals, Shopping, Exercise and More. It holds the layout and the look; its script is in the six `app-*.js` files below. |
+| `app-core.js` | What every tab of the main app shares: what the page remembers, people, saving and syncing, the week tabs. It starts with a list of all six files. |
+| `app-shopping.js`, `app-meals.js`, `app-exercise.js`, `app-today.js` | One file for each tab of the main app. |
+| `app-start.js` | Shows the chosen view, wires up the buttons and starts the main app. Loaded last. |
 | `login.html` | Logging in, the first account, invites, sign-ups and password resets. |
 | `profile.html` | About me, one section at a time. The questions come from `questions.json`. |
 | `setup.html` | Plan setup (admins). |
