@@ -5,6 +5,10 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
 
 ## Unreleased
 
+- **Light or dark button at the top of every page.** A round button (a moon or a sun) swaps
+  between light and dark with one tap. It saves the same "Light or dark" choice as Settings >
+  On this device, so it is remembered on that phone or computer. Choose "Match my device" in
+  Settings to go back to following the device.
 - **New page: Current food (in More).** Anyone in the family can list the food already at home,
   sorted into Pantry, Fridge, Freezer and Other, adding and removing one thing at a time. It
   replaces the "What's already in your kitchen?" box on Plan setup, which now shows how many

@@ -653,6 +653,8 @@ $("resetIcon").addEventListener("click", function () {
   }).catch(function (e) { status(e.message, true); });
 });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { renderMine(); renderHouse(); });
+// The light or dark button at the top of the page was tapped: show the new choice here too.
+window.addEventListener("look-changed", function () { renderMine(); renderHouse(); drawIcon(); });
 
 // ---------- The household's country, and new meals for the plan builder (admins) ----------
 // (These two sections used to be on Plan setup.)

@@ -360,7 +360,7 @@ With Claude, if Anthropic's safety checks decline a request, it is automatically
 
 **Settings** (in More) changes how the app looks:
 
-- **On this device:** anyone can pick light or dark, a colour, a font and a text size just for themselves. These are saved in their browser.
+- **On this device:** anyone can pick light or dark, a colour, a font and a text size just for themselves. These are saved in their browser. The round moon or sun button at the top of every page swaps light and dark with one tap.
 - **For everyone (admins):** the household's colour, font and text size, used by anyone who hasn't chosen their own. Saved in `data/app.db`.
 - **App icon (admins):** pick a picture (or type up to two letters or an emoji) and a background colour. The icon is drawn in the browser and saved as `site/icon-512.png`, `site/icon-192.png` and `site/apple-touch-icon.png`. Old icons are kept in `data/icon-backups/`, and **Back to the original icon** restores the first one. On iPhone, remove the app from the home screen and add it again to see a new icon.
 
