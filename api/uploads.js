@@ -8,6 +8,7 @@
 // Everyone sees only their own files. Admins can see, add and delete anyone's.
 const fs = require('fs');
 const path = require('path');
+const { send } = require('./requests');   // sending JSON back
 
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const ROOT = path.join(DATA_DIR, 'uploads');
@@ -67,12 +68,6 @@ function ensureRoot(people) {
     for (const c of CATEGORIES) fs.mkdirSync(path.join(ROOT, person, c.id), { recursive: true });
   }
   foldersMadeFor = key;
-}
-
-// Sends a JSON answer with an HTTP status code.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
 }
 
 // The file type from a name, lower case and without the dot: "Results.PDF" gives "pdf".

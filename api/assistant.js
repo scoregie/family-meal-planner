@@ -47,6 +47,7 @@ try {
   sdkProblem = 'The Anthropic SDK is not installed. Restart the app with docker compose up -d (it installs on start, and needs the internet once).';
 }
 const ai = require('./ai');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 const claudeClients = new Map();   // API key -> Anthropic client
 
 // Whether the assistant can be used by this person, and which AI: their own key (from Settings)
@@ -82,35 +83,6 @@ async function checkKey(apiKey) {
     if (err instanceof Anthropic.APIError) return 'Anthropic said: ' + String(err.message || '').slice(0, 200);
     return 'Couldn’t reach Anthropic to check the key. Try again in a moment.';
   }
-}
-
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function body(req) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > 2e4) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(text || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
 }
 
 // Today's date where the server is, like "2026-11-08".
@@ -402,7 +374,7 @@ function opening(me, person, names, text) {
 // One message in an Ask AI chat: sends it with the chat so far to the AI, lets the AI use its tools
 // (look up the plan, guidelines and so on), and streams the answer back to the page as it's written.
 async function chatTurn(req, res, me, ctx) {
-  const b = await body(req);
+  const b = await readBody(req);
   const text = String(b.text || '').trim().slice(0, MAX_TEXT);
   if (!text) return send(res, 400, { error: 'Type a message first.' });
 
@@ -701,7 +673,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
 
   const action = urlPath.match(/^\/api\/requests\/(\d+)\/(send|withdraw|approve|decline)$/);
   if (action && req.method === 'POST') {
-    requestAction(res, me, Number(action[1]), action[2], await body(req), ctx);
+    requestAction(res, me, Number(action[1]), action[2], await readBody(req), ctx);
     return true;
   }
 

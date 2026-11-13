@@ -18,6 +18,7 @@ an empty data folder in a temporary folder, and deletes it afterwards.
 | `currentfood.test.js` | The Current food lists: an older kitchen list is sorted into places; spices and the fruit bowl have their own lists. (Photo links and clearing are in `server.test.js`.) |
 | `themetoggle.test.js` | The light or dark button at the top of the page: it is added, swaps the look, and remembers the choice. |
 | `names.test.js` | People's keys are the same in the browser and on the server. |
+| `requests.test.js` | Reading what a page sent and sending a reply (`api/requests.js`): empty, too big, not JSON, and accented letters split across pieces. |
 | `parts.test.js` | Calendar times, reading Apple Health zips, the meal library, countries and prices, the vegetable and fruit targets, and the wording rules for health text. |
 
 `fixtures/` holds small made-up files the tests read.

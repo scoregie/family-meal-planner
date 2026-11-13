@@ -123,6 +123,9 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
 - **Tidier plan builder code (no change to plans).** The 350-line function that built a whole plan
   is now a short list of named steps (family meals, each person's own meals, exercise, each week,
   snacks, shopping), each small enough to read on its own.
+- **Names with accents are safe on slow connections.** A letter like "é" that arrived split across
+  two pieces of a request could be saved as two broken characters. Every part of the server now
+  reads requests the same way, from one shared file (`api/requests.js`), which joins the pieces first.
 
 ## v1.8.0 (2026-11-10)
 

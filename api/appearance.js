@@ -31,6 +31,7 @@ const CHOICES = {
 
 // Countries and their grocery stores: site/regions.js, shared with the pages.
 const REGIONS = require(path.join(SITE_DIR, 'regions.js'));
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 const STORES = Object.keys(REGIONS.stores);
 
 // The household's country (default Australia, where the app started).
@@ -125,36 +126,6 @@ function cleanPin(store, link) {
 // The icon files, and the size each must be.
 const ICONS = { icon512: ['icon-512.png', 512], icon192: ['icon-192.png', 192], icon180: ['apple-touch-icon.png', 180] };
 
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function body(req, limit) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    let size = 0;
-    req.on('data', chunk => {
-      size += chunk.length;
-      if (size > limit) {
-        reject(new Error('too big'));
-        req.destroy();
-      } else chunks.push(chunk);
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
-
 // The household's look chosen by an admin ({colour, font, size}), keeping only known choices.
 function house() {
   try {
@@ -226,7 +197,7 @@ async function handle(req, res, urlPath, url, me) {
   }
   if (urlPath === '/api/appearance/pins') {
     // {item, store, url}: pin a product (url "" removes the pin).
-    const b = await body(req, 3000);
+    const b = await readBody(req, 3000);
     const item = String(b.item || '').trim().toLowerCase().slice(0, 120);
     const store = String(b.store || '');
     if (!item || !Object.prototype.hasOwnProperty.call(PIN_HOSTS, store) || ['__proto__', 'constructor', 'prototype'].includes(item)) {
@@ -254,7 +225,7 @@ async function handle(req, res, urlPath, url, me) {
     return true;
   }
   if (urlPath === '/api/appearance/country') {
-    const b = await body(req, 2000);
+    const b = await readBody(req, 2000);
     if (!me.admin) {
       send(res, 403, { error: 'Only an admin can change the household’s country.' });
       return true;
@@ -267,7 +238,7 @@ async function handle(req, res, urlPath, url, me) {
     return true;
   }
   if (urlPath === '/api/appearance/energy') {
-    const b = await body(req, 2000);
+    const b = await readBody(req, 2000);
     const value = ENERGY.includes(b.energy) ? b.energy : '';   // '' = use the household's
     const key = b.scope === 'house' ? 'energy' : 'energy:' + me.person;
     if (b.scope === 'house' && !me.admin) {
@@ -280,7 +251,7 @@ async function handle(req, res, urlPath, url, me) {
     return true;
   }
   if (urlPath === '/api/appearance/stores') {
-    const b = await body(req, 2000);
+    const b = await readBody(req, 2000);
     const list = Array.isArray(b.stores) ? [...new Set(b.stores.filter(s => region().stores.includes(s)))] : [];
     if (b.scope === 'house') {
       if (!me.admin) {
@@ -300,7 +271,7 @@ async function handle(req, res, urlPath, url, me) {
   }
 
   if (urlPath === '/api/appearance') {
-    const b = await body(req, 2000);
+    const b = await readBody(req, 2000);
     const choice = {};
     for (const k of Object.keys(CHOICES)) {
       if (b[k] === undefined || b[k] === null || b[k] === '') continue;
@@ -316,7 +287,7 @@ async function handle(req, res, urlPath, url, me) {
   }
 
   // A new icon.
-  const b = await body(req, 4 * 1024 * 1024);
+  const b = await readBody(req, 4 * 1024 * 1024);
   if (b.reset) {
     const original = path.join(ICON_BACKUPS, 'original');
     if (!fs.existsSync(original)) {

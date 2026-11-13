@@ -20,37 +20,11 @@ const path = require('path');
 const db = require('./db');
 const zip = require('./zip');
 const uploads = require('./uploads');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const DAY = 24 * 60 * 60 * 1000;
 const KJ_PER_KCAL = 4.184;
 const KG_PER_LB = 0.45359237;
-
-// Sends a JSON answer with an HTTP status code.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads the JSON the page sent (up to 10 KB).
-function body(req) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > 1e4) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(text || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Dates. Everything is grouped by the person's local date, written "YYYY-MM-DD".
@@ -473,7 +447,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
   }
 
   if (urlPath === '/api/measurements' && req.method === 'POST') {
-    const b = await body(req);
+    const b = await readBody(req, 1e4);
     const weight = Number(b.weight);
     const date = String(b.date || '');
     if (!isDate(date) || date > addDays(localDate(Date.now()), 1)) {

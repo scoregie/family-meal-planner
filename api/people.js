@@ -12,36 +12,10 @@ const fs = require('fs');
 const path = require('path');
 const auth = require('./auth');
 const db = require('./db');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const PLAN_FILE = process.env.PLAN_FILE || '/site/plan.json';
 const QUESTIONS_FILE = path.join(path.dirname(PLAN_FILE), 'questions.json');
-
-// Sends a JSON answer with an HTTP status code.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads the JSON the page sent (up to 100 KB).
-function body(req) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > 1e5) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(text || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
 
 // Every question in site/questions.json, by id: {goal: {id, label, type, options, ...}, ...}.
 function questionsById() {
@@ -166,7 +140,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
       return true;
     }
     if (req.method === 'PUT') {
-      const b = await body(req);
+      const b = await readBody(req, 1e5);
       // {finished: true/false} alone marks the answers finished (or not) without changing them.
       if (typeof b.finished === 'boolean' && b.answers === undefined) {
         db.setProfileFinished(who.person, b.finished);
@@ -181,7 +155,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
   }
 
   if (urlPath === '/api/password' && req.method === 'POST') {
-    const b = await body(req);
+    const b = await readBody(req, 1e5);
     const password = String(b.password || '');
     if (me.accountId) {
       // An email account.

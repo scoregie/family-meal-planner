@@ -106,6 +106,7 @@ ticks and files are all stored under that key (`toKey` in `api/server.js`).
 | `handoff-cli.js` | Lets Claude Code draft the plan (see CLAUDE.md). |
 | `hash-password.js` | Makes a password hash for the older `.env` logins. |
 | `names.js` | Turns a person's name into their key (`toKey`). |
+| `requests.js` | Reads the JSON a page sent (`readBody`) and sends a JSON reply (`send`); every file above uses it. |
 
 Data files: `library.json` (the builder's ingredients, meals and snacks), `library-prices.json`
 (local names and prices for other countries), `library-community.json` (shared new meals),

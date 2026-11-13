@@ -42,44 +42,13 @@ const db = require('./db');
 const mailer = require('./mailer');
 const secrets = require('./secrets');
 const uploads = require('./uploads');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const DAY = 864e5;
 const INVITE_DAYS = 7;
 const RESET_HOURS_EMAILED = 1;
 const RESET_HOURS_SHARED = 24;
 const EMAIL = /^[^\s@<>()",;:]{1,64}@[^\s@<>()",;:]+\.[^\s@<>()",;:]{2,}$/;
-
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-// A login cookie can be sent with it.
-function send(res, code, obj, cookie) {
-  const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
-  if (cookie) headers['Set-Cookie'] = cookie;
-  res.writeHead(code, headers);
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function body(req) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > 1e4) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(text || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
 
 // A new random link secret, and the hash that is stored instead of it.
 function newToken() {
@@ -167,7 +136,7 @@ function nameOf(person, ctx) {
 async function register(req, res, ctx) {
   if (!needsSetup()) return send(res, 403, { error: 'This family already has an account. Ask its owner for an invite.' });
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const email = cleanEmail(b.email);
   const name = String(b.name || '').trim().slice(0, 40);
   if (!email) return send(res, 400, { error: 'Enter a valid email address.' });
@@ -191,7 +160,7 @@ async function signup(req, res, ctx) {
   if (needsSetup()) return register(req, res, ctx);
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
   countTry(req);   // every sign-up counts towards the limit, so it can't be used to flood the list
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const email = cleanEmail(b.email);
   const name = String(b.name || '').trim().slice(0, 40);
   if (!goodName(name)) return send(res, 400, { error: 'Enter your name (with at least one letter or number).' });
@@ -215,7 +184,7 @@ async function signup(req, res, ctx) {
 
 // An admin approving or declining a sign-up.
 async function decideSignup(req, res, me, ctx, id) {
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const s = db.getSignup(id);
   if (!s) return send(res, 404, { error: 'That sign-up has already been dealt with.' });
   if (b.action === 'decline') {
@@ -252,7 +221,7 @@ function usernameFree(username) {
 
 // An admin adding someone without an email (like a child), with an optional username and password.
 async function addPersonNoEmail(req, res, me, ctx) {
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const name = String(b.name || '').trim().slice(0, 40);
   const portion = b.portion === undefined || b.portion === '' ? 1 : Number(b.portion);
   const username = String(b.username || '').trim().toLowerCase();
@@ -282,7 +251,7 @@ function inviteInfo(res, url, ctx) {
 // Someone opening an invite link and choosing their password: makes their account and logs them in.
 async function join(req, res, ctx) {
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const invite = db.inviteByToken(hashToken(b.t));
   if (!invite) {
     countTry(req);
@@ -303,7 +272,7 @@ async function join(req, res, ctx) {
 // "Forgot password": emails a reset link if the address has an account.
 async function forgot(req, res, ctx) {
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   countTry(req);
   // The answer is the same whether or not the email has an account, so this can't be used to
   // find out who has one.
@@ -323,7 +292,7 @@ async function forgot(req, res, ctx) {
 async function reset(req, res) {
   if (req.method === 'GET') return send(res, 200, { ok: true });
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const found = db.resetByToken(hashToken(b.t));
   if (!found) {
     countTry(req);
@@ -350,7 +319,7 @@ function resetInfo(res, url) {
 
 // Adds an email to an older username (making it an account), or changes an account's email.
 async function setEmail(req, res, me) {
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const email = cleanEmail(b.email);
   if (!email) return send(res, 400, { error: 'Enter a valid email address.' });
   const taken = db.accountByEmail(email);
@@ -372,7 +341,7 @@ async function setEmail(req, res, me) {
 
 // Someone deleting their own account (and, if they choose, their history), after typing their password.
 async function deleteMine(req, res, me) {
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   if (!me.accountId) return send(res, 400, { error: 'Add your email first (older usernames are removed by an admin on the server).' });
   const account = db.getAccount(me.accountId);
   if (!account || !auth.verify(String(b.password || ''), account.hash)) return send(res, 400, { error: 'Your password is not right.' });
@@ -427,7 +396,7 @@ async function aiKey(req, res, me) {
     }
   }
   if (req.method !== 'PUT') return send(res, 404, { error: 'not found' });
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const provider = String(b.provider || 'anthropic');
   const p = ai.PROVIDERS[provider];
   if (!p || p.familyOnly) return send(res, 400, { error: 'Choose Claude, OpenAI or Gemini.' });
@@ -470,7 +439,7 @@ function family(res, me, ctx) {
 
 // An admin inviting someone: makes an invite link (emailed if email is set up, else shown to copy).
 async function invite(req, res, me, ctx) {
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const name = String(b.name || '').trim().slice(0, 40);
   const email = b.email ? cleanEmail(b.email) : '';
   const role = b.role === 'admin' ? 'admin' : 'member';
@@ -517,7 +486,7 @@ async function memberAction(req, res, me, id, action, ctx) {
   }
 
   // Changing a role.
-  const b = await body(req);
+  const b = await readBody(req, 1e4);
   const role = b.role;
   if (!['owner', 'admin', 'member'].includes(role)) return send(res, 400, { error: 'Unknown role.' });
   if (!isOwner) return send(res, 403, { error: 'Only the owner can change roles.' });

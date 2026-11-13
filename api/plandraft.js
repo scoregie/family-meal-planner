@@ -33,6 +33,7 @@ const healthtargets = require('./healthtargets');
 const planextras = require('./planextras');
 const plancheck = require('./plancheck');
 const currentFood = require('./currentfood');   // the food the family already has
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const QUESTIONS_FILE = process.env.QUESTIONS_FILE || '/site/questions.json';
 const EXAMPLE_FILE = process.env.PLAN_EXAMPLE || '/site/plan.example.json';
@@ -70,32 +71,6 @@ function dishRatings() {
 let job = null;
 // While an AI is writing: a function that stops it (the Cancel button on Plan setup), else null.
 let stopDraft = null;
-
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, status, body) {
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(body));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-      if (data.length > 20000) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(e); }
-    });
-    req.on('error', reject);
-  });
-}
 
 // Reads a JSON file, or null if it's missing or broken.
 function readJson(file) {
