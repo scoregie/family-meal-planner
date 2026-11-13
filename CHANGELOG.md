@@ -9,6 +9,10 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
   between light and dark with one tap. It saves the same "Light or dark" choice as Settings >
   On this device, so it is remembered on that phone or computer. Choose "Match my device" in
   Settings to go back to following the device.
+- **Fixed: updates show up straight away.** Browsers could keep an old copy of a page or its
+  scripts for hours or days after an update (so a new feature seemed to be missing). Pages and
+  scripts are now checked for a newer copy each time. After updating to this version, refresh
+  once (or close and reopen the app) to clear the old copy.
 - **New page: Current food (in More).** Anyone in the family can list the food already at home,
   sorted into Pantry, Fridge, Freezer and Other, adding and removing one thing at a time. It
   replaces the "What's already in your kitchen?" box on Plan setup, which now shows how many

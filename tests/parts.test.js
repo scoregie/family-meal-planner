@@ -359,3 +359,10 @@ test('wording: the app calls its own notes "considerations", never "advice"', ()
   const bad = texts.filter(t => /\badvice\b/i.test(t.replace(/not medical advice|given you advice/gi, '')));
   assert.deepEqual(bad, []);
 });
+
+test('updates: pages and scripts are sent with "check for a newer copy each time"', () => {
+  // Without this, a browser can keep showing an old appearance.js for days after an update.
+  const caddy = fs.readFileSync(path.join(ROOT, 'Caddyfile'), 'utf8');
+  assert.match(caddy, /@fresh path [^\n]*\*\.html[^\n]*\*\.js/);
+  assert.match(caddy, /header @fresh Cache-Control "no-cache"/);
+});
