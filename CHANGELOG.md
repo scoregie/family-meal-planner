@@ -120,6 +120,9 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
   - Fasting with type 1 diabetes, diabetes medicine that can cause lows, other medicines, or
     while pregnant or breastfeeding adds a consideration to check with their health
     professional. Going without food isn't applied to anyone under 18.
+- **Tidier plan builder code (no change to plans).** The 350-line function that built a whole plan
+  is now a short list of named steps (family meals, each person's own meals, exercise, each week,
+  snacks, shopping), each small enough to read on its own.
 
 ## v1.8.0 (2026-11-10)
 
