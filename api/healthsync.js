@@ -21,37 +21,12 @@ const db = require('./db');
 const auth = require('./auth');
 const { sensible } = require('./progress');
 const shortcutfile = require('./shortcutfile');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const KJ_PER_KCAL = 4.184;
 const NAMES = { steps: 'steps', active_energy: 'Move', weight: 'weight', energy_in: 'food', protein_in: 'protein', carbs_in: 'carbs', fat_in: 'fat' };
 const PER_HOUR = 30;              // syncs per key per hour
 const recentSyncs = new Map();    // key hash -> [times]
-
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function readBody(req, limit) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > limit) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try { resolve(text ? JSON.parse(text) : {}); } catch (e) { reject(e); }
-    });
-    req.on('error', reject);
-  });
-}
 
 const sha = text => crypto.createHash('sha256').update(String(text)).digest('hex');
 

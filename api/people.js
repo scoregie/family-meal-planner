@@ -12,36 +12,10 @@ const fs = require('fs');
 const path = require('path');
 const auth = require('./auth');
 const db = require('./db');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const PLAN_FILE = process.env.PLAN_FILE || '/site/plan.json';
 const QUESTIONS_FILE = path.join(path.dirname(PLAN_FILE), 'questions.json');
-
-// Sends a JSON answer with an HTTP status code.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads the JSON the page sent (up to 100 KB).
-function body(req) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > 1e5) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(text || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
 
 // Every question in site/questions.json, by id: {goal: {id, label, type, options, ...}, ...}.
 function questionsById() {
@@ -125,102 +99,66 @@ function listPeople(ctx) {
   return { people, otherLogins: logins.filter(l => !known.has(l.person)) };
 }
 
+// GET /api/profile?person=: a person's About me answers.
+function sendProfile(res, me, person) {
+  const profile = db.getProfile(person);
+  const ownAppLogin = person === me.person && (!!me.accountId || !auth.isEnvLogin(me.user));
+  send(res, 200, {
+    person,
+    answers: profile ? profile.answers : null,
+    updated_at: profile ? profile.updated_at : null,
+    finished_at: profile ? profile.finished_at : null,
+    canChangePassword: ownAppLogin,
+  });
+}
+
+// PUT /api/profile?person= {answers}: saves a person's About me answers.
+async function saveProfile(req, res, person) {
+  const b = await readBody(req, 1e5);
+  // {finished: true/false} alone marks the answers finished (or not) without changing them.
+  if (typeof b.finished === 'boolean' && b.answers === undefined) {
+    db.setProfileFinished(person, b.finished);
+    return send(res, 200, { ok: true, finished_at: db.getProfile(person).finished_at });
+  }
+  const answers = cleanAnswers(b.answers);
+  db.saveProfile(person, answers);
+  send(res, 200, { ok: true, answers });
+}
+
+// POST /api/password {current, password}: changes the logged-in person's own password.
+async function changePassword(req, res, me) {
+  const b = await readBody(req, 1e5);
+  const password = String(b.password || '');
+  const account = me.accountId ? db.getAccount(me.accountId) : null;   // an email account
+  if (!me.accountId && auth.isEnvLogin(me.user)) {
+    return send(res, 400, { error: 'This login is set in .env on the server, so its password can only be changed there.' });
+  }
+  const login = me.accountId ? account : db.getLogin(me.user);
+  if (!login || !auth.verify(String(b.current || ''), login.hash)) return send(res, 400, { error: 'Your current password is not right.' });
+  if (password.length < 8 || password.length > 200) return send(res, 400, { error: 'The new password needs at least 8 characters.' });
+  if (me.accountId) db.updateAccount(me.accountId, { hash: auth.hash(password) });
+  else db.setPassword(me.user, auth.hash(password));
+  // Changing the password signs every device out. Log this one back in with a new cookie.
+  res.setHeader('Set-Cookie', auth.loginCookie(req, me.subject));
+  send(res, 200, { ok: true });
+}
+
 // Answers the /api/people, /api/profile and /api/password requests. Returns true if it handled one.
 async function handle(req, res, urlPath, url, me, ctx) {
   const mine = ['/api/people', '/api/profile', '/api/password'];
   if (!mine.includes(urlPath)) return false;
+  const what = req.method + ' ' + urlPath;
+  const who = urlPath === '/api/profile' ? whose(url, me, ctx.people()) : {};
 
   // Changes must come from the app itself (a second guard on top of the SameSite cookie).
-  if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
-    send(res, 403, { error: 'bad request' });
-    return true;
-  }
-
-  if (urlPath === '/api/people') {
-    if (!me.admin) {
-      send(res, 403, { error: 'only an admin can manage people' });
-      return true;
-    }
-    if (req.method === 'GET') {
-      send(res, 200, listPeople(ctx));
-      return true;
-    }
-  }
-
-  if (urlPath === '/api/profile') {
-    const who = whose(url, me, ctx.people());
-    if (who.err) {
-      send(res, who.err[0], { error: who.err[1] });
-      return true;
-    }
-    if (req.method === 'GET') {
-      const profile = db.getProfile(who.person);
-      const ownAppLogin = who.person === me.person && (!!me.accountId || !auth.isEnvLogin(me.user));
-      send(res, 200, {
-        person: who.person,
-        answers: profile ? profile.answers : null,
-        updated_at: profile ? profile.updated_at : null,
-        finished_at: profile ? profile.finished_at : null,
-        canChangePassword: ownAppLogin,
-      });
-      return true;
-    }
-    if (req.method === 'PUT') {
-      const b = await body(req);
-      // {finished: true/false} alone marks the answers finished (or not) without changing them.
-      if (typeof b.finished === 'boolean' && b.answers === undefined) {
-        db.setProfileFinished(who.person, b.finished);
-        send(res, 200, { ok: true, finished_at: db.getProfile(who.person).finished_at });
-        return true;
-      }
-      const answers = cleanAnswers(b.answers);
-      db.saveProfile(who.person, answers);
-      send(res, 200, { ok: true, answers });
-      return true;
-    }
-  }
-
-  if (urlPath === '/api/password' && req.method === 'POST') {
-    const b = await body(req);
-    const password = String(b.password || '');
-    if (me.accountId) {
-      // An email account.
-      const account = db.getAccount(me.accountId);
-      if (!account || !auth.verify(String(b.current || ''), account.hash)) {
-        send(res, 400, { error: 'Your current password is not right.' });
-        return true;
-      }
-      if (password.length < 8 || password.length > 200) {
-        send(res, 400, { error: 'The new password needs at least 8 characters.' });
-        return true;
-      }
-      db.updateAccount(me.accountId, { hash: auth.hash(password) });
-      res.setHeader('Set-Cookie', auth.loginCookie(req, me.subject));
-      send(res, 200, { ok: true });
-      return true;
-    }
-    if (auth.isEnvLogin(me.user)) {
-      send(res, 400, { error: 'This login is set in .env on the server, so its password can only be changed there.' });
-      return true;
-    }
-    const login = db.getLogin(me.user);
-    if (!login || !auth.verify(String(b.current || ''), login.hash)) {
-      send(res, 400, { error: 'Your current password is not right.' });
-      return true;
-    }
-    if (password.length < 8 || password.length > 200) {
-      send(res, 400, { error: 'The new password needs at least 8 characters.' });
-      return true;
-    }
-    db.setPassword(me.user, auth.hash(password));
-    // Changing the password signs every device out. Log this one back in with a new cookie.
-    res.setHeader('Set-Cookie', auth.loginCookie(req, me.subject));
-    send(res, 200, { ok: true });
-    return true;
-  }
-
-  send(res, 404, { error: 'not found' });
+  if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') send(res, 403, { error: 'bad request' });
+  else if (urlPath === '/api/people' && !me.admin) send(res, 403, { error: 'only an admin can manage people' });
+  else if (what === 'GET /api/people') send(res, 200, listPeople(ctx));
+  else if (who.err) send(res, who.err[0], { error: who.err[1] });
+  else if (what === 'GET /api/profile') sendProfile(res, me, who.person);
+  else if (what === 'PUT /api/profile') await saveProfile(req, res, who.person);
+  else if (what === 'POST /api/password') await changePassword(req, res, me);
+  else send(res, 404, { error: 'not found' });
   return true;
 }
-
 module.exports = { handle, cleanAnswers };
