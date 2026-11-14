@@ -455,6 +455,23 @@ function localYmd(d) {
   return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
 }
 
+// The "Calendar reminders" box on More: the logged-in person's "Add to calendar" buttons, or a
+// line saying when they will appear.
+function moreCalendar() {
+  var box = $("moreCal");
+  if (!box || !PLAN) return;
+  box.textContent = "";
+  box.appendChild(el("h3", null, "Calendar reminders"));
+  var key = ME && ME.person ? PMAP[nameOf(ME.person)] : null;
+  var person = key ? PLAN.people[key] : null;
+  if (!person || !person.times || !person.times.length) {
+    box.appendChild(el("p", "note2", "When your plan has suggested eating times, you can add them to your phone’s calendar from here."));
+    return;
+  }
+  box.appendChild(el("p", "note2", "Get a reminder on your phone before each of your suggested eating times. The times are listed in Meals, under your guide."));
+  box.appendChild(calBlock(key));
+}
+
 // "Add to calendar" for a person's suggested eating times: an Apple Calendar file (which also
 // works in Outlook), and a list of Google Calendar links that loads when opened.
 function calBlock(personKey) {

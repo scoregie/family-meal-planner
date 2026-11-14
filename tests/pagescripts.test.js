@@ -33,3 +33,12 @@ test('app-start.js, which starts the page, is loaded after the other parts', () 
   assert.strictEqual(scripts[0], 'app-core.js');
   assert.strictEqual(scripts[scripts.length - 1], 'app-start.js');
 });
+
+test('More has Apple Health sync and calendar reminders, so they are easy to find', () => {
+  const html = fs.readFileSync(path.join(site, 'index.html'), 'utf8');
+  const more = html.slice(html.indexOf('id="moreView"'), html.indexOf('id="adminGroup"'));
+  assert.ok(more.includes('href="health-sync.html"'), 'More has no link to Apple Health sync');
+  assert.ok(more.includes('id="moreCal"'), 'More has no calendar reminders box');
+  const start = fs.readFileSync(path.join(site, 'app-start.js'), 'utf8');
+  assert.ok(start.includes('moreCalendar()'), 'opening More does not fill the calendar reminders box');
+});

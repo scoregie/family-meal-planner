@@ -38,6 +38,7 @@ function show() {
   else if (view === "macros") renderMacros();
   else if (view === "ratings") renderRatings();
   else if (view === "exercise") renderExercise();
+  else if (view === "more") moreCalendar();
 }
 
 // Stock-up weeks have no meals or exercise, so those buttons jump to the next normal week
