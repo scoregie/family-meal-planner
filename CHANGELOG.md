@@ -133,6 +133,8 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
   server and in the pages, are each split into small named steps with a plain comment: for
   example the Today view is one function per card, and the progress chart is layout, axes, bars
   or line, and the pop-up value.
+- **A page check for people changing the code** (`tools/page-check.sh`): it presses every button on
+  every page before and after a change and says whether anything came out different.
 
 ## v1.8.0 (2026-11-10)
 

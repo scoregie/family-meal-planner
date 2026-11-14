@@ -23,6 +23,9 @@ an empty data folder in a temporary folder, and deletes it afterwards.
 
 `fixtures/` holds small made-up files the tests read.
 
+For a change that shouldn't alter what the pages do (a tidy-up), there is also `tools/page-check.sh`:
+it presses every button on every page before and after the change and compares (see `tools/README.md`).
+
 ## Adding a test
 
 Tests use Node's built-in test runner (`node:test`), so there's nothing to install. A test is a
