@@ -129,6 +129,10 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
 - **The main page's script is in six smaller files (no change to the app).** `site/index.html` held
   3,100 lines of script. It is now one file for what every tab shares, one for each of Shopping,
   Meals, Exercise and Today, and one that starts the page (`site/app-*.js`).
+- **No more very long functions (no change to the app).** The 21 functions over 80 lines, on the
+  server and in the pages, are each split into small named steps with a plain comment: for
+  example the Today view is one function per card, and the progress chart is layout, axes, bars
+  or line, and the pop-up value.
 
 ## v1.8.0 (2026-11-10)
 

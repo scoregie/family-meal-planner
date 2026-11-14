@@ -61,6 +61,12 @@ function rateUI(id, what, button, summary, box, dish) {
     }
     box.appendChild(scores);
 
+    addNote(rating);
+    addFoot();
+  }
+
+  // Adds the note box ("What didn't you like?") to the rating box. It saves as you type.
+  function addNote(rating) {
     var noteId = boxId + "-note";
     var label = el("label", null, "What didn't you like? (optional)");
     label.htmlFor = noteId;
@@ -77,7 +83,10 @@ function rateUI(id, what, button, summary, box, dish) {
       summary.hidden = true;
     };
     box.appendChild(note);
+  }
 
+  // Adds the "Clear rating" and "Done" buttons to the bottom of the rating box.
+  function addFoot() {
     var foot = el("div", "rate-foot");
     var clear = el("button", "btn", "Clear rating");
     var done = el("button", "btn", "Done");
