@@ -12,6 +12,7 @@ Scripts you run by hand, from the project folder. The Python ones need Python 3 
 | `claude-code-plan.sh` | Lets Claude Code draft the family's plan (`prompt`, then `submit`). See CLAUDE.md. | No (makes a draft to approve) |
 | `library-pr.sh` | Shares new library meals and exercises with everyone through a GitHub pull request. | No |
 | `test.sh` | Runs the automated tests in `tests/` (see `tests/README.md`). Uses a throwaway container; your data isn't touched. | Never |
+| `page-check.sh` | Proves a change didn't alter what the pages do: it presses every button on every page, before and after, and compares. See below. | Never |
 | `offsite-backup.sh` | Encrypts the whole app folder and uploads it to a private GitHub repository. See the README. | No |
 
 ## estimate_macros.py
@@ -38,3 +39,18 @@ It uses the same ingredient rules as `estimate_macros.py`, plus what each food c
 It prints items bought in a much bigger amount than needed ("spare"), then any **shortfalls**. A shortfall that rounds to 0 means you are short by part of an item (for example 2.2 limes needed and 2 bought), which is usually fine. Fresh food is checked week by week. Pantry and freezer food is checked over each fortnight (stock-up week plus its two weeks), with leftovers carried forward.
 
 The pack sizes (in `bought()`) and the weekly snacks (in `SNACKS`) are written for the current plan. When the shopping list or snacks change, update them to match. Things the checker can't see, like chicken frozen in one week and used the next, show up as a shortfall you can ignore.
+
+## page-check.sh
+
+For changes that shouldn't alter what the app does, such as tidying code:
+
+    tools/page-check.sh record before          # 1. record the code as it is now
+    # ...make your change...
+    tools/page-check.sh record after           # 2. record it again
+    tools/page-check.sh compare before after   # 3. "All 26 pages are the same", or what differs
+
+Each recording opens every page in a pretend browser (jsdom) against a throwaway copy of the server, presses every button, tick box and fold in turn (about 1,900 presses), uploads a file and reads the charts with the keyboard, and writes down the page after each press. When two recordings differ, `compare` names the page, the press after which it differed, and the piece of the page that changed.
+
+Your family's data is never touched: the throwaway server has its own empty data folder, the example plan and a made-up person. Recordings are kept in `.page-check/` (not saved to git). It needs Docker, and the first run downloads jsdom into `.page-check/`; the app itself doesn't use it.
+
+What it can't see: layout, touch and drag and drop (it isn't a real browser), and anything that needs an AI key (Ask AI answers, AI-written plans). A change that is meant to alter a page will show as a difference there, which is a handy way to see exactly what it altered.

@@ -232,20 +232,46 @@ var Guidelines = (function () {
       return;
     }
 
+    var compared = compareGroups(country, days, answers);
+    var note = compared.note;
+    box.appendChild(compared.intro);
+    box.appendChild(compared.rows);
+
+    var ideas = country.checks ? ukChecks(box, country, days) : [];
+    // Ideas for the two groups that fall furthest short.
+    compared.below.slice(0, 2).forEach(function (g) {
+      if (data.ideas[g]) ideas.push(data.ideas[g][0]);
+    });
+    if (ideas.length) box.appendChild(ideasBox(ideas));
+
+    if (country.note) note += country.note + " ";
+    if (days.length < o.days.length) note += "Averaged over the " + days.length + " days with estimates. ";
+    note += "Estimated from the recipes and snacks, scaled to " + o.person.name + "’s portion. Salt, saturated fat, sugar and fibre can’t be worked out from the recipes yet, so check the limits below.";
+    box.appendChild(el("p", "mac-note", note));
+    addCountryFolds(box, country);
+  }
+
+  // Compares the week with a country's food groups, in that country's own way. Returns
+  // {intro (the sentence above the rows), rows (one per food group), below (the groups that fall
+  // short), note (anything to add to the small print)}.
+  function compareGroups(country, days, answers) {
     var measure = MEASURE[country.id];
     var intro = el("p", "gl-intro");
     var rows = el("div", "gl-rows");
     var below = [];
     var note = "";
+    // Adds one food group's row, and remembers the group if the week falls short.
+    function add(g, r) {
+      rows.appendChild(r);
+      if (r.state === "below") below.push(g);
+    }
 
     if (country.variety) {
       // Korea: every food group, every day.
       intro.textContent = "Korea’s guidelines ask for a variety of foods every day. Days this week with each food group:";
       country.groups.forEach(function (g) {
         var withIt = days.filter(function (d) { return (d[g] || 0) >= 0.3; }).length;
-        var r = groupRow(data.groups[g].short, withIt, days.length, null, "days");
-        rows.appendChild(r);
-        if (r.state === "below") below.push(g);
+        add(g, groupRow(data.groups[g].short, withIt, days.length, null, "days"));
       });
     } else if (country.bands) {
       // Japan: servings of dishes, by energy band.
@@ -255,9 +281,7 @@ var Guidelines = (function () {
         Math.round(band.kcal[0]).toLocaleString(LOC()) + " to " + Math.round(band.kcal[1]).toLocaleString(LOC()) + " kcal a day (this week’s plan: about " +
         Math.round(kj / 4.184).toLocaleString(LOC()) + " kcal).";
       country.groups.forEach(function (g) {
-        var r = groupRow(data.groups[g].short, avg(days, measure[g]), band[g][0], band[g][1], "SV");
-        rows.appendChild(r);
-        if (r.state === "below") below.push(g);
+        add(g, groupRow(data.groups[g].short, avg(days, measure[g]), band[g][0], band[g][1], "SV"));
       });
       if (band.check) note += "The serving numbers for this energy band are still to be confirmed against the official chart. ";
     } else {
@@ -265,55 +289,50 @@ var Guidelines = (function () {
       intro.textContent = "Daily average this week, compared with " + country.name + "’s guidelines for " + t.who + ".";
       note += t.note;
       country.groups.forEach(function (g) {
-        var r = groupRow(data.groups[g].short, avg(days, measure[g]), t.row[g], null, country.unit);
-        rows.appendChild(r);
-        if (r.state === "below") below.push(g);
+        add(g, groupRow(data.groups[g].short, avg(days, measure[g]), t.row[g], null, country.unit));
       });
       if (t.row.check) note += "Some of these numbers are from a secondary source and are still to be confirmed against the official table. ";
     }
-    box.appendChild(intro);
-    box.appendChild(rows);
+    return { intro: intro, rows: rows, below: below, note: note };
+  }
 
-    // The UK's extra checks: red and processed meat, and fish twice a week.
+  // The UK's extra checks: red and processed meat, and fish twice a week. Adds them to the card
+  // and returns ideas for any the week falls short on.
+  function ukChecks(box, country, days) {
     var ideas = [];
-    if (country.checks) {
-      var red = avg(days, "red");
-      var fish = days.reduce(function (s, d) { return s + d.fishMeals; }, 0) * 7 / days.length;
-      var oily = days.reduce(function (s, d) { return s + d.oilyMeals; }, 0) * 7 / days.length;
-      var extra = el("ul", "gl-checks");
-      // One line of the comparison: a tick if the week meets the guideline, "!" if it falls short.
-      function check(ok, text) {
-        var li = el("li", ok ? "meets" : "below");
-        li.appendChild(el("span", "gl-icon", ok ? "✓" : "!"));
-        li.appendChild(document.createTextNode(" " + text));
-        extra.appendChild(li);
-      }
-      check(red <= country.checks.redMeatMaxG, "Red and processed meat: about " + Math.round(red) + " g a day (cooked). The guide: 70 g or less.");
-      check(fish >= country.checks.fishPerWeek, "Fish: " + num(fish) + " meals a week. The guide: at least 2.");
-      check(oily >= country.checks.oilyFishPerWeek, "Oily fish: " + num(oily) + " meals a week. The guide: at least 1 (salmon, sardines, mackerel or trout).");
-      box.appendChild(extra);
-      if (red > country.checks.redMeatMaxG) ideas.push(data.ideas.redmeat[0]);
-      if (fish < country.checks.fishPerWeek || oily < country.checks.oilyFishPerWeek) ideas.push(data.ideas.fish[0]);
+    var red = avg(days, "red");
+    var fish = days.reduce(function (s, d) { return s + d.fishMeals; }, 0) * 7 / days.length;
+    var oily = days.reduce(function (s, d) { return s + d.oilyMeals; }, 0) * 7 / days.length;
+    var extra = el("ul", "gl-checks");
+    // One line of the comparison: a tick if the week meets the guideline, "!" if it falls short.
+    function check(ok, text) {
+      var li = el("li", ok ? "meets" : "below");
+      li.appendChild(el("span", "gl-icon", ok ? "✓" : "!"));
+      li.appendChild(document.createTextNode(" " + text));
+      extra.appendChild(li);
     }
+    check(red <= country.checks.redMeatMaxG, "Red and processed meat: about " + Math.round(red) + " g a day (cooked). The guide: 70 g or less.");
+    check(fish >= country.checks.fishPerWeek, "Fish: " + num(fish) + " meals a week. The guide: at least 2.");
+    check(oily >= country.checks.oilyFishPerWeek, "Oily fish: " + num(oily) + " meals a week. The guide: at least 1 (salmon, sardines, mackerel or trout).");
+    box.appendChild(extra);
+    if (red > country.checks.redMeatMaxG) ideas.push(data.ideas.redmeat[0]);
+    if (fish < country.checks.fishPerWeek || oily < country.checks.oilyFishPerWeek) ideas.push(data.ideas.fish[0]);
+    return ideas;
+  }
 
-    // Ideas for the two groups that fall furthest short.
-    below.slice(0, 2).forEach(function (g) {
-      if (data.ideas[g]) ideas.push(data.ideas[g][0]);
-    });
-    if (ideas.length) {
-      var ideaBox = el("div", "gl-ideas");
-      ideaBox.appendChild(el("b", null, "Ideas"));
-      var list = el("ul");
-      ideas.forEach(function (i) { list.appendChild(el("li", null, i)); });
-      ideaBox.appendChild(list);
-      box.appendChild(ideaBox);
-    }
+  // The "Ideas" box: a list of small changes for the food groups the week falls short on.
+  function ideasBox(ideas) {
+    var ideaBox = el("div", "gl-ideas");
+    ideaBox.appendChild(el("b", null, "Ideas"));
+    var list = el("ul");
+    ideas.forEach(function (i) { list.appendChild(el("li", null, i)); });
+    ideaBox.appendChild(list);
+    return ideaBox;
+  }
 
-    if (country.note) note += country.note + " ";
-    if (days.length < o.days.length) note += "Averaged over the " + days.length + " days with estimates. ";
-    note += "Estimated from the recipes and snacks, scaled to " + o.person.name + "’s portion. Salt, saturated fat, sugar and fibre can’t be worked out from the recipes yet, so check the limits below.";
-    box.appendChild(el("p", "mac-note", note));
-
+  // The boxes that open at the bottom of the card: the country's key messages, what counts as a
+  // serve, its limits and its sources.
+  function addCountryFolds(box, country) {
     box.appendChild(fold("Key messages", country.messages));
     if (country.serveSizes) {
       box.appendChild(fold("What counts as one " + (country.unit === "SV" ? "serving" : country.unit.replace(/s$/, "")),

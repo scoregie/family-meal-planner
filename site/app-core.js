@@ -258,6 +258,85 @@ function save() {
   pushTimer = setTimeout(pushNow, 400);
 }
 
+// The steps of pull() below. Each compares one part of what the server sent (`s`) with what this
+// device has, takes the server's copy where it differs, and notes the outcome in `found`:
+// found.changed (the server had something new, so redraw) and found.needPush (this device has
+// something the server doesn't).
+
+// An admin pressed "Reset all" since this device last synced: clear everything here too.
+function takeReset(s, found) {
+  var localEpoch = lsGet("coles-plan-epoch");
+  if (localEpoch !== null && localEpoch !== String(s.epoch || 0)) {
+    ticks = {};
+    exTicks = {};
+    eaten = {};
+    rates = {};
+    have = [];
+    found.changed = true;
+  }
+  try { localStorage.setItem("coles-plan-epoch", String(s.epoch || 0)); } catch (e) {}
+}
+
+// What everyone shares: shopping ticks, who ticked them, and "At home" marks.
+function takeShared(s, found) {
+  if (s.shared && !same(s.shared.by || {}, BY)) {
+    BY = s.shared.by || {};
+    found.changed = true;
+  }
+  if (s.shared && s.shared.ticks) {
+    if (!same(s.shared.ticks, ticks)) {
+      ticks = s.shared.ticks;
+      found.changed = true;
+    }
+  } else if (Object.keys(ticks).length) {
+    found.needPush = true;
+  }
+  if (Array.isArray(s.have)) {
+    if (!same(s.have, have)) {
+      have = s.have;
+      found.changed = true;
+    }
+  } else if (have.length) {
+    found.needPush = true;
+  }
+}
+
+// This person's meal and exercise ticks and ratings.
+function takeMine(s, found) {
+  var key = ukey(USER);
+  if (s.users && s.users[key]) {
+    var serverEx = s.users[key].ex || {};
+    var serverEaten = s.users[key].eaten || {};
+    var serverRates = s.users[key].ratings;
+    if (!same(serverEx, exTicks) || !same(serverEaten, eaten)) {
+      exTicks = serverEx;
+      eaten = serverEaten;
+      found.changed = true;
+    }
+    if (serverRates === undefined) {
+      if (Object.keys(rates).length) found.needPush = true;
+    } else if (!same(serverRates, rates)) {
+      rates = serverRates;
+      found.changed = true;
+    }
+  } else if (Object.keys(exTicks).length || Object.keys(eaten).length || Object.keys(rates).length) {
+    found.needPush = true;
+  }
+}
+
+// Admins: everyone's ratings, for the Ratings view.
+function takeAllRatings(s, found) {
+  if (!(ME && ME.admin)) return;
+  var everyone = {};
+  Object.keys(s.users || {}).forEach(function (person) {
+    everyone[person] = (s.users[person] && s.users[person].ratings) || {};
+  });
+  if (!same(everyone, ALL_RATINGS)) {
+    ALL_RATINGS = everyone;
+    if (view === "ratings") found.changed = true;
+  }
+}
+
 // Gets the latest from the server and redraws if anything changed. If this device has changes
 // the server hasn't got (for example after being offline), it sends those instead.
 function pull() {
@@ -266,85 +345,18 @@ function pull() {
     return;
   }
   api("GET", "api/state").then(function (s) {
-    var key = ukey(USER);
-    var needPush = false;   // this device has something the server doesn't
-    var changed = false;    // the server had something new, so redraw
-
-    // An admin pressed "Reset all" since this device last synced: clear everything here too.
-    var localEpoch = lsGet("coles-plan-epoch");
-    if (localEpoch !== null && localEpoch !== String(s.epoch || 0)) {
-      ticks = {};
-      exTicks = {};
-      eaten = {};
-      rates = {};
-      have = [];
-      changed = true;
-    }
-    try { localStorage.setItem("coles-plan-epoch", String(s.epoch || 0)); } catch (e) {}
-
-    // Shopping ticks and who ticked them.
-    if (s.shared && !same(s.shared.by || {}, BY)) {
-      BY = s.shared.by || {};
-      changed = true;
-    }
-    if (s.shared && s.shared.ticks) {
-      if (!same(s.shared.ticks, ticks)) {
-        ticks = s.shared.ticks;
-        changed = true;
-      }
-    } else if (Object.keys(ticks).length) {
-      needPush = true;
-    }
-
-    // This person's meal and exercise ticks and ratings.
-    if (s.users && s.users[key]) {
-      var serverEx = s.users[key].ex || {};
-      var serverEaten = s.users[key].eaten || {};
-      var serverRates = s.users[key].ratings;
-      if (!same(serverEx, exTicks) || !same(serverEaten, eaten)) {
-        exTicks = serverEx;
-        eaten = serverEaten;
-        changed = true;
-      }
-      if (serverRates === undefined) {
-        if (Object.keys(rates).length) needPush = true;
-      } else if (!same(serverRates, rates)) {
-        rates = serverRates;
-        changed = true;
-      }
-    } else if (Object.keys(exTicks).length || Object.keys(eaten).length || Object.keys(rates).length) {
-      needPush = true;
-    }
-
-    // Admins: everyone's ratings, for the Ratings view.
-    if (ME && ME.admin) {
-      var everyone = {};
-      Object.keys(s.users || {}).forEach(function (person) {
-        everyone[person] = (s.users[person] && s.users[person].ratings) || {};
-      });
-      if (!same(everyone, ALL_RATINGS)) {
-        ALL_RATINGS = everyone;
-        if (view === "ratings") changed = true;
-      }
-    }
-
-    // "At home" marks.
-    if (Array.isArray(s.have)) {
-      if (!same(s.have, have)) {
-        have = s.have;
-        changed = true;
-      }
-    } else if (have.length) {
-      needPush = true;
-    }
-
-    if (changed) {
+    var found = { changed: false, needPush: false };
+    takeReset(s, found);
+    takeShared(s, found);
+    takeMine(s, found);
+    takeAllRatings(s, found);
+    if (found.changed) {
       saveLocal();
       // Don't redraw while someone is typing a rating note, or they would lose their place.
       var focused = document.activeElement;
       if (PLAN && !(focused && focused.tagName === "TEXTAREA")) show();
     }
-    if (needPush) pushNow();
+    if (found.needPush) pushNow();
     setSync("Synced");
   }).catch(function () {
     setSync("Offline: saved on this device only");

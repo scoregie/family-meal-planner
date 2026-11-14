@@ -61,6 +61,12 @@ function rateUI(id, what, button, summary, box, dish) {
     }
     box.appendChild(scores);
 
+    addNote(rating);
+    addFoot();
+  }
+
+  // Adds the note box ("What didn't you like?") to the rating box. It saves as you type.
+  function addNote(rating) {
     var noteId = boxId + "-note";
     var label = el("label", null, "What didn't you like? (optional)");
     label.htmlFor = noteId;
@@ -77,7 +83,10 @@ function rateUI(id, what, button, summary, box, dish) {
       summary.hidden = true;
     };
     box.appendChild(note);
+  }
 
+  // Adds the "Clear rating" and "Done" buttons to the bottom of the rating box.
+  function addFoot() {
     var foot = el("div", "rate-foot");
     var clear = el("button", "btn", "Clear rating");
     var done = el("button", "btn", "Done");
@@ -461,22 +470,7 @@ function macroCard(days, person) {
   var today = withData.filter(function (x) { return String(x.d.day || "").slice(0, 3) === TODAY; })[0];
   var mode = macroMode || (today ? "today" : "avg");
   if (mode === "today" && !today) mode = "avg";
-  if (today) {
-    var choice = el("div", "seg");
-    [["today", "Today"], ["avg", "Daily average"]].forEach(function (option) {
-      var b = el("button", "btn", option[1]);
-      b.type = "button";
-      b.setAttribute("aria-pressed", mode === option[0]);
-      b.onclick = function () {
-        macroMode = option[0];
-        var y = window.scrollY;
-        renderMacros();
-        window.scrollTo(0, y);
-      };
-      choice.appendChild(b);
-    });
-    head.appendChild(choice);
-  }
+  if (today) head.appendChild(macroModeChoice(mode));
 
   var m = { p: 0, c: 0, f: 0, kj: 0 };
   var source = mode === "today" ? [today] : withData;
@@ -491,19 +485,7 @@ function macroCard(days, person) {
   kjLine.appendChild(el("span", null, unit));
   box.appendChild(kjLine);
 
-  var legend = el("ul", "mac-leg");
-  MACROS.forEach(function (x) {
-    var item = el("li");
-    var swatch = el("span", "mac-sw");
-    swatch.style.background = x[3];
-    item.appendChild(swatch);
-    var text = el("span");
-    text.appendChild(document.createTextNode(x[0] + " "));
-    text.appendChild(el("b", null, Math.round(m[x[1]]) + " g"));
-    item.appendChild(text);
-    item.appendChild(el("small", null, (energy ? Math.round(m[x[1]] * x[2] / energy * 100) : 0) + "%"));
-    legend.appendChild(item);
-  });
+  var legend = macroLegend(m, energy);
   box.appendChild(macroBar(m, legend));
   box.appendChild(legend);
 
@@ -518,6 +500,42 @@ function macroCard(days, person) {
   if (missing) note += " " + missing + (missing === 1 ? " meal has" : " meals have") + " no macros yet, so the totals are low.";
   box.appendChild(el("p", "mac-note", note));
   return box;
+}
+
+// The "Today | Daily average" switch on the macros card. `mode` is the one showing now.
+function macroModeChoice(mode) {
+  var choice = el("div", "seg");
+  [["today", "Today"], ["avg", "Daily average"]].forEach(function (option) {
+    var b = el("button", "btn", option[1]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", mode === option[0]);
+    b.onclick = function () {
+      macroMode = option[0];
+      var y = window.scrollY;
+      renderMacros();
+      window.scrollTo(0, y);
+    };
+    choice.appendChild(b);
+  });
+  return choice;
+}
+
+// The list under the macros bar: each macro's colour, grams, and share of the energy (`energy` is the total).
+function macroLegend(m, energy) {
+  var legend = el("ul", "mac-leg");
+  MACROS.forEach(function (x) {
+    var item = el("li");
+    var swatch = el("span", "mac-sw");
+    swatch.style.background = x[3];
+    item.appendChild(swatch);
+    var text = el("span");
+    text.appendChild(document.createTextNode(x[0] + " "));
+    text.appendChild(el("b", null, Math.round(m[x[1]]) + " g"));
+    item.appendChild(text);
+    item.appendChild(el("small", null, (energy ? Math.round(m[x[1]] * x[2] / energy * 100) : 0) + "%"));
+    legend.appendChild(item);
+  });
+  return legend;
 }
 
 // Which person is picked on the Meals and Macros views ("all" for everyone), remembered on this device.
@@ -640,7 +658,14 @@ function renderMacros() {
   }
   if (!days.some(function (x) { return x.known; })) return;
 
-  // "Each day" heading with a colour key.
+  panel.appendChild(macroDaysHeading());
+  var list = el("ul", "days");
+  days.forEach(function (dayInfo) { list.appendChild(macroDay(dayInfo)); });
+  panel.appendChild(list);
+}
+
+// The "Each day" heading on Macros, with a key to the bar's colours.
+function macroDaysHeading() {
   var head = el("div", "mac-h");
   head.appendChild(el("h2", null, "Each day"));
   var key = el("div", "mac-key");
@@ -654,40 +679,37 @@ function renderMacros() {
     key.appendChild(item);
   });
   head.appendChild(key);
-  panel.appendChild(head);
-
-  var list = el("ul", "days");
-  days.forEach(function (dayInfo) {
-    var day = dayInfo.d;
-    var card = el("li", "day");
-    var heading = el("h3", null, day.day || "");
-    card.appendChild(heading);
-    markToday(card, heading, day.day);
-    if (dayInfo.known) {
-      // "+" means some meals have no macros, so the real total is higher.
-      heading.appendChild(el("span", "dk", kjText(dayInfo.tot.kj) + (dayInfo.miss ? "+" : "")));
-      card.appendChild(macroBar(dayInfo.tot, null));
-      var t = dayInfo.tot;
-      card.appendChild(el("p", "mac-day", "P " + Math.round(t.p) + " g · C " + Math.round(t.c) + " g · F " + Math.round(t.f) + " g" + (dayInfo.miss ? " · " + dayInfo.miss + " without macros" : "")));
-    }
-    dayInfo.rows.forEach(function (row) {
-      var line = el("p", "mrow");
-      line.appendChild(el("span", "mk", row[0]));
-      line.appendChild(el("span", "mv", row[1]));
-      line.appendChild(row[2] ? el("span", "mm", macroLine(row[2])) : el("span", "mm none", "No macros yet"));
-      if (row.optional) {
-        line.className = "mrow opt";
-        line.appendChild(el("span", "mm none", "If hungry, so not in the totals"));
-      }
-      card.appendChild(line);
-    });
-    list.appendChild(card);
-  });
-  panel.appendChild(list);
+  return head;
 }
 
-// The Meals view: the person picker, that person's guide (times, tips, snacks), each day's
-// meals with "eaten" ticks and Rate buttons, then the recipes.
+// One day on Macros: its energy, a bar, the protein, carbs and fat, then every meal with its numbers.
+function macroDay(dayInfo) {
+  var day = dayInfo.d;
+  var card = el("li", "day");
+  var heading = el("h3", null, day.day || "");
+  card.appendChild(heading);
+  markToday(card, heading, day.day);
+  if (dayInfo.known) {
+    // "+" means some meals have no macros, so the real total is higher.
+    heading.appendChild(el("span", "dk", kjText(dayInfo.tot.kj) + (dayInfo.miss ? "+" : "")));
+    card.appendChild(macroBar(dayInfo.tot, null));
+    var t = dayInfo.tot;
+    card.appendChild(el("p", "mac-day", "P " + Math.round(t.p) + " g · C " + Math.round(t.c) + " g · F " + Math.round(t.f) + " g" + (dayInfo.miss ? " · " + dayInfo.miss + " without macros" : "")));
+  }
+  dayInfo.rows.forEach(function (row) {
+    var line = el("p", "mrow");
+    line.appendChild(el("span", "mk", row[0]));
+    line.appendChild(el("span", "mv", row[1]));
+    line.appendChild(row[2] ? el("span", "mm", macroLine(row[2])) : el("span", "mm none", "No macros yet"));
+    if (row.optional) {
+      line.className = "mrow opt";
+      line.appendChild(el("span", "mm none", "If hungry, so not in the totals"));
+    }
+    card.appendChild(line);
+  });
+  return card;
+}
+
 // Shown under each person's meal guide and exercise plan.
 var CHECK_WITH_GP = "Please check this meal and exercise plan with your GP, dietitian or physio before you start, especially if you take medicines, are pregnant or have a health condition. It’s general information, not medical advice.";
 
@@ -860,6 +882,29 @@ function renderMeals() {
   var dayInfo = mealDays(w, person, who, true)[nav.index];
   var day = dayInfo.d;
 
+  var card = dayMealsCard(dayInfo, person, ppl);
+  panel.appendChild(card);
+  swipeDays(card, nav.step);
+
+  var lines = dayConsiderations(day, person, ppl, who, nav.index);
+  var advice = adviceBox("Today’s considerations" + (short(day.day) === TODAY ? "" : ": " + (FULLDAY[short(day.day)] || day.day)), lines);
+  if (advice) panel.appendChild(advice);
+
+  if (w.recipes && w.recipes.length) addDayRecipes(panel, w.recipes, dayInfo, person);
+
+  if (person) {
+    var guide = el("details", "exfold");
+    guide.appendChild(el("summary", null, person.name + "’s guide, eating times and calendar"));
+    var g = el("div");
+    g.appendChild(personGuide(person, who));
+    guide.appendChild(g);
+    panel.appendChild(guide);
+  }
+}
+
+// The card for one day on Meals: "3 of 5 eaten", then each meal with its tick and Rate button.
+function dayMealsCard(dayInfo, person, ppl) {
+  var day = dayInfo.d;
   var card = el("section", "day daycard");
   var count = el("p", "count");
   card.appendChild(count);
@@ -876,11 +921,12 @@ function renderMeals() {
   });
   if (dayInfo.fasting.length) card.appendChild(el("p", "note2", fastingLine(dayInfo.fasting)));
   updateEaten();
-  panel.appendChild(card);
-  swipeDays(card, nav.step);
+  return card;
+}
 
-  // Things to consider today: training today and what that means for snacks, the plan's note for the
-  // day, and a tip (a different one each day).
+// Things to consider on a day, as a list of lines: the plan's note for the day, training that day
+// and what it means for snacks, and a tip (a different one each day: `dayIndex` picks it).
+function dayConsiderations(day, person, ppl, who, dayIndex) {
   var lines = [];
   if (day.note) lines.push(day.note);
   if (person) {
@@ -897,45 +943,35 @@ function renderMeals() {
           : "No weights today, so " + tied.map(function (s) { return s.what.replace(/^\d+\s*ml\s+/, ""); }).join(", ") + " is left out.");
       }
     }
-    if (person.tips && person.tips.length) lines.push("Tip: " + person.tips[nav.index % person.tips.length]);
+    if (person.tips && person.tips.length) lines.push("Tip: " + person.tips[dayIndex % person.tips.length]);
   } else if (ppl) {
     lines.push("Pick a person above to see their snacks and notes for the day.");
   }
-  var advice = adviceBox("Today’s considerations" + (short(day.day) === TODAY ? "" : ": " + (FULLDAY[short(day.day)] || day.day)), lines);
-  if (advice) panel.appendChild(advice);
+  return lines;
+}
 
-  // Recipes for the dishes on this day, then the rest of the week's in a fold.
-  if (w.recipes && w.recipes.length) {
-    var forPerson = person;
-    var dishes = dayInfo.rows.map(function (row) { return String(row[1]).replace(/ \(packed\)$/, ""); });
-    var today = w.recipes.filter(function (r) { return dishes.indexOf(r.name) > -1; });
-    var rest = w.recipes.filter(function (r) { return dishes.indexOf(r.name) < 0; });
-    var qty = forPerson ? " (amounts for " + forPerson.name + ")" : " (amounts for everyone)";
-    if (today.length) {
-      panel.appendChild(el("h2", "rh", "Today’s recipes" + qty));
-      var list = el("ul", "recipes");
-      today.forEach(function (r) { list.appendChild(recipeItem(r, forPerson)); });
-      panel.appendChild(list);
-    }
-    if (rest.length) {
-      var fold = el("details", "exfold");
-      fold.appendChild(el("summary", null, (today.length ? "The rest of this week’s recipes" : "This week’s recipes") + qty));
-      var inner = el("div");
-      var more = el("ul", "recipes");
-      rest.forEach(function (r) { more.appendChild(recipeItem(r, forPerson)); });
-      inner.appendChild(more);
-      fold.appendChild(inner);
-      panel.appendChild(fold);
-    }
+// Adds the recipes to the Meals view: the ones for the dishes on this day, then the rest of the
+// week's in a fold. Amounts are for `forPerson`, or for everyone when it is null.
+function addDayRecipes(panel, recipes, dayInfo, forPerson) {
+  var dishes = dayInfo.rows.map(function (row) { return String(row[1]).replace(/ \(packed\)$/, ""); });
+  var today = recipes.filter(function (r) { return dishes.indexOf(r.name) > -1; });
+  var rest = recipes.filter(function (r) { return dishes.indexOf(r.name) < 0; });
+  var qty = forPerson ? " (amounts for " + forPerson.name + ")" : " (amounts for everyone)";
+  if (today.length) {
+    panel.appendChild(el("h2", "rh", "Today’s recipes" + qty));
+    var list = el("ul", "recipes");
+    today.forEach(function (r) { list.appendChild(recipeItem(r, forPerson)); });
+    panel.appendChild(list);
   }
-
-  if (person) {
-    var guide = el("details", "exfold");
-    guide.appendChild(el("summary", null, person.name + "’s guide, eating times and calendar"));
-    var g = el("div");
-    g.appendChild(personGuide(person, who));
-    guide.appendChild(g);
-    panel.appendChild(guide);
+  if (rest.length) {
+    var fold = el("details", "exfold");
+    fold.appendChild(el("summary", null, (today.length ? "The rest of this week’s recipes" : "This week’s recipes") + qty));
+    var inner = el("div");
+    var more = el("ul", "recipes");
+    rest.forEach(function (r) { more.appendChild(recipeItem(r, forPerson)); });
+    inner.appendChild(more);
+    fold.appendChild(inner);
+    panel.appendChild(fold);
   }
 }
 
