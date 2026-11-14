@@ -754,16 +754,10 @@ function arrange(dishes) {
 // Exercise
 // ---------------------------------------------------------------------------
 
-// One person's exercise for the 4 weeks: their workouts, each week's days and targets, notes and medical considerations.
-function exerciseFor(p, r, rnd) {
-  const a = p.answers || {};
-  const equipment = new Set(list(a.equipment));
-  const gentle = ['Low energy or chronic fatigue', 'Chronic pain'].some(x => r.support.has(x));
-  const seated = r.support.has('Use a wheelchair or mobility aid');
-  const pregnant = r.conditions.has('Pregnant or breastfeeding');
+// Which cardio suits a person: {cardio (their main one), otherCardio (for days the pool isn't
+// open to them), poolDays (the days they can get to a public pool)}.
+function cardioFor(a, equipment, seated) {
   const likes = String(a.exercise_likes || '').toLowerCase();
-  const minutes = { 'Less than 15 minutes': 10, '15 to 30 minutes': 20, '30 to 60 minutes': 30, 'More than an hour': 45 }[a.exercise_time] || 20;
-  const level = seated ? 'seated' : equipment.has('Gym membership') ? 'gym' : equipment.has('Dumbbells') ? 'dumbbells' : equipment.has('Resistance bands') ? 'bands' : 'none';
   let cardio = seated ? 'Seated cardio or a push/wheel' : 'Walk';
   if (!seated && (hasPool(equipment) && /swim/.test(likes))) cardio = equipment.has('Pool at home') ? 'Swim' : 'Swim at the pool';
   else if (!seated && (equipment.has('Exercise bike') || equipment.has('Bike')) && /bike|cycl|ride/.test(likes)) cardio = 'Ride';
@@ -779,83 +773,115 @@ function exerciseFor(p, r, rnd) {
   }
   // What the other cardio days are when the pool is only some days.
   const otherCardio = lowerBody && canRide ? 'Ride' : 'Walk';
+  return { cardio, otherCardio, poolDays };
+}
 
+// What each health condition means for exercise, in the plan's words.
+const CONDITION_NOTES = {
+  'Type 1 diabetes': 'You said you have type 1 diabetes. It may be worth checking with your diabetes team about insulin and carbs around exercise, and keeping fast-acting carbs with you during sessions.',
+  'Type 2 diabetes or pre-diabetes': 'You said you have type 2 diabetes or pre-diabetes. Short walks after meals may help. If you take medicine that can cause low blood sugar, consider asking your GP about exercise.',
+  'High blood pressure': 'You said you have high blood pressure. Consider breathing out as you lift rather than holding your breath, and checking with your GP before heavy lifting.',
+  'Heart condition': 'You said you have a heart condition. It may be worth checking with your GP or cardiologist before starting, and stopping if you feel chest pain, dizziness or unusual breathlessness.',
+  'Kidney condition': 'You said you have a kidney condition. Protein, salt and fluid needs can differ, so consider checking this plan with your doctor or dietitian.',
+  'Pregnant or breastfeeding': 'You said you’re pregnant or breastfeeding. Consider checking with your midwife or GP before new exercise. This plan keeps to walking and gentle strength.',
+};
+
+// The medical considerations shown with a person's exercise: what they wrote about their health,
+// their conditions, medicines, supplements and fasting. `gentle` is true for low energy or chronic pain.
+function exerciseConsiderations(a, r, gentle) {
   const medical = [];
+  const said = text => text && !/^(no|none|nil|n\/a)\.?$/i.test(text);   // they wrote something other than "no"
   const injuries = String(a.injuries || '').trim();
   const gp = String(a.gp || '').trim();
   const medicines = String(a.medicines || '').trim();
   const otherConditions = String(a.conditions_other || '').trim();
   // A health condition they wrote in their own words can't be read by rules, so the plan says so.
-  if (otherConditions && !/^(no|none|nil|n\/a)\.?$/i.test(otherConditions)) medical.push('You mentioned another health condition: “' + otherConditions.slice(0, 300) + '”. This plan wasn’t changed for it, so it may be worth checking the meals and exercise with your GP.');
-  if (injuries && !/^(no|none|nil|n\/a)\.?$/i.test(injuries)) medical.push('You mentioned: “' + injuries.slice(0, 300) + '”. Consider checking with your GP or physio which exercises suit you, and stop any exercise that causes pain.');
-  if (gp && !/^(no|none|nil|n\/a)\.?$/i.test(gp)) medical.push('You said a doctor or dietitian told you: “' + gp.slice(0, 300) + '”. What they told you comes first. If this plan doesn’t fit it, go with what they said and let an admin know.');
-  if (medicines && !/^(no|none|nil|n\/a)\.?$/i.test(medicines)) medical.push('You mentioned medicines or supplements: “' + medicines.slice(0, 200) + '”. It may be worth asking your pharmacist whether any foods or exercise affect them.');
-  const C = {
-    'Type 1 diabetes': 'You said you have type 1 diabetes. It may be worth checking with your diabetes team about insulin and carbs around exercise, and keeping fast-acting carbs with you during sessions.',
-    'Type 2 diabetes or pre-diabetes': 'You said you have type 2 diabetes or pre-diabetes. Short walks after meals may help. If you take medicine that can cause low blood sugar, consider asking your GP about exercise.',
-    'High blood pressure': 'You said you have high blood pressure. Consider breathing out as you lift rather than holding your breath, and checking with your GP before heavy lifting.',
-    'Heart condition': 'You said you have a heart condition. It may be worth checking with your GP or cardiologist before starting, and stopping if you feel chest pain, dizziness or unusual breathlessness.',
-    'Kidney condition': 'You said you have a kidney condition. Protein, salt and fluid needs can differ, so consider checking this plan with your doctor or dietitian.',
-    'Pregnant or breastfeeding': 'You said you’re pregnant or breastfeeding. Consider checking with your midwife or GP before new exercise. This plan keeps to walking and gentle strength.',
-  };
-  for (const c of r.conditions) if (C[c]) medical.push(C[c]);
+  if (said(otherConditions)) medical.push('You mentioned another health condition: “' + otherConditions.slice(0, 300) + '”. This plan wasn’t changed for it, so it may be worth checking the meals and exercise with your GP.');
+  if (said(injuries)) medical.push('You mentioned: “' + injuries.slice(0, 300) + '”. Consider checking with your GP or physio which exercises suit you, and stop any exercise that causes pain.');
+  if (said(gp)) medical.push('You said a doctor or dietitian told you: “' + gp.slice(0, 300) + '”. What they told you comes first. If this plan doesn’t fit it, go with what they said and let an admin know.');
+  if (said(medicines)) medical.push('You mentioned medicines or supplements: “' + medicines.slice(0, 200) + '”. It may be worth asking your pharmacist whether any foods or exercise affect them.');
+  for (const c of r.conditions) if (CONDITION_NOTES[c]) medical.push(CONDITION_NOTES[c]);
   for (const m of r.meds) if (MEDS[m] && MEDS[m].exercise) medical.push(MEDS[m].exercise);
   medical.push(...supplementNotes(r).exercise);
   medical.push(...fastNotes(r, a).exercise);
   if (r.meds.size) medical.push('Because you take medicines, consider checking this exercise plan with your GP before you start.');
   if (gentle) medical.push('You mentioned low energy or chronic pain. On harder days, consider a shorter session or just a walk. Any movement counts.');
+  return medical;
+}
+
+// A child's exercise: active play every day, the same for all 4 weeks.
+function kidExercise(medical) {
+  const weeks = [];
+  for (let w = 0; w < 4; w++) {
+    weeks.push({
+      focus: 'Move every day', targets: ['About 60 minutes of active play a day, counting school and sport', 'Less screen time on school nights'],
+      days: DAYS.map(day => ({ day, session: day === 'Sat' || day === 'Sun' ? 'Active play: park, bike, swim or sport' : 'Active play after school' })),
+    });
+  }
+  return { weeks, top: { notes: ['Play counts: running around, riding, swimming, dancing and sport all count.', 'Kids don’t need diets or weigh-ins. Plenty of play and regular meals is the goal.'], medical } };
+}
+
+// One week of a teenager's or adult's exercise (w is 0 to 3): which days are strength and which
+// are cardio, and the week's targets. `sessions` is [strength sessions, cardio sessions] for the
+// week, `minutes` how long they have, and `c` what cardioFor chose.
+function exerciseWeek(w, sessions, minutes, c) {
+  const strengthDays = { 1: ['Wed'], 2: ['Mon', 'Thu'], 3: ['Mon', 'Wed', 'Fri'] };
+  const cardioOrder = ['Tue', 'Sat', 'Thu', 'Mon', 'Wed', 'Fri'];
+  const focus = ['Build the habit', 'A little more', 'Step it up', 'Keep it going'];
+  const [s, count] = sessions;
+  const sDays = strengthDays[s];
+  const mins = minutes + (minutes >= 20 ? w * 5 : 0);
+  let cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, count);
+  // Public pool: swims only on the days they can get there; any other cardio days are walks.
+  let swimDays = cDays;
+  if (c.cardio === 'Swim at the pool' && c.poolDays.length) {
+    swimDays = c.poolDays.filter(d => !sDays.includes(d)).slice(0, count);
+    cDays = swimDays.concat(cardioOrder.filter(d => !sDays.includes(d) && !swimDays.includes(d)).slice(0, count - swimDays.length));
+  }
+  const cardioTarget = swimDays.length === cDays.length
+    ? count + ' × ' + c.cardio.toLowerCase() + ' ' + mins + ' minutes'
+    : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × ' + c.otherCardio.toLowerCase()].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
+  let ab = 0;
+  return {
+    focus: focus[w],
+    targets: [s + ' strength session' + (s > 1 ? 's' : ''), cardioTarget, 'A few more steps each day than last week'],
+    days: DAYS.map(day => {
+      const o = { day };
+      if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
+      if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? c.cardio : c.otherCardio) + ' ' + mins + ' minutes';
+      if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
+      return o;
+    }),
+  };
+}
+
+// One person's exercise for the 4 weeks: their workouts, each week's days and targets, notes and medical considerations.
+function exerciseFor(p, r, rnd) {
+  const a = p.answers || {};
+  const equipment = new Set(list(a.equipment));
+  const gentle = ['Low energy or chronic fatigue', 'Chronic pain'].some(x => r.support.has(x));
+  const seated = r.support.has('Use a wheelchair or mobility aid');
+  const pregnant = r.conditions.has('Pregnant or breastfeeding');
+  const minutes = { 'Less than 15 minutes': 10, '15 to 30 minutes': 20, '30 to 60 minutes': 30, 'More than an hour': 45 }[a.exercise_time] || 20;
+  const level = seated ? 'seated' : equipment.has('Gym membership') ? 'gym' : equipment.has('Dumbbells') ? 'dumbbells' : equipment.has('Resistance bands') ? 'bands' : 'none';
+  const medical = exerciseConsiderations(a, r, gentle);
+  if (r.kid) return kidExercise(medical);
 
   const notes = [
     'If a session feels too hard, do less rather than skipping it.',
     'Warm up for 5 minutes first. You should be able to talk during walks.',
     'Sore muscles a day or two after a new exercise are normal. Sharp pain isn’t: stop and get it checked.',
   ];
-
-  const weeks = [];
-  if (r.kid) {
-    for (let w = 0; w < 4; w++) {
-      weeks.push({
-        focus: 'Move every day', targets: ['About 60 minutes of active play a day, counting school and sport', 'Less screen time on school nights'],
-        days: DAYS.map(day => ({ day, session: day === 'Sat' || day === 'Sun' ? 'Active play: park, bike, swim or sport' : 'Active play after school' })),
-      });
-    }
-    return { weeks, top: { notes: ['Play counts: running around, riding, swimming, dancing and sport all count.', 'Kids don’t need diets or weigh-ins. Plenty of play and regular meals is the goal.'], medical } };
-  }
+  // [strength sessions, cardio sessions] for each of the 4 weeks.
   const plan = gentle || pregnant
     ? [[1, 3], [2, 3], [2, 4], [2, 4]]
     : r.teen ? [[2, 3], [2, 3], [2, 4], [2, 4]]
     : [[2, 3], [2, 4], [3, 4], [3, 5]];
-  const strengthDays = { 1: ['Wed'], 2: ['Mon', 'Thu'], 3: ['Mon', 'Wed', 'Fri'] };
-  const cardioOrder = ['Tue', 'Sat', 'Thu', 'Mon', 'Wed', 'Fri'];
-  const focus = ['Build the habit', 'A little more', 'Step it up', 'Keep it going'];
-  for (let w = 0; w < 4; w++) {
-    const [s, c] = plan[w];
-    const sDays = strengthDays[s];
-    const mins = minutes + (minutes >= 20 ? w * 5 : 0);
-    let cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, c);
-    // Public pool: swims only on the days they can get there; any other cardio days are walks.
-    let swimDays = cDays;
-    if (cardio === 'Swim at the pool' && poolDays.length) {
-      swimDays = poolDays.filter(d => !sDays.includes(d)).slice(0, c);
-      cDays = swimDays.concat(cardioOrder.filter(d => !sDays.includes(d) && !swimDays.includes(d)).slice(0, c - swimDays.length));
-    }
-    const cardioTarget = swimDays.length === cDays.length
-      ? c + ' × ' + cardio.toLowerCase() + ' ' + mins + ' minutes'
-      : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × ' + otherCardio.toLowerCase()].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
-    let ab = 0;
-    weeks.push({
-      focus: focus[w],
-      targets: [s + ' strength session' + (s > 1 ? 's' : ''), cardioTarget, 'A few more steps each day than last week'],
-      days: DAYS.map(day => {
-        const o = { day };
-        if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
-        if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? cardio : otherCardio) + ' ' + mins + ' minutes';
-        if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
-        return o;
-      }),
-    });
-  }
-  const made = strengthWorkouts(p, r, { level, gentle, pregnant, seated, injuries: injuries + ' ' + gp }, rnd || Math.random);
+  const cardio = cardioFor(a, equipment, seated);
+  const weeks = [];
+  for (let w = 0; w < 4; w++) weeks.push(exerciseWeek(w, plan[w], minutes, cardio));
+  const injuries = String(a.injuries || '').trim() + ' ' + String(a.gp || '').trim();
+  const made = strengthWorkouts(p, r, { level, gentle, pregnant, seated, injuries }, rnd || Math.random);
   if (made.note) notes.push(made.note);
   return { weeks, top: { workouts: made.workouts, notes, medical } };
 }
