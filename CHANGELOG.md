@@ -3,7 +3,7 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
-## Unreleased
+## v1.9.0 (2026-11-14)
 
 - **Current food now makes the shopping cheaper in the built-in plan builder.** For a family with a
   budget, the builder used to stop cutting costs once the shopping fitted the budget, so the saving
