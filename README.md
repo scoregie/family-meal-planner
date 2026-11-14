@@ -9,7 +9,7 @@ It runs on your own server (two small Docker containers, for example in a Proxmo
 **Getting started**
 
 - **About me:** each person answers questions about their goals, health, food likes and dislikes, budget, week, exercise and any support needs (for example ADHD or autism-friendly routines). Adults can answer for kids.
-- **Current food:** in More, anyone in the family lists the food already at home, sorted into pantry, fridge, freezer and other. The next plan prefers meals that use it and leaves it off the shopping lists.
+- **Current food:** in More, anyone in the family lists the food already at home, sorted by where it is kept (pantry, spices and seasonings, fridge, freezer, fruit bowl and bench, other). The next plan prefers meals that use it and leaves it off the shopping lists.
 - **Plan setup:** an admin chooses the family's AI (Claude, OpenAI, Google Gemini, a local Ollama model, or no AI). When everyone is finished, they tap **Draft our plan**: the AI (or the built-in plan builder) writes 4 weeks of meals, snacks, recipes, priced shopping lists and an exercise plan for each person. The admin reviews it, then approves or discards it, and can rebuild it any time answers change.
 
 **Every day**
@@ -202,7 +202,7 @@ Either way, every new entry is checked before it's used: dishes may only use ing
 
 ## Uploading files
 
-Everyone gets a **My files** page in More for things that help with the plan: Lose It exports, Apple Health exports, blood tests, photos and anything else. Each person only sees their own files. Admins can see, add and delete everyone's.
+Everyone gets a **My files** page in More for things that help with the plan: Lose It exports, Apple Health exports, blood tests, photos, food photos (shelves of the pantry, fridge and freezer, for filling in Current food) and anything else. Each person only sees their own files. Admins can see, add and delete everyone's.
 
 Blood test results are only used in a plan if the person says yes to the About me question "May the plan writer read the blood test results you upload in My files?" (under Health). Then their newest results (up to 3 PDFs, JPG or PNG photos, or text files) are sent to Claude with the rest of the request when an admin drafts the plan, or read by a Claude Code session. The built-in builder and the other AIs can't read files.
 
@@ -360,7 +360,7 @@ With Claude, if Anthropic's safety checks decline a request, it is automatically
 
 **Settings** (in More) changes how the app looks:
 
-- **On this device:** anyone can pick light or dark, a colour, a font and a text size just for themselves. These are saved in their browser.
+- **On this device:** anyone can pick light or dark, a colour, a font and a text size just for themselves. These are saved in their browser. The round moon or sun button at the top of every page swaps light and dark with one tap.
 - **For everyone (admins):** the household's colour, font and text size, used by anyone who hasn't chosen their own. Saved in `data/app.db`.
 - **App icon (admins):** pick a picture (or type up to two letters or an emoji) and a background colour. The icon is drawn in the browser and saved as `site/icon-512.png`, `site/icon-192.png` and `site/apple-touch-icon.png`. Old icons are kept in `data/icon-backups/`, and **Back to the original icon** restores the first one. On iPhone, remove the app from the home screen and add it again to see a new icon.
 

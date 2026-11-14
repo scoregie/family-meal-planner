@@ -20,37 +20,11 @@ const path = require('path');
 const db = require('./db');
 const zip = require('./zip');
 const uploads = require('./uploads');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const DAY = 24 * 60 * 60 * 1000;
 const KJ_PER_KCAL = 4.184;
 const KG_PER_LB = 0.45359237;
-
-// Sends a JSON answer with an HTTP status code.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads the JSON the page sent (up to 10 KB).
-function body(req) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > 1e4) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(text || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Dates. Everything is grouped by the person's local date, written "YYYY-MM-DD".
@@ -144,6 +118,7 @@ async function readLoseIt(file) {
   const entries = zip.list(file);
   const find = name => entries.find(e => e.name === name || e.name.endsWith('/' + name));
   const rows = [];
+  // Keeps one number for one day if it is sensible (no negative weights or impossible step counts).
   const add = (date, kind, value, unit) => {
     if (sensible(kind, value, date)) rows.push({ date, kind, value: Math.round(value * 100) / 100, unit });
   };
@@ -216,6 +191,7 @@ async function readAppleHealth(file) {
   });
 
   const rows = [];
+  // Keeps one number for one day if it is sensible (no negative weights or impossible step counts).
   const add = (date, kind, value, unit) => {
     if (sensible(kind, value, date)) rows.push({ date, kind, value: Math.round(value * 100) / 100, unit });
   };
@@ -321,17 +297,12 @@ function kjOf(m) {
   return 17 * (m.p || 0) + 17 * (m.c || 0) + 37 * (m.f || 0);
 }
 
-// Builds everything the dashboard shows for one person over the last `weeks` weeks.
-function summary(person, weeks, tz, ctx) {
-  const today = localDate(Date.now(), tz);
-  const firstWeek = addDays(mondayOf(today), -7 * (weeks - 1));
-  // Read a day early and late, so a time zone can't push a tick out of range.
-  const sinceMs = new Date(firstWeek + 'T00:00:00Z').getTime() - DAY;
-
-  // One value per date and kind, from the best source.
-  const byKind = {};   // kind -> Map(date -> {value, source})
+// A person's measurements since a date, one value per date and kind, from the best source.
+// Returns {byKind: kind -> Map(date -> {value, source}), manual: the weigh-ins typed by hand}.
+function bestMeasurements(person, since) {
+  const byKind = {};
   const manual = [];
-  for (const m of db.measurements(person, firstWeek)) {
+  for (const m of db.measurements(person, since)) {
     const order = PREFER[m.kind] || [m.source];
     const map = byKind[m.kind] || (byKind[m.kind] = new Map());
     const current = map.get(m.date);
@@ -339,8 +310,12 @@ function summary(person, weeks, tz, ctx) {
     if (!current || rank(m.source) < rank(current.source)) map.set(m.date, { value: m.value, source: m.source });
     if (m.source === 'manual' && m.kind === 'weight') manual.push({ id: m.id, date: m.date, weight: m.value });
   }
+  return { byKind, manual };
+}
 
-  // The weeks, oldest first.
+// An empty record for each week from firstWeek to today, oldest first. Returns {list, weekOf},
+// where weekOf(date) gives the week a date falls in (or null if it is outside them).
+function emptyWeeks(firstWeek, weeks, today) {
   const list = [];
   const index = {};
   for (let i = 0; i < weeks; i++) {
@@ -350,7 +325,11 @@ function summary(person, weeks, tz, ctx) {
       energy_in: [], protein_in: [], meals: 0, plan_kj: {}, plan_protein: {}, scores: [], sessions: 0 });
   }
   const weekOf = date => (date >= firstWeek && date <= today ? list[index[mondayOf(date)]] : null);
+  return { list, weekOf };
+}
 
+// Puts each measurement into its week: daily numbers are listed, workouts are added up.
+function addMeasurements(byKind, weekOf) {
   for (const kind of ['weight', 'steps', 'active_energy', 'energy_in', 'protein_in']) {
     for (const [date, v] of byKind[kind] || []) {
       const w = weekOf(date);
@@ -363,8 +342,11 @@ function summary(person, weeks, tz, ctx) {
       if (w) w[kind] += v.value;
     }
   }
+}
 
-  // The plan's estimate: each ticked meal's macros × this person's portion.
+// Puts what the person ticked in the app into its week: meals eaten (with the plan's estimate of
+// their energy and protein: each meal's macros × this person's portion), ratings and exercise sessions.
+function addTicks(person, sinceMs, tz, ctx, weekOf) {
   const plan = ctx.readPlan() || {};
   const planKey = db.planKeyFor(plan, person, ctx.toKey);
   const portion = Number(plan.people && plan.people[planKey] && plan.people[planKey].portion) || 1;
@@ -386,9 +368,11 @@ function summary(person, weeks, tz, ctx) {
     const w = weekOf(localDate(s.done_at, tz));
     if (w) w.sessions++;
   }
+}
 
-  // Turn each week's lists into averages. Daily numbers are "per day that has a value".
-  const out = list.map(w => ({
+// Turns one week's lists into averages. Daily numbers are "per day that has a value".
+function weekAverages(w) {
+  return {
     week: w.week,
     weight: round(average(w.weight), 1),
     steps: round(average(w.steps), 0),
@@ -402,31 +386,46 @@ function summary(person, weeks, tz, ctx) {
     plan_protein: round(average(Object.values(w.plan_protein)), 0),
     score: round(average(w.scores), 1),
     sessions: w.sessions,
-  }));
+  };
+}
 
-  // Every weigh-in in the range, for the weight chart's dots.
-  const weighIns = [...(byKind.weight || new Map())]
-    .map(([date, v]) => ({ date, weight: v.value, source: v.source }))
-    .sort((a, b) => (a.date < b.date ? -1 : 1));
-
-  // The newest day (today, else yesterday) with phone numbers, for the Today page.
-  let latest = null;
+// The newest day (today, else yesterday) with phone numbers, for the Today page. Null if neither has any.
+function latestDay(byKind, today) {
   for (const date of [today, addDays(today, -1)]) {
     const day = { date };
     for (const kind of ['steps', 'active_energy', 'energy_in']) {
       const v = byKind[kind] && byKind[kind].get(date);
       if (v) day[kind] = round(v.value, 0);
     }
-    if (Object.keys(day).length > 1) { latest = day; break; }
+    if (Object.keys(day).length > 1) return day;
   }
+  return null;
+}
+
+// Builds everything the dashboard shows for one person over the last `weeks` weeks.
+function summary(person, weeks, tz, ctx) {
+  const today = localDate(Date.now(), tz);
+  const firstWeek = addDays(mondayOf(today), -7 * (weeks - 1));
+  // Read a day early and late, so a time zone can't push a tick out of range.
+  const sinceMs = new Date(firstWeek + 'T00:00:00Z').getTime() - DAY;
+
+  const { byKind, manual } = bestMeasurements(person, firstWeek);
+  const { list, weekOf } = emptyWeeks(firstWeek, weeks, today);
+  addMeasurements(byKind, weekOf);
+  addTicks(person, sinceMs, tz, ctx, weekOf);
+
+  // Every weigh-in in the range, for the weight chart's dots.
+  const weighIns = [...(byKind.weight || new Map())]
+    .map(([date, v]) => ({ date, weight: v.value, source: v.source }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
 
   const profile = db.getProfile(person);
   const answers = (profile && profile.answers) || {};
   return {
     person,
     today,
-    latest,
-    weeks: out,
+    latest: latestDay(byKind, today),
+    weeks: list.map(weekAverages),
     weighIns,
     manual: manual.sort((a, b) => (a.date < b.date ? 1 : -1)),
     goalWeight: Number(answers.goal_weight) || null,
@@ -471,7 +470,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
   }
 
   if (urlPath === '/api/measurements' && req.method === 'POST') {
-    const b = await body(req);
+    const b = await readBody(req, 1e4);
     const weight = Number(b.weight);
     const date = String(b.date || '');
     if (!isDate(date) || date > addDays(localDate(Date.now()), 1)) {

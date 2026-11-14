@@ -5,6 +5,46 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
 
 ## Unreleased
 
+- **Current food now makes the shopping cheaper in the built-in plan builder.** For a family with a
+  budget, the builder used to stop cutting costs once the shopping fitted the budget, so the saving
+  from food at home was spent on dearer meals and the 4 weeks could cost more than with an empty
+  kitchen. It now judges the meals on what they are worth (shopping plus the food at home they
+  use), and its note to the admin says how much the food at home covered.
+- **Current food items are read whole.** "Wholemeal bread, 1 loaf (Wonder)" is one food with an
+  amount, not "Wholemeal bread" plus a stray "1 loaf (Wonder)". "Apples, 4" is four apples (not
+  four bags), "Frozen peas, a little left" is part of a pack, and a ready meal like "Butter chicken
+  with rice" is no longer counted as butter. The admin's note lists a few examples of what the
+  meal library doesn't know, not every one.
+- **A stricter "not used in this plan" check.** A food only counts as used when the plan names it
+  ("jasmine rice" by a recipe with rice; "teriyaki sauce" not by one with soy sauce). Before, any
+  word typed with the item was enough, including "use" from "use by 20 Nov".
+- **Drinks and baking things aren't reported as unused.** Tea, coffee, cordial, sugar, flour,
+  bicarb, yeast and food colouring aren't for meals, so plans aren't asked to use them.
+- **Plans are checked for buying what is already at home.** If the first shopping lists (Stock-up 1
+  and Week 1) include food that is on Current food, the plan writer is told which, and asked to
+  take it off or buy only the extra the recipes need. An AI is sent back over it once, and a
+  Claude Code session sees it when it submits. The drafting instructions now say the same.
+- **Current food: an Edit button on every item.** Fix the wording of something, or move it to a
+  different place (say, from Fridge to Freezer), without removing it and typing it again. It
+  keeps its spot in the list.
+- **Current food: two more lists.** "Spices and seasonings" (dried herbs, spices, stock powders,
+  seasoning mixes) and "Fruit bowl and bench" (fresh food kept out of the fridge) sit beside
+  Pantry, Fridge, Freezer and Other, so a full pantry is easier to read and fresh food on the
+  bench is used early in the plan.
+- **Food photos.** My files has a new "Food photos" box for photos of your pantry, fridge and
+  freezer shelves. Food that is read from those photos (for now by a Claude Code session, see
+  CLAUDE.md) is marked "Read from a photo" on Current food, and the app remembers which photos
+  it came from. **Clear food from photos** removes all of it, and deletes those photos, so you
+  can start again with new photos after a shop or a clean-out. Things typed in by hand stay.
+  Only your own photos are deleted, or everyone's if you are an admin.
+- **Light or dark button at the top of every page.** A round button (a moon or a sun) swaps
+  between light and dark with one tap. It saves the same "Light or dark" choice as Settings >
+  On this device, so it is remembered on that phone or computer. Choose "Match my device" in
+  Settings to go back to following the device.
+- **Fixed: updates show up straight away.** Browsers could keep an old copy of a page or its
+  scripts for hours or days after an update (so a new feature seemed to be missing). Pages and
+  scripts are now checked for a newer copy each time. After updating to this version, refresh
+  once (or close and reopen the app) to clear the old copy.
 - **New page: Current food (in More).** Anyone in the family can list the food already at home,
   sorted into Pantry, Fridge, Freezer and Other, adding and removing one thing at a time. It
   replaces the "What's already in your kitchen?" box on Plan setup, which now shows how many
@@ -80,6 +120,21 @@ Each release is tagged on GitHub (see Releases) with these notes. To update a se
   - Fasting with type 1 diabetes, diabetes medicine that can cause lows, other medicines, or
     while pregnant or breastfeeding adds a consideration to check with their health
     professional. Going without food isn't applied to anyone under 18.
+- **Tidier plan builder code (no change to plans).** The 350-line function that built a whole plan
+  is now a short list of named steps (family meals, each person's own meals, exercise, each week,
+  snacks, shopping), each small enough to read on its own.
+- **Names with accents are safe on slow connections.** A letter like "é" that arrived split across
+  two pieces of a request could be saved as two broken characters. Every part of the server now
+  reads requests the same way, from one shared file (`api/requests.js`), which joins the pieces first.
+- **The main page's script is in six smaller files (no change to the app).** `site/index.html` held
+  3,100 lines of script. It is now one file for what every tab shares, one for each of Shopping,
+  Meals, Exercise and Today, and one that starts the page (`site/app-*.js`).
+- **No more very long functions (no change to the app).** The 21 functions over 80 lines, on the
+  server and in the pages, are each split into small named steps with a plain comment: for
+  example the Today view is one function per card, and the progress chart is layout, axes, bars
+  or line, and the pop-up value.
+- **A page check for people changing the code** (`tools/page-check.sh`): it presses every button on
+  every page before and after a change and says whether anything came out different.
 
 ## v1.8.0 (2026-11-10)
 

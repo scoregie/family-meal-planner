@@ -84,6 +84,7 @@ function sumToday(type) {
 
 // ---------- the Health sync shortcut ----------
 
+// Builds the Health sync shortcut for one sync address, as the text of a shortcut file.
 function build(syncUrl) {
   const acts = [];
   const keyUid = uuid();

@@ -85,7 +85,7 @@ ticks and files are all stored under that key (`toKey` in `api/server.js`).
 | `db.js` | Every database read and write. Each function does one small job, like "get this account". |
 | `appearance.js` | The household's look, country, stores, energy unit and pinned products. |
 | `plandraft.js` | Plan setup: who has finished About me, which AI to use, and drafting a new plan. |
-| `currentfood.js` | Current food: the food the family already has, in pantry, fridge, freezer and other. The next plan uses it first. |
+| `currentfood.js` | Current food: the food the family already has, sorted by where it is kept (pantry, spices and seasonings, fridge, freezer, fruit bowl and bench, other). The next plan uses it first. |
 | `planbuilder.js` | The built-in plan builder: makes a whole plan from everyone's answers, with no AI. |
 | `plancheck.js` | Checks a plan an AI has just written (serves of vegetables and fruit, foods someone won't eat, wording) and sends the AI back to correct it before the draft is saved. |
 | `planextras.js` | What the plan writer is told about each person besides About me: their meal scores and notes, the health numbers they've logged or uploaded, their "small steps" record, and (if they said yes in About me) their blood test files from My files. |
@@ -106,6 +106,7 @@ ticks and files are all stored under that key (`toKey` in `api/server.js`).
 | `handoff-cli.js` | Lets Claude Code draft the plan (see CLAUDE.md). |
 | `hash-password.js` | Makes a password hash for the older `.env` logins. |
 | `names.js` | Turns a person's name into their key (`toKey`). |
+| `requests.js` | Reads the JSON a page sent (`readBody`) and sends a JSON reply (`send`); every file above uses it. |
 
 Data files: `library.json` (the builder's ingredients, meals and snacks), `library-prices.json`
 (local names and prices for other countries), `library-community.json` (shared new meals),
@@ -115,7 +116,10 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 
 | File | The page |
 | --- | --- |
-| `index.html` | The main app: Today, Meals, Shopping, Exercise and More. The biggest file. |
+| `index.html` | The main app: Today, Meals, Shopping, Exercise and More. It holds the layout and the look; its script is in the six `app-*.js` files below. |
+| `app-core.js` | What every tab of the main app shares: what the page remembers, people, saving and syncing, the week tabs. It starts with a list of all six files. |
+| `app-shopping.js`, `app-meals.js`, `app-exercise.js`, `app-today.js` | One file for each tab of the main app. |
+| `app-start.js` | Shows the chosen view, wires up the buttons and starts the main app. Loaded last. |
 | `login.html` | Logging in, the first account, invites, sign-ups and password resets. |
 | `profile.html` | About me, one section at a time. The questions come from `questions.json`. |
 | `setup.html` | Plan setup (admins). |

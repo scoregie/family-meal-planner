@@ -55,6 +55,10 @@
 	header @plan Cache-Control "no-cache"
 	@nocache path /sw.js /login /login.html
 	header @nocache Cache-Control "no-cache"
+	# Pages and their scripts: the browser asks "has this changed?" each time (a tiny request),
+	# so nobody keeps seeing an old copy of a page after an update.
+	@fresh path / *.html *.js *.css *.json
+	header @fresh Cache-Control "no-cache"
 
 	header {
 		X-Content-Type-Options nosniff

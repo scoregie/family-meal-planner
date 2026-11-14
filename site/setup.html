@@ -92,7 +92,7 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(-
 
     <section class="card" id="kitchenCard">
       <h2>What’s already in your kitchen?</h2>
-      <p class="note">The family lists the food at home on the Current food page, sorted into pantry, fridge, freezer and other. The next plan you draft prefers meals that use it and leaves what it covers off the shopping lists.</p>
+      <p class="note">The family lists the food at home on the Current food page, sorted by where it is kept (pantry, spices and seasonings, fridge, freezer, fruit bowl and bench, other). The next plan you draft prefers meals that use it and leaves what it covers off the shopping lists.</p>
       <p class="note" id="kitchenNote"></p>
       <div class="row"><a class="btn" href="food.html">Open Current food</a></div>
     </section>
@@ -323,50 +323,40 @@ function heardText(heard) {
   return "Last heard from it " + Math.round(seconds / 60) + " minutes ago. If that passes 10 minutes, it has probably stalled: cancel and try again. ";
 }
 
-// Step 3: the button to draft (or rebuild) the plan, or its progress while the AI writes it.
-function renderDraft() {
-  var box = $("draftBody");
-  box.textContent = "";
-  var job = DATA.job;
-  // The example plan's made-up people aren't waited for: they are left out of the family's plan.
-  var real = DATA.people.filter(function (p) { return !p.example; });
-  var finished = real.filter(function (p) { return p.finished; }).length;
-  var all = real.length;
-  $("draftTitle").textContent = DATA.isExample ? "Draft the plan" : "Draft a new plan";
+// Step 3 while the AI is writing: what it is doing, a progress bar, how long it has been, and a
+// Cancel button. The page asks the server again every 4 seconds.
+function renderDraftProgress(box, job) {
+  box.appendChild(el("p", null, (DATA.claude.name || "The AI") + " is writing your plan: " + (job.stage || "starting") + "…"));
+  var bar = el("div", "bar");
+  var fill = el("i");
+  fill.style.width = Math.round((job.progress || 0.02) * 100) + "%";
+  bar.appendChild(fill);
+  box.appendChild(bar);
+  // How long it has been going, and what is happening while the bar hasn't moved yet: the AI
+  // reads everything and thinks first, which can take several minutes before any plan appears.
+  var minutes = job.started ? Math.floor((Date.now() - job.started) / 60000) : 0;
+  var thinking = !job.progress || job.progress < 0.01;
+  if (thinking) bar.className = "bar waiting";
+  box.appendChild(el("p", "note", (minutes < 1 ? "Started just now. " : "Started " + minutes + (minutes === 1 ? " minute" : " minutes") + " ago. ") +
+    (thinking ? "It is reading everyone’s answers and thinking the plan through. The bar starts moving when it begins writing, often after a few minutes. " : "") +
+    heardText(job.heard) +
+    "The whole thing usually takes 10 to 20 minutes, because the plan is checked and corrected before you see it. You can close this page; the draft keeps going and shows up here when it’s ready."));
+  // Stop it part-way (started by mistake, say). Nothing is saved.
+  var stop = el("button", "btn small", "Cancel this draft");
+  stop.type = "button";
+  stop.onclick = function () {
+    if (!confirm("Stop writing this plan? Nothing is saved, and what the AI has done so far is still charged to the key.")) return;
+    stop.disabled = true;
+    api("DELETE", "/api/plan/draft").then(function () { status("Cancelled."); return load(); }).catch(function (e) { stop.disabled = false; status(e.message, true); });
+  };
+  box.appendChild(stop);
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(load, 4000);
+}
 
-  if (job && job.state === "running") {
-    box.appendChild(el("p", null, (DATA.claude.name || "The AI") + " is writing your plan: " + (job.stage || "starting") + "…"));
-    var bar = el("div", "bar");
-    var fill = el("i");
-    fill.style.width = Math.round((job.progress || 0.02) * 100) + "%";
-    bar.appendChild(fill);
-    box.appendChild(bar);
-    // How long it has been going, and what is happening while the bar hasn't moved yet: the AI
-    // reads everything and thinks first, which can take several minutes before any plan appears.
-    var minutes = job.started ? Math.floor((Date.now() - job.started) / 60000) : 0;
-    var thinking = !job.progress || job.progress < 0.01;
-    if (thinking) bar.className = "bar waiting";
-    box.appendChild(el("p", "note", (minutes < 1 ? "Started just now. " : "Started " + minutes + (minutes === 1 ? " minute" : " minutes") + " ago. ") +
-      (thinking ? "It is reading everyone’s answers and thinking the plan through. The bar starts moving when it begins writing, often after a few minutes. " : "") +
-      heardText(job.heard) +
-      "The whole thing usually takes 10 to 20 minutes, because the plan is checked and corrected before you see it. You can close this page; the draft keeps going and shows up here when it’s ready."));
-    // Stop it part-way (started by mistake, say). Nothing is saved.
-    var stop = el("button", "btn small", "Cancel this draft");
-    stop.type = "button";
-    stop.onclick = function () {
-      if (!confirm("Stop writing this plan? Nothing is saved, and what the AI has done so far is still charged to the key.")) return;
-      stop.disabled = true;
-      api("DELETE", "/api/plan/draft").then(function () { status("Cancelled."); return load(); }).catch(function (e) { stop.disabled = false; status(e.message, true); });
-    };
-    box.appendChild(stop);
-    clearTimeout(pollTimer);
-    pollTimer = setTimeout(load, 4000);
-    return;
-  }
-  if (job && job.state === "failed") box.appendChild(el("div", "msg err", "The last draft didn’t work: " + job.error));
-
-  var useAI = DATA.claude.enabled;
-  var name = DATA.claude.name || "the AI";
+// Step 3's words: what drafting does, what happens when a plan is approved, and the GP reminder.
+// `useAI` is whether an AI will write it, and `name` is that AI's name.
+function addDraftExplainer(box, useAI, name) {
   // One line on what the button does; the rest is behind "What happens?".
   box.appendChild(el("p", "note", useAI
     ? name + " writes 4 weeks of meals, shopping and exercise from everyone’s answers. It takes 10 to 20 minutes, with a check at the end. Nothing changes until you approve it."
@@ -380,17 +370,12 @@ function renderDraft() {
   box.appendChild(more);
   var warn = el("p", "warn", "Please check the meal and exercise plan with your GP, dietitian or physio before starting, especially for anyone with a health condition, taking medicines, pregnant, or a child. The plan is general information, not medical advice.");
   box.appendChild(warn);
-  box.appendChild(el("p", null, finished + " of " + all + " finished."));
-  var label = el("label", "f", "Anything " + name + " should know for the whole family? (optional)");
-  label.hidden = !useAI;
-  label.htmlFor = "note";
-  box.appendChild(label);
-  var note = el("textarea");
-  note.id = "note";
-  note.hidden = !useAI;
-  note.maxLength = 2000;
-  note.placeholder = "e.g. Keep it under $250 a week. Thursday is footy night, so something quick.";
-  box.appendChild(note);
+}
+
+// Step 3's buttons: draft with the AI, or build without it. `people` is {finished, all} (how many
+// have finished About me) and `note` is the box for a note to the AI. Returns the row of buttons.
+function draftButtons(useAI, name, people, note) {
+  var finished = people.finished, all = people.all;
   var row = el("div", "row");
   var ready = all > 0 && finished === all;
   // Starts making the plan, with the AI or the built-in builder, after checking with the admin.
@@ -417,62 +402,92 @@ function renderDraft() {
   builtin.onclick = function () { start("builtin", builtin); };
   row.appendChild(builtin);
   if (!ready && all) row.appendChild(el("span", "note", "Best once everyone has finished."));
-  box.appendChild(row);
+  return row;
 }
 
-// Step 3: a waiting draft, with enough detail to decide, and Approve or Discard.
-function renderReview() {
-  var d = DATA.draft;
-  $("reviewCard").hidden = !d;
-  if (!d) return;
-  var box = $("review");
+// Step 3: the button to draft (or rebuild) the plan, or its progress while the AI writes it.
+function renderDraft() {
+  var box = $("draftBody");
   box.textContent = "";
-  if (d.details) box.appendChild(el("p", "details", d.details));
-  d.weeks.forEach(function (w) {
-    var wk = el("details", "wk");
-    var s = el("summary", null, w.name);
-    s.appendChild(el("span", null, "about " + money(w.cost)));
-    wk.appendChild(s);
-    var list = el("ul");
-    if (w.kind === "stockup") list.appendChild(el("li", null, "Pantry and freezer items for the next two weeks"));
-    // Each day's breakfast, lunch and dinner (an older server only sends the dinners).
-    if (w.meals && w.meals.length) {
-      w.meals.forEach(function (m) {
-        var li = el("li");
-        li.appendChild(el("b", null, m.day + ": "));
-        li.appendChild(document.createTextNode([m.breakfast, m.lunch, m.dinner].filter(Boolean).join(" · ")));
-        list.appendChild(li);
-      });
-      if (w.useUp && w.useUp.length) list.appendChild(el("li", null, "Likely left over: " + w.useUp.join("; ")));
-    } else {
-      w.dinners.forEach(function (t) { list.appendChild(el("li", null, t)); });
-    }
-    wk.appendChild(list);
-    box.appendChild(wk);
-  });
-  d.people.forEach(function (p) {
-    var wk = el("details", "wk");
-    var s = el("summary", null, p.name);
-    s.appendChild(el("span", null, "portion " + p.portion));
-    wk.appendChild(s);
-    var list = el("ul");
-    if (p.health) {
-      // Their average serves a day in this draft, against the guideline amounts for their age.
-      // How they chose to eat (About me): building up is measured on weeks 3 and 4.
-      var pace = p.health.pace === "build" ? " They chose to build up, so this is weeks 3 and 4."
-        : p.health.pace === "own" ? " They chose to keep close to what they eat now, so nothing was added to reach the guideline amounts." : "";
-      list.appendChild(el("li", null, "Vegetables: about " + p.health.veg + " of " + p.health.target.veg + " serves a day. Fruit: about " + p.health.fruit + " of " + p.health.target.fruit + "." + (p.health.short.length ? " This is under the guideline amount." : "") + pace));
-    }
-    if (p.focus) list.appendChild(el("li", null, "Exercise: " + p.focus));
-    p.snacks.forEach(function (t) { list.appendChild(el("li", null, "Snack: " + t)); });
-    // What the plan tells this person: worth reading before approving.
-    if (p.guide) list.appendChild(el("li", null, "Guide: " + p.guide));
-    (p.tips || []).forEach(function (t) { list.appendChild(el("li", null, "Tip: " + t)); });
-    (p.steps || []).forEach(function (t) { list.appendChild(el("li", null, "Small step. " + t)); });
-    (p.medical || []).forEach(function (t) { list.appendChild(el("li", null, "Medical consideration: " + t)); });
-    wk.appendChild(list);
-    box.appendChild(wk);
-  });
+  var job = DATA.job;
+  // The example plan's made-up people aren't waited for: they are left out of the family's plan.
+  var real = DATA.people.filter(function (p) { return !p.example; });
+  var finished = real.filter(function (p) { return p.finished; }).length;
+  var all = real.length;
+  $("draftTitle").textContent = DATA.isExample ? "Draft the plan" : "Draft a new plan";
+
+  if (job && job.state === "running") return renderDraftProgress(box, job);
+  if (job && job.state === "failed") box.appendChild(el("div", "msg err", "The last draft didn’t work: " + job.error));
+
+  var useAI = DATA.claude.enabled;
+  var name = DATA.claude.name || "the AI";
+  addDraftExplainer(box, useAI, name);
+  box.appendChild(el("p", null, finished + " of " + all + " finished."));
+  var label = el("label", "f", "Anything " + name + " should know for the whole family? (optional)");
+  label.hidden = !useAI;
+  label.htmlFor = "note";
+  box.appendChild(label);
+  var note = el("textarea");
+  note.id = "note";
+  note.hidden = !useAI;
+  note.maxLength = 2000;
+  note.placeholder = "e.g. Keep it under $250 a week. Thursday is footy night, so something quick.";
+  box.appendChild(note);
+  box.appendChild(draftButtons(useAI, name, { finished: finished, all: all }, note));
+}
+
+// One week of a waiting draft, in a box that opens: its cost and each day's meals.
+function reviewWeek(w) {
+  var wk = el("details", "wk");
+  var s = el("summary", null, w.name);
+  s.appendChild(el("span", null, "about " + money(w.cost)));
+  wk.appendChild(s);
+  var list = el("ul");
+  if (w.kind === "stockup") list.appendChild(el("li", null, "Pantry and freezer items for the next two weeks"));
+  // Each day's breakfast, lunch and dinner (an older server only sends the dinners).
+  if (w.meals && w.meals.length) {
+    w.meals.forEach(function (m) {
+      var li = el("li");
+      li.appendChild(el("b", null, m.day + ": "));
+      li.appendChild(document.createTextNode([m.breakfast, m.lunch, m.dinner].filter(Boolean).join(" · ")));
+      list.appendChild(li);
+    });
+    if (w.useUp && w.useUp.length) list.appendChild(el("li", null, "Likely left over: " + w.useUp.join("; ")));
+  } else {
+    w.dinners.forEach(function (t) { list.appendChild(el("li", null, t)); });
+  }
+  wk.appendChild(list);
+  return wk;
+}
+
+// One person in a waiting draft, in a box that opens: their vegetables and fruit against the
+// guideline amounts, exercise, snacks, and what the plan tells them.
+function reviewPerson(p) {
+  var wk = el("details", "wk");
+  var s = el("summary", null, p.name);
+  s.appendChild(el("span", null, "portion " + p.portion));
+  wk.appendChild(s);
+  var list = el("ul");
+  if (p.health) {
+    // Their average serves a day in this draft, against the guideline amounts for their age.
+    // How they chose to eat (About me): building up is measured on weeks 3 and 4.
+    var pace = p.health.pace === "build" ? " They chose to build up, so this is weeks 3 and 4."
+      : p.health.pace === "own" ? " They chose to keep close to what they eat now, so nothing was added to reach the guideline amounts." : "";
+    list.appendChild(el("li", null, "Vegetables: about " + p.health.veg + " of " + p.health.target.veg + " serves a day. Fruit: about " + p.health.fruit + " of " + p.health.target.fruit + "." + (p.health.short.length ? " This is under the guideline amount." : "") + pace));
+  }
+  if (p.focus) list.appendChild(el("li", null, "Exercise: " + p.focus));
+  p.snacks.forEach(function (t) { list.appendChild(el("li", null, "Snack: " + t)); });
+  // What the plan tells this person: worth reading before approving.
+  if (p.guide) list.appendChild(el("li", null, "Guide: " + p.guide));
+  (p.tips || []).forEach(function (t) { list.appendChild(el("li", null, "Tip: " + t)); });
+  (p.steps || []).forEach(function (t) { list.appendChild(el("li", null, "Small step. " + t)); });
+  (p.medical || []).forEach(function (t) { list.appendChild(el("li", null, "Medical consideration: " + t)); });
+  wk.appendChild(list);
+  return wk;
+}
+
+// The Approve and Discard buttons under a waiting draft (`d`).
+function reviewButtons(d) {
   var row = el("div", "row");
   var ok = el("button", "btn primary", "Approve and use this plan");
   ok.type = "button";
@@ -501,7 +516,20 @@ function renderReview() {
   };
   row.appendChild(ok);
   row.appendChild(no);
-  box.appendChild(row);
+  return row;
+}
+
+// Step 3: a waiting draft, with enough detail to decide, and Approve or Discard.
+function renderReview() {
+  var d = DATA.draft;
+  $("reviewCard").hidden = !d;
+  if (!d) return;
+  var box = $("review");
+  box.textContent = "";
+  if (d.details) box.appendChild(el("p", "details", d.details));
+  d.weeks.forEach(function (w) { box.appendChild(reviewWeek(w)); });
+  d.people.forEach(function (p) { box.appendChild(reviewPerson(p)); });
+  box.appendChild(reviewButtons(d));
   box.appendChild(el("p", "warn", "Before you start: please check this meal and exercise plan with your GP, dietitian or physio, especially for anyone with a health condition, taking medicines, pregnant, or a child."));
   box.appendChild(el("p", "note", "Want changes? Approve it and use Ask AI or Edit plan for tweaks afterwards, or discard it and make another."));
 }

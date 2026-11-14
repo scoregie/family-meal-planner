@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
-  Current food: what the family already has at home, sorted into pantry, fridge, freezer and
-  other. Anyone in the family can add things and take them off. The next plan uses this food
+  Current food: what the family already has at home, sorted into pantry, spices and
+  seasonings, fridge, freezer, fruit bowl and bench, and other. Anyone in the family can add things and take them off. The next plan uses this food
   first and leaves what it covers off the shopping lists.
   How this file is laid out: the style section at the top sets the look, the body is the
   layout, and the script section near the end makes it work (asking the server for data with
@@ -41,8 +41,15 @@ h1{font-size:1.5rem;margin:0 0 .2rem}
 .items li:first-child{border-top:0}
 .items .what{flex:1;min-width:0;overflow-wrap:anywhere}
 .items .ai{display:block;color:var(--mute);font-size:.8rem}
+.photocard p{margin:0 0 .6rem;font-size:.9rem}
 .remove{font:inherit;font-size:.85rem;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:.5rem;min-width:2.75rem;min-height:2.75rem;padding:0 .7rem;cursor:pointer}
-.remove:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.remove:focus-visible,.edit select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.items li.editing{display:block;padding:.6rem 0}
+.edit{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap}
+.edit div{flex:1;min-width:9rem}
+.edit div.where{flex:0 1 9rem}
+.edit label{display:block;font-size:.85rem;font-weight:700;margin:0 0 .2rem}
+.edit input,.edit select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.5rem .6rem;min-height:2.75rem;width:100%}
 .none{color:var(--mute);font-size:.9rem;margin:0 0 .5rem}
 .add{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap}
 .add div{flex:1;min-width:11rem}
@@ -63,25 +70,31 @@ h1{font-size:1.5rem;margin:0 0 .2rem}
     <a class="btn" id="back" href="./">← Back</a>
   </div>
   <div id="msg" role="alert"></div>
-  <p class="note">Add what’s in your kitchen, with an amount if you know it (like “rice 2 kg” or “6 eggs”). Everyone in the family shares this list. The next plan that’s drafted uses this food first and leaves what it covers off the shopping lists, so it’s worth updating before a new plan is made.</p>
+  <p class="note">Add what’s in your kitchen, with an amount if you know it (like “rice 2 kg” or “6 eggs”). Use Edit to fix the wording of something, or to move it to a different place. Everyone in the family shares this list. The next plan that’s drafted uses this food first and leaves what it covers off the shopping lists, so it’s worth updating before a new plan is made.</p>
+  <div id="photos" hidden></div>
   <div id="places" hidden></div>
 </main>
 <div class="status" id="status" role="status" hidden></div>
 <script>
-// The Current food page. It shows four lists (pantry, fridge, freezer, other) from
-// GET /api/food, and adds or removes one item at a time with POST and DELETE /api/food
-// (api/currentfood.js), so two people adding things at once don't undo each other.
+// The Current food page. It shows six lists (pantry, spices and seasonings, fridge, freezer, fruit
+// bowl and bench, other) from
+// GET /api/food, and adds, changes or removes one item at a time with POST, PUT and DELETE
+// /api/food (api/currentfood.js), so two people adding things at once don't undo each other.
 "use strict";
 
 // What each place is called, an example for its box, and how long its food counts for.
 var PLACES = {
   pantry: ["Pantry", "e.g. rice 2 kg", "Tins, rice, pasta and other dry food count for the whole 4 weeks."],
+  spices: ["Spices and seasonings", "e.g. smoked paprika", "Dried herbs, spices, salt, stock powders and seasoning mixes. They count for the whole 4 weeks."],
   fridge: ["Fridge", "e.g. 6 eggs", "Fresh food counts for as long as it usually keeps: about a week for most, longer for eggs and cheese. Something from the freezer aisle kept here counts for the first week."],
   freezer: ["Freezer", "e.g. chicken thighs 500 g", "Counts for the whole 4 weeks."],
-  other: ["Other", "e.g. potatoes 2 kg", "Anything kept somewhere else, like the fruit bowl or the bench."]
+  bench: ["Fruit bowl and bench", "e.g. 4 apples", "Fresh food kept out of the fridge, like fruit, tomatoes, potatoes and onions. It counts for as long as it usually keeps, so it is used early in the plan."],
+  other: ["Other", "e.g. tea bags", "Anything that doesn’t fit the lists above."]
 };
-var FOOD = null;      // {pantry: [{text, known}], fridge: [...], freezer: [...], other: [...]}
+var FOOD = null;      // {pantry: [{text, known}], spices: [...], fridge: [...], and so on}
 var ORDER = [];       // the places, in the order the server lists them
+var FROM_PHOTOS = 0;  // how many items on the lists were read from photos
+var EDITING = null;   // the item being edited, as {place, text}, or null when none is
 var statusTimer = 0;  // hides the "Added" message after a moment
 
 // Shortcut for document.getElementById.
@@ -129,6 +142,7 @@ function status(text) {
 function show(data, focus) {
   FOOD = data.food;
   ORDER = data.places;
+  FROM_PHOTOS = data.fromPhotos || 0;
   draw();
   if (focus && $("add-" + focus)) $("add-" + focus).focus();
 }
@@ -142,6 +156,89 @@ function addItem(place) {
   api("POST", "/api/food", { place: place, text: text })
     .then(function (d) { show(d, place); status("Added"); })
     .catch(function (e) { showErr("That wasn’t added: " + e.message); });
+}
+
+// Opens one item for editing (its row turns into a box, a place chooser, Save and Cancel).
+function startEdit(place, text) {
+  EDITING = { place: place, text: text };
+  draw();
+  var box = $("edit-text");
+  if (box) { box.focus(); box.select(); }
+}
+
+// Closes the edit row without saving, and puts the cursor back on that item's Edit button.
+function cancelEdit() {
+  var was = EDITING;
+  EDITING = null;
+  draw();
+  if (was) focusEdit(was.place, was.text);
+}
+
+// Puts the cursor on an item's Edit button (after saving or cancelling), if it is on the page.
+function focusEdit(place, text) {
+  var buttons = document.querySelectorAll("button[data-edit]");
+  for (var i = 0; i < buttons.length; i++) {
+    if (buttons[i].getAttribute("data-edit") === place + "|" + text.toLowerCase()) { buttons[i].focus(); return; }
+  }
+}
+
+// Saves the item being edited: its new wording, and its new place if that was changed.
+function saveEdit() {
+  var was = EDITING;
+  var text = $("edit-text").value.trim();
+  var toPlace = $("edit-place").value;
+  if (!text) { $("edit-text").focus(); return; }
+  if (text === was.text && toPlace === was.place) { cancelEdit(); return; }
+  showErr("");
+  api("PUT", "/api/food", { place: was.place, text: was.text, to: text, toPlace: toPlace })
+    .then(function (d) { EDITING = null; show(d); status("Saved"); focusEdit(toPlace, text); })
+    .catch(function (e) { showErr("That wasn’t changed: " + e.message); });
+}
+
+// The row for the item being edited: a box with its wording, where it is kept, Save and Cancel.
+function editRow(place, item) {
+  var li = el("li", "editing");
+  var form = el("form", "edit");
+  var field = el("div");
+  var label = el("label", null, "Change “" + item.text + "”");
+  label.htmlFor = "edit-text";
+  var box = el("input");
+  box.id = "edit-text";
+  box.type = "text";
+  box.maxLength = 80;
+  box.autocomplete = "off";
+  box.value = item.text;
+  field.appendChild(label);
+  field.appendChild(box);
+  form.appendChild(field);
+
+  var where = el("div", "where");
+  var whereLabel = el("label", null, "Kept in");
+  whereLabel.htmlFor = "edit-place";
+  var choose = el("select");
+  choose.id = "edit-place";
+  ORDER.forEach(function (p) {
+    var option = el("option", null, (PLACES[p] || [p])[0]);
+    option.value = p;
+    choose.appendChild(option);
+  });
+  choose.value = place;
+  where.appendChild(whereLabel);
+  where.appendChild(choose);
+  form.appendChild(where);
+
+  var save = el("button", "btn primary", "Save");
+  save.type = "submit";
+  form.appendChild(save);
+  var cancel = el("button", "btn", "Cancel");
+  cancel.type = "button";
+  cancel.onclick = cancelEdit;
+  form.appendChild(cancel);
+  form.onsubmit = function (event) { event.preventDefault(); saveEdit(); };
+  // The Escape key cancels, like the Cancel button.
+  form.onkeydown = function (event) { if (event.key === "Escape") cancelEdit(); };
+  li.appendChild(form);
+  return li;
 }
 
 // Takes one item off a place's list.
@@ -175,11 +272,20 @@ function placeCard(place) {
   if (items.length) {
     var list = el("ul", "items");
     items.forEach(function (item) {
+      if (EDITING && EDITING.place === place && EDITING.text === item.text) { list.appendChild(editRow(place, item)); return; }
       var li = el("li");
       var what = el("span", "what", item.text);
       // The built-in plan builder only knows the foods in its own recipes.
       if (!item.known) what.appendChild(el("span", "ai", "Not in the plan builder’s recipes, so only an AI-written plan can use it."));
+      if (item.photo) what.appendChild(el("span", "ai", "Read from a photo. Use Edit if it isn’t right."));
       li.appendChild(what);
+      // Edit: fix the wording or the place, for something typed or read from a photo wrongly.
+      var edit = el("button", "remove", "Edit");
+      edit.type = "button";
+      edit.setAttribute("aria-label", "Edit " + item.text + " in " + info[0].toLowerCase());
+      edit.setAttribute("data-edit", place + "|" + item.text.toLowerCase());
+      edit.onclick = function () { startEdit(place, item.text); };
+      li.appendChild(edit);
       var remove = el("button", "remove", "Remove");
       remove.type = "button";
       remove.setAttribute("aria-label", "Remove " + item.text + " from " + info[0].toLowerCase());
@@ -221,8 +327,40 @@ function placeCard(place) {
   return card;
 }
 
-// Draws every place's card.
+// Removes everything that was read from photos, and deletes those photos, after checking.
+function clearPhotoFood() {
+  if (!confirm("Remove the " + FROM_PHOTOS + " things that were read from photos, and delete those photos from My files? Things typed in by hand stay. This can’t be undone.")) return;
+  showErr("");
+  api("DELETE", "/api/food", { photos: true })
+    .then(function (d) { show(d); status("Removed"); })
+    .catch(function (e) { showErr("The food from photos wasn’t cleared: " + e.message); });
+}
+
+// The card above the lists about food read from photos: how many things, and a button to clear
+// them so new photos can be used. It is hidden when nothing came from a photo.
+function drawPhotoCard() {
+  var box = $("photos");
+  box.textContent = "";
+  box.hidden = !FROM_PHOTOS;
+  if (!FROM_PHOTOS) return;
+  var card = el("section", "card photocard");
+  card.appendChild(el("h2", null, "Food from photos"));
+  var p = el("p", null, (FROM_PHOTOS === 1 ? "1 thing was" : FROM_PHOTOS + " things were") + " read from photos in ");
+  var link = el("a", null, "My files, under Food photos");
+  link.href = "files.html";
+  p.appendChild(link);
+  p.appendChild(document.createTextNode(". To start again after a shop or a clean-out, clear them here, then upload new photos."));
+  card.appendChild(p);
+  var clear = el("button", "btn", "Clear food from photos");
+  clear.type = "button";
+  clear.onclick = clearPhotoFood;
+  card.appendChild(clear);
+  box.appendChild(card);
+}
+
+// Draws the photo card and every place's card.
 function draw() {
+  drawPhotoCard();
   var box = $("places");
   box.textContent = "";
   ORDER.forEach(function (place) { box.appendChild(placeCard(place)); });

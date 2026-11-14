@@ -15,11 +15,16 @@ an empty data folder in a temporary folder, and deletes it afterwards.
 | --- | --- |
 | `server.test.js` | The server end to end: the first account, logins, the wrong-password limit, safe redirects, About me, building and approving a plan, ticks. |
 | `planbuilder.test.js` | The built-in plan builder: allergies, diets, children's portions, vegetable and fruit targets, exercise for injuries and pregnancy, every country's prices. |
-| `currentfood.test.js` | The Current food lists: an older kitchen list is sorted into pantry, fridge, freezer and other. |
+| `currentfood.test.js` | The Current food lists: an older kitchen list is sorted into places; spices and the fruit bowl have their own lists. (Photo links and clearing are in `server.test.js`.) |
+| `themetoggle.test.js` | The light or dark button at the top of the page: it is added, swaps the look, and remembers the choice. |
 | `names.test.js` | People's keys are the same in the browser and on the server. |
+| `requests.test.js` | Reading what a page sent and sending a reply (`api/requests.js`): empty, too big, not JSON, and accented letters split across pieces. |
 | `parts.test.js` | Calendar times, reading Apple Health zips, the meal library, countries and prices, the vegetable and fruit targets, and the wording rules for health text. |
 
 `fixtures/` holds small made-up files the tests read.
+
+For a change that shouldn't alter what the pages do (a tidy-up), there is also `tools/page-check.sh`:
+it presses every button on every page before and after the change and compares (see `tools/README.md`).
 
 ## Adding a test
 

@@ -357,6 +357,40 @@ test('the kitchen list is read into ingredients and amounts, and says what it co
   assert.deepEqual(pb.kitchenStock(null), { stock: {}, counted: [], unknown: [] });
 });
 
+test('a Current food item is one food: its commas, brackets and "a little left" are read, not split off', () => {
+  // "Wholemeal bread, 1 loaf (Wonder)" used to be split at the comma, so the admin was told
+  // "1 loaf (Wonder)" wasn't in the meal library, and "Carrots, about 5" counted as 5 kg.
+  const read = lines => pb.kitchenStock(lines.map(text => ({ text, place: 'pantry' })));
+  const bread = read(['Wholemeal bread, 1 loaf (Wonder)']);
+  assert.deepEqual(bread.stock.bread.map(x => x.amount), [LIB.ingredients.bread.pack]);
+  assert.deepEqual(bread.unknown, []);
+  assert.deepEqual(read(['Pasta spirals, 3 bags']).stock.pasta.map(x => x.amount), [3 * LIB.ingredients.pasta.pack]);
+  assert.deepEqual(read(['Apples, 4']).stock.apple.map(x => x.amount), [600], 'four apples, not four bags');
+  assert.deepEqual(read(['Frozen peas, a little left']).stock['frozen peas'].map(x => x.amount), [0.2 * LIB.ingredients['frozen peas'].pack]);
+  assert.deepEqual(read(['Full cream milk, 2 L, three-quarters full (use by 20 Nov)']).stock.milk.map(x => x.amount), [1500]);
+  // A made dish isn't its first ingredient, and the whole item is what's reported, once.
+  const meals = read(['Butter chicken with rice, 375 g meal (Woolworths)', 'Pesto pasta and fetta meal', 'Garlic crackers', 'Lemon or lime cordial, 1 bottle']);
+  assert.deepEqual(Object.keys(meals.stock).filter(k => k !== 'crackers'), []);
+  assert.ok(meals.unknown.includes('Butter chicken with rice, 375 g meal (Woolworths)'));
+});
+
+test('food at home makes the shopping cheaper, even for a family with a budget', () => {
+  // The builder used to stop cutting costs as soon as the shopping fitted the budget, so the
+  // saving from food at home was spent on dearer meals and the 4 weeks cost more, not less.
+  const people = [{ key: 'a', name: 'A', answers: { age: 40, budget: 150 } }, { key: 'b', name: 'B', answers: { age: 38, budget: 150 } }];
+  const cost = plan => plan.weeks.reduce((n, w) => n + w.cost, 0);
+  const pantry = ['rice 5 kg', 'pasta 2 kg', 'frozen peas 2 kg', '4 tins diced tomatoes', 'rolled oats 1 kg', '12 eggs', 'passata', 'baked beans 4 tins']
+    .map(text => ({ text, place: 'pantry' }));
+  let empty = 0, stocked = 0;
+  for (let seed = 1; seed <= 8; seed++) {
+    empty += cost(pb.build(people, { seed }).plan);
+    const built = pb.build(people, { seed, pantry });
+    stocked += cost(built.plan);
+    assert.match(built.notesForAdmin, /Food already at home covers about \$\d+ of this plan’s shopping/);
+  }
+  assert.ok(stocked < empty, 'with food at home: $' + Math.round(stocked) + ', with an empty kitchen: $' + Math.round(empty));
+});
+
 test('where food is kept changes how long the plan counts it for', () => {
   // "until" is the last week (0 to 3) the food still counts in.
   const until = (text, place) => pb.kitchenStock([{ text, place }]).stock;

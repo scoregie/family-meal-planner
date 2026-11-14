@@ -1,4 +1,4 @@
-// Per-person file uploads for the "My files" page (Lose It exports, Apple Health, blood tests, photos).
+// Per-person file uploads for the "My files" page (Lose It exports, Apple Health, blood tests, photos, food photos).
 // No npm packages.
 //
 // Files are kept in plain folders so they are easy to find on the server:
@@ -8,6 +8,7 @@
 // Everyone sees only their own files. Admins can see, add and delete anyone's.
 const fs = require('fs');
 const path = require('path');
+const { send } = require('./requests');   // sending JSON back
 
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const ROOT = path.join(DATA_DIR, 'uploads');
@@ -19,6 +20,7 @@ const CATEGORIES = [
   { id: 'apple-health', label: 'Apple Health', hint: 'Health app → your picture → Export All Health Data (a zip), or a summary.', ext: ['zip', 'xml', 'csv', 'pdf', 'json', 'txt'] },
   { id: 'blood-tests', label: 'Blood tests', hint: 'Pathology results as a PDF or a photo.', ext: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'txt'] },
   { id: 'photos', label: 'Photos', hint: 'Progress photos, meals or food labels.', ext: ['jpg', 'jpeg', 'png', 'heic', 'webp'] },
+  { id: 'food-photos', label: 'Food photos', hint: 'Photos of your pantry, fridge and freezer shelves, for filling in Current food.', ext: ['jpg', 'jpeg', 'png', 'heic', 'webp'] },
   { id: 'other', label: 'Other', hint: 'Anything else that helps with the plan.', ext: ['pdf', 'csv', 'zip', 'xlsx', 'txt', 'json', 'xml', 'jpg', 'jpeg', 'png', 'heic', 'webp', 'docx'] },
 ];
 
@@ -66,12 +68,6 @@ function ensureRoot(people) {
     for (const c of CATEGORIES) fs.mkdirSync(path.join(ROOT, person, c.id), { recursive: true });
   }
   foldersMadeFor = key;
-}
-
-// Sends a JSON answer with an HTTP status code.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
 }
 
 // The file type from a name, lower case and without the dot: "Results.PDF" gives "pdf".
@@ -295,6 +291,18 @@ async function handle(req, res, urlPath, url, me, people) {
   return true;
 }
 
+// Deletes one of a person's files, like remove('alex', 'food-photos', '2026-11-13 Shelf.jpeg').
+// Returns true if a file was deleted.
+function remove(person, categoryId, name) {
+  if (!/^[a-z0-9-]+$/.test(String(person || '')) || !CATEGORY_BY_ID[categoryId]) return false;
+  const plain = String(name || '');
+  if (!plain || plain !== path.basename(plain) || plain.startsWith('.')) return false;
+  const file = path.join(ROOT, person, categoryId, plain);
+  if (!inside(file) || !fs.existsSync(file)) return false;
+  fs.rmSync(file, { force: true });
+  return true;
+}
+
 // Deletes everything a person uploaded (when they delete their account and history).
 function forget(person) {
   // Keys can start with "-" (a name like "Émile" gives "-mile"), but never contain anything else.
@@ -304,4 +312,4 @@ function forget(person) {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
-module.exports = { handle, CATEGORIES, ROOT, forget };
+module.exports = { handle, CATEGORIES, ROOT, forget, remove };

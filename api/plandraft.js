@@ -33,6 +33,7 @@ const healthtargets = require('./healthtargets');
 const planextras = require('./planextras');
 const plancheck = require('./plancheck');
 const currentFood = require('./currentfood');   // the food the family already has
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const QUESTIONS_FILE = process.env.QUESTIONS_FILE || '/site/questions.json';
 const EXAMPLE_FILE = process.env.PLAN_EXAMPLE || '/site/plan.example.json';
@@ -71,32 +72,6 @@ let job = null;
 // While an AI is writing: a function that stops it (the Cancel button on Plan setup), else null.
 let stopDraft = null;
 
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, status, body) {
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(body));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-      if (data.length > 20000) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(e); }
-    });
-    req.on('error', reject);
-  });
-}
-
 // Reads a JSON file, or null if it's missing or broken.
 function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; }
@@ -120,6 +95,7 @@ function planners(ctx) {
   return household(ctx).filter(p => !p.example);
 }
 
+// Everyone in the plan with what a plan writer needs to know: answers, logins, feedback, logged numbers and blood test files.
 function household(ctx) {
   const plan = ctx.readPlan() || {};
   const onExample = isExamplePlan(plan);
@@ -201,6 +177,7 @@ function draftPreview(r) {
 // The prompt
 // ---------------------------------------------------------------------------
 
+// The instructions every plan writer gets (the AI, or a Claude Code session): the rules, the format guide and an example plan.
 function systemText() {
   const r = appearance.region();
   let docs = '';
@@ -259,6 +236,7 @@ Check before you reply (the app runs these checks too, and sends the plan back i
 - Every condition, medicine and supplement a person listed has a hedged consideration in their tips or exercise medical list.
 - An adult's protein powder is in their snacks with a "macros" entry (optional if they have it now and then), and no under-18 has one.
 - Snacks avoid the textures that person finds hard.
+- If the family listed food they already have at home: go through the Stock-up 1 and Week 1 shopping lists item by item against it. Nothing that is at home is bought again unless weeks 1 and 2 use more than is there, and then only the extra. Meat, ready meals and vegetables in the freezer are cooked before more are bought.
 
 Style: plain English as written in ${r.where}, metric units. Energy numbers in the plan (macros, guides) are always kilojoules (kJ); the app converts them for people who prefer Calories.
 
@@ -314,7 +292,7 @@ function userText(ctx, people, note, results) {
   }
   const kitchen = kitchenList();
   if (kitchen.length) {
-    lines.push('', 'Food the family already has at home, with where it is kept. Use it up first (fridge food in week 1, pantry and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists:',
+    lines.push('', 'Food the family already has at home, with where it is kept. Use it up first (fridge, fruit bowl and bench food in week 1; pantry, spices and freezer food across the plan), prefer meals that use it, and leave what it covers off the shopping lists: buy only what the recipes need beyond what is here, so the first shopping lists are the smallest and the cost builds up as the food at home runs down. Drinks (tea, coffee, cordial) and baking things (sugar, flour, yeast) aren’t for meals, so they don’t need using:',
       '<kitchen>' + currentFood.lines().join('\n') + '</kitchen>');
   }
   // Meals from earlier plans that the family rated well or poorly (averages out of 10).
@@ -378,96 +356,114 @@ function cutOffMessage(written) {
 // Running a draft
 // ---------------------------------------------------------------------------
 
+// Notes how far the writing has got as each piece of the plan arrives: how many characters, and
+// which week is being written. `before` is the plan text so far and `delta` the new piece. Only
+// the new text (plus a little before it, for a name split across two pieces) is searched.
+function noteWriting(mine, before, delta) {
+  const recent = before.slice(-40) + delta;
+  mine.chars = before.length + delta.length;
+  const weeks = recent.match(/"name":\s*"((?:Stock-up|Week) \d)"/g);
+  if (weeks) mine.stage = 'Writing ' + weeks[weeks.length - 1].replace(/"name":\s*"/, '').replace(/"$/, '');
+}
+
+// Runs one "check your plan again" follow-up and gives back the AI's new plan text, or "" if the
+// AI didn't finish or the follow-up failed (the first plan is then kept). `ask` sends the follow-up.
+async function checkAgain(mine, ask) {
+  mine.stage = 'Checking the plan against everyone’s answers';
+  try {
+    const reply = await ask();
+    return reply.stop_reason === 'end_turn' ? replyText(reply) : '';
+  } catch (e) {
+    if (mine.cancelled) throw e;
+    console.error('Plan check failed: ' + String(e && e.message || e));
+    return '';
+  }
+}
+
+// Has OpenAI, Gemini or Ollama write the plan, then saves it as a draft. `mine` is this run's progress record.
+async function draftWithOtherAi(me, ready, ctx, note, people, mine) {
+  const stopper = new AbortController();
+  stopDraft = () => stopper.abort();
+  let text = '';
+  const message = await ai.chat(ready, {
+    signal: stopper.signal,
+    system: systemText(), messages: [{ role: 'user', content: userText(ctx, people, note) }],
+    maxTokens: ai.maxOutput(ready.provider), json: true,
+    onText: delta => {
+      noteWriting(mine, text, delta);
+      text += delta;
+    },
+  });
+  if (message.stop_reason === 'max_tokens') throw new Error('The plan was too long and got cut off. Try again, perhaps with a note asking for simpler recipes' + (ready.provider === 'ollama' ? ', or use a model with a bigger context' : '') + '.');
+  if (message.stop_reason === 'refusal') throw new Error(ready.name + ' couldn’t write this plan. Check the About me answers and try again.');
+  // The follow-up that sends the AI back over its own plan (plancheck.js): one message saying
+  // what the app's checks found.
+  const asked = userText(ctx, people, note);
+  const again = fix => checkAgain(mine, () => ai.chat(ready, {
+    signal: stopper.signal, system: systemText(), maxTokens: ai.maxOutput(ready.provider), json: true,
+    messages: [{ role: 'user', content: asked }, { role: 'assistant', content: text }, { role: 'user', content: fix }],
+    onText: () => { mine.heard = Date.now(); },
+  }));
+  await finishDraft(me, ctx, people, new Set(people.map(p => p.key)), text, ready.name, planextras.unreadNote(people, ready.name), again);
+}
+
+// Has Claude write the plan, then saves it as a draft. `mine` is this run's progress record.
+async function draftWithClaude(me, ready, ctx, note, people, mine) {
+  // Claude also gets the blood test files of anyone who agreed to share them, before the text.
+  const attached = [];
+  for (const p of people) attached.push(...planextras.resultBlocks(p.name, p.results.files));
+  const client = ready.client;
+  const system = [{ type: 'text', text: systemText(), cache_control: { type: 'ephemeral' } }];
+  const asked = { role: 'user', content: [...attached, { type: 'text', text: userText(ctx, people, note, 'attached') }] };
+  const stream = client.beta.messages.stream({ ...claudeRequest(ready.model || MODEL), system, messages: [asked] });
+  stopDraft = () => stream.abort();
+  let text = '';
+  // Every piece that arrives (thinking included, which sends no plan text) is noted, so Plan
+  // setup can show the AI is still working during the long quiet stretch before it writes.
+  stream.on('streamEvent', event => {
+    mine.heard = Date.now();
+    if (event.type === 'content_block_start' && event.content_block && event.content_block.type === 'thinking' && !mine.chars) mine.stage = 'Thinking it through';
+  });
+  stream.on('text', delta => {
+    if (!text) mine.stage = 'Writing the plan';   // the thinking is over
+    noteWriting(mine, text, delta);
+    text += delta;
+  });
+  const message = await stream.finalMessage();
+  if (message.stop_reason === 'max_tokens') throw new Error(cutOffMessage(text.length));
+  if (message.stop_reason === 'refusal') throw new Error('Claude couldn’t write this plan. Check the About me answers and try again.');
+  // The follow-up that sends Claude back over its own plan (plancheck.js). Claude gets its whole
+  // first reply back (thinking included), then the list of what to check.
+  const again = fix => checkAgain(mine, () => {
+    const check = client.beta.messages.stream({
+      ...claudeRequest(ready.model || MODEL), system,
+      messages: [asked, { role: 'assistant', content: message.content }, { role: 'user', content: fix }],
+    });
+    stopDraft = () => check.abort();
+    check.on('streamEvent', () => { mine.heard = Date.now(); });
+    return check.finalMessage();
+  });
+  await finishDraft(me, ctx, people, new Set(people.map(p => p.key)), text, 'Claude', planextras.skippedNote(people), again);
+}
+
+// What to tell the admin when a draft failed.
+function draftFailure(err, ready) {
+  const message = String(err && err.message || err);
+  if (ready.provider !== 'anthropic' && (err instanceof ai.AIError || /fetch|ECONN|ENOTFOUND/.test(message))) return ai.explain(err, ready);
+  if (Anthropic && err instanceof Anthropic.AuthenticationError) return 'The Claude key wasn’t accepted. Check it in Settings.';
+  if (Anthropic && err instanceof Anthropic.RateLimitError) return 'Claude is busy right now (rate limit). Try again in a few minutes.';
+  if (Anthropic && err instanceof Anthropic.APIError) return 'Claude couldn’t finish the plan: ' + String(err.message || '').slice(0, 300);
+  return message;
+}
+
+// Asks the chosen AI to write the plan, follows its progress, and saves the result as a draft (or the reason it failed).
 async function runDraft(me, ready, ctx, note) {
   const mine = job;   // this run's progress record (a later run gets its own)
   const people = planners(ctx);
-  const known = new Set(people.map(p => p.key));
-  let text = '';
   try {
     job.stage = 'Writing the plan';
-    if (ready.provider !== 'anthropic') {
-      // OpenAI, Gemini or Ollama.
-      const stopper = new AbortController();
-      stopDraft = () => stopper.abort();
-      const message = await ai.chat(ready, {
-        signal: stopper.signal,
-        system: systemText(), messages: [{ role: 'user', content: userText(ctx, people, note) }],
-        maxTokens: ai.maxOutput(ready.provider), json: true,
-        onText: delta => {
-          const recent = text.slice(-40) + delta;
-          text += delta;
-          job.chars = text.length;
-          const weeks = recent.match(/"name":\s*"((?:Stock-up|Week) \d)"/g);
-          if (weeks) job.stage = 'Writing ' + weeks[weeks.length - 1].replace(/"name":\s*"/, '').replace(/"$/, '');
-        },
-      });
-      if (message.stop_reason === 'max_tokens') throw new Error('The plan was too long and got cut off. Try again, perhaps with a note asking for simpler recipes' + (ready.provider === 'ollama' ? ', or use a model with a bigger context' : '') + '.');
-      if (message.stop_reason === 'refusal') throw new Error(ready.name + ' couldn’t write this plan. Check the About me answers and try again.');
-      // The follow-up that sends the AI back over its own plan (plancheck.js).
-      const asked = userText(ctx, people, note);
-      const again = async fix => {
-        mine.stage = 'Checking the plan against everyone’s answers';
-        try {
-          const reply = await ai.chat(ready, {
-            signal: stopper.signal, system: systemText(), maxTokens: ai.maxOutput(ready.provider), json: true,
-            messages: [{ role: 'user', content: asked }, { role: 'assistant', content: text }, { role: 'user', content: fix }],
-            onText: () => { mine.heard = Date.now(); },
-          });
-          return reply.stop_reason === 'end_turn' ? replyText(reply) : '';
-        } catch (e) {
-          if (mine.cancelled) throw e;
-          console.error('Plan check failed: ' + String(e && e.message || e));
-          return '';
-        }
-      };
-      return await finishDraft(me, ctx, people, known, text, ready.name, planextras.unreadNote(people, ready.name), again);
-    }
-    // Claude also gets the blood test files of anyone who agreed to share them, before the text.
-    const attached = [];
-    for (const p of people) attached.push(...planextras.resultBlocks(p.name, p.results.files));
-    const client = ready.client;
-    const system = [{ type: 'text', text: systemText(), cache_control: { type: 'ephemeral' } }];
-    const asked = { role: 'user', content: [...attached, { type: 'text', text: userText(ctx, people, note, 'attached') }] };
-    const stream = client.beta.messages.stream({ ...claudeRequest(ready.model || MODEL), system, messages: [asked] });
-    stopDraft = () => stream.abort();
-    // Every piece that arrives (thinking included, which sends no plan text) is noted, so Plan
-    // setup can show the AI is still working during the long quiet stretch before it writes.
-    stream.on('streamEvent', event => {
-      mine.heard = Date.now();
-      if (event.type === 'content_block_start' && event.content_block && event.content_block.type === 'thinking' && !mine.chars) mine.stage = 'Thinking it through';
-    });
-    stream.on('text', delta => {
-      // Only the new text (plus a little before it, for a name split across two pieces) is searched.
-      const recent = text.slice(-40) + delta;
-      if (!text) mine.stage = 'Writing the plan';   // the thinking is over
-      text += delta;
-      mine.chars = text.length;
-      const weeks = recent.match(/"name":\s*"((?:Stock-up|Week) \d)"/g);
-      if (weeks) mine.stage = 'Writing ' + weeks[weeks.length - 1].replace(/"name":\s*"/, '').replace(/"$/, '');
-    });
-    const message = await stream.finalMessage();
-    if (message.stop_reason === 'max_tokens') throw new Error(cutOffMessage(text.length));
-    if (message.stop_reason === 'refusal') throw new Error('Claude couldn’t write this plan. Check the About me answers and try again.');
-    // The follow-up that sends Claude back over its own plan (plancheck.js). Claude gets its whole
-    // first reply back (thinking included), then the list of what to check.
-    const again = async fix => {
-      mine.stage = 'Checking the plan against everyone’s answers';
-      try {
-        const check = client.beta.messages.stream({
-          ...claudeRequest(ready.model || MODEL), system,
-          messages: [asked, { role: 'assistant', content: message.content }, { role: 'user', content: fix }],
-        });
-        stopDraft = () => check.abort();
-        check.on('streamEvent', () => { mine.heard = Date.now(); });
-        const reply = await check.finalMessage();
-        return reply.stop_reason === 'end_turn' ? replyText(reply) : '';
-      } catch (e) {
-        if (mine.cancelled) throw e;
-        console.error('Plan check failed: ' + String(e && e.message || e));
-        return '';
-      }
-    };
-    await finishDraft(me, ctx, people, known, text, 'Claude', planextras.skippedNote(people), again);
+    if (ready.provider !== 'anthropic') await draftWithOtherAi(me, ready, ctx, note, people, mine);
+    else await draftWithClaude(me, ready, ctx, note, people, mine);
   } catch (err) {
     // Stopped with the Cancel button: nothing went wrong, so there is no error to show.
     if (mine && mine.cancelled) {
@@ -475,18 +471,13 @@ async function runDraft(me, ready, ctx, note) {
       return;
     }
     if (job !== mine) return;   // a newer draft has started: leave its progress alone
-    let message = String(err && err.message || err);
-    if (ready.provider !== 'anthropic' && (err instanceof ai.AIError || /fetch|ECONN|ENOTFOUND/.test(message))) message = ai.explain(err, ready);
-    else if (Anthropic && err instanceof Anthropic.AuthenticationError) message = 'The Claude key wasn’t accepted. Check it in Settings.';
-    else if (Anthropic && err instanceof Anthropic.RateLimitError) message = 'Claude is busy right now (rate limit). Try again in a few minutes.';
-    else if (Anthropic && err instanceof Anthropic.APIError) message = 'Claude couldn’t finish the plan: ' + String(err.message || '').slice(0, 300);
+    const message = draftFailure(err, ready);
     job = { state: 'failed', by: job && job.by, started: job && job.started, error: message };
     // Also in the server's log (docker compose logs api), so a failed draft can be looked into later.
     console.error('Plan draft failed: ' + message);
   }
   stopDraft = null;
 }
-
 // The text of an AI's reply (its text blocks joined; thinking is left out).
 function replyText(message) {
   return (message.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
@@ -610,135 +601,130 @@ function saveDraft(me, ctx, people, plan, forAdmin, title) {
 // Routes
 // ---------------------------------------------------------------------------
 
-async function handle(req, res, urlPath, url, me, ctx) {
-  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;
-  if (!me.admin) {
-    send(res, 403, { error: 'Only an admin can set up the family’s plan.' });
-    return true;
+// GET /api/plan/ai/models?provider=: the models the family's key for that AI can use.
+async function listModels(res, url) {
+  const provider = String(url.searchParams.get('provider') || '');
+  if (!ai.PROVIDERS[provider]) return send(res, 400, { error: 'unknown AI' });
+  if (!ai.familyKeys()[provider]) return send(res, 400, { error: 'The server has no key for ' + ai.PROVIDERS[provider].name + '.' });
+  try {
+    const key = provider === 'anthropic' ? '' : provider === 'ollama' ? 'ollama' : process.env[provider.toUpperCase() + '_API_KEY'];
+    send(res, 200, { models: (await ai.checkKey(provider, key)).models });
+  } catch (e) {
+    send(res, 400, { error: String(e.message || e) });
   }
-  if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
-    send(res, 403, { error: 'bad request' });
-    return true;
-  }
-
-  if (urlPath === '/api/plan/ai/models' && req.method === 'GET') {
-    const provider = String(url.searchParams.get('provider') || '');
-    if (!ai.PROVIDERS[provider]) { send(res, 400, { error: 'unknown AI' }); return true; }
-    if (!ai.familyKeys()[provider]) { send(res, 400, { error: 'The server has no key for ' + ai.PROVIDERS[provider].name + '.' }); return true; }
-    try {
-      const key = provider === 'anthropic' ? '' : provider === 'ollama' ? 'ollama' : process.env[provider.toUpperCase() + '_API_KEY'];
-      send(res, 200, { models: (await ai.checkKey(provider, key)).models });
-    } catch (e) {
-      send(res, 400, { error: String(e.message || e) });
-    }
-    return true;
-  }
-
-  if (urlPath === '/api/plan/ai' && req.method === 'PUT') {
-    let b;
-    try { b = await readBody(req); } catch (e) { send(res, 400, { error: 'bad request' }); return true; }
-    const provider = String(b.provider || '');
-    if (provider !== 'none' && !ai.PROVIDERS[provider]) { send(res, 400, { error: 'unknown AI' }); return true; }
-    const model = String(b.model || '').slice(0, 100);
-    if (provider !== 'none' && provider !== 'anthropic' && !/^[A-Za-z0-9._:\/-]{1,100}$/.test(model)) { send(res, 400, { error: 'Choose a model.' }); return true; }
-    ai.setFamilyChoice(provider === 'none' ? { provider } : { provider, model: model || (provider === 'anthropic' ? ai.DEFAULT_CLAUDE : '') });
-    send(res, 200, { ok: true, family: ai.familyChoice() });
-    return true;
-  }
-
-  if (urlPath === '/api/plan/setup' && req.method === 'GET') {
-    const ready = assistant.setup(me);
-    const pending = pendingDraft();
-    send(res, 200, {
-      people: household(ctx).map(p => Object.assign({}, p, { answers: undefined, feedback: undefined, measured: undefined, tried: undefined,
-        // Only the counts: how many blood test files they have, and how many a plan would read.
-        results: { shared: p.results.shared, count: p.results.count, reading: p.results.files.length } })),
-      questions: questionCount(),
-      claude: { enabled: ready.enabled, own: !!ready.own, reason: ready.reason || null, name: ready.name, provider: ready.provider, model: ready.model || null },
-      ai: { family: ai.familyChoice(), keys: ai.familyKeys(), providers: Object.fromEntries(Object.entries(ai.PROVIDERS).map(([k, p]) => [k, { name: p.name, company: p.company, keys: p.keys || null }])) },
-      job: job ? { state: job.state, by: job.by, started: job.started, stage: job.stage || '', error: job.error || null, heard: job.heard || null,
-        progress: job.state === 'running' ? Math.min(0.97, (job.chars || 0) / EXPECTED_CHARS) : null } : null,
-      draft: pending ? draftPreview(pending) : null,
-      kitchen: kitchenList().map(item => item.text),   // just the names, for the count on Plan setup
-      isExample: isExamplePlan(ctx.readPlan()),
-    });
-    return true;
-  }
-
-  // Claude Code (on the user's own subscription) writes the plan instead of the app's AI.
-  if (urlPath === '/api/plan/handoff' && req.method === 'GET') {
-    const people = planners(ctx);
-    if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
-    send(res, 200, { system: systemText(), user: userText(ctx, people, String(url.searchParams.get('note') || '').slice(0, 2000), 'folder') });
-    return true;
-  }
-  if (urlPath === '/api/plan/handoff' && req.method === 'POST') {
-    if (job && job.state === 'running') {
-      send(res, 409, { error: 'The AI is drafting a plan on Plan setup right now. Wait until it finishes (or fails), then submit again.' });
-      return true;
-    }
-    let text;
-    try { text = await readBig(req); } catch (e) { send(res, 400, { error: 'The plan is too big (over 3 MB).' }); return true; }
-    const people = planners(ctx);
-    try {
-      // A Claude Code session isn't sent back automatically: it is told what the checks found.
-      const problems = await finishDraft(me, ctx, people, new Set(people.map(p => p.key)), text, 'Claude Code', planextras.skippedNote(people));
-      send(res, 200, { ok: true, problems });
-    } catch (e) {
-      send(res, 400, { error: String(e.message || e).replace(/ Try again\.$/, '') });
-    }
-    return true;
-  }
-
-  // The Cancel button: stops the AI part-way through writing. Nothing is saved.
-  if (urlPath === '/api/plan/draft' && req.method === 'DELETE') {
-    if (job && job.state === 'running') {
-      job.cancelled = true;
-      if (stopDraft) stopDraft();
-      else job = null;
-    }
-    send(res, 200, { ok: true });
-    return true;
-  }
-
-  if (urlPath === '/api/plan/draft' && req.method === 'POST') {
-    let body;
-    try { body = await readBody(req); } catch (e) { send(res, 400, { error: 'bad request' }); return true; }
-    if (job && job.state === 'running') {
-      send(res, 409, { error: 'A plan is already being drafted. It takes a few minutes.' });
-      return true;
-    }
-    if (body.how === 'builtin') {
-      const people = planners(ctx);
-      if (!people.length) { send(res, 400, { error: 'Add the people in your family first.' }); return true; }
-      try {
-        const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale, pantry: kitchenList(), rated: dishRatings() });
-        // (Each person in `people` also carries their own feedback, logged numbers and small steps.)
-        saveDraft(me, ctx, people, built.plan, [built.notesForAdmin, planextras.unreadNote(people, 'The built-in builder')].filter(Boolean).join(' '), 'New 4-week plan for the family (built-in, no AI)');
-        job = null;
-        send(res, 200, { ok: true, done: true });
-      } catch (e) {
-        send(res, 500, { error: 'The plan builder couldn’t make a plan: ' + String(e.message || e).slice(0, 200) });
-      }
-      return true;
-    }
-    const ready = assistant.setup(me);
-    if (!ready.enabled) {
-      send(res, 400, { error: ready.reason || 'Claude isn’t set up.' });
-      return true;
-    }
-    if (!planners(ctx).length) {
-      send(res, 400, { error: 'Add the people in your family first.' });
-      return true;
-    }
-    job = { state: 'running', by: me.user, started: Date.now(), chars: 0, stage: 'Starting' };
-    runDraft(me, ready, ctx, String(body.note || '').slice(0, 2000));
-    send(res, 202, { ok: true });
-    return true;
-  }
-
-  send(res, 404, { error: 'not found' });
-  return true;
 }
 
+// PUT /api/plan/ai {provider, model}: which AI the family uses ("none" for the built-in builder only).
+async function saveAiChoice(req, res) {
+  let b;
+  try { b = await readBody(req); } catch (e) { return send(res, 400, { error: 'bad request' }); }
+  const provider = String(b.provider || '');
+  if (provider !== 'none' && !ai.PROVIDERS[provider]) return send(res, 400, { error: 'unknown AI' });
+  const model = String(b.model || '').slice(0, 100);
+  if (provider !== 'none' && provider !== 'anthropic' && !/^[A-Za-z0-9._:\/-]{1,100}$/.test(model)) return send(res, 400, { error: 'Choose a model.' });
+  ai.setFamilyChoice(provider === 'none' ? { provider } : { provider, model: model || (provider === 'anthropic' ? ai.DEFAULT_CLAUDE : '') });
+  send(res, 200, { ok: true, family: ai.familyChoice() });
+}
+
+// GET /api/plan/setup: everything the Plan setup page shows (the people, the AI, a draft being
+// written or waiting, and the food at home).
+function sendSetup(res, me, ctx) {
+  const ready = assistant.setup(me);
+  const pending = pendingDraft();
+  send(res, 200, {
+    people: household(ctx).map(p => Object.assign({}, p, { answers: undefined, feedback: undefined, measured: undefined, tried: undefined,
+      // Only the counts: how many blood test files they have, and how many a plan would read.
+      results: { shared: p.results.shared, count: p.results.count, reading: p.results.files.length } })),
+    questions: questionCount(),
+    claude: { enabled: ready.enabled, own: !!ready.own, reason: ready.reason || null, name: ready.name, provider: ready.provider, model: ready.model || null },
+    ai: { family: ai.familyChoice(), keys: ai.familyKeys(), providers: Object.fromEntries(Object.entries(ai.PROVIDERS).map(([k, p]) => [k, { name: p.name, company: p.company, keys: p.keys || null }])) },
+    job: job ? { state: job.state, by: job.by, started: job.started, stage: job.stage || '', error: job.error || null, heard: job.heard || null,
+      progress: job.state === 'running' ? Math.min(0.97, (job.chars || 0) / EXPECTED_CHARS) : null } : null,
+    draft: pending ? draftPreview(pending) : null,
+    kitchen: kitchenList().map(item => item.text),   // just the names, for the count on Plan setup
+    isExample: isExamplePlan(ctx.readPlan()),
+  });
+}
+
+// GET /api/plan/handoff?note=: the drafting instructions, for a Claude Code session (on the user's
+// own subscription) to write the plan instead of the app's AI.
+function sendHandoff(res, url, ctx) {
+  const people = planners(ctx);
+  if (!people.length) return send(res, 400, { error: 'Add the people in your family first.' });
+  send(res, 200, { system: systemText(), user: userText(ctx, people, String(url.searchParams.get('note') || '').slice(0, 2000), 'folder') });
+}
+
+// POST /api/plan/handoff: the plan a Claude Code session wrote. It is checked and saved as a draft.
+async function takeHandoff(req, res, me, ctx) {
+  if (job && job.state === 'running') {
+    return send(res, 409, { error: 'The AI is drafting a plan on Plan setup right now. Wait until it finishes (or fails), then submit again.' });
+  }
+  let text;
+  try { text = await readBig(req); } catch (e) { return send(res, 400, { error: 'The plan is too big (over 3 MB).' }); }
+  const people = planners(ctx);
+  try {
+    // A Claude Code session isn't sent back automatically: it is told what the checks found.
+    const problems = await finishDraft(me, ctx, people, new Set(people.map(p => p.key)), text, 'Claude Code', planextras.skippedNote(people));
+    send(res, 200, { ok: true, problems });
+  } catch (e) {
+    send(res, 400, { error: String(e.message || e).replace(/ Try again\.$/, '') });
+  }
+}
+
+// DELETE /api/plan/draft, the Cancel button: stops the AI part-way through writing. Nothing is saved.
+function cancelDraft(res) {
+  if (job && job.state === 'running') {
+    job.cancelled = true;
+    if (stopDraft) stopDraft();
+    else job = null;
+  }
+  send(res, 200, { ok: true });
+}
+
+// Drafts a plan with the built-in builder (no AI) and saves it for review. It only takes a moment.
+function builtinDraft(res, me, ctx) {
+  const people = planners(ctx);
+  if (!people.length) return send(res, 400, { error: 'Add the people in your family first.' });
+  try {
+    const built = planbuilder.build(people, { seed: Date.now(), country: appearance.country(), locale: appearance.region().locale, pantry: kitchenList(), rated: dishRatings() });
+    // (Each person in `people` also carries their own feedback, logged numbers and small steps.)
+    saveDraft(me, ctx, people, built.plan, [built.notesForAdmin, planextras.unreadNote(people, 'The built-in builder')].filter(Boolean).join(' '), 'New 4-week plan for the family (built-in, no AI)');
+    job = null;
+    send(res, 200, { ok: true, done: true });
+  } catch (e) {
+    send(res, 500, { error: 'The plan builder couldn’t make a plan: ' + String(e.message || e).slice(0, 200) });
+  }
+}
+
+// POST /api/plan/draft {how, note}: starts a new draft, with the built-in builder ({how: "builtin"})
+// or the family's AI, which carries on writing after this has answered.
+async function startDraft(req, res, me, ctx) {
+  let body;
+  try { body = await readBody(req); } catch (e) { return send(res, 400, { error: 'bad request' }); }
+  if (job && job.state === 'running') return send(res, 409, { error: 'A plan is already being drafted. It takes a few minutes.' });
+  if (body.how === 'builtin') return builtinDraft(res, me, ctx);
+  const ready = assistant.setup(me);
+  if (!ready.enabled) return send(res, 400, { error: ready.reason || 'Claude isn’t set up.' });
+  if (!planners(ctx).length) return send(res, 400, { error: 'Add the people in your family first.' });
+  job = { state: 'running', by: me.user, started: Date.now(), chars: 0, stage: 'Starting' };
+  runDraft(me, ready, ctx, String(body.note || '').slice(0, 2000));
+  send(res, 202, { ok: true });
+}
+
+// Answers Plan setup's requests. Returns true if it answered, false to let the next file try.
+async function handle(req, res, urlPath, url, me, ctx) {
+  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;
+  const what = req.method + ' ' + urlPath;
+  if (!me.admin) send(res, 403, { error: 'Only an admin can set up the family’s plan.' });
+  else if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') send(res, 403, { error: 'bad request' });
+  else if (what === 'GET /api/plan/ai/models') await listModels(res, url);
+  else if (what === 'PUT /api/plan/ai') await saveAiChoice(req, res);
+  else if (what === 'GET /api/plan/setup') sendSetup(res, me, ctx);
+  else if (what === 'GET /api/plan/handoff') sendHandoff(res, url, ctx);
+  else if (what === 'POST /api/plan/handoff') await takeHandoff(req, res, me, ctx);
+  else if (what === 'DELETE /api/plan/draft') cancelDraft(res);
+  else if (what === 'POST /api/plan/draft') await startDraft(req, res, me, ctx);
+  else send(res, 404, { error: 'not found' });
+  return true;
+}
 module.exports = { handle, household, CLAUDE_DRAFT, cutOffMessage, claudeRequest, systemText };

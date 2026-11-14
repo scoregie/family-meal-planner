@@ -21,37 +21,12 @@ const db = require('./db');
 const auth = require('./auth');
 const { sensible } = require('./progress');
 const shortcutfile = require('./shortcutfile');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const KJ_PER_KCAL = 4.184;
 const NAMES = { steps: 'steps', active_energy: 'Move', weight: 'weight', energy_in: 'food', protein_in: 'protein', carbs_in: 'carbs', fat_in: 'fat' };
 const PER_HOUR = 30;              // syncs per key per hour
 const recentSyncs = new Map();    // key hash -> [times]
-
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function readBody(req, limit) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > limit) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try { resolve(text ? JSON.parse(text) : {}); } catch (e) { reject(e); }
-    });
-    req.on('error', reject);
-  });
-}
 
 const sha = text => crypto.createHash('sha256').update(String(text)).digest('hex');
 
@@ -72,6 +47,7 @@ function isKcal(unit, value) {
 // The sync itself (public)
 // ---------------------------------------------------------------------------
 
+// Takes one sync from the phone: checks the key, reads each number, saves the ones that make sense.
 async function sync(req, res) {
   const ip = auth.clientIp(req);
   if (auth.recent(ip).length >= auth.LIMIT) return send(res, 429, { error: 'Too many wrong keys from here. Wait 15 minutes.' });
@@ -100,6 +76,7 @@ async function sync(req, res) {
 
   const rows = [];
   const skipped = [];   // values that came but couldn't be used, like 'Move ("abc")', so the person can see why
+  // Keeps one number if it is sensible; otherwise notes what was sent, so the person can see why.
   const add = (kind, value, unit, raw, day) => {
     if (value !== null && sensible(kind, value, day || date)) rows.push({ date: day || date, kind, value: Math.round(value * 100) / 100, unit });
     else if (raw !== undefined && raw !== null && String(raw).trim() !== '') skipped.push(NAMES[kind] + ' ("' + String(raw).slice(0, 40) + '")');

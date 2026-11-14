@@ -13,28 +13,10 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./db');
 const uploads = require('./uploads');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const DAY = 24 * 3600 * 1000;
 const RESULTS = ['tried', 'liked', 'not yet'];
-
-// Sends an answer back to the page: a status code and an object, turned into JSON text.
-function send(res, status, body) {
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(body));
-}
-
-// Reads what the page sent (a small piece of JSON text) and turns it into an object.
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-      if (data.length > 5000) { reject(new Error('too big')); req.destroy(); }
-    });
-    req.on('end', () => { try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(e); } });
-    req.on('error', reject);
-  });
-}
 
 // One person's feedback on meals from earlier plans:
 //   {rated: {"lower-case dish name": average score out of 10}, notes: [{dish, note}]}.
@@ -228,7 +210,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
   if (req.method === 'GET') { send(res, 200, { person, tried: triedFor(person) }); return true; }
   if (req.method === 'PUT') {
     let b;
-    try { b = await readBody(req); } catch (e) { send(res, 400, { error: 'bad request' }); return true; }
+    try { b = await readBody(req, 5000); } catch (e) { send(res, 400, { error: 'bad request' }); return true; }
     const food = String(b.food || '').trim().slice(0, 120);
     const result = String(b.result || '');
     if (!food || (result && !RESULTS.includes(result))) { send(res, 400, { error: 'bad request' }); return true; }

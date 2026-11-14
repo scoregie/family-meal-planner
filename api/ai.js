@@ -174,6 +174,7 @@ async function models(provider, key) {
 // Newest and most capable first: bigger version numbers first, full models before mini/flash-lite,
 // dated snapshots and previews last.
 function rank(provider, ids) {
+  // The version number in a model's name ("gpt-5.1-mini" is 5.1), or 0 if it has none.
   const version = id => {
     const m = id.match(/(\d+(?:\.\d+)?)/);
     return m ? parseFloat(m[1]) : 0;
@@ -205,6 +206,7 @@ async function checkKey(provider, key) {
 // Chats are saved in Claude's message format (so a chat can carry on if the family changes AI),
 // and turned into OpenAI's format for each request.
 
+// Turns a saved chat (Claude's message format) into the list of messages OpenAI's format wants.
 function toOpenAI(system, messages) {
   const out = [{ role: 'system', content: system }];
   for (const m of messages) {

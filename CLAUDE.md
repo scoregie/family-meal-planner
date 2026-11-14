@@ -8,6 +8,7 @@ The owner wants the code readable by someone with minimal coding experience: eve
 a plain note saying what it does, and every new function gets a one-line plain comment above it.
 
 Run `tools/test.sh` before opening a PR, and add a test when fixing a bug (see `tests/README.md`).
+For a tidy-up that shouldn't change what pages do, also run `tools/page-check.sh` (record before, record after, compare).
 
 ## "Draft our family plan with Claude Code"
 
@@ -37,6 +38,14 @@ out. Write recipes in your own words, never copied. Check them with `checkSet` i
 
 Local names, packs and prices for other countries are in `api/library-prices.json`, made by
 `tools/build_prices.py`; after adding an ingredient to `api/library.json`, run it again.
+
+## "Add our food from photos"
+
+People upload shelf photos in My files > Food photos (`data/uploads/<person>/food-photos/`). Read
+each photo where it is, show the user the list to check (guesses marked), and only then add the
+items: POST `{place, text, photos: [file names]}` to `/api/food` as the person who uploaded them
+(a login cookie made the way `api/handoff-cli.js` does), so each item remembers its photos and
+"Clear food from photos" on Current food can remove them later. Never copy the photos out of `data/`.
 
 ## What comes first in a plan
 

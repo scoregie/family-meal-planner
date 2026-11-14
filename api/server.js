@@ -25,13 +25,14 @@ const exercises = require('./exercises');   // the exercise library: browse, lea
 const libraryUpdates = require('./libraryupdates'); // new meals and exercises every 2 weeks
 const currentFood = require('./currentfood');       // the food the family already has (pantry, fridge, freezer)
 const { toKey } = require('./names');             // "Alex Smith" -> "alex-smith"
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
 const STATIC_DIR = process.env.STATIC_DIR || '';   // only used for local testing without Caddy
 const PORT = +process.env.PORT || 3000;
-const MAX_BODY = 1e6;                              // largest request body we read, in characters (about 1 MB)
+const MAX_BODY = 1e6;                              // largest request body we read, in bytes (about 1 MB)
 const PLAN_FILE = process.env.PLAN_FILE || '/site/plan.json';
 const PLAN_EXAMPLE = PLAN_FILE.replace(/plan\.json$/, 'plan.example.json');
 const BACKUPS_DIR = path.join(DATA_DIR, 'plan-backups');
@@ -94,33 +95,6 @@ function persist() {
 // ---------------------------------------------------------------------------
 // Small helpers
 // ---------------------------------------------------------------------------
-
-// Sends a JSON answer with an HTTP status code (200 = OK, 400 = bad request, 403 = not allowed, ...).
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads the JSON the page sent with its request. Gives up if it is bigger than `max`.
-function body(req, max = MAX_BODY) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > max) {
-        reject(new Error('big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(text || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
 
 // True for a plain object like {a: 1}. False for lists, null, text and numbers.
 function isObj(v) {
@@ -322,7 +296,7 @@ async function handlePlan(req, res, urlPath, me) {
 
   // Save the plan.
   if (urlPath === '/api/plan' && req.method === 'PUT') {
-    const b = await body(req, 8e6);   // plans can be big, so allow up to about 8 MB
+    const b = await readBody(req, 8e6);   // plans can be big, so allow up to about 8 MB
     if (b.version !== undefined && String(b.version) !== planVersion()) {
       send(res, 409, { error: 'The plan was changed somewhere else since you opened it. Reload to get the latest copy.' });
       return true;
@@ -345,7 +319,7 @@ async function handlePlan(req, res, urlPath, me) {
 
   // Put an old plan back.
   if (urlPath === '/api/plan/restore' && req.method === 'POST') {
-    const b = await body(req);
+    const b = await readBody(req, MAX_BODY);
     if (!backups().includes(b.name)) {   // only names from the list, so nobody can read other files
       send(res, 404, { error: 'no such backup' });
       return true;
@@ -433,7 +407,7 @@ function getState(res, me) {
 async function putUser(req, res, me, person) {
   if (!people().includes(person)) return send(res, 404, { error: 'unknown user' });
   if (!me.admin && person !== me.person) return send(res, 403, { error: 'you can only change your own ticks' });
-  const b = await body(req);
+  const b = await readBody(req, MAX_BODY);
   if (!isObj(b.ex) || !isObj(b.eaten)) return send(res, 400, { error: 'bad body' });
   // Older pages that do not send ratings keep what is already saved.
   const oldRatings = (state.users[person] || {}).ratings || {};
@@ -450,7 +424,7 @@ async function putUser(req, res, me, person) {
 // PUT /api/shared: saves the shopping list ticks, and remembers who ticked each new item and when.
 // "by" looks like {"<week>|<item id>": {who: "alex", at: 1762560000000}}.
 async function putShared(req, res, me) {
-  const b = await body(req);
+  const b = await readBody(req, MAX_BODY);
   if (!isObj(b.ticks)) return send(res, 400, { error: 'bad body' });
   const previousTicks = (state.shared && state.shared.ticks) || {};
   const by = Object.assign({}, (state.shared && state.shared.by) || {});
@@ -479,7 +453,7 @@ async function putShared(req, res, me) {
 
 // PUT /api/have: saves the names of items marked "At home".
 async function putHave(req, res) {
-  const b = await body(req);
+  const b = await readBody(req, MAX_BODY);
   if (!Array.isArray(b.have)) return send(res, 400, { error: 'bad body' });
   state.have = b.have.filter(x => typeof x === 'string').slice(0, 2000);
   persist();
@@ -549,7 +523,7 @@ async function handleRequest(req, res) {
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
     if (await plandraft.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, toKey, people })) return;
     if (await planextras.handle(req, res, urlPath, url, me, { people })) return;
-    if (await currentFood.handle(req, res, urlPath)) return;
+    if (await currentFood.handle(req, res, urlPath, me)) return;
     if (healthsync.handle(req, res, urlPath, url, me, { people })) return;
     if (await exercises.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await libraryUpdates.handle(req, res, urlPath, url, me, { readPlan, toKey, people })) return;

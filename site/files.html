@@ -184,14 +184,8 @@ function render() {
     : "Only you and the plan’s admin can see these files.";
 }
 
-// Makes the box for one kind of file (such as "Blood tests"): a heading, an Upload button,
-// drag and drop, and the list of files with Download and Delete buttons.
-function catCard(c) {
-  var card = el("section", "cat");
-  card.setAttribute("aria-labelledby", "h-" + c.id);
-
-  // Heading, hint and folder name.
-  var head = el("div", "cat-head");
+// The words at the top of a file box: its name and how many files, a hint, and where they are saved.
+function catWords(c) {
   var text = el("div");
   var heading = el("h2");
   heading.id = "h-" + c.id;
@@ -211,9 +205,12 @@ function catCard(c) {
     used.appendChild(change);
     text.appendChild(used);
   }
-  head.appendChild(text);
+  return text;
+}
 
-  // The Upload button is a <label> for a hidden file picker, so tapping it opens the picker.
+// The Upload button for a file box. It is a <label> for a hidden file picker, so tapping it opens
+// the picker. Returns {input (the hidden picker), button}.
+function uploadPicker(c) {
   var input = el("input");
   input.type = "file";
   input.multiple = true;
@@ -231,19 +228,11 @@ function catCard(c) {
       input.click();
     }
   };
-  head.appendChild(uploadButton);
-  card.appendChild(head);
-  card.appendChild(input);
+  return { input: input, button: uploadButton };
+}
 
-  var status = el("div");   // progress bars and messages go here
-  card.appendChild(status);
-  input.onchange = function () {
-    var picked = [].slice.call(input.files);   // copy the list before clearing the picker
-    input.value = "";
-    uploadAll(c, picked, status);
-  };
-
-  // Drag and drop onto the box.
+// Lets files be dragged and dropped onto a file box. `status` is where progress and messages go.
+function addDropZone(card, c, status) {
   card.addEventListener("dragover", function (e) {
     e.preventDefault();
     card.classList.add("over");
@@ -256,6 +245,30 @@ function catCard(c) {
     card.classList.remove("over");
     uploadAll(c, [].slice.call(e.dataTransfer.files || []), status);
   });
+}
+
+// Makes the box for one kind of file (such as "Blood tests"): a heading, an Upload button,
+// drag and drop, and the list of files with Download and Delete buttons.
+function catCard(c) {
+  var card = el("section", "cat");
+  card.setAttribute("aria-labelledby", "h-" + c.id);
+
+  var head = el("div", "cat-head");
+  head.appendChild(catWords(c));
+  var picker = uploadPicker(c);
+  var input = picker.input;
+  head.appendChild(picker.button);
+  card.appendChild(head);
+  card.appendChild(input);
+
+  var status = el("div");   // progress bars and messages go here
+  card.appendChild(status);
+  input.onchange = function () {
+    var picked = [].slice.call(input.files);   // copy the list before clearing the picker
+    input.value = "";
+    uploadAll(c, picked, status);
+  };
+  addDropZone(card, c, status);
 
   if (!c.files.length) {
     card.appendChild(el("p", "empty", "Nothing here yet."));
@@ -309,23 +322,52 @@ function dotExt(name) {
   return (name.match(/\.[^.]+$/) || [""])[0].toLowerCase();
 }
 
-// Uploads files one at a time with a progress bar (big Apple Health exports can take a while).
-// Files of the wrong type for this box are skipped, with a message saying so.
-function uploadAll(c, files, status) {
-  if (!files.length) return;
+// Leaves out files of the wrong type for a file box, with a message in `status` saying so.
+// Returns the files that can be uploaded.
+function rightType(c, files, status) {
   var allowed = c.accept.split(",");   // like [".pdf", ".jpg"]
   var wrongType = files.filter(function (f) {
     return allowed.indexOf(dotExt(f.name)) < 0;
   });
-  status.textContent = "";
   if (wrongType.length) {
     var names = wrongType.map(function (f) { return f.name; }).join(", ");
     var message = c.label + " takes " + allowed.join(", ") + " files, so " + names + (wrongType.length === 1 ? " was" : " were") + " skipped.";
     status.appendChild(el("div", "msg err", message));
   }
-  files = files.filter(function (f) {
+  return files.filter(function (f) {
     return wrongType.indexOf(f) < 0;
   });
+}
+
+// Sends one file to the server. `fill` is the progress bar's inner part, which grows as it goes.
+// When it is over, calls done(error, name): `error` is a message, or "" with the name it was saved under.
+function sendFile(c, f, fill, done) {
+  // XMLHttpRequest is used instead of fetch() because it can report upload progress.
+  var request = new XMLHttpRequest();
+  request.open("POST", "/api/uploads?" + q({ person: PERSON, category: c.id, name: f.name }));
+  request.setRequestHeader("X-Requested-With", "files");
+  request.setRequestHeader("Content-Type", "application/octet-stream");
+  request.upload.onprogress = function (e) {
+    if (e.lengthComputable) fill.style.width = Math.round(e.loaded / e.total * 100) + "%";
+  };
+  request.onload = function () {
+    var answer = {};
+    try { answer = JSON.parse(request.responseText); } catch (e) {}
+    if (request.status === 200) done("", answer.name);
+    else done(f.name + ": " + (answer.error || "upload failed (" + request.status + ")"));
+  };
+  request.onerror = function () {
+    done(f.name + ": the upload failed. Check your connection and try again.");
+  };
+  request.send(f);
+}
+
+// Uploads files one at a time with a progress bar (big Apple Health exports can take a while).
+// Files of the wrong type for this box are skipped, with a message saying so.
+function uploadAll(c, files, status) {
+  if (!files.length) return;
+  status.textContent = "";
+  files = rightType(c, files, status);
   if (!files.length) return;
 
   // The progress bar: a label, and a bar whose inner <i> grows from 0% to 100%.
@@ -356,11 +398,6 @@ function uploadAll(c, files, status) {
     });
   }
 
-  // Shows an error for one file, above the progress bar.
-  function showError(text) {
-    status.insertBefore(el("div", "msg err", text), progress);
-  }
-
   // Uploads the next file, then calls itself again when that one is done.
   function next() {
     if (index >= files.length) {
@@ -370,27 +407,12 @@ function uploadAll(c, files, status) {
     var f = files[index++];
     label.textContent = "Uploading " + f.name + " (" + size(f.size) + ")" + (files.length > 1 ? " · " + index + " of " + files.length : "");
     fill.style.width = "0";
-
-    // XMLHttpRequest is used instead of fetch() because it can report upload progress.
-    var request = new XMLHttpRequest();
-    request.open("POST", "/api/uploads?" + q({ person: PERSON, category: c.id, name: f.name }));
-    request.setRequestHeader("X-Requested-With", "files");
-    request.setRequestHeader("Content-Type", "application/octet-stream");
-    request.upload.onprogress = function (e) {
-      if (e.lengthComputable) fill.style.width = Math.round(e.loaded / e.total * 100) + "%";
-    };
-    request.onload = function () {
-      var answer = {};
-      try { answer = JSON.parse(request.responseText); } catch (e) {}
-      if (request.status === 200) uploaded.push(answer.name);
-      else showError(f.name + ": " + (answer.error || "upload failed (" + request.status + ")"));
+    sendFile(c, f, fill, function (error, name) {
+      // An error for one file is shown above the progress bar.
+      if (error) status.insertBefore(el("div", "msg err", error), progress);
+      else uploaded.push(name);
       next();
-    };
-    request.onerror = function () {
-      showError(f.name + ": the upload failed. Check your connection and try again.");
-      next();
-    };
-    request.send(f);
+    });
   }
   next();
 }

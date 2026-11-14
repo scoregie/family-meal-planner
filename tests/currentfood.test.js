@@ -20,10 +20,16 @@ test('an older kitchen list is sorted into places once, then kept as it is', () 
   assert.deepEqual(food.items(), [], 'nothing saved yet');
 
   db.setSetting('kitchen-list', JSON.stringify(['rice 2 kg', '6 eggs', 'frozen peas', 'dragon fruit']));
-  assert.deepEqual(food.read(), { pantry: ['rice 2 kg'], fridge: ['6 eggs'], freezer: ['frozen peas'], other: ['dragon fruit'] });
+  assert.deepEqual(food.read(), { pantry: ['rice 2 kg'], spices: [], fridge: ['6 eggs'], freezer: ['frozen peas'], bench: [], other: ['dragon fruit'] });
   assert.deepEqual(food.lines(), ['Pantry: rice 2 kg', 'Fridge: 6 eggs', 'Freezer: frozen peas', 'Other: dragon fruit']);
 
   // It is saved in the new form, so a later change to the old list makes no difference.
   db.setSetting('kitchen-list', JSON.stringify(['milk']));
   assert.deepEqual(food.items().map(item => item.text), ['rice 2 kg', '6 eggs', 'frozen peas', 'dragon fruit']);
+});
+
+test('spices and the fruit bowl have their own lists, named in full for an AI plan writer', () => {
+  db.setSetting('current-food', JSON.stringify({ pantry: ['rice 2 kg'], spices: ['smoked paprika'], bench: ['4 apples'] }));
+  assert.deepEqual(food.PLACES, ['pantry', 'spices', 'fridge', 'freezer', 'bench', 'other']);
+  assert.deepEqual(food.lines(), ['Pantry: rice 2 kg', 'Spices and seasonings: smoked paprika', 'Fruit bowl and bench: 4 apples']);
 });

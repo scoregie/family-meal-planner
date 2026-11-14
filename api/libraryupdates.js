@@ -22,6 +22,7 @@ const db = require('./db');
 const ai = require('./ai');
 const assistant = require('./assistant');
 const planbuilder = require('./planbuilder');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const LIB = planbuilder.LIB;
 const EXERCISES = planbuilder.EXERCISES;
@@ -240,6 +241,7 @@ function takenNames() {
 function checkSet(set, taken) {
   const out = { dishes: [], snacks: [], exercises: [], rejected: [] };
   const take = { dishes: new Set(taken.dishes), snacks: new Set(taken.snacks), exercises: new Set(taken.exercises) };
+  // Checks each entry of one kind (dishes, snacks or exercises): good ones are kept, the rest are listed with why.
   const run = (list, check, into, keyOf) => {
     for (const raw of Array.isArray(list) ? list.slice(0, 60) : []) {
       const r = check(raw, take[into]);
@@ -258,6 +260,7 @@ function checkSet(set, taken) {
 // Files and settings
 // ---------------------------------------------------------------------------
 
+// Reads a JSON file, or gives null if it is missing or broken.
 function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; }
 }
@@ -302,6 +305,7 @@ function apply() {
   LIB.dishes.splice(BASE.dishes);
   LIB.snacks.splice(BASE.snacks);
   EXERCISES.splice(BASE.exercises);
+  // Adds one checked set of new dishes, snacks and exercises to the library in memory.
   const add = set => {
     const ok = checkSet(set || {}, takenNames());
     LIB.dishes.push(...ok.dishes);
@@ -317,6 +321,7 @@ function apply() {
 // 1. Downloading the shared additions (no AI)
 // ---------------------------------------------------------------------------
 
+// Downloads the shared additions from GitHub and keeps the ones that pass the checks.
 async function checkCommunity() {
   const at = Date.now();
   // lastCheck is only saved when the download works, so a failed one is tried again at the next
@@ -538,6 +543,7 @@ function decide(ids, all, keep) {
 // Every 2 weeks
 // ---------------------------------------------------------------------------
 
+// Starts the timer that looks for library additions every 6 hours (and does the 2-weekly jobs when due).
 function start(ctx) {
   try { apply(); } catch (e) { console.error('library additions:', e.message); }
   const tick = () => {
@@ -553,22 +559,6 @@ function start(ctx) {
 // ---------------------------------------------------------------------------
 // Requests
 // ---------------------------------------------------------------------------
-
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let t = '';
-    req.on('data', c => { t += c; if (t.length > 2e4) { reject(new Error('too big')); req.destroy(); } });
-    req.on('end', () => { try { resolve(JSON.parse(t || '{}')); } catch (e) { reject(e); } });
-    req.on('error', reject);
-  });
-}
 
 // Everything the Plan setup card shows: the switches, the last results and what's waiting.
 function status(me) {

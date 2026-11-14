@@ -214,85 +214,74 @@ function setAnswer(id, value) {
   if (id === "reminders") updateReminders();
 }
 
-// Makes the input for one question: chips for choices, a number box, or a text box.
-function questionField(q) {
-  var inputId = "q-" + q.id;
-  var wrap;
-  var help = q.help ? el("span", "help", q.help) : null;
-
-  if (q.type === "choice" || q.type === "multi") {
-    // A group of chips. "choice" allows one (tap again to clear); "multi" allows several.
-    wrap = el("fieldset", "q");
-    var legend = el("legend", null, q.label);
-    if (help) legend.appendChild(help);
-    wrap.appendChild(legend);
-    var chips = el("div", "chips");
-    q.options.forEach(function (option) {
-      var label = el("label", "chip");
-      var input = el("input");
-      input.type = "checkbox";
-      input.name = inputId;
-      input.value = option;
-      var current = ANSWERS[q.id];
-      // An answer saved before a question allowed several choices is a single string.
-      if (q.type === "multi" && typeof current === "string") current = [current];
-      input.checked = q.type === "multi" ? Array.isArray(current) && current.indexOf(option) > -1 : current === option;
-      input.onchange = function () {
-        if (q.type === "choice") {
-          // Only one can be picked, so untick the others.
-          chips.querySelectorAll("input").forEach(function (other) {
-            if (other !== input) other.checked = false;
-          });
-          setAnswer(q.id, input.checked ? option : "");
-        } else {
-          var picked = [].filter.call(chips.querySelectorAll("input"), function (x) { return x.checked; })
-            .map(function (x) { return x.value; });
-          setAnswer(q.id, picked);
-        }
-      };
-      label.appendChild(input);
-      label.appendChild(el("span", null, option));
-      chips.appendChild(label);
-    });
-    wrap.appendChild(chips);
-    return wrap;
-  }
-
-  wrap = el("div", "q");
-  var title = el("label", null, q.label);
-  title.htmlFor = inputId;
-  if (help) title.appendChild(help);
-  wrap.appendChild(title);
-
-  if (q.type === "number") {
-    var number = el("input");
-    number.type = "number";
-    number.id = inputId;
-    number.inputMode = "decimal";
-    if (q.min != null) number.min = q.min;
-    if (q.max != null) number.max = q.max;
-    number.step = q.step || 1;
-    number.value = ANSWERS[q.id] != null ? ANSWERS[q.id] : "";
-    number.oninput = function () {
-      setAnswer(q.id, number.value === "" ? "" : Number(number.value));
+// A question answered with chips. "choice" allows one (tap again to clear); "multi" allows several.
+function chipsQuestion(q, inputId, help) {
+  var wrap = el("fieldset", "q");
+  var legend = el("legend", null, q.label);
+  if (help) legend.appendChild(help);
+  wrap.appendChild(legend);
+  var chips = el("div", "chips");
+  q.options.forEach(function (option) {
+    var label = el("label", "chip");
+    var input = el("input");
+    input.type = "checkbox";
+    input.name = inputId;
+    input.value = option;
+    var current = ANSWERS[q.id];
+    // An answer saved before a question allowed several choices is a single string.
+    if (q.type === "multi" && typeof current === "string") current = [current];
+    input.checked = q.type === "multi" ? Array.isArray(current) && current.indexOf(option) > -1 : current === option;
+    input.onchange = function () {
+      if (q.type === "choice") {
+        // Only one can be picked, so untick the others.
+        chips.querySelectorAll("input").forEach(function (other) {
+          if (other !== input) other.checked = false;
+        });
+        setAnswer(q.id, input.checked ? option : "");
+      } else {
+        var picked = [].filter.call(chips.querySelectorAll("input"), function (x) { return x.checked; })
+          .map(function (x) { return x.value; });
+        setAnswer(q.id, picked);
+      }
     };
-    // Money goes before the number, other units after it.
-    if (q.unit === "$") {
-      // The household's currency symbol: "$", "£", "€", "¥"...
-      var symbol = "$";
-      try {
-        new Intl.NumberFormat(Appearance.locale(), { style: "currency", currency: Appearance.region().currency }).formatToParts(0).forEach(function (part) { if (part.type === "currency") symbol = part.value; });
-      } catch (e) { /* keep "$" */ }
-      var money = el("span", null, symbol + " ");
-      wrap.appendChild(money);
-      wrap.appendChild(number);
-    } else {
-      wrap.appendChild(number);
-      if (q.unit) wrap.appendChild(el("span", "unit", q.unit));
-    }
-    return wrap;
-  }
+    label.appendChild(input);
+    label.appendChild(el("span", null, option));
+    chips.appendChild(label);
+  });
+  wrap.appendChild(chips);
+  return wrap;
+}
 
+// Adds a number box to a question (`wrap`), with its unit: money before the number, other units after.
+function addNumberBox(wrap, q, inputId) {
+  var number = el("input");
+  number.type = "number";
+  number.id = inputId;
+  number.inputMode = "decimal";
+  if (q.min != null) number.min = q.min;
+  if (q.max != null) number.max = q.max;
+  number.step = q.step || 1;
+  number.value = ANSWERS[q.id] != null ? ANSWERS[q.id] : "";
+  number.oninput = function () {
+    setAnswer(q.id, number.value === "" ? "" : Number(number.value));
+  };
+  if (q.unit === "$") {
+    // The household's currency symbol: "$", "£", "€", "¥"...
+    var symbol = "$";
+    try {
+      new Intl.NumberFormat(Appearance.locale(), { style: "currency", currency: Appearance.region().currency }).formatToParts(0).forEach(function (part) { if (part.type === "currency") symbol = part.value; });
+    } catch (e) { /* keep "$" */ }
+    var money = el("span", null, symbol + " ");
+    wrap.appendChild(money);
+    wrap.appendChild(number);
+  } else {
+    wrap.appendChild(number);
+    if (q.unit) wrap.appendChild(el("span", "unit", q.unit));
+  }
+}
+
+// Adds a text box to a question (`wrap`): one line, or three for a "long" question.
+function addTextBox(wrap, q, inputId) {
   var text = el("textarea");
   text.id = inputId;
   text.maxLength = 2000;
@@ -303,9 +292,23 @@ function questionField(q) {
     setAnswer(q.id, text.value);
   };
   wrap.appendChild(text);
-  return wrap;
 }
 
+// Makes the input for one question: chips for choices, a number box, or a text box.
+function questionField(q) {
+  var inputId = "q-" + q.id;
+  var help = q.help ? el("span", "help", q.help) : null;
+  if (q.type === "choice" || q.type === "multi") return chipsQuestion(q, inputId, help);
+
+  var wrap = el("div", "q");
+  var title = el("label", null, q.label);
+  title.htmlFor = inputId;
+  if (help) title.appendChild(help);
+  wrap.appendChild(title);
+  if (q.type === "number") addNumberBox(wrap, q, inputId);
+  else addTextBox(wrap, q, inputId);
+  return wrap;
+}
 // ---------- One section at a time ----------
 var STEP = 0;           // which section is showing (0 is the first)
 var SHOW_ALL = false;   // true when the person chose to see every section on one page

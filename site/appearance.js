@@ -1,6 +1,8 @@
 // Applies the chosen look (colour, font, text size, light or dark) to every page.
 // Each page loads this at the end of its <head>, so the look is set before anything is drawn.
 //
+// It also adds the round light or dark button to the top of every page.
+//
 // There are two layers:
 //   - the household's defaults, chosen by an admin on the Settings page (saved on the server), and
 //   - this device's own choices (saved in the browser), which win over the household's.
@@ -213,9 +215,76 @@
     document.querySelectorAll('meta[name="theme-color"]').forEach(function (meta) {
       meta.setAttribute("content", dark ? "#121214" : "#f5f5f4");
     });
+    drawToggle();
+  }
+
+  // ---------- The light or dark button at the top of every page ----------
+  // It saves the same "Light or dark" choice as Settings > On this device, so the two always agree.
+
+  // The pictures on the button: a moon (shown in light mode) and a sun (shown in dark mode).
+  var MOON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+  var SUN = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var toggle = null;
+
+  // True if the page is showing dark right now (chosen, or matching a device set to dark).
+  function isDark() {
+    var theme = current().theme;
+    return theme === "dark" || (theme === "auto" && !!window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+
+  // Makes the button show what a tap will do: a moon to go dark, a sun to go light.
+  function drawToggle() {
+    if (!toggle) return;
+    var label = isDark() ? "Switch to light mode" : "Switch to dark mode";
+    toggle.innerHTML = isDark() ? SUN : MOON;
+    toggle.setAttribute("aria-label", label);
+    toggle.title = label;
+  }
+
+  // Swaps light and dark, remembers it on this device, and tells the page (Settings redraws its choices).
+  function flipTheme() {
+    var mine = clean(read("appearance-mine"));
+    mine.theme = isDark() ? "light" : "dark";
+    write("appearance-mine", mine);
+    apply();
+    window.dispatchEvent(new Event("look-changed"));
+  }
+
+  // Adds the button to the page's top row (or the top corner on pages without one, like the login page).
+  function addToggle() {
+    if (toggle || !document.body) return;
+    var style = document.createElement("style");
+    style.textContent = ".themebtn{flex:none;align-self:center;margin-left:auto;display:grid;place-items:center;width:2.75rem;height:2.75rem;padding:0;" +
+      "border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--ink);cursor:pointer}" +
+      ".themebtn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}" +
+      ".topbar .themebtn{margin-left:0}" +
+      ".themebtn.corner{position:absolute;top:.75rem;right:.75rem}";
+    document.head.appendChild(style);
+
+    toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "themebtn";
+    toggle.addEventListener("click", flipTheme);
+
+    var bar = document.querySelector(".topbar");   // the home page: goes just before the round account button
+    var top = document.querySelector(".top");      // other pages: goes after the title, before "Back to the app"
+    if (bar) bar.insertBefore(toggle, bar.querySelector(".avatarlink"));
+    else if (top) top.insertBefore(toggle, top.children[1] || null);
+    else {
+      toggle.className += " corner";
+      document.body.appendChild(toggle);
+    }
+    drawToggle();
   }
 
   apply();
+
+  // This file loads in the <head>, before the page's top row exists, so wait for the page first.
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", addToggle);
+  else addToggle();
+  // If the device itself changes between light and dark, the button's picture follows.
+  var deviceDark = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+  if (deviceDark && deviceDark.addEventListener) deviceDark.addEventListener("change", drawToggle);
 
   // Gets the household's choices from the server (not on the login page: that needs a login).
   function refresh() {

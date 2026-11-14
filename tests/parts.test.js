@@ -237,6 +237,48 @@ test('plan check: food on Current food that no meal uses is reported', () => {
   assert.deepEqual(check.problems(smallPlan(), []), []);
 });
 
+test('plan check: a food only counts as used when the plan names it, not just a word from its label', () => {
+  // The check used to count a food as used if any word typed with it turned up anywhere, so
+  // "Full cream milk, 2 L (use by 20 Nov)" was used by any recipe with the word "use" in it.
+  const check = require('../api/plancheck');
+  const plan = smallPlan();
+  plan.weeks[1].recipes.push({ name: 'Fried rice', ingredients: ['300 g rice', '2 tbsp soy sauce'], steps: ['Use a large pan, and cut the block of tofu small.'] });
+  const unused = texts => check.unusedFood(plan, texts.map(text => ({ text, place: 'pantry' })));
+  assert.deepEqual(unused(['Jasmine rice 5 kg', 'Soy sauce, large bottle a third full']), [], 'rice and soy sauce are in the recipe');
+  assert.deepEqual(unused(['Teriyaki sauce 250 mL (Kikkoman)']), ['Teriyaki sauce 250 mL (Kikkoman)'], 'soy sauce isn’t teriyaki sauce');
+  assert.deepEqual(unused(['Full cream milk, 2 L, three-quarters full (use by 20 Nov)']).length, 1, 'the word "use" isn’t milk');
+  assert.deepEqual(unused(['Cheese block, large, plus a part block']).length, 1, 'a "block" of tofu isn’t cheese');
+  assert.equal(check.foodName('Wholemeal bread, 1 loaf (Wonder)'), 'wholemeal bread');
+  assert.equal(check.foodName('Carrot, cauliflower and broccoli, 1 kg, opened (Birds Eye)'), 'carrot cauliflower and broccoli');
+});
+
+test('plan check: drinks and baking things on Current food aren’t reported as unused', () => {
+  // Tea, coffee, sugar and cordial were listed as "not used" on every plan, with no way to stop it.
+  const check = require('../api/plancheck');
+  const food = ['Tea bags: Earl Grey, peppermint', 'Instant coffee 100 g', 'Caster sugar', 'Self raising flour, 1 kg tub', 'Bicarb soda',
+    'Dried yeast', 'Cordial, 2 bottles', 'Food colouring', 'Gingerbread decorating kit', 'Chocolate drink powder'].map(text => ({ text, place: 'pantry' }));
+  assert.deepEqual(check.unusedFood(smallPlan(), food), []);
+  // Real food in the same cupboard is still reported.
+  assert.deepEqual(check.unusedFood(smallPlan(), [...food, { text: 'Crab meat in brine 170 g', place: 'pantry' }]), ['Crab meat in brine 170 g']);
+});
+
+test('plan check: food on the first shopping lists that is already at home is pointed out', () => {
+  // An AI plan bought turkey mince, wraps and carrots in week 1 with all three at home.
+  const check = require('../api/plancheck');
+  const food = [{ text: 'Jasmine rice 5 kg', place: 'pantry' }, { text: 'Carrots, about 5', place: 'fridge' }, { text: 'Egg, 1', place: 'fridge' },
+    { text: 'Tinned beans, 1 more tin', place: 'pantry' }, { text: 'Tea bags', place: 'other' }];
+  const plan = smallPlan();
+  plan.weeks[0].shopping.Pantry.push(['Egg noodles 440 g', 2.5], ['Red kidney beans 400 g', 1.5]);
+  // Rice and carrots are at home. Egg noodles aren't eggs, and "beans" alone could be any beans.
+  assert.deepEqual(check.boughtAgain(plan, food), ['Rice 1 kg (at home: Jasmine rice 5 kg)', 'Carrots 1 kg (at home: Carrots, about 5)']);
+  const found = check.problems(plan, [], food).join('\n');
+  assert.match(found, /Stock-up 1 or Week 1 shopping lists.*Rice 1 kg \(at home: Jasmine rice 5 kg\).*buy only the extra/);
+  // Later weeks aren't checked: by then the food at home may be gone.
+  plan.weeks.push({ name: 'Week 2', meals: [], shopping: { Veg: [['Carrots 1 kg', 2]] } });
+  assert.equal(check.boughtAgain(plan, food).length, 2);
+  assert.deepEqual(check.boughtAgain(smallPlan(), []), []);
+});
+
 test('plan check: finds a plan short of vegetables, a food someone won’t eat, and "must"', () => {
   const check = require('../api/plancheck');
   const found = check.problems(smallPlan(), SAM).join('\n');
@@ -358,4 +400,11 @@ test('wording: the app calls its own notes "considerations", never "advice"', ()
   // "not medical advice" is the disclaimer, and the About me question asks about a doctor's advice.
   const bad = texts.filter(t => /\badvice\b/i.test(t.replace(/not medical advice|given you advice/gi, '')));
   assert.deepEqual(bad, []);
+});
+
+test('updates: pages and scripts are sent with "check for a newer copy each time"', () => {
+  // Without this, a browser can keep showing an old appearance.js for days after an update.
+  const caddy = fs.readFileSync(path.join(ROOT, 'Caddyfile'), 'utf8');
+  assert.match(caddy, /@fresh path [^\n]*\*\.html[^\n]*\*\.js/);
+  assert.match(caddy, /header @fresh Cache-Control "no-cache"/);
 });

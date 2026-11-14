@@ -100,8 +100,8 @@ test('the instructions for an AI-written plan give each person’s vegetable and
 
 test('Current food: things are added to and removed from each place, and given to an AI-written plan', async () => {
   const start = await server.request('GET', '/api/food');
-  assert.deepEqual(start.json.places, ['pantry', 'fridge', 'freezer', 'other']);
-  assert.deepEqual(start.json.food, { pantry: [], fridge: [], freezer: [], other: [] });
+  assert.deepEqual(start.json.places, ['pantry', 'spices', 'fridge', 'freezer', 'bench', 'other']);
+  assert.deepEqual(start.json.food, { pantry: [], spices: [], fridge: [], freezer: [], bench: [], other: [] });
 
   await server.request('POST', '/api/food', { place: 'pantry', text: '  rice   2 kg ' });
   await server.request('POST', '/api/food', { place: 'fridge', text: '6 eggs' });
@@ -111,8 +111,10 @@ test('Current food: things are added to and removed from each place, and given t
   assert.equal(added.status, 200, added.text);
   assert.deepEqual(added.json.food, {
     pantry: [{ text: 'rice 2 kg', known: true }],
+    spices: [],
     fridge: [{ text: '6 eggs', known: true }],
     freezer: [{ text: 'chicken breast 500 g', known: true }],
+    bench: [],
     other: [{ text: 'dragon fruit', known: false }],   // the built-in builder has no meals with it
   });
 
@@ -142,6 +144,64 @@ test('Current food: things are added to and removed from each place, and given t
   const back = await server.request('POST', '/auth/login', new URLSearchParams({ username: OWNER.email, password: OWNER.password, next: '/' }));
   assert.equal(back.status, 303, back.text);
   assert.deepEqual((await server.request('GET', '/api/food')).json, mine.json);
+});
+
+test('Current food: an item can be reworded, moved to another place, and merged with a matching one', async () => {
+  const put = body => server.request('PUT', '/api/food', body);
+  const texts = list => list.map(item => item.text);
+  await server.request('DELETE', '/api/food', { place: 'freezer' });
+  await server.request('DELETE', '/api/food', { place: 'other' });
+  for (const text of ['beef pies 4 pack', 'coleslaw', 'peas']) await server.request('POST', '/api/food', { place: 'freezer', text });
+
+  // Reworded: it keeps its spot in the list.
+  const reworded = await put({ place: 'freezer', text: 'coleslaw', to: '  seafood   salad ' });
+  assert.equal(reworded.status, 200);
+  assert.deepEqual(texts(reworded.json.food.freezer), ['beef pies 4 pack', 'seafood salad', 'peas']);
+
+  // Moved (and reworded at the same time).
+  const moved = await put({ place: 'freezer', text: 'seafood salad', to: 'seafood salad 400 g', toPlace: 'other' });
+  assert.deepEqual(texts(moved.json.food.freezer), ['beef pies 4 pack', 'peas']);
+  assert.deepEqual(texts(moved.json.food.other), ['seafood salad 400 g']);
+
+  // Reworded to match something already on the list: the two become one.
+  const merged = await put({ place: 'freezer', text: 'beef pies 4 pack', to: 'Peas' });
+  assert.deepEqual(texts(merged.json.food.freezer), ['peas']);
+
+  // Things that are refused, with nothing changed.
+  assert.equal((await put({ place: 'freezer', text: 'not there', to: 'x' })).status, 400);
+  assert.equal((await put({ place: 'freezer', text: 'peas', to: '   ' })).status, 400);
+  assert.equal((await put({ place: 'freezer', text: 'peas', to: 'corn', toPlace: 'shed' })).status, 400);
+  assert.equal((await server.request('PUT', '/api/food', { place: 'freezer', text: 'peas', to: 'corn' }, { 'X-Requested-With': 'elsewhere' })).status, 403);
+  assert.deepEqual(texts((await server.request('GET', '/api/food')).json.food.freezer), ['peas']);
+  await server.request('DELETE', '/api/food', { place: 'freezer' });
+  await server.request('DELETE', '/api/food', { place: 'other' });
+});
+
+test('Current food: an item read from a photo remembers it, and clearing food from photos removes both', async () => {
+  const dir = path.join(server.dir, 'data', 'uploads', 'alex-smith', 'food-photos');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, '2026-11-13 Shelf.jpeg'), 'a photo');
+
+  await server.request('POST', '/api/food', { place: 'bench', text: 'bananas' });   // typed by hand
+  const added = await server.request('POST', '/api/food', { place: 'pantry', text: 'tinned corn', photos: ['2026-11-13 Shelf.jpeg', '../secret.txt'] });
+  assert.equal(added.status, 200, added.text);
+  assert.equal(added.json.fromPhotos, 1);
+  assert.equal(added.json.food.pantry.find(item => item.text === 'tinned corn').photo, true);
+  assert.equal(added.json.food.bench.find(item => item.text === 'bananas').photo, undefined);
+
+  // Fixing the wording or the place keeps the note of where it came from.
+  const moved = await server.request('PUT', '/api/food', { place: 'pantry', text: 'tinned corn', to: 'corn kernels 420 g', toPlace: 'other' });
+  assert.equal(moved.json.food.other.find(item => item.text === 'corn kernels 420 g').photo, true);
+  assert.equal(moved.json.fromPhotos, 1);
+
+  const cleared = await server.request('DELETE', '/api/food', { photos: true });
+  assert.equal(cleared.json.fromPhotos, 0);
+  assert.equal(cleared.json.food.other.some(item => item.text === 'corn kernels 420 g'), false, 'the photo item is gone');
+  assert.equal(cleared.json.food.bench.some(item => item.text === 'bananas'), true, 'the hand-typed item stays');
+  assert.equal(fs.existsSync(path.join(dir, '2026-11-13 Shelf.jpeg')), false, 'the photo is deleted');
+
+  const files = await server.request('GET', '/api/uploads');
+  assert.ok(files.json.categories.some(c => c.id === 'food-photos' && c.label === 'Food photos'));
 });
 
 test('small steps: how a new food went is saved and read back', async () => {

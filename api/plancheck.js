@@ -9,6 +9,7 @@
 //      checks and measures no worse than before (improve).
 // Nothing here approves anything: the corrected draft still waits for an admin.
 const healthtargets = require('./healthtargets');
+const { HOW_MUCH } = require('./planbuilder');   // tells "2 jars, opened" from the name of a food
 
 const WORDS = { veg: 'vegetables', fruit: 'fruit' };
 const ABSOLUTES = /\b(always|never|must)\b/i;
@@ -124,41 +125,113 @@ function proteinPowder(plan, p) {
   return missing ? [p.name + '’s snack "' + missing.what + '" has no "macros" entry, so it isn’t counted. Add one (about 24 g protein, 2 g carbs, 2 g fat, 510 kJ for a scoop mixed with water).'] : [];
 }
 
-// The food in a Current food line, without the amount or the pack: "2 tins diced tomatoes" is
-// "diced tomatoes", "rice 2 kg" is "rice".
+// The food in a Current food line, without the amount, the pack, the brand in brackets or the
+// part after a comma that says how much is left: "2 tins diced tomatoes" is "diced tomatoes",
+// "Wholemeal bread, 1 loaf (Wonder)" is "wholemeal bread".
 function foodName(text) {
-  return String(text || '').toLowerCase()
+  const bits = String(text || '').toLowerCase().replace(/\([^)]*\)/g, ' ').split(',');
+  // Keep the parts that still name food ("carrot, cauliflower and broccoli"); stop at how much.
+  let named = 1;
+  while (named < bits.length && !HOW_MUCH.test(bits[named])) named++;
+  return bits.slice(0, named).join(' ')
     .replace(/(\d+(?:\.\d+)?)\s*(kg|g|grams?|ml|l|litres?|liters?)?\b/g, ' ')
     .replace(/\b(tins?|cans?|packs?|packets?|bags?|boxe?s?|bottles?|jars?|cartons?|tubs?|loaf|loaves|bunch(es)?|heads?|pieces?|of|a|an|some|half|dozen|about|x)\b/g, ' ')
-    .replace(/[^a-z\u00c0-\u024f' -]/g, ' ').replace(/\s+/g, ' ').trim();
+    .replace(/[^a-zÀ-ɏ' -]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // Words in a food's name that don't say which food it is ("frozen peas" is about the peas).
 const PLAIN_WORDS = new Set(['frozen', 'fresh', 'dried', 'canned', 'tinned', 'diced', 'sliced', 'chopped', 'whole', 'raw', 'cooked',
-  'fillet', 'fillets', 'fruit', 'vegetable', 'vegetables', 'veg', 'mixed', 'free', 'range', 'lean', 'large', 'small', 'big', 'and', 'the', 'with']);
+  'fillet', 'fillets', 'fruit', 'vegetable', 'vegetables', 'veg', 'mixed', 'free', 'range', 'lean', 'large', 'small', 'big', 'and', 'the', 'with',
+  'style', 'cut', 'full', 'cream', 'recipe', 'base', 'pieces', 'chunks', 'portions', 'red', 'green', 'white', 'brown', 'ground', 'crushed',
+  'springwater', 'brine', 'net', 'pre-cut', 'loose', 'bag', 'block']);
+
+// Last words that many different foods share ("teriyaki sauce" and "soy sauce" are both a sauce),
+// so a food ending in one only counts as used when the rest of its name is there too.
+const SHARED_WORDS = new Set(['sauce', 'paste', 'powder', 'seasoning', 'oil', 'juice', 'dressing', 'soup', 'stock', 'mix', 'kit', 'meal',
+  'blend', 'sugar', 'flour', 'cheese', 'cheeses', 'beans', 'bars', 'chips', 'drink', 'essence', 'vinegar', 'mustard', 'pepper', 'salt',
+  'crackers', 'cereal', 'pies', 'seeds', 'sticks', 'leaves', 'flakes', 'pulp', 'salad', 'spread', 'syrup', 'wine', 'pickles', 'cup']);
+
+// Things kept with the food that aren't cooked into meals (drinks, baking and decorating). A plan
+// isn't asked to use these.
+const NOT_FOR_MEALS = /\b(tea|teas|tea bags?|coffee|decaf|cordial|soft drinks?|drink powder|fruit drink|poppers?|bitters|sugar|icing|flour|bicarb|baking (soda|powder)|yeast|food colouring|colouring|sprinkles|decorating|vanilla essence|cooking spray|gum|lollies|chocolate drink)\b/;
+
+// Whether a plan's text uses a food: its whole name is there, or most of the words that tell it
+// apart are ("jasmine rice" is used by a recipe with "rice"; "teriyaki sauce" isn't used by one
+// with "soy sauce"). It reads words, not amounts, so it is a guide, not a count.
+function usesFood(text, name) {
+  const named = term => mentions(text, term) || (/oes$/.test(term) && mentions(text, term.slice(0, -2)))
+    || (/ies$/.test(term) && mentions(text, term.slice(0, -3) + 'y'));
+  if (named(name)) return true;
+  const words = telling(name);
+  if (!words.length) return false;
+  const found = words.filter(named).length;
+  if (found / words.length >= 0.66) return true;
+  const last = words[words.length - 1];
+  // "Jasmine rice": the food itself (the last word, or the first) and half its words are enough.
+  return !SHARED_WORDS.has(last) && (named(last) || named(words[0])) && found / words.length >= 0.5;
+}
 
 // The things on Current food that no meal, recipe or snack in the plan uses, as they were typed.
-// `food` is a list of {text, place}. A food counts as used if its name, or any telling word in
-// its name ("salmon" for "salmon fillets"), turns up, so this only reports clear misses.
+// `food` is a list of {text, place}. Drinks and baking things are left out: they aren't for meals.
 function unusedFood(plan, food) {
   const weeks = mealWeeks(plan);
   const text = textOf([weeks.map(w => [w.meals, w.recipes]), Object.values(plan.people || {}).map(p => p && p.snacks)]);
-  const named = term => mentions(text, term) || (/oes$/.test(term) && mentions(text, term.slice(0, -2)));
   const out = [];
   for (const item of Array.isArray(food) ? food : []) {
     const name = foodName(item && item.text);
-    if (!name) continue;
-    const words = name.split(' ').filter(w => w.length > 2 && !PLAIN_WORDS.has(w));
-    if (!named(name) && !words.some(named)) out.push(String(item.text));
+    if (!name || NOT_FOR_MEALS.test(name)) continue;
+    if (!usesFood(text, name)) out.push(String(item.text));
   }
   return out;
 }
 
-// Current food the plan doesn't use, as one sentence for the plan writer (none: an empty list).
+// The words in a food's name that tell it apart from other foods.
+const telling = name => name.split(' ').filter(w => w.length > 2 && !PLAIN_WORDS.has(w));
+// A word without its plural ending: "tomatoes" and "tomato", "berries" and "berry".
+const singular = w => w.replace(/ies$/, 'y').replace(/oes$/, 'o').replace(/s$/, '');
+
+// Food on the first shopping lists (Stock-up 1 and Week 1) that Current food says is already at
+// home, like ["Turkey mince 500 g (at home: Turkey mince (Steggles))"]. Buying a top-up is fine
+// when the recipes need more than is there, so this is something to check, not a mistake.
+function boughtAgain(plan, food) {
+  const lists = (plan.weeks || []).filter(w => w && (w.name === 'Stock-up 1' || w.name === 'Week 1'));
+  const home = (Array.isArray(food) ? food : []).filter(item => item && item.place !== 'spices')
+    .map(item => ({ text: String(item.text), name: foodName(item.text) })).filter(x => x.name && !NOT_FOR_MEALS.test(x.name));
+  const out = [];
+  for (const week of lists) {
+    for (const items of Object.values(week.shopping || {})) {
+      for (const it of Array.isArray(items) ? items : []) {
+        const bought = foodName(Array.isArray(it) ? it[0] : '');
+        if (!bought) continue;
+        // The same food: it ends in the same word ("wholemeal wraps" and "wraps", but not "egg
+        // noodles" and "egg"), and one name holds every telling word of the other ("rice" and
+        // "jasmine rice", but not "turkey mince" and "beef mince").
+        const boughtLast = telling(bought).pop();
+        const same = home.filter(h => {
+          const words = telling(h.name);
+          const last = words[words.length - 1];
+          if (!last || !boughtLast || (SHARED_WORDS.has(last) && words.length < 2)) return false;
+          if (singular(last) !== singular(boughtLast)) return false;
+          return words.every(w => mentions(bought, w)) || telling(bought).every(w => mentions(h.name, w));
+        });
+        // The closest one: the same name if there is one, else the one with the most words.
+        const match = same.find(h => h.name === bought) || same.sort((a, b) => telling(b.name).length - telling(a.name).length)[0];
+        if (match) out.push(it[0] + ' (at home: ' + match.text + ')');
+      }
+    }
+  }
+  return out;
+}
+
+// What the plan writer is told about Current food: what the plan doesn't use, and what the first
+// shopping lists buy that is already at home (none: an empty list).
 function foodProblems(plan, food) {
+  const out = [];
   const unused = unusedFood(plan, food);
-  if (!unused.length) return [];
-  return ['The family already has these at home (Current food) and no meal, recipe or snack uses them: ' + unused.slice(0, 30).join('; ') + '. Where it suits everyone’s answers, use them in a meal or as a side, and take what they cover off the shopping lists.'];
+  if (unused.length) out.push('The family already has these at home (Current food) and no meal, recipe or snack uses them: ' + unused.slice(0, 30).join('; ') + '. Where it suits everyone’s answers, use them in a meal or as a side, and take what they cover off the shopping lists.');
+  const again = boughtAgain(plan, food);
+  if (again.length) out.push('These are on the Stock-up 1 or Week 1 shopping lists, and Current food says they are already at home: ' + again.slice(0, 20).join('; ') + '. Check each against what weeks 1 and 2 use: take it off if what is at home covers it, or buy only the extra the recipes need.');
+  return out;
 }
 
 // Everything the app itself can find wrong with a plan, as a list of sentences for the plan
@@ -357,4 +430,4 @@ async function improve(plan, people, notes, ask, checkPlan, food) {
   return { plan: fixed.plan, notes: newNotes, changed: true, note: 'The AI went back over this plan and made corrections' + count + '.' };
 }
 
-module.exports = { problems, fixRequest, parseFixes, applyFixes, improve, namedDislikes, mentions, unusedFood };
+module.exports = { problems, fixRequest, parseFixes, applyFixes, improve, namedDislikes, mentions, unusedFood, boughtAgain, foodName };
