@@ -293,16 +293,18 @@ function chartCard(spec) {
   return card;
 }
 
-// Draws a line chart as an SVG picture (no chart library), with dots you can tap to see each value.
-function drawChart(box, spec) {
-  box.textContent = "";
-  var W = Math.max(260, Math.round(box.clientWidth || 600));
-  var H = W < 420 ? 170 : 200;
-  var pad = { l: 44, r: 10, t: 10, b: 24 };
-  var plotW = W - pad.l - pad.r;
-  var plotH = H - pad.t - pad.b;
-  var pts = spec.points;
-  var values = pts.map(function (p) { return p.value; }).filter(function (v) { return v != null; });
+// Works out a chart's measurements from the width of its box. Returns `c`, which the drawing
+// steps below share: the size (W, H, pad, plotW, plotH), the points (pts), the y-axis (low, high,
+// ticks), y(value) and cx(i) which turn a value and a week's position into places on the
+// picture, and step (the width each week gets).
+function chartLayout(box, spec) {
+  var c = { spec: spec, pts: spec.points };
+  c.W = Math.max(260, Math.round(box.clientWidth || 600));
+  c.H = c.W < 420 ? 170 : 200;
+  c.pad = { l: 44, r: 10, t: 10, b: 24 };
+  c.plotW = c.W - c.pad.l - c.pad.r;
+  c.plotH = c.H - c.pad.t - c.pad.b;
+  var values = c.pts.map(function (p) { return p.value; }).filter(function (v) { return v != null; });
   if (spec.goal) values.push(spec.goal);
 
   // The y-axis. Bars start at zero (their length is the value). A line zooms in on its range.
@@ -313,82 +315,97 @@ function drawChart(box, spec) {
     low -= spare;
     high += spare;
   }
-  var ticks = niceTicks(low, high, 4);
-  low = ticks[0];
-  high = ticks[ticks.length - 1];
-  var y = function (v) { return pad.t + plotH - (v - low) / (high - low) * plotH; };
-  var step = plotW / pts.length;   // each week gets the same width
-  var cx = function (i) { return pad.l + step * (i + 0.5); };
+  c.ticks = niceTicks(low, high, 4);
+  c.low = c.ticks[0];
+  c.high = c.ticks[c.ticks.length - 1];
+  c.y = function (v) { return c.pad.t + c.plotH - (v - c.low) / (c.high - c.low) * c.plotH; };
+  c.step = c.plotW / c.pts.length;   // each week gets the same width
+  c.cx = function (i) { return c.pad.l + c.step * (i + 0.5); };
+  return c;
+}
 
-  chartCount++;
-  var hatchId = "hatch" + chartCount;
-  var root = svg("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H, role: "img", tabindex: 0,
-    "aria-label": spec.title + ". " + describe(spec) + " Use the left and right arrow keys to read each week." });
+// Draws what is behind the values: the grid lines with their numbers, the dates along the
+// bottom, and the goal line.
+function drawAxes(root, c) {
+  var spec = c.spec, pad = c.pad;
   // Diagonal lines for estimated bars, so they differ by pattern as well as by colour.
   var defs = svg("defs", {});
-  var pattern = svg("pattern", { id: hatchId, "class": "hatch", patternUnits: "userSpaceOnUse", width: 5, height: 5, patternTransform: "rotate(45)" });
+  var pattern = svg("pattern", { id: c.hatchId, "class": "hatch", patternUnits: "userSpaceOnUse", width: 5, height: 5, patternTransform: "rotate(45)" });
   pattern.appendChild(svg("line", { x1: 0, y1: 0, x2: 0, y2: 5 }));
   defs.appendChild(pattern);
   root.appendChild(defs);
-  ticks.forEach(function (t) {
-    root.appendChild(svg("line", { "class": t === low && spec.kind === "bar" ? "base" : "grid", x1: pad.l, x2: W - pad.r, y1: y(t), y2: y(t) }));
-    var label = svg("text", { x: pad.l - 6, y: y(t) + 4, "text-anchor": "end" });
+  c.ticks.forEach(function (t) {
+    root.appendChild(svg("line", { "class": t === c.low && spec.kind === "bar" ? "base" : "grid", x1: pad.l, x2: c.W - pad.r, y1: c.y(t), y2: c.y(t) }));
+    var label = svg("text", { x: pad.l - 6, y: c.y(t) + 4, "text-anchor": "end" });
     label.textContent = fmt(t, spec.tickPlaces || 0);
     root.appendChild(label);
   });
   // Date labels along the bottom: as many as fit without crowding.
-  var every = Math.max(1, Math.ceil(pts.length / Math.floor(plotW / 56)));
-  pts.forEach(function (p, i) {
-    if ((pts.length - 1 - i) % every) return;
-    var label = svg("text", { x: cx(i), y: H - 6, "text-anchor": "middle" });
+  var every = Math.max(1, Math.ceil(c.pts.length / Math.floor(c.plotW / 56)));
+  c.pts.forEach(function (p, i) {
+    if ((c.pts.length - 1 - i) % every) return;
+    var label = svg("text", { x: c.cx(i), y: c.H - 6, "text-anchor": "middle" });
     label.textContent = shortDate(p.week);
     root.appendChild(label);
   });
   if (spec.goal) {
-    root.appendChild(svg("line", { "class": "goal", x1: pad.l, x2: W - pad.r, y1: y(spec.goal), y2: y(spec.goal) }));
+    root.appendChild(svg("line", { "class": "goal", x1: pad.l, x2: c.W - pad.r, y1: c.y(spec.goal), y2: c.y(spec.goal) }));
   }
+}
 
-  var marks = [];   // one group per week, for the hover
-  if (spec.kind === "bar") {
-    var barW = Math.max(2, Math.min(28, step - Math.max(2, step * 0.3)));
-    pts.forEach(function (p, i) {
-      var g = svg("g", {});
-      if (p.value != null && p.value > 0) {
-        // An outlined bar is drawn 0.75px inside, so its outline lines up with the solid bars.
-        var inset = p.est ? 0.75 : 0;
-        var bar = svg("path", { "class": "bar" + (p.est ? " est" : ""),
-          d: barPath(cx(i) - barW / 2 + inset, y(p.value) + inset, barW - 2 * inset, y(low) - y(p.value) - inset) });
-        if (p.est) bar.style.fill = "url(#" + hatchId + ")";
-        g.appendChild(bar);
-      }
-      root.appendChild(g);
-      marks.push(g);
-    });
-  } else {
-    // The line breaks where a week has no value, rather than guessing across the gap.
-    var d = "";
-    pts.forEach(function (p, i) {
-      if (p.value == null) return;
-      var joined = i > 0 && pts[i - 1].value != null;
-      d += (joined ? "L" : "M") + cx(i).toFixed(1) + "," + y(p.value).toFixed(1);
-    });
-    root.appendChild(svg("path", { "class": "ln", d: d }));
-    pts.forEach(function (p, i) {
-      var g = svg("g", {});
-      if (p.value != null) {
-        // A lone week (no neighbours) still shows as a dot. Otherwise dots are small and only the
-        // last one is drawn, with the others appearing on hover.
-        var alone = !(pts[i - 1] && pts[i - 1].value != null) && !(pts[i + 1] && pts[i + 1].value != null);
-        var last = !pts.slice(i + 1).some(function (q) { return q.value != null; });
-        g.appendChild(svg("circle", { "class": "dot", cx: cx(i), cy: y(p.value), r: 4, opacity: alone || last ? 1 : 0 }));
-      }
-      root.appendChild(g);
-      marks.push(g);
-    });
-  }
+// Draws a bar for each week. Returns one group per week, for the hover.
+function drawBars(root, c) {
+  var marks = [];
+  var barW = Math.max(2, Math.min(28, c.step - Math.max(2, c.step * 0.3)));
+  c.pts.forEach(function (p, i) {
+    var g = svg("g", {});
+    if (p.value != null && p.value > 0) {
+      // An outlined bar is drawn 0.75px inside, so its outline lines up with the solid bars.
+      var inset = p.est ? 0.75 : 0;
+      var bar = svg("path", { "class": "bar" + (p.est ? " est" : ""),
+        d: barPath(c.cx(i) - barW / 2 + inset, c.y(p.value) + inset, barW - 2 * inset, c.y(c.low) - c.y(p.value) - inset) });
+      if (p.est) bar.style.fill = "url(#" + c.hatchId + ")";
+      g.appendChild(bar);
+    }
+    root.appendChild(g);
+    marks.push(g);
+  });
+  return marks;
+}
 
-  // The hover layer: a full-height strip per week, so you only need to point at the right week.
-  var hair = svg("line", { "class": "hair", y1: pad.t, y2: pad.t + plotH, visibility: "hidden" });
+// Draws the line and a dot for each week. Returns one group per week, for the hover.
+function drawLine(root, c) {
+  var marks = [];
+  var pts = c.pts;
+  // The line breaks where a week has no value, rather than guessing across the gap.
+  var d = "";
+  pts.forEach(function (p, i) {
+    if (p.value == null) return;
+    var joined = i > 0 && pts[i - 1].value != null;
+    d += (joined ? "L" : "M") + c.cx(i).toFixed(1) + "," + c.y(p.value).toFixed(1);
+  });
+  root.appendChild(svg("path", { "class": "ln", d: d }));
+  pts.forEach(function (p, i) {
+    var g = svg("g", {});
+    if (p.value != null) {
+      // A lone week (no neighbours) still shows as a dot. Otherwise dots are small and only the
+      // last one is drawn, with the others appearing on hover.
+      var alone = !(pts[i - 1] && pts[i - 1].value != null) && !(pts[i + 1] && pts[i + 1].value != null);
+      var last = !pts.slice(i + 1).some(function (q) { return q.value != null; });
+      g.appendChild(svg("circle", { "class": "dot", cx: c.cx(i), cy: c.y(p.value), r: 4, opacity: alone || last ? 1 : 0 }));
+    }
+    root.appendChild(g);
+    marks.push(g);
+  });
+  return marks;
+}
+
+// Makes the chart answer to pointing, tapping and the arrow keys: a full-height strip per week
+// (so you only need to point at the right week) shows that week's value in a little box.
+// `marks` is the group drawn for each week. Returns the little box, to be added after the picture.
+function addChartHover(box, root, c, marks) {
+  var spec = c.spec, pts = c.pts, pad = c.pad;
+  var hair = svg("line", { "class": "hair", y1: pad.t, y2: pad.t + c.plotH, visibility: "hidden" });
   root.appendChild(hair);
   var tip = el("div", "tip");
   tip.hidden = true;
@@ -404,8 +421,8 @@ function drawChart(box, spec) {
       if (dot) dot.setAttribute("opacity", j === i || dot.dataset.keep ? 1 : dot.dataset.base);
     });
     if (spec.kind !== "bar") {
-      hair.setAttribute("x1", cx(i));
-      hair.setAttribute("x2", cx(i));
+      hair.setAttribute("x1", c.cx(i));
+      hair.setAttribute("x2", c.cx(i));
       hair.setAttribute("visibility", "visible");
     }
     tip.textContent = "";
@@ -414,9 +431,9 @@ function drawChart(box, spec) {
     if (p.extra) tip.appendChild(el("span", null, p.extra));
     tip.appendChild(el("span", null, weekName(p.week)));
     tip.hidden = false;
-    var scale = box.clientWidth / W;
-    var left = cx(i) * scale;
-    var top = (p.value == null ? pad.t : y(p.value)) * scale;
+    var scale = box.clientWidth / c.W;
+    var left = c.cx(i) * scale;
+    var top = (p.value == null ? pad.t : c.y(p.value)) * scale;
     var tw = tip.offsetWidth;
     tip.style.left = Math.max(0, Math.min(box.clientWidth - tw, left - tw / 2)) + "px";
     tip.style.top = Math.max(-8, top - tip.offsetHeight - 10) + "px";
@@ -437,7 +454,7 @@ function drawChart(box, spec) {
     if (dot) dot.dataset.base = dot.getAttribute("opacity");
   });
   pts.forEach(function (p, i) {
-    var hit = svg("rect", { "class": "hit", x: pad.l + step * i, y: 0, width: step, height: pad.t + plotH });
+    var hit = svg("rect", { "class": "hit", x: pad.l + c.step * i, y: 0, width: c.step, height: pad.t + c.plotH });
     hit.addEventListener("pointerenter", function () { show(i); });
     hit.addEventListener("pointerdown", function () { show(i); });
     root.appendChild(hit);
@@ -450,10 +467,24 @@ function drawChart(box, spec) {
     if (e.key === "ArrowRight") { show(Math.min(pts.length - 1, current + 1)); e.preventDefault(); }
     if (e.key === "Escape") hide();
   });
+  return tip;
+}
+
+// Draws a line or bar chart as an SVG picture (no chart library), with a value for each week
+// that shows when you point at it, tap it, or use the arrow keys.
+function drawChart(box, spec) {
+  box.textContent = "";
+  var c = chartLayout(box, spec);
+  chartCount++;
+  c.hatchId = "hatch" + chartCount;
+  var root = svg("svg", { viewBox: "0 0 " + c.W + " " + c.H, width: c.W, height: c.H, role: "img", tabindex: 0,
+    "aria-label": spec.title + ". " + describe(spec) + " Use the left and right arrow keys to read each week." });
+  drawAxes(root, c);
+  var marks = spec.kind === "bar" ? drawBars(root, c) : drawLine(root, c);
+  var tip = addChartHover(box, root, c, marks);
   box.appendChild(root);
   box.appendChild(tip);
 }
-
 // A sentence for screen readers: "From 82.4 kg in the week of 4 Aug to 80.9 kg in the week of 3 Nov."
 function describe(spec) {
   var have = spec.points.filter(function (p) { return p.value != null; });

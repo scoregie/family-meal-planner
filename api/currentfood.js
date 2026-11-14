@@ -19,6 +19,7 @@
 const db = require('./db');
 const planbuilder = require('./planbuilder');
 const uploads = require('./uploads');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 // The places food is kept, in the order the page shows them, and what each is called.
 const PLACES = ['pantry', 'spices', 'fridge', 'freezer', 'bench', 'other'];
@@ -28,22 +29,6 @@ const MAX_ITEMS = 100;   // most items in one place
 const MAX_TEXT = 80;     // longest item, in characters
 const MAX_PHOTOS = 40;   // most photos noted against one item
 const PHOTO_KIND = 'food-photos';   // the My files folder the photos are in (uploads.js)
-
-// Sends a JSON answer.
-function send(res, status, data) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(data));
-}
-
-// Reads the JSON a page sent, up to about 10 KB. Gives {} if it is empty or can't be read.
-function readBody(req) {
-  return new Promise(resolve => {
-    let text = '';
-    req.on('data', chunk => { if (text.length < 1e4) text += chunk; });
-    req.on('end', () => { try { resolve(JSON.parse(text) || {}); } catch (e) { resolve({}); } });
-    req.on('error', () => resolve({}));
-  });
-}
 
 // One item as it is saved: no angle brackets, no extra spaces, at most 80 characters.
 function tidy(text) {
@@ -203,7 +188,8 @@ async function handle(req, res, urlPath, me) {
     send(res, 405, { error: 'not allowed' });
     return true;
   }
-  const b = await readBody(req);
+  // A request that is too long or isn't JSON is treated as empty, and gets the usual "nothing to add" reply.
+  const b = (await readBody(req, 1e4).catch(() => null)) || {};
   if (req.method === 'DELETE' && b.photos === true) {
     const all = read();
     clearPhotoItems(all, readLinks(all), me);

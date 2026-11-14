@@ -31,6 +31,7 @@ const CHOICES = {
 
 // Countries and their grocery stores: site/regions.js, shared with the pages.
 const REGIONS = require(path.join(SITE_DIR, 'regions.js'));
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 const STORES = Object.keys(REGIONS.stores);
 
 // The household's country (default Australia, where the app started).
@@ -125,36 +126,6 @@ function cleanPin(store, link) {
 // The icon files, and the size each must be.
 const ICONS = { icon512: ['icon-512.png', 512], icon192: ['icon-192.png', 192], icon180: ['apple-touch-icon.png', 180] };
 
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function body(req, limit) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    let size = 0;
-    req.on('data', chunk => {
-      size += chunk.length;
-      if (size > limit) {
-        reject(new Error('too big'));
-        req.destroy();
-      } else chunks.push(chunk);
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
-}
-
 // The household's look chosen by an admin ({colour, font, size}), keeping only known choices.
 function house() {
   try {
@@ -207,143 +178,123 @@ function writeFile(file, bytes) {
   fs.renameSync(tmp, file);
 }
 
-// Answers the requests this file looks after. server.js offers every /api/ request to each
-// file in turn: this returns true if it answered, or false to let the next file try.
-async function handle(req, res, urlPath, url, me) {
-  if (!['/api/appearance', '/api/appearance/icon', '/api/appearance/stores', '/api/appearance/energy', '/api/appearance/pins', '/api/appearance/country'].includes(urlPath)) return false;
-  if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
-    send(res, 403, { error: 'bad request' });
-    return true;
+// PUT /api/appearance/pins {item, store, url}: pins a product to a shopping item (url "" removes the pin).
+async function savePin(req, res) {
+  const b = await readBody(req, 3000);
+  const item = String(b.item || '').trim().toLowerCase().slice(0, 120);
+  const store = String(b.store || '');
+  if (!item || !Object.prototype.hasOwnProperty.call(PIN_HOSTS, store) || ['__proto__', 'constructor', 'prototype'].includes(item)) {
+    return send(res, 400, { error: 'bad request' });
   }
+  const all = pins();
+  if (b.url) {
+    const link = cleanPin(store, b.url);
+    if (!link) {
+      return send(res, 400, { error: 'That doesn’t look like a product page on ' + PIN_HOSTS[store] + '. Open the product there, copy its address, and paste it here.' });
+    }
+    if (!all[item] && Object.keys(all).length >= 1000) {
+      return send(res, 400, { error: 'That’s a lot of pinned products. Remove some first.' });
+    }
+    all[item] = Object.assign({}, all[item], { [store]: link });
+  } else if (all[item]) {
+    delete all[item][store];
+    if (!Object.keys(all[item]).length) delete all[item];
+  }
+  db.setSetting('pins', JSON.stringify(all));
+  send(res, 200, { ok: true, pins: all });
+}
 
-  if (urlPath === '/api/appearance' && req.method === 'GET') {
-    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person), energy: energy(me.person), pins: pins(), country: country() });
-    return true;
-  }
-  if (req.method !== 'PUT') {
-    send(res, 404, { error: 'not found' });
-    return true;
-  }
-  if (urlPath === '/api/appearance/pins') {
-    // {item, store, url}: pin a product (url "" removes the pin).
-    const b = await body(req, 3000);
-    const item = String(b.item || '').trim().toLowerCase().slice(0, 120);
-    const store = String(b.store || '');
-    if (!item || !Object.prototype.hasOwnProperty.call(PIN_HOSTS, store) || ['__proto__', 'constructor', 'prototype'].includes(item)) {
-      send(res, 400, { error: 'bad request' });
-      return true;
-    }
-    const all = pins();
-    if (b.url) {
-      const link = cleanPin(store, b.url);
-      if (!link) {
-        send(res, 400, { error: 'That doesn’t look like a product page on ' + PIN_HOSTS[store] + '. Open the product there, copy its address, and paste it here.' });
-        return true;
-      }
-      if (!all[item] && Object.keys(all).length >= 1000) {
-        send(res, 400, { error: 'That’s a lot of pinned products. Remove some first.' });
-        return true;
-      }
-      all[item] = Object.assign({}, all[item], { [store]: link });
-    } else if (all[item]) {
-      delete all[item][store];
-      if (!Object.keys(all[item]).length) delete all[item];
-    }
-    db.setSetting('pins', JSON.stringify(all));
-    send(res, 200, { ok: true, pins: all });
-    return true;
-  }
-  if (urlPath === '/api/appearance/country') {
-    const b = await body(req, 2000);
-    if (!me.admin) {
-      send(res, 403, { error: 'Only an admin can change the household’s country.' });
-      return true;
-    }
-    if (!setCountry(String(b.country || ''))) {
-      send(res, 400, { error: 'Unknown country.' });
-      return true;
-    }
-    send(res, 200, { ok: true, country: country(), stores: stores(me.person), energy: energy(me.person) });
-    return true;
-  }
-  if (urlPath === '/api/appearance/energy') {
-    const b = await body(req, 2000);
-    const value = ENERGY.includes(b.energy) ? b.energy : '';   // '' = use the household's
-    const key = b.scope === 'house' ? 'energy' : 'energy:' + me.person;
-    if (b.scope === 'house' && !me.admin) {
-      send(res, 403, { error: 'Only an admin can change the household’s units.' });
-      return true;
-    }
-    if (value) db.setSetting(key, value);
-    else db.deleteSetting(key);
-    send(res, 200, { ok: true, energy: energy(me.person) });
-    return true;
-  }
-  if (urlPath === '/api/appearance/stores') {
-    const b = await body(req, 2000);
-    const list = Array.isArray(b.stores) ? [...new Set(b.stores.filter(s => region().stores.includes(s)))] : [];
-    if (b.scope === 'house') {
-      if (!me.admin) {
-        send(res, 403, { error: 'Only an admin can change the household’s stores.' });
-        return true;
-      }
-      db.setSetting('stores', JSON.stringify(list));
-    } else {
-      db.setSetting('stores:' + me.person, JSON.stringify(list));
-    }
-    send(res, 200, { ok: true, stores: stores(me.person) });
-    return true;
-  }
-  if (!me.admin) {
-    send(res, 403, { error: 'Only an admin can change the look for everyone.' });
-    return true;
-  }
+// PUT /api/appearance/country {country}: the household's country (admins).
+async function saveCountry(req, res, me) {
+  const b = await readBody(req, 2000);
+  if (!me.admin) return send(res, 403, { error: 'Only an admin can change the household’s country.' });
+  if (!setCountry(String(b.country || ''))) return send(res, 400, { error: 'Unknown country.' });
+  send(res, 200, { ok: true, country: country(), stores: stores(me.person), energy: energy(me.person) });
+}
 
-  if (urlPath === '/api/appearance') {
-    const b = await body(req, 2000);
-    const choice = {};
-    for (const k of Object.keys(CHOICES)) {
-      if (b[k] === undefined || b[k] === null || b[k] === '') continue;
-      if (!CHOICES[k].includes(b[k])) {
-        send(res, 400, { error: 'Unknown ' + k + ': ' + b[k] });
-        return true;
-      }
-      choice[k] = b[k];
-    }
-    db.setSetting('appearance', JSON.stringify(choice));
-    send(res, 200, { ok: true, house: house() });
-    return true;
-  }
+// PUT /api/appearance/energy {energy, scope}: kJ or kcal, for this person or (admins) the household.
+async function saveEnergy(req, res, me) {
+  const b = await readBody(req, 2000);
+  const value = ENERGY.includes(b.energy) ? b.energy : '';   // '' = use the household's
+  const key = b.scope === 'house' ? 'energy' : 'energy:' + me.person;
+  if (b.scope === 'house' && !me.admin) return send(res, 403, { error: 'Only an admin can change the household’s units.' });
+  if (value) db.setSetting(key, value);
+  else db.deleteSetting(key);
+  send(res, 200, { ok: true, energy: energy(me.person) });
+}
 
-  // A new icon.
-  const b = await body(req, 4 * 1024 * 1024);
-  if (b.reset) {
-    const original = path.join(ICON_BACKUPS, 'original');
-    if (!fs.existsSync(original)) {
-      send(res, 200, { ok: true, note: 'The icon has not been changed, so it is already the original.' });
-      return true;
-    }
-    backUpIcons();
-    for (const [file] of Object.values(ICONS)) {
-      const from = path.join(original, file);
-      if (fs.existsSync(from)) writeFile(path.join(SITE_DIR, file), fs.readFileSync(from));
-    }
-    send(res, 200, { ok: true });
-    return true;
+// PUT /api/appearance/stores {stores, scope}: where this person or (admins) the household shops.
+async function saveStores(req, res, me) {
+  const b = await readBody(req, 2000);
+  const list = Array.isArray(b.stores) ? [...new Set(b.stores.filter(s => region().stores.includes(s)))] : [];
+  if (b.scope === 'house') {
+    if (!me.admin) return send(res, 403, { error: 'Only an admin can change the household’s stores.' });
+    db.setSetting('stores', JSON.stringify(list));
+  } else {
+    db.setSetting('stores:' + me.person, JSON.stringify(list));
   }
+  send(res, 200, { ok: true, stores: stores(me.person) });
+}
+
+// PUT /api/appearance: the look everyone starts with (admins).
+async function saveHouseLook(req, res) {
+  const b = await readBody(req, 2000);
+  const choice = {};
+  for (const k of Object.keys(CHOICES)) {
+    if (b[k] === undefined || b[k] === null || b[k] === '') continue;
+    if (!CHOICES[k].includes(b[k])) return send(res, 400, { error: 'Unknown ' + k + ': ' + b[k] });
+    choice[k] = b[k];
+  }
+  db.setSetting('appearance', JSON.stringify(choice));
+  send(res, 200, { ok: true, house: house() });
+}
+
+// Puts the app's first icon back (the one saved before it was ever changed).
+function resetIcon(res) {
+  const original = path.join(ICON_BACKUPS, 'original');
+  if (!fs.existsSync(original)) {
+    return send(res, 200, { ok: true, note: 'The icon has not been changed, so it is already the original.' });
+  }
+  backUpIcons();
+  for (const [file] of Object.values(ICONS)) {
+    const from = path.join(original, file);
+    if (fs.existsSync(from)) writeFile(path.join(SITE_DIR, file), fs.readFileSync(from));
+  }
+  send(res, 200, { ok: true });
+}
+
+// PUT /api/appearance/icon: a new app icon in each size, or {reset: true} for the original (admins).
+async function saveIcon(req, res) {
+  const b = await readBody(req, 4 * 1024 * 1024);
+  if (b.reset) return resetIcon(res);
   const pictures = {};
   for (const [key, [file, size]] of Object.entries(ICONS)) {
     const bytes = readPng(b[key], size);
-    if (typeof bytes === 'string') {
-      send(res, 400, { error: file + ': ' + bytes });
-      return true;
-    }
+    if (typeof bytes === 'string') return send(res, 400, { error: file + ': ' + bytes });
     pictures[file] = bytes;
   }
   backUpIcons();
   for (const [file, bytes] of Object.entries(pictures)) writeFile(path.join(SITE_DIR, file), bytes);
   send(res, 200, { ok: true });
-  return true;
 }
 
+// Answers the requests this file looks after. server.js offers every /api/ request to each
+// file in turn: this returns true if it answered, or false to let the next file try.
+async function handle(req, res, urlPath, url, me) {
+  if (!['/api/appearance', '/api/appearance/icon', '/api/appearance/stores', '/api/appearance/energy', '/api/appearance/pins', '/api/appearance/country'].includes(urlPath)) return false;
+  if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') send(res, 403, { error: 'bad request' });
+  else if (urlPath === '/api/appearance' && req.method === 'GET') {
+    send(res, 200, { house: house(), admin: !!me.admin, stores: stores(me.person), energy: energy(me.person), pins: pins(), country: country() });
+  }
+  else if (req.method !== 'PUT') send(res, 404, { error: 'not found' });
+  else if (urlPath === '/api/appearance/pins') await savePin(req, res);
+  else if (urlPath === '/api/appearance/country') await saveCountry(req, res, me);
+  else if (urlPath === '/api/appearance/energy') await saveEnergy(req, res, me);
+  else if (urlPath === '/api/appearance/stores') await saveStores(req, res, me);
+  // What is left changes things for everyone.
+  else if (!me.admin) send(res, 403, { error: 'Only an admin can change the look for everyone.' });
+  else if (urlPath === '/api/appearance') await saveHouseLook(req, res);
+  else await saveIcon(req, res);
+  return true;
+}
 module.exports = { handle, CHOICES, STORES, REGIONS, storesFor, storeNames, energyFor, country, region, setCountry };

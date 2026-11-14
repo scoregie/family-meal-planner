@@ -18,6 +18,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { send } = require('./requests');   // sending JSON back
 
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const COOKIE = 'sl_session';
@@ -328,12 +329,6 @@ function redirect(res, location, cookie) {
   res.end();
 }
 
-// Sends a JSON answer with an HTTP status code.
-function json(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
 // GET /auth/check: Caddy asks this before serving any protected file.
 // Logged in: 200 (Caddy serves the file). Not logged in: send them to the login page.
 function authCheck(req, res) {
@@ -345,7 +340,7 @@ function authCheck(req, res) {
   }
   const uri = String(req.headers['x-forwarded-uri'] || '/');
   if (uri.startsWith('/api/')) {
-    json(res, 401, { error: 'login needed' });
+    send(res, 401, { error: 'login needed' });
   } else {
     res.writeHead(302, { Location: '/login?next=' + encodeURIComponent(safeNext(uri)), 'Cache-Control': 'no-store' });
     res.end();
@@ -372,8 +367,8 @@ async function login(req, res) {
 function me(req, res) {
   const s = session(req);
   refresh(req, res, s);
-  if (s) json(res, 200, { user: s.user, person: s.person, admin: s.admin, role: s.role, email: s.email || null, needsEmail: !!s.needsEmail });
-  else json(res, 401, { error: 'login needed' });
+  if (s) send(res, 200, { user: s.user, person: s.person, admin: s.admin, role: s.role, email: s.email || null, needsEmail: !!s.needsEmail });
+  else send(res, 401, { error: 'login needed' });
 }
 
 // Handles /auth/*. Returns true if it answered the request.
@@ -395,7 +390,7 @@ async function handle(req, res, urlPath) {
     return true;
   }
   if (urlPath.startsWith('/auth/')) {
-    json(res, 404, { error: 'not found' });
+    send(res, 404, { error: 'not found' });
     return true;
   }
   return false;

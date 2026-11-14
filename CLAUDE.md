@@ -8,6 +8,7 @@ The owner wants the code readable by someone with minimal coding experience: eve
 a plain note saying what it does, and every new function gets a one-line plain comment above it.
 
 Run `tools/test.sh` before opening a PR, and add a test when fixing a bug (see `tests/README.md`).
+For a tidy-up that shouldn't change what pages do, also run `tools/page-check.sh` (record before, record after, compare).
 
 ## "Draft our family plan with Claude Code"
 

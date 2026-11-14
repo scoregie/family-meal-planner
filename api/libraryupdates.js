@@ -22,6 +22,7 @@ const db = require('./db');
 const ai = require('./ai');
 const assistant = require('./assistant');
 const planbuilder = require('./planbuilder');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const LIB = planbuilder.LIB;
 const EXERCISES = planbuilder.EXERCISES;
@@ -558,23 +559,6 @@ function start(ctx) {
 // ---------------------------------------------------------------------------
 // Requests
 // ---------------------------------------------------------------------------
-
-// Sends an answer back to the page: a status code and an object, turned into JSON text.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let t = '';
-    req.on('data', c => { t += c; if (t.length > 2e4) { reject(new Error('too big')); req.destroy(); } });
-    req.on('end', () => { try { resolve(JSON.parse(t || '{}')); } catch (e) { reject(e); } });
-    req.on('error', reject);
-  });
-}
 
 // Everything the Plan setup card shows: the switches, the last results and what's waiting.
 function status(me) {

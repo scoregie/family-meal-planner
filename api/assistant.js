@@ -47,6 +47,7 @@ try {
   sdkProblem = 'The Anthropic SDK is not installed. Restart the app with docker compose up -d (it installs on start, and needs the internet once).';
 }
 const ai = require('./ai');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 const claudeClients = new Map();   // API key -> Anthropic client
 
 // Whether the assistant can be used by this person, and which AI: their own key (from Settings)
@@ -82,35 +83,6 @@ async function checkKey(apiKey) {
     if (err instanceof Anthropic.APIError) return 'Anthropic said: ' + String(err.message || '').slice(0, 200);
     return 'Couldn’t reach Anthropic to check the key. Try again in a moment.';
   }
-}
-
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function body(req) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > 2e4) {
-        reject(new Error('too big'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(text || '{}'));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
 }
 
 // Today's date where the server is, like "2026-11-08".
@@ -288,96 +260,114 @@ function badInput(name, input) {
   return '';
 }
 
+// Turns a value into the text sent back to the AI.
+const json = value => JSON.stringify(value);
+
+// Tool get_plan_overview: the plan's title, its weeks and its people.
+function overviewTool(input, about) {
+  const plan = about.plan;
+  const people = plan.people || {};
+  return {
+    content: json({
+      title: plan.title, subtitle: plan.subtitle, id: plan.id,
+      weeks: (plan.weeks || []).map((w, i) => ({ index: i, name: w.name, kind: w.kind, cost: w.cost, meals: Array.isArray(w.meals) && w.meals.length > 0, exercise: !!w.exercise })),
+      people: Object.keys(people).filter(k => people[k] && people[k].name).map(k => ({ key: k, name: people[k].name, portion: people[k].portion })),
+      thisChatIsAbout: { planKey: about.key, name: people[about.key] && people[about.key].name },
+    }),
+  };
+}
+
+// Tool get_week: one week's meals, recipe names, shopping and exercise, and the numbers for each dish.
+function weekTool(input, about) {
+  const plan = about.plan;
+  const week = (plan.weeks || [])[input.week];
+  if (!week) return { content: 'Error: there is no week ' + input.week + ' (weeks start at 0).', isError: true };
+  const dishes = new Set();
+  (week.meals || []).forEach(day => {
+    ['breakfast', 'lunch', 'dinner'].forEach(m => { if (day[m]) dishes.add(day[m]); });
+    Object.values(day.people || {}).forEach(own => ['breakfast', 'lunch', 'dinner'].forEach(m => { if (own && own[m]) dishes.add(own[m]); }));
+  });
+  // Finds a dish's entry in a block like macros or groups, whatever capitals its name was typed with.
+  const lookup = (block, dish) => {
+    const want = db.dishKey(dish);
+    const found = Object.keys(block || {}).find(k => db.dishKey(k) === want);
+    return found ? block[found] : null;
+  };
+  const exercise = week.exercise && (Array.isArray(week.exercise.days) ? week.exercise : week.exercise[about.key]);
+  return {
+    content: json({
+      index: input.week, name: week.name, kind: week.kind, cost: week.cost,
+      meals: week.meals || [],
+      recipes: (week.recipes || []).map((r, i) => ({ position: i, name: r.name, makes: r.makes })),
+      shopping: week.shopping,
+      exercise: exercise || null,
+      dishes: [...dishes].map(d => ({ dish: d, macros: lookup(plan.macros, d), groups: lookup(plan.groups, d) })),
+    }),
+  };
+}
+
+// Tool get_recipe: a recipe by its dish name (up to three matches).
+function recipeTool(input, about) {
+  const found = findRecipe(about.plan, input.name);
+  if (!found.length) return { content: 'No recipe called "' + input.name + '". Use get_week to see the recipe names.' };
+  return { content: json(found.slice(0, 3)) };
+}
+
+// Tool get_person: what the plan says about the person, and their About me answers.
+function personTool(input, about) {
+  const profile = db.getProfile(about.person);
+  return { content: json({ planKey: about.key, inPlan: (about.plan.people || {})[about.key] || null, aboutMe: profile ? profile.answers : 'not answered yet' }) };
+}
+
+// Tool get_history: the meals the person ate lately, and how dishes were rated.
+function historyTool(input, about) {
+  const meals = db.history(about.person).slice(0, 80);
+  const dishes = db.dishes().filter(d => d.times_eaten || d.ratings).slice(0, 80)
+    .map(d => ({ name: d.name, times_eaten: d.times_eaten, avg_score: d.avg_score }));
+  return { content: json({ meals, dishes }) };
+}
+
+// Tool get_progress: the person's numbers week by week, and their latest weigh-ins.
+function progressTool(input, about) {
+  const weeks = Math.min(52, Math.max(4, input.weeks || 12));
+  const s = progress.summary(about.person, weeks, undefined, about.ctx);
+  return { content: json({ today: s.today, goalWeight: s.goalWeight, weeks: s.weeks, recentWeighIns: s.weighIns.slice(-10) }) };
+}
+
+// Tool get_guidelines: one country's dietary guidelines.
+function guidelinesTool(input) {
+  const all = JSON.parse(fs.readFileSync(path.join(SITE_DIR, 'guidelines.json'), 'utf8'));
+  const country = all.countries.find(c => c.id === input.country);
+  return { content: json({ about: all.about, groups: all.groups, country, ideas: all.ideas }) };
+}
+
+// Tool propose_change: tries a change on a copy of the plan and, if it fits, saves it as a draft request.
+function proposeTool(input, about) {
+  const { chat, ctx } = about;
+  const tried = planchange.apply(about.plan, input.changes, ctx.checkPlan);
+  if (tried.error) return { content: 'The change was not saved. ' + tried.error + '. Check the paths with get_week and try again.', isError: true };
+  const change = { steps: input.changes, summary: tried.summary, planVersion: ctx.planVersion() };
+  const id = db.addRequest({ person: about.person, user: chat.user, chatId: chat.id, title: input.title.slice(0, 200), details: input.reason.slice(0, 2000), change, status: 'draft' });
+  return {
+    content: json({ ok: true, request: id, summary: tried.summary, next: chat.admin ? 'Shown as a draft. As an admin, they can apply it from the card under your message.' : 'Shown as a draft. They can send it to the admins from the card under your message.' }),
+    proposal: db.getRequest(id),
+  };
+}
+
+// Which function runs each tool.
+const TOOL_RUNNERS = {
+  get_plan_overview: overviewTool, get_week: weekTool, get_recipe: recipeTool, get_person: personTool,
+  get_history: historyTool, get_progress: progressTool, get_guidelines: guidelinesTool, propose_change: proposeTool,
+};
+
 // Runs one tool and returns {content (text for Claude), proposal (a new draft request, if any)}.
 function runTool(name, input, chat, ctx) {
   const bad = badInput(name, input);
   if (bad) return { content: 'Error: ' + bad, isError: true };
+  if (!Object.hasOwn(TOOL_RUNNERS, name)) return { content: 'Error: unknown tool ' + name, isError: true };
   const plan = ctx.readPlan() || {};
   const person = chat.person;
-  const key = planKey(plan, person, ctx.toKey);
-  const json = value => JSON.stringify(value);
-
-  if (name === 'get_plan_overview') {
-    const people = plan.people || {};
-    return {
-      content: json({
-        title: plan.title, subtitle: plan.subtitle, id: plan.id,
-        weeks: (plan.weeks || []).map((w, i) => ({ index: i, name: w.name, kind: w.kind, cost: w.cost, meals: Array.isArray(w.meals) && w.meals.length > 0, exercise: !!w.exercise })),
-        people: Object.keys(people).filter(k => people[k] && people[k].name).map(k => ({ key: k, name: people[k].name, portion: people[k].portion })),
-        thisChatIsAbout: { planKey: key, name: people[key] && people[key].name },
-      }),
-    };
-  }
-
-  if (name === 'get_week') {
-    const week = (plan.weeks || [])[input.week];
-    if (!week) return { content: 'Error: there is no week ' + input.week + ' (weeks start at 0).', isError: true };
-    const dishes = new Set();
-    (week.meals || []).forEach(day => {
-      ['breakfast', 'lunch', 'dinner'].forEach(m => { if (day[m]) dishes.add(day[m]); });
-      Object.values(day.people || {}).forEach(own => ['breakfast', 'lunch', 'dinner'].forEach(m => { if (own && own[m]) dishes.add(own[m]); }));
-    });
-    // Finds a dish's entry in a block like macros or groups, whatever capitals its name was typed with.
-    const lookup = (block, dish) => {
-      const want = db.dishKey(dish);
-      const found = Object.keys(block || {}).find(k => db.dishKey(k) === want);
-      return found ? block[found] : null;
-    };
-    const exercise = week.exercise && (Array.isArray(week.exercise.days) ? week.exercise : week.exercise[key]);
-    return {
-      content: json({
-        index: input.week, name: week.name, kind: week.kind, cost: week.cost,
-        meals: week.meals || [],
-        recipes: (week.recipes || []).map((r, i) => ({ position: i, name: r.name, makes: r.makes })),
-        shopping: week.shopping,
-        exercise: exercise || null,
-        dishes: [...dishes].map(d => ({ dish: d, macros: lookup(plan.macros, d), groups: lookup(plan.groups, d) })),
-      }),
-    };
-  }
-
-  if (name === 'get_recipe') {
-    const found = findRecipe(plan, input.name);
-    if (!found.length) return { content: 'No recipe called "' + input.name + '". Use get_week to see the recipe names.' };
-    return { content: json(found.slice(0, 3)) };
-  }
-
-  if (name === 'get_person') {
-    const profile = db.getProfile(person);
-    return { content: json({ planKey: key, inPlan: (plan.people || {})[key] || null, aboutMe: profile ? profile.answers : 'not answered yet' }) };
-  }
-
-  if (name === 'get_history') {
-    const meals = db.history(person).slice(0, 80);
-    const dishes = db.dishes().filter(d => d.times_eaten || d.ratings).slice(0, 80)
-      .map(d => ({ name: d.name, times_eaten: d.times_eaten, avg_score: d.avg_score }));
-    return { content: json({ meals, dishes }) };
-  }
-
-  if (name === 'get_progress') {
-    const weeks = Math.min(52, Math.max(4, input.weeks || 12));
-    const s = progress.summary(person, weeks, undefined, ctx);
-    return { content: json({ today: s.today, goalWeight: s.goalWeight, weeks: s.weeks, recentWeighIns: s.weighIns.slice(-10) }) };
-  }
-
-  if (name === 'get_guidelines') {
-    const all = JSON.parse(fs.readFileSync(path.join(SITE_DIR, 'guidelines.json'), 'utf8'));
-    const country = all.countries.find(c => c.id === input.country);
-    return { content: json({ about: all.about, groups: all.groups, country, ideas: all.ideas }) };
-  }
-
-  if (name === 'propose_change') {
-    const tried = planchange.apply(plan, input.changes, ctx.checkPlan);
-    if (tried.error) return { content: 'The change was not saved. ' + tried.error + '. Check the paths with get_week and try again.', isError: true };
-    const change = { steps: input.changes, summary: tried.summary, planVersion: ctx.planVersion() };
-    const id = db.addRequest({ person, user: chat.user, chatId: chat.id, title: input.title.slice(0, 200), details: input.reason.slice(0, 2000), change, status: 'draft' });
-    return {
-      content: json({ ok: true, request: id, summary: tried.summary, next: chat.admin ? 'Shown as a draft. As an admin, they can apply it from the card under your message.' : 'Shown as a draft. They can send it to the admins from the card under your message.' }),
-      proposal: db.getRequest(id),
-    };
-  }
-
-  return { content: 'Error: unknown tool ' + name, isError: true };
+  return TOOL_RUNNERS[name](input, { plan, person, key: planKey(plan, person, ctx.toKey), chat, ctx });
 }
 
 // ---------------------------------------------------------------------------
@@ -399,29 +389,160 @@ function opening(me, person, names, text) {
     '. The family lives in ' + require('./appearance').region().where + '. They shop at: ' + shopsAt(person) + '. Show energy in ' + (require('./appearance').energyFor(me.person) === 'kcal' ? 'Calories (kcal)' : 'kilojoules (kJ)') + '.</context>\n\n' + text;
 }
 
+// Finds the chat a message belongs to, or starts a new one. People can only ask about themselves;
+// admins about anyone. Returns {chat}, or {status, error} when it isn't allowed.
+function chatFor(b, me, ctx) {
+  let chat;
+  if (b.id) {
+    chat = db.getChat(Number(b.id));
+    if (!chat || (chat.user !== me.user && !me.admin)) return { status: 404, error: 'That chat was not found.' };
+  } else {
+    const person = String(b.person || me.person || '').toLowerCase();
+    if (!ctx.people().includes(person)) return { status: 404, error: 'unknown person' };
+    if (person !== me.person && !me.admin) return { status: 403, error: 'You can only ask about your own plan.' };
+    chat = { id: null, person, user: me.user, messages: [] };
+  }
+  chat.admin = me.admin;
+  return { chat };
+}
+
+// The names of the people in the plan, by their key: {"alex-smith": "Alex Smith"}.
+function planNames(ctx) {
+  const names = {};
+  const plan = ctx.readPlan() || {};
+  Object.values(plan.people || {}).forEach(p => { if (p && p.name) names[ctx.toKey(p.name)] = p.name; });
+  return names;
+}
+
+// Runs the tools the AI asked for; returns the results to send back. `turn` is what chatTurn keeps
+// about the message being answered (see there).
+function runCalls(turn, calls) {
+  const results = [];
+  for (const call of calls) {
+    turn.event('step', { label: stepLabel(call.name, call.input, turn.ctx.readPlan() || {}) });
+    let out;
+    try {
+      out = runTool(call.name, call.input, turn.chat, turn.ctx);
+    } catch (e) {
+      out = { content: 'Error: ' + String(e.message || e), isError: true };
+    }
+    if (out.proposal) {
+      turn.made.push(out.proposal.id);
+      turn.event('proposal', publicRequest(out.proposal));
+    }
+    results.push({ type: 'tool_result', tool_use_id: call.id, content: out.content, is_error: !!out.isError });
+  }
+  return results;
+}
+
+// What to do when an answer ran out of room: a tool call cut off part-way can't be run, so the
+// turn is left there (and only kept if the answer was all words).
+function cutOff(turn, calls) {
+  if (calls.length) turn.messages.pop();
+  turn.event('error', { message: 'The answer was too long and got cut off. Try asking for less at once.' });
+  turn.finished = !calls.length;
+}
+
+// One step of the conversation with OpenAI, Gemini or Ollama (ai.js turns the reply into the same
+// shape as Claude's). Returns true if the AI used tools and needs to be asked again.
+async function otherAiRound(turn) {
+  const { ready, messages, event } = turn;
+  const message = await ai.chat(ready, { system: system(), messages, tools: TOOLS, maxTokens: 8000, onText: delta => event('text', delta), signal: turn.signal });
+  turn.inputTokens += message.usage.input_tokens || 0;
+  turn.outputTokens += message.usage.output_tokens || 0;
+  messages.push({ role: 'assistant', content: message.content.length ? message.content : [{ type: 'text', text: '' }] });
+  if (message.stop_reason === 'refusal') {
+    event('error', { message: ready.name + ' couldn’t help with that one. Try asking a different way.' });
+    messages.pop();
+    return false;
+  }
+  const calls = message.content.filter(block => block.type === 'tool_use');
+  if (message.stop_reason === 'max_tokens') {
+    cutOff(turn, calls);
+    return false;
+  }
+  if (!calls.length) {
+    turn.finished = true;
+    return false;
+  }
+  messages.push({ role: 'user', content: runCalls(turn, calls) });
+  return true;
+}
+
+// One step of the conversation with Claude. Returns true if Claude needs to be asked again
+// (it used tools, paused, or sent a tool input that couldn't be read).
+async function claudeRound(turn) {
+  const { messages, event } = turn;
+  const stream = turn.ready.client.beta.messages.stream({
+    model: MODEL,
+    max_tokens: 16000,
+    betas: ['server-side-fallback-2026-07-01'],
+    fallbacks: 'default',          // if a safety check declines, Anthropic retries on a suitable model
+    output_config: { effort: EFFORT },
+    cache_control: { type: 'ephemeral' },
+    system: [{ type: 'text', text: system(), cache_control: { type: 'ephemeral' } }],
+    tools: TOOLS,
+    messages,
+  });
+  stream.on('text', delta => event('text', delta));
+
+  let message;
+  try {
+    message = await stream.finalMessage();
+    turn.jsonRetries = 0;
+  } catch (err) {
+    // A tool input that couldn't be read as JSON: ask again (up to twice). Real API errors go to chatTurn's catch.
+    if (err instanceof Anthropic.APIError || turn.jsonRetries++ >= 2) throw err;
+    event('step', { label: 'Trying that again…' });
+    return true;
+  }
+  turn.inputTokens += (message.usage.input_tokens || 0) + (message.usage.cache_read_input_tokens || 0) + (message.usage.cache_creation_input_tokens || 0);
+  turn.outputTokens += message.usage.output_tokens || 0;
+  messages.push({ role: 'assistant', content: message.content });
+
+  if (message.stop_reason === 'refusal') {
+    // Not saved, so the chat can carry on as if this question wasn't asked.
+    event('error', { message: 'Claude couldn’t help with that one. Try asking a different way.' });
+    return false;
+  }
+  if (message.stop_reason === 'pause_turn') return true;
+  const calls = message.content.filter(block => block.type === 'tool_use');
+  if (message.stop_reason === 'max_tokens') {
+    cutOff(turn, calls);
+    return false;
+  }
+  if (!calls.length) {
+    turn.finished = true;
+    return false;
+  }
+  // Run every tool Claude asked for, and send all the results back together.
+  messages.push({ role: 'user', content: runCalls(turn, calls) });
+  return true;
+}
+
+// The message to show when talking to the AI failed ("" for nothing, when the person just left).
+function failureMessage(err, ready) {
+  if (ready.provider !== 'anthropic') return err && err.name === 'AbortError' ? '' : ai.explain(err, ready);
+  if (err instanceof Anthropic.AuthenticationError) return ready.own ? 'Your Claude key was not accepted. Check it in Settings → Your Claude key.' : 'The family’s Claude key (ANTHROPIC_API_KEY in .env) was not accepted. An admin needs to check it.';
+  if (err instanceof Anthropic.RateLimitError) return 'Claude is busy right now (rate limit). Try again in a minute.';
+  if (err instanceof Anthropic.APIError && err.status >= 500) return 'Claude’s servers had a problem. Try again in a moment.';
+  if (err instanceof Anthropic.APIError) return 'Claude could not answer: ' + String(err.message || '').slice(0, 300);
+  return 'Something went wrong talking to Claude. Try again in a moment.';
+}
+
 // One message in an Ask AI chat: sends it with the chat so far to the AI, lets the AI use its tools
 // (look up the plan, guidelines and so on), and streams the answer back to the page as it's written.
 async function chatTurn(req, res, me, ctx) {
-  const b = await body(req);
+  const b = await readBody(req);
   const text = String(b.text || '').trim().slice(0, MAX_TEXT);
   if (!text) return send(res, 400, { error: 'Type a message first.' });
 
   const ready = setup(me);
   if (!ready.enabled) return send(res, 503, { error: ready.reason });
-  const client = ready.client;
 
-  // Which chat, and whose plan it is about (people can only ask about themselves; admins about anyone).
-  let chat;
-  if (b.id) {
-    chat = db.getChat(Number(b.id));
-    if (!chat || (chat.user !== me.user && !me.admin)) return send(res, 404, { error: 'That chat was not found.' });
-  } else {
-    const person = String(b.person || me.person || '').toLowerCase();
-    if (!ctx.people().includes(person)) return send(res, 404, { error: 'unknown person' });
-    if (person !== me.person && !me.admin) return send(res, 403, { error: 'You can only ask about your own plan.' });
-    chat = { id: null, person, user: me.user, messages: [] };
-  }
-  chat.admin = me.admin;
+  const found = chatFor(b, me, ctx);
+  if (found.error) return send(res, found.status, { error: found.error });
+  const chat = found.chat;
 
   // The daily limit protects the household's key. People using their own key pay for it themselves.
   const used = db.usage(me.user, today());
@@ -429,142 +550,46 @@ async function chatTurn(req, res, me, ctx) {
 
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' });
   const event = (type, data) => res.write('event: ' + type + '\ndata: ' + JSON.stringify(data) + '\n\n');
-
-  const names = {};
-  const plan = ctx.readPlan() || {};
-  Object.values(plan.people || {}).forEach(p => { if (p && p.name) names[ctx.toKey(p.name)] = p.name; });
-  const content = chat.messages.length ? text : opening(me, chat.person, names, text);
+  const content = chat.messages.length ? text : opening(me, chat.person, planNames(ctx), text);
 
   // The conversation is only ever added to (never edited), and it is saved only when a turn
   // finishes properly, so a failed turn can simply be asked again.
-  const messages = chat.messages.concat([{ role: 'user', content: [{ type: 'text', text: content }] }]);
-  let inputTokens = 0;
-  let outputTokens = 0;
-  let finished = false;
-  let jsonRetries = 0;
-  let aborted = false;
-  const made = [];   // drafts made in this turn
-  res.on('close', () => { aborted = true; });
-
-  // Runs the tools the AI asked for; returns the results to send back.
-  function runCalls(calls) {
-    const results = [];
-    for (const call of calls) {
-      event('step', { label: stepLabel(call.name, call.input, ctx.readPlan() || {}) });
-      let out;
-      try {
-        out = runTool(call.name, call.input, chat, ctx);
-      } catch (e) {
-        out = { content: 'Error: ' + String(e.message || e), isError: true };
-      }
-      if (out.proposal) {
-        made.push(out.proposal.id);
-        event('proposal', publicRequest(out.proposal));
-      }
-      results.push({ type: 'tool_result', tool_use_id: call.id, content: out.content, is_error: !!out.isError });
-    }
-    return results;
-  }
-
   const controller = new AbortController();
-  res.on('close', () => controller.abort());
+  let aborted = false;
+  res.on('close', () => { aborted = true; controller.abort(); });
+  // Everything about the message being answered, shared by the steps above.
+  const turn = {
+    ready, chat, ctx, event, signal: controller.signal,
+    messages: chat.messages.concat([{ role: 'user', content: [{ type: 'text', text: content }] }]),
+    inputTokens: 0, outputTokens: 0,
+    finished: false,   // the answer is complete and can be saved
+    jsonRetries: 0,
+    made: [],          // drafts made in this turn
+  };
+  const messages = turn.messages;
+
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS && !aborted; round++) {
-      if (ready.provider !== 'anthropic') {
-        // OpenAI, Gemini or Ollama (ai.js turns the reply into the same shape as Claude's).
-        const message = await ai.chat(ready, { system: system(), messages, tools: TOOLS, maxTokens: 8000, onText: delta => event('text', delta), signal: controller.signal });
-        inputTokens += message.usage.input_tokens || 0;
-        outputTokens += message.usage.output_tokens || 0;
-        messages.push({ role: 'assistant', content: message.content.length ? message.content : [{ type: 'text', text: '' }] });
-        if (message.stop_reason === 'refusal') {
-          event('error', { message: ready.name + ' couldn’t help with that one. Try asking a different way.' });
-          messages.pop();
-          break;
-        }
-        const calls = message.content.filter(block => block.type === 'tool_use');
-        if (message.stop_reason === 'max_tokens') {
-          if (calls.length) messages.pop();
-          event('error', { message: 'The answer was too long and got cut off. Try asking for less at once.' });
-          finished = !calls.length;
-          break;
-        }
-        if (!calls.length) {
-          finished = true;
-          break;
-        }
-        messages.push({ role: 'user', content: runCalls(calls) });
-        continue;
-      }
-      const stream = client.beta.messages.stream({
-        model: MODEL,
-        max_tokens: 16000,
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',          // if a safety check declines, Anthropic retries on a suitable model
-        output_config: { effort: EFFORT },
-        cache_control: { type: 'ephemeral' },
-        system: [{ type: 'text', text: system(), cache_control: { type: 'ephemeral' } }],
-        tools: TOOLS,
-        messages,
-      });
-      stream.on('text', delta => event('text', delta));
-
-      let message;
-      try {
-        message = await stream.finalMessage();
-        jsonRetries = 0;
-      } catch (err) {
-        // A tool input that couldn't be read as JSON: ask again (up to twice). Real API errors go to the catch below.
-        if (err instanceof Anthropic.APIError || jsonRetries++ >= 2) throw err;
-        event('step', { label: 'Trying that again…' });
-        continue;
-      }
-      inputTokens += (message.usage.input_tokens || 0) + (message.usage.cache_read_input_tokens || 0) + (message.usage.cache_creation_input_tokens || 0);
-      outputTokens += message.usage.output_tokens || 0;
-      messages.push({ role: 'assistant', content: message.content });
-
-      if (message.stop_reason === 'refusal') {
-        // Not saved, so the chat can carry on as if this question wasn't asked.
-        event('error', { message: 'Claude couldn’t help with that one. Try asking a different way.' });
-        break;
-      }
-      if (message.stop_reason === 'pause_turn') continue;
-      const calls = message.content.filter(block => block.type === 'tool_use');
-      if (message.stop_reason === 'max_tokens') {
-        // A tool call cut off part-way can't be run; leave the turn there.
-        if (calls.length) messages.pop();
-        event('error', { message: 'The answer was too long and got cut off. Try asking for less at once.' });
-        finished = !calls.length;
-        break;
-      }
-      if (!calls.length) {
-        finished = true;
-        break;
-      }
-      // Run every tool Claude asked for, and send all the results back together.
-      messages.push({ role: 'user', content: runCalls(calls) });
+      const again = ready.provider !== 'anthropic' ? await otherAiRound(turn) : await claudeRound(turn);
+      if (!again) break;
     }
-    if (!finished && !aborted && messages[messages.length - 1].role === 'user' && messages.length > chat.messages.length + 1) {
+    if (!turn.finished && !aborted && messages[messages.length - 1].role === 'user' && messages.length > chat.messages.length + 1) {
       event('error', { message: 'That took too many steps. Try a smaller question.' });
     }
   } catch (err) {
-    let message = 'Something went wrong talking to Claude. Try again in a moment.';
-    if (ready.provider !== 'anthropic') message = err && err.name === 'AbortError' ? '' : ai.explain(err, ready);
-    else if (err instanceof Anthropic.AuthenticationError) message = ready.own ? 'Your Claude key was not accepted. Check it in Settings → Your Claude key.' : 'The family’s Claude key (ANTHROPIC_API_KEY in .env) was not accepted. An admin needs to check it.';
-    else if (err instanceof Anthropic.RateLimitError) message = 'Claude is busy right now (rate limit). Try again in a minute.';
-    else if (err instanceof Anthropic.APIError && err.status >= 500) message = 'Claude’s servers had a problem. Try again in a moment.';
-    else if (err instanceof Anthropic.APIError) message = 'Claude could not answer: ' + String(err.message || '').slice(0, 300);
+    const message = failureMessage(err, ready);
     console.error('assistant:', err && err.message ? err.message : err);
     if (message) event('error', { message });
   }
 
-  db.countUsage(me.user, today(), inputTokens, outputTokens, 1);
-  if (finished) {
+  db.countUsage(me.user, today(), turn.inputTokens, turn.outputTokens, 1);
+  if (turn.finished) {
     const title = chat.messages.length ? null : text.slice(0, 80);
     chat.id = db.saveChat(chat.id, chat.person, chat.user, title, messages);
     // Drafts made in a brand-new chat get its id now that it exists.
-    made.forEach(id => db.setRequestChat(id, chat.id));
+    turn.made.forEach(id => db.setRequestChat(id, chat.id));
   }
-  event('done', { id: chat.id, saved: finished });
+  event('done', { id: chat.id, saved: turn.finished });
   res.end();
 }
 
@@ -701,7 +726,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
 
   const action = urlPath.match(/^\/api\/requests\/(\d+)\/(send|withdraw|approve|decline)$/);
   if (action && req.method === 'POST') {
-    requestAction(res, me, Number(action[1]), action[2], await body(req), ctx);
+    requestAction(res, me, Number(action[1]), action[2], await readBody(req), ctx);
     return true;
   }
 

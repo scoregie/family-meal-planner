@@ -754,16 +754,10 @@ function arrange(dishes) {
 // Exercise
 // ---------------------------------------------------------------------------
 
-// One person's exercise for the 4 weeks: their workouts, each week's days and targets, notes and medical considerations.
-function exerciseFor(p, r, rnd) {
-  const a = p.answers || {};
-  const equipment = new Set(list(a.equipment));
-  const gentle = ['Low energy or chronic fatigue', 'Chronic pain'].some(x => r.support.has(x));
-  const seated = r.support.has('Use a wheelchair or mobility aid');
-  const pregnant = r.conditions.has('Pregnant or breastfeeding');
+// Which cardio suits a person: {cardio (their main one), otherCardio (for days the pool isn't
+// open to them), poolDays (the days they can get to a public pool)}.
+function cardioFor(a, equipment, seated) {
   const likes = String(a.exercise_likes || '').toLowerCase();
-  const minutes = { 'Less than 15 minutes': 10, '15 to 30 minutes': 20, '30 to 60 minutes': 30, 'More than an hour': 45 }[a.exercise_time] || 20;
-  const level = seated ? 'seated' : equipment.has('Gym membership') ? 'gym' : equipment.has('Dumbbells') ? 'dumbbells' : equipment.has('Resistance bands') ? 'bands' : 'none';
   let cardio = seated ? 'Seated cardio or a push/wheel' : 'Walk';
   if (!seated && (hasPool(equipment) && /swim/.test(likes))) cardio = equipment.has('Pool at home') ? 'Swim' : 'Swim at the pool';
   else if (!seated && (equipment.has('Exercise bike') || equipment.has('Bike')) && /bike|cycl|ride/.test(likes)) cardio = 'Ride';
@@ -779,83 +773,115 @@ function exerciseFor(p, r, rnd) {
   }
   // What the other cardio days are when the pool is only some days.
   const otherCardio = lowerBody && canRide ? 'Ride' : 'Walk';
+  return { cardio, otherCardio, poolDays };
+}
 
+// What each health condition means for exercise, in the plan's words.
+const CONDITION_NOTES = {
+  'Type 1 diabetes': 'You said you have type 1 diabetes. It may be worth checking with your diabetes team about insulin and carbs around exercise, and keeping fast-acting carbs with you during sessions.',
+  'Type 2 diabetes or pre-diabetes': 'You said you have type 2 diabetes or pre-diabetes. Short walks after meals may help. If you take medicine that can cause low blood sugar, consider asking your GP about exercise.',
+  'High blood pressure': 'You said you have high blood pressure. Consider breathing out as you lift rather than holding your breath, and checking with your GP before heavy lifting.',
+  'Heart condition': 'You said you have a heart condition. It may be worth checking with your GP or cardiologist before starting, and stopping if you feel chest pain, dizziness or unusual breathlessness.',
+  'Kidney condition': 'You said you have a kidney condition. Protein, salt and fluid needs can differ, so consider checking this plan with your doctor or dietitian.',
+  'Pregnant or breastfeeding': 'You said you’re pregnant or breastfeeding. Consider checking with your midwife or GP before new exercise. This plan keeps to walking and gentle strength.',
+};
+
+// The medical considerations shown with a person's exercise: what they wrote about their health,
+// their conditions, medicines, supplements and fasting. `gentle` is true for low energy or chronic pain.
+function exerciseConsiderations(a, r, gentle) {
   const medical = [];
+  const said = text => text && !/^(no|none|nil|n\/a)\.?$/i.test(text);   // they wrote something other than "no"
   const injuries = String(a.injuries || '').trim();
   const gp = String(a.gp || '').trim();
   const medicines = String(a.medicines || '').trim();
   const otherConditions = String(a.conditions_other || '').trim();
   // A health condition they wrote in their own words can't be read by rules, so the plan says so.
-  if (otherConditions && !/^(no|none|nil|n\/a)\.?$/i.test(otherConditions)) medical.push('You mentioned another health condition: “' + otherConditions.slice(0, 300) + '”. This plan wasn’t changed for it, so it may be worth checking the meals and exercise with your GP.');
-  if (injuries && !/^(no|none|nil|n\/a)\.?$/i.test(injuries)) medical.push('You mentioned: “' + injuries.slice(0, 300) + '”. Consider checking with your GP or physio which exercises suit you, and stop any exercise that causes pain.');
-  if (gp && !/^(no|none|nil|n\/a)\.?$/i.test(gp)) medical.push('You said a doctor or dietitian told you: “' + gp.slice(0, 300) + '”. What they told you comes first. If this plan doesn’t fit it, go with what they said and let an admin know.');
-  if (medicines && !/^(no|none|nil|n\/a)\.?$/i.test(medicines)) medical.push('You mentioned medicines or supplements: “' + medicines.slice(0, 200) + '”. It may be worth asking your pharmacist whether any foods or exercise affect them.');
-  const C = {
-    'Type 1 diabetes': 'You said you have type 1 diabetes. It may be worth checking with your diabetes team about insulin and carbs around exercise, and keeping fast-acting carbs with you during sessions.',
-    'Type 2 diabetes or pre-diabetes': 'You said you have type 2 diabetes or pre-diabetes. Short walks after meals may help. If you take medicine that can cause low blood sugar, consider asking your GP about exercise.',
-    'High blood pressure': 'You said you have high blood pressure. Consider breathing out as you lift rather than holding your breath, and checking with your GP before heavy lifting.',
-    'Heart condition': 'You said you have a heart condition. It may be worth checking with your GP or cardiologist before starting, and stopping if you feel chest pain, dizziness or unusual breathlessness.',
-    'Kidney condition': 'You said you have a kidney condition. Protein, salt and fluid needs can differ, so consider checking this plan with your doctor or dietitian.',
-    'Pregnant or breastfeeding': 'You said you’re pregnant or breastfeeding. Consider checking with your midwife or GP before new exercise. This plan keeps to walking and gentle strength.',
-  };
-  for (const c of r.conditions) if (C[c]) medical.push(C[c]);
+  if (said(otherConditions)) medical.push('You mentioned another health condition: “' + otherConditions.slice(0, 300) + '”. This plan wasn’t changed for it, so it may be worth checking the meals and exercise with your GP.');
+  if (said(injuries)) medical.push('You mentioned: “' + injuries.slice(0, 300) + '”. Consider checking with your GP or physio which exercises suit you, and stop any exercise that causes pain.');
+  if (said(gp)) medical.push('You said a doctor or dietitian told you: “' + gp.slice(0, 300) + '”. What they told you comes first. If this plan doesn’t fit it, go with what they said and let an admin know.');
+  if (said(medicines)) medical.push('You mentioned medicines or supplements: “' + medicines.slice(0, 200) + '”. It may be worth asking your pharmacist whether any foods or exercise affect them.');
+  for (const c of r.conditions) if (CONDITION_NOTES[c]) medical.push(CONDITION_NOTES[c]);
   for (const m of r.meds) if (MEDS[m] && MEDS[m].exercise) medical.push(MEDS[m].exercise);
   medical.push(...supplementNotes(r).exercise);
   medical.push(...fastNotes(r, a).exercise);
   if (r.meds.size) medical.push('Because you take medicines, consider checking this exercise plan with your GP before you start.');
   if (gentle) medical.push('You mentioned low energy or chronic pain. On harder days, consider a shorter session or just a walk. Any movement counts.');
+  return medical;
+}
+
+// A child's exercise: active play every day, the same for all 4 weeks.
+function kidExercise(medical) {
+  const weeks = [];
+  for (let w = 0; w < 4; w++) {
+    weeks.push({
+      focus: 'Move every day', targets: ['About 60 minutes of active play a day, counting school and sport', 'Less screen time on school nights'],
+      days: DAYS.map(day => ({ day, session: day === 'Sat' || day === 'Sun' ? 'Active play: park, bike, swim or sport' : 'Active play after school' })),
+    });
+  }
+  return { weeks, top: { notes: ['Play counts: running around, riding, swimming, dancing and sport all count.', 'Kids don’t need diets or weigh-ins. Plenty of play and regular meals is the goal.'], medical } };
+}
+
+// One week of a teenager's or adult's exercise (w is 0 to 3): which days are strength and which
+// are cardio, and the week's targets. `sessions` is [strength sessions, cardio sessions] for the
+// week, `minutes` how long they have, and `c` what cardioFor chose.
+function exerciseWeek(w, sessions, minutes, c) {
+  const strengthDays = { 1: ['Wed'], 2: ['Mon', 'Thu'], 3: ['Mon', 'Wed', 'Fri'] };
+  const cardioOrder = ['Tue', 'Sat', 'Thu', 'Mon', 'Wed', 'Fri'];
+  const focus = ['Build the habit', 'A little more', 'Step it up', 'Keep it going'];
+  const [s, count] = sessions;
+  const sDays = strengthDays[s];
+  const mins = minutes + (minutes >= 20 ? w * 5 : 0);
+  let cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, count);
+  // Public pool: swims only on the days they can get there; any other cardio days are walks.
+  let swimDays = cDays;
+  if (c.cardio === 'Swim at the pool' && c.poolDays.length) {
+    swimDays = c.poolDays.filter(d => !sDays.includes(d)).slice(0, count);
+    cDays = swimDays.concat(cardioOrder.filter(d => !sDays.includes(d) && !swimDays.includes(d)).slice(0, count - swimDays.length));
+  }
+  const cardioTarget = swimDays.length === cDays.length
+    ? count + ' × ' + c.cardio.toLowerCase() + ' ' + mins + ' minutes'
+    : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × ' + c.otherCardio.toLowerCase()].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
+  let ab = 0;
+  return {
+    focus: focus[w],
+    targets: [s + ' strength session' + (s > 1 ? 's' : ''), cardioTarget, 'A few more steps each day than last week'],
+    days: DAYS.map(day => {
+      const o = { day };
+      if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
+      if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? c.cardio : c.otherCardio) + ' ' + mins + ' minutes';
+      if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
+      return o;
+    }),
+  };
+}
+
+// One person's exercise for the 4 weeks: their workouts, each week's days and targets, notes and medical considerations.
+function exerciseFor(p, r, rnd) {
+  const a = p.answers || {};
+  const equipment = new Set(list(a.equipment));
+  const gentle = ['Low energy or chronic fatigue', 'Chronic pain'].some(x => r.support.has(x));
+  const seated = r.support.has('Use a wheelchair or mobility aid');
+  const pregnant = r.conditions.has('Pregnant or breastfeeding');
+  const minutes = { 'Less than 15 minutes': 10, '15 to 30 minutes': 20, '30 to 60 minutes': 30, 'More than an hour': 45 }[a.exercise_time] || 20;
+  const level = seated ? 'seated' : equipment.has('Gym membership') ? 'gym' : equipment.has('Dumbbells') ? 'dumbbells' : equipment.has('Resistance bands') ? 'bands' : 'none';
+  const medical = exerciseConsiderations(a, r, gentle);
+  if (r.kid) return kidExercise(medical);
 
   const notes = [
     'If a session feels too hard, do less rather than skipping it.',
     'Warm up for 5 minutes first. You should be able to talk during walks.',
     'Sore muscles a day or two after a new exercise are normal. Sharp pain isn’t: stop and get it checked.',
   ];
-
-  const weeks = [];
-  if (r.kid) {
-    for (let w = 0; w < 4; w++) {
-      weeks.push({
-        focus: 'Move every day', targets: ['About 60 minutes of active play a day, counting school and sport', 'Less screen time on school nights'],
-        days: DAYS.map(day => ({ day, session: day === 'Sat' || day === 'Sun' ? 'Active play: park, bike, swim or sport' : 'Active play after school' })),
-      });
-    }
-    return { weeks, top: { notes: ['Play counts: running around, riding, swimming, dancing and sport all count.', 'Kids don’t need diets or weigh-ins. Plenty of play and regular meals is the goal.'], medical } };
-  }
+  // [strength sessions, cardio sessions] for each of the 4 weeks.
   const plan = gentle || pregnant
     ? [[1, 3], [2, 3], [2, 4], [2, 4]]
     : r.teen ? [[2, 3], [2, 3], [2, 4], [2, 4]]
     : [[2, 3], [2, 4], [3, 4], [3, 5]];
-  const strengthDays = { 1: ['Wed'], 2: ['Mon', 'Thu'], 3: ['Mon', 'Wed', 'Fri'] };
-  const cardioOrder = ['Tue', 'Sat', 'Thu', 'Mon', 'Wed', 'Fri'];
-  const focus = ['Build the habit', 'A little more', 'Step it up', 'Keep it going'];
-  for (let w = 0; w < 4; w++) {
-    const [s, c] = plan[w];
-    const sDays = strengthDays[s];
-    const mins = minutes + (minutes >= 20 ? w * 5 : 0);
-    let cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, c);
-    // Public pool: swims only on the days they can get there; any other cardio days are walks.
-    let swimDays = cDays;
-    if (cardio === 'Swim at the pool' && poolDays.length) {
-      swimDays = poolDays.filter(d => !sDays.includes(d)).slice(0, c);
-      cDays = swimDays.concat(cardioOrder.filter(d => !sDays.includes(d) && !swimDays.includes(d)).slice(0, c - swimDays.length));
-    }
-    const cardioTarget = swimDays.length === cDays.length
-      ? c + ' × ' + cardio.toLowerCase() + ' ' + mins + ' minutes'
-      : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × ' + otherCardio.toLowerCase()].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
-    let ab = 0;
-    weeks.push({
-      focus: focus[w],
-      targets: [s + ' strength session' + (s > 1 ? 's' : ''), cardioTarget, 'A few more steps each day than last week'],
-      days: DAYS.map(day => {
-        const o = { day };
-        if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
-        if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? cardio : otherCardio) + ' ' + mins + ' minutes';
-        if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
-        return o;
-      }),
-    });
-  }
-  const made = strengthWorkouts(p, r, { level, gentle, pregnant, seated, injuries: injuries + ' ' + gp }, rnd || Math.random);
+  const cardio = cardioFor(a, equipment, seated);
+  const weeks = [];
+  for (let w = 0; w < 4; w++) weeks.push(exerciseWeek(w, plan[w], minutes, cardio));
+  const injuries = String(a.injuries || '').trim() + ' ' + String(a.gp || '').trim();
+  const made = strengthWorkouts(p, r, { level, gentle, pregnant, seated, injuries }, rnd || Math.random);
   if (made.note) notes.push(made.note);
   return { weeks, top: { workouts: made.workouts, notes, medical } };
 }
@@ -1067,23 +1093,85 @@ function orOwnChoice(dishes, meal, forAdmin) {
     macros: { p: 0, c: 0, f: 0, kj: 0 }, groups: {}, cost: 0 }];
 }
 
-// One try at a whole plan: picks dinners, lunches, breakfasts and snacks for each week, makes the
-// recipes and shopping lists, and adds exercise. build() calls this again (cheaper) if it's over budget.
+// One try at a whole plan. It runs the steps below in the same order every time (so the same seed
+// gives the same plan): choose the family's meals, each person's own meals and exercise, work out
+// each week's amounts and recipes, add snacks and eating times, then the shopping lists and the
+// numbers for each dish. build() calls this again (cheaper) if it's over budget.
 function attempt(people, rules, house, rnd, repeat, forAdmin) {
+  // What the steps share. `used` collects every dish the plan ends up with (dish name -> dish),
+  // for the recipes, macros and food groups.
+  const job = { people, rules, house, rnd, repeat, forAdmin, used: new Map() };
+  const pools = dishPools(job);
+  const mealWeeks = chooseFamilyMeals(job, pools);
+  const own = chooseOwnMeals(job, pools);
+  const planPeople = {};
+  people.forEach((p, i) => { planPeople[p.key] = { name: p.name, portion: rules[i].portion }; });
+  const exercise = chooseExercise(job);
+
+  // Each week's meals, recipes and the amounts to buy.
+  const weeks = [];
+  const needs = [];   // per meal week: {ingredient key: amount}
+  mealWeeks.forEach((days, w) => {
+    const week = weekOfMeals(job, days, w, own, planPeople);
+    weeks.push({ name: 'Week ' + (w + 1), meals: week.meals, recipes: week.recipes, exercise: Object.fromEntries(people.map(p => [p.key, exercise.weeks[p.key][w]])) });
+    needs.push(week.need);
+  });
+
+  // Snacks, eating times and the guide for each person: the same for every week.
+  people.forEach((p, i) => {
+    const r = rules[i];
+    const mine = planPeople[p.key];
+    chooseSnacks(job, r, p.key, planPeople, weeks, exercise.weeks[p.key]);
+    addSnackNeeds(mine.snacks, exercise.weeks[p.key], needs);
+    addEatingTimes(mine, r);
+    Object.assign(mine, guideFor(r, p));
+    const steps = smallSteps(r, p);
+    if (steps.length) mine.steps = steps;
+  });
+
+  const plan = withShopping(weeks, needs, house);
+  const numbers = macrosAndGroups(job, planPeople);
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  plan.id = 'family-plan-built-' + stamp;
+  plan.title = 'Meal and exercise plan';
+  const f1 = plan.weeks.slice(0, 3).reduce((n, w) => n + w.cost, 0);
+  const f2 = plan.weeks.slice(3, 6).reduce((n, w) => n + w.cost, 0);
+  plan.subtitle = 'Built by the app from everyone’s answers. Fortnight 1 about ' + priceText(f1) + ', fortnight 2 about ' + priceText(f2) + '. Prices are estimates.';
+  plan.currency = CURRENCY;
+  plan.people = planPeople;
+  plan.exercise = exercise.top;
+  plan.macros = numbers.macros;
+  plan.groups = numbers.groups;
+  return plan;
+}
+
+// Step 1 of a plan: the dishes this household can cook, sorted by meal. `shared` are the ones
+// that suit everyone; `family` are the dinners that suit at least one person.
+function dishPools(job) {
+  const { rules, house, forAdmin } = job;
   const byMeal = m => LIB.dishes.filter(d => d.meal === m && available(d) && canCook(d, house) && !(d.tags || []).some(t => house.hard.has(t)));
+  const everyone = d => rules.every(r => allowed(d, r));
   const dinners = byMeal('dinner');
   const lunches = byMeal('lunch');
   const breakfasts = byMeal('breakfast');
-  const everyone = d => rules.every(r => allowed(d, r));
-  const shared = dinners.filter(everyone);
-  // Family dinners are chosen from everything nobody is allergic to; the score prefers dinners that
-  // suit everyone, and anyone a dinner doesn't suit gets their own that night.
-  const familyPool = dinners.filter(d => rules.some(r => allowed(d, r)));
-  const recent = new Set();
-  const used = new Map();     // dish name -> dish, for recipes, macros and groups
-  const notes = [];
-  if (shared.length < 4) forAdmin.push('Only ' + shared.length + ' dinners in the app’s library suit everyone, so some nights have a separate dinner for someone.');
+  const sharedDinners = dinners.filter(everyone);
+  if (sharedDinners.length < 4) forAdmin.push('Only ' + sharedDinners.length + ' dinners in the app’s library suit everyone, so some nights have a separate dinner for someone.');
+  return {
+    dinners, lunches, breakfasts,
+    // Family dinners are chosen from everything nobody is allergic to; the score prefers dinners that
+    // suit everyone, and anyone a dinner doesn't suit gets their own that night.
+    familyDinners: dinners.filter(d => rules.some(r => allowed(d, r))),
+    sharedBreakfasts: breakfasts.filter(everyone),
+    sharedLunches: lunches.filter(everyone),
+  };
+}
 
+// Step 2 of a plan: the family's dinner, breakfast and lunch for each day of the 4 weeks.
+// Returns 4 weeks, each a list of 7 days like {day, dinner, breakfast, lunch}. Food already at
+// home is preferred until it has been used up.
+function chooseFamilyMeals(job, pools) {
+  const { rules, house, rnd, repeat, forAdmin } = job;
+  const recent = new Set();
   const mealWeeks = [];
   let fixedDinners = null;
   // How much of each kitchen food is left as the weeks are planned ({ingredient: amount}). Each
@@ -1105,18 +1193,16 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     if (repeat && fixedDinners && w % 2 === 1) week = fixedDinners;
     else {
       const n = repeat ? 4 : 7;
-      week = pick(familyPool.length ? familyPool : dinners, n, rules, house, rnd, recent);
+      week = pick(pools.familyDinners.length ? pools.familyDinners : pools.dinners, n, rules, house, rnd, recent);
       if (repeat) week = DAYS.map((_, i) => week[i % week.length]);
       week = repeat ? week : arrange(week);
       fixedDinners = week;
     }
     week.forEach(d => recent.add(d.name));
     // Breakfasts: three that suit everyone, rotated.
-    const bShared = breakfasts.filter(everyone);
-    const bPick = orOwnChoice(pick(bShared.length ? bShared : breakfasts, 3, rules, house, rnd, new Set()), 'breakfast', w ? null : forAdmin);
+    const bPick = orOwnChoice(pick(pools.sharedBreakfasts.length ? pools.sharedBreakfasts : pools.breakfasts, 3, rules, house, rnd, new Set()), 'breakfast', w ? null : forAdmin);
     // Lunches at home (adults): two that suit everyone, plus leftovers.
-    const lShared = lunches.filter(everyone);
-    const lPick = orOwnChoice(pick(lShared.length ? lShared : lunches, 2, rules.filter(r => !r.kid), house, rnd, new Set()), 'lunch', w ? null : forAdmin);
+    const lPick = orOwnChoice(pick(pools.sharedLunches.length ? pools.sharedLunches : pools.lunches, 2, rules.filter(r => !r.kid), house, rnd, new Set()), 'lunch', w ? null : forAdmin);
 
     const days = DAYS.map((day, i) => {
       const dinner = week[i];
@@ -1129,16 +1215,21 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     // Take this week's meals off what's left in the kitchen (a leftover lunch was cooked as dinner).
     for (const day of days) { useUp(day.dinner); useUp(day.breakfast); useUp(day.lunch.leftover || day.lunch); }
   }
-
-  // Per-person swaps: anyone a shared dish doesn't suit gets one that does.
+  // The steps after this one prefer whatever kitchen food the family meals have left over.
   house.ownedNow = ownedIn(0);
-  const own = {};       // person key -> {dinners: [dishes], breakfast, lunches}
-  const ownFast = {};   // the same, for the days they give up some foods (people with a food fast)
+  return mealWeeks;
+}
+
+// Step 3 of a plan: each person's own meals, for when a family dish doesn't suit them. Returns
+// {usual, fasting}: each is {person key: {dinners, breakfast, lunches}}, and `fasting` is for the
+// days someone gives up some foods (only people with a food fast are in it).
+function chooseOwnMeals(job, pools) {
+  const { rules, house, rnd, forAdmin } = job;
   // One person's own meals. `fasting` is true for the days they give up some foods.
   const ownMeals = (r, fasting) => {
-    const myDinners = dinners.filter(d => allowed(d, r, fasting));
-    const myBreakfasts = breakfasts.filter(d => allowed(d, r, fasting));
-    const myLunches = lunches.filter(d => allowed(d, r, fasting));
+    const myDinners = pools.dinners.filter(d => allowed(d, r, fasting));
+    const myBreakfasts = pools.breakfasts.filter(d => allowed(d, r, fasting));
+    const myLunches = pools.lunches.filter(d => allowed(d, r, fasting));
     if (!myDinners.length) forAdmin.push('No dinners in the library suit ' + r.name + '’s needs' + (fasting ? ' on the days they give up ' + r.foodFast.words : '') + '. Their meals will need adding by hand in Edit plan.');
     return {
       dinners: pick(myDinners, 7, [r], house, rnd, new Set()),
@@ -1147,224 +1238,255 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       lunches: (l => pick(l, Math.min(7, l.length), [r], house, rnd, new Set()))(myLunches.filter(d => !r.kid || d.packable)),
     };
   };
-  for (const r of rules) own[r.key] = ownMeals(r, false);
-  for (const r of rules) if (r.foodFast) ownFast[r.key] = ownMeals(r, true);
+  const usual = {}, fasting = {};
+  for (const r of rules) usual[r.key] = ownMeals(r, false);
+  for (const r of rules) if (r.foodFast) fasting[r.key] = ownMeals(r, true);
+  return { usual, fasting };
+}
 
-  const planPeople = {};
-  for (let i = 0; i < people.length; i++) {
-    const p = people[i], r = rules[i];
-    planPeople[p.key] = Object.assign({}, { name: p.name, portion: r.portion });
-  }
-
-  const weeks = [];
-  const exercise = {};
-  const topExercise = {};
-  people.forEach((p, i) => {
-    const ex = exerciseFor(p, rules[i], rnd);
-    exercise[p.key] = ex.weeks;
-    topExercise[p.key] = ex.top;
+// Step 4 of a plan: everyone's exercise. Returns {weeks: {person key: [4 weeks]}, top: {person
+// key: the notes shown above their exercise}}.
+function chooseExercise(job) {
+  const weeks = {}, top = {};
+  job.people.forEach((p, i) => {
+    const ex = exerciseFor(p, job.rules[i], job.rnd);
+    weeks[p.key] = ex.weeks;
+    top[p.key] = ex.top;
   });
+  return { weeks, top };
+}
 
-  // Each week's meals, recipes and the amounts to buy.
-  const needs = [];   // per meal week: {ingredient key: amount}
-  mealWeeks.forEach((days, w) => {
-    const need = {};
-    // Adds what a dish needs for that many serves to this week's ingredient totals.
-    const addNeed = (dish, serves) => {
-      for (const [k, amount] of dish.per) {
-        const ing = ING[k];
-        if (ing.aisle === 'assumed') continue;
-        need[k] = (need[k] || 0) + amount * serves;
-      }
-    };
-    const cooked = new Map();   // dish name -> total serves this week (for the recipe)
-    const addCooked = (d, serves) => cooked.set(d.name, (cooked.get(d.name) || 0) + serves);
-    const meals = days.map((day, i) => {
-      const m = { day: day.day };
-      const overrides = {};
-      // How each person's fasting changes today: foods given up, and meals they go without.
-      const today = {}, next = {};
-      rules.forEach(r => {
-        today[r.key] = fastingOn(r, w + 1, day.day);
-        next[r.key] = days[i + 1] ? fastingOn(r, w + 1, days[i + 1].day) : { food: false, skip: new Set() };
-      });
-      const fits = (dish, r) => allowed(dish, r, today[r.key].food);
-      const mine = r => (today[r.key].food ? ownFast[r.key] : own[r.key]);
-      // Marks a meal someone goes without today. Returns true if they do.
-      const skipped = (r, slot) => {
-        if (!today[r.key].skip.has(slot)) return false;
-        overrides[r.key] = Object.assign(overrides[r.key] || {}, { [slot]: FASTING });
-        return true;
-      };
-      // Breakfast.
-      let bServes = 0;
-      rules.forEach(r => {
-        if (skipped(r, 'breakfast')) return;
-        const alt = mine(r).breakfast;
-        if (fits(day.breakfast, r)) bServes += r.portion;
-        else if (alt) {
-          overrides[r.key] = Object.assign(overrides[r.key] || {}, { breakfast: alt.name });
-          addNeed(alt, r.portion); addCooked(alt, r.portion); used.set(alt.name, alt);
-        }
-      });
-      m.breakfast = day.breakfast.name;
-      if (!day.breakfast.ownChoice) { addNeed(day.breakfast, bServes); addCooked(day.breakfast, bServes); used.set(day.breakfast.name, day.breakfast); }
-      // Dinner (and extra for tomorrow's leftovers).
-      let dServes = 0;
-      rules.forEach(r => {
-        if (skipped(r, 'dinner')) return;
-        if (fits(day.dinner, r)) dServes += r.portion;
-        else if (mine(r).dinners.length) {
-          const alt = mine(r).dinners[i % mine(r).dinners.length];
-          overrides[r.key] = Object.assign(overrides[r.key] || {}, { dinner: alt.name });
-          addNeed(alt, r.portion); addCooked(alt, r.portion); used.set(alt.name, alt);
-        }
-      });
-      m.dinner = day.dinner.name;
-      used.set(day.dinner.name, day.dinner);
-      const tomorrow = days[i + 1];
-      // Leftovers are packed for the adults who can have them for lunch tomorrow (not for someone
-      // who gives up that food tomorrow, or goes without lunch).
-      const leftoverFor = tomorrow && tomorrow.lunch.leftover === day.dinner ? rules.filter(r => !r.kid && allowed(day.dinner, r, next[r.key].food) && !r.lunchProvided.has(tomorrow.day) && !next[r.key].skip.has('lunch')) : [];
-      const extra = leftoverFor.reduce((n, r) => n + r.portion, 0);
-      addNeed(day.dinner, dServes + extra); addCooked(day.dinner, dServes + extra);
-      if (extra) m.note = 'Cook extra tonight: pack ' + (leftoverFor.length === 1 ? 'a serve' : leftoverFor.length + ' serves') + ' for tomorrow’s lunch.';
-      if (day.dinner.kit.includes('slow cooker')) m.note = 'Start the slow cooker this morning.' + (m.note ? ' ' + m.note : '');
-      if (tomorrow && tomorrow.breakfast.name === 'Overnight oats with berries') m.note = (m.note ? m.note + ' ' : '') + 'Make tomorrow’s overnight oats tonight.';
-      // Lunch. Adults whose work provides lunch that day get that instead.
-      const providedLunch = r => {
-        if (r.kid || !r.lunchProvided.has(day.day)) return false;
-        overrides[r.key] = Object.assign(overrides[r.key] || {}, { lunch: 'Work provides lunch' });
-        return true;
-      };
-      if (day.lunch.leftover) {
-        m.lunch = 'Leftovers: ' + day.lunch.leftover.name;
-        used.set(m.lunch, Object.assign({}, day.lunch.leftover, { name: m.lunch, leftoverOf: day.lunch.leftover.name }));
-        rules.forEach(r => {
-          if (r.kid && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(day.day)) return;   // school lunch, below
-          if (skipped(r, 'lunch')) return;
-          if (providedLunch(r)) return;
-          if (!fits(day.lunch.leftover, r) || r.kid) {
-            const alt = mine(r).lunches[i % Math.max(1, mine(r).lunches.length)];
-            if (alt) {
-              overrides[r.key] = Object.assign(overrides[r.key] || {}, { lunch: alt.name });
-              addNeed(alt, r.portion); addCooked(alt, r.portion); used.set(alt.name, alt);
-            }
-          }
-        });
-      } else {
-        m.lunch = day.lunch.name;
-        if (!day.lunch.ownChoice) used.set(day.lunch.name, day.lunch);
-        let lServes = 0;
-        rules.forEach(r => {
-          if (r.kid && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(day.day)) return;
-          if (skipped(r, 'lunch')) return;
-          if (providedLunch(r)) return;
-          if (fits(day.lunch, r)) lServes += r.portion;
-          else {
-            const alt = mine(r).lunches[i % Math.max(1, mine(r).lunches.length)];
-            if (alt) {
-              overrides[r.key] = Object.assign(overrides[r.key] || {}, { lunch: alt.name });
-              addNeed(alt, r.portion); addCooked(alt, r.portion); used.set(alt.name, alt);
-            }
-          }
-        });
-        if (!day.lunch.ownChoice) { addNeed(day.lunch, lServes); addCooked(day.lunch, lServes); }
-      }
-      if (Object.keys(overrides).length) m.people = overrides;
-      return m;
-    });
-
-    // Children's school lunches and snacks (Mon to Fri), the same each week.
-    rules.filter(r => r.kid).forEach(r => {
-      const p = planPeople[r.key];
-      if (!p.weekday) {
-        // A child who gives up some foods on some days gets school lunches and snacks that fit
-        // on every day, because the school week is the same each week.
-        const packs = (r.foodFast ? ownFast : own)[r.key].lunches.filter(d => d.packable);
-        const kidSnacks = snackOrder(LIB.snacks.filter(s => s.kids && s.kind !== 'side' && available(s) && allowed(s, r, true)), r, rnd);
-        p.weekday = {};
-        DAYS.slice(0, 5).forEach((d, i) => {
-          const l = packs[i % Math.max(1, packs.length)];
-          const s = kidSnacks[i % Math.max(1, kidSnacks.length)];
-          p.weekday[d] = {};
-          if (r.lunchProvided.has(d)) p.weekday[d].lunch = 'School provides lunch';
-          else if (l) { p.weekday[d].lunch = l.name; used.set(l.name, l); }
-          if (s) p.weekday[d].snack = s.what;
-        });
-      }
-      DAYS.slice(0, 5).forEach(d => {
-        const wd = p.weekday[d];
-        const l = wd.lunch && LIB.dishes.find(x => x.name === wd.lunch);
-        if (l) { addNeed(l, r.portion); addCooked(l, r.portion); }
-        const s = wd.snack && LIB.snacks.find(x => x.what === wd.snack);
-        if (s) addNeed(s, 1);
-      });
-    });
-
-    // Recipes for every dish cooked this week, with amounts for everyone eating it.
-    const recipes = [];
-    for (const [name, serves] of cooked) {
-      const d = used.get(name) || LIB.dishes.find(x => x.name === name);
-      if (!d || d.leftoverOf || !serves) continue;
-      recipes.push(recipeFor(d, serves, meals));
-    }
-    weeks.push({ name: 'Week ' + (w + 1), meals, recipes, exercise: Object.fromEntries(people.map(p => [p.key, exercise[p.key][w]])) });
-    needs.push(need);
-  });
-
-  // Snacks: the same for every week, per person.
-  for (let i = 0; i < people.length; i++) {
-    const r = rules[i];
-    const p = planPeople[people[i].key];
-    p.snacks = snacksFor(r, exercise[people[i].key], rnd).map(s => offFastDays(s, r));
-    // Top up to their serves at the pace they chose. Building up: weeks 1 and 2 aim lower than
-    // weeks 3 and 4, so anything added only for the later weeks is marked with those weeks.
-    if (r.pace === 'full') topUp(r, people[i].key, planPeople, weeks, used, null);
-    else if (r.pace === 'build') {
-      [[1], [2], [3, 4]].forEach(stage => topUp(r, people[i].key, planPeople, weeks, used, stage));
-      p.snacks = mergeWeeks(p.snacks);
-    }
-    for (let w = 0; w < 4; w++) {
-      const exWeek = exercise[people[i].key][w];
-      for (const s of p.snacks) {
-        const lib = LIB.snacks.find(x => x.what === s.what);
-        if (!lib) continue;
-        const days = DAYS.filter(d => {
-          if (s.days && !s.days.includes(d)) return false;
-          if (s.weeks && !s.weeks.includes(w + 1)) return false;
-          const exDay = exWeek.days.find(x => x.day === d) || {};
-          if (s.exercise === 'strength') return !!exDay.strength;
-          if (s.exercise === 'rest') return !exDay.strength;
-          if (s.exercise === 'active') return !!(exDay.strength || exDay.cardio);
-          if (s.exercise === 'inactive') return !(exDay.strength || exDay.cardio);
-          return true;
-        }).length;
-        for (const [k, amount] of lib.per) if (LIB.ingredients[k].aisle !== 'assumed') needs[w][k] = (needs[w][k] || 0) + amount * days * (s.optional ? 0.5 : 1);
-      }
-    }
-    // Suggested eating times: for anyone who asked for reminders, and for anyone who keeps a
-    // daily fast (their meals are spread through their eating window, with a line for each
-    // snack that follows exercise).
-    if (r.fast) {
-      p.times = timesFor(p.snacks, r.fast).concat(exerciseSnackTimes(p.snacks, r.fast));
-      p.timesNote = 'These times fit the fast you said you aim for (about ' + r.fast.hours + ' hours without food). Shift them to suit your day.';
-    } else if (r.remind) {
-      p.times = timesFor(p.snacks);
-      p.timesNote = 'You asked for eating reminders, so these are ordinary times to start from. Shift them to suit your day.';
-    }
-    // Weeks of fasting from sunrise to sunset: in place of the usual times when it's the whole
-    // plan, or listed after them when it's only some weeks.
-    if (r.sunWeeks.length) {
-      p.times = (r.sunWeeks.length >= 4 ? [] : p.times || []).concat(sunTimes(r.sunWeeks));
-      if (r.sunWeeks.length >= 4 || !p.timesNote) p.timesNote = 'Sunrise and sunset change with where you live and the time of year, so these have no clock times.';
-    }
-    Object.assign(p, guideFor(r, people[i]));
-    const steps = smallSteps(r, people[i]);
-    if (steps.length) p.steps = steps;
+// Adds what a dish (or snack) needs for that many serves to a week's ingredient totals.
+// Ingredients every kitchen is assumed to have (salt, water and so on) aren't counted.
+function addNeed(need, dish, serves) {
+  for (const [k, amount] of dish.per) {
+    if (ING[k].aisle === 'assumed') continue;
+    need[k] = (need[k] || 0) + amount * serves;
   }
+}
 
-  // Shopping: buy in whole packs, carrying over what keeps.
+// Counts a dish as cooked this week for that many serves: its ingredients go on the week's
+// totals, and its recipe is written for the total serves.
+function cook(tally, dish, serves) {
+  addNeed(tally.need, dish, serves);
+  tally.cooked.set(dish.name, (tally.cooked.get(dish.name) || 0) + serves);
+}
+
+// Step 5 of a plan, once for each week: who eats what each day, the children's school lunches,
+// and the recipes. Returns {meals, recipes, need}; `need` is {ingredient key: amount} to buy.
+function weekOfMeals(job, days, w, own, planPeople) {
+  // The week's running totals: ingredients needed, and serves of each dish cooked.
+  const tally = { need: {}, cooked: new Map() };
+  const meals = days.map((day, i) => dayOfMeals(job, days, i, w, own, tally));
+  schoolLunches(job, own, planPeople, tally);
+  // Recipes for every dish cooked this week, with amounts for everyone eating it.
+  const recipes = [];
+  for (const [name, serves] of tally.cooked) {
+    const d = job.used.get(name) || LIB.dishes.find(x => x.name === name);
+    if (!d || d.leftoverOf || !serves) continue;
+    recipes.push(recipeFor(d, serves, meals));
+  }
+  return { meals, recipes, need: tally.need };
+}
+
+// One day's meals in the plan's format: {day, breakfast, lunch, dinner, note, people}. `people`
+// lists what anyone has in place of the family meal (their own dish, a fast, lunch from work).
+function dayOfMeals(job, days, i, w, own, tally) {
+  const { rules, used } = job;
+  const day = days[i];
+  const meal = { day: day.day };
+  const overrides = {};
+  // How each person's fasting changes today and tomorrow: foods given up, and meals they go without.
+  const today = {}, next = {};
+  rules.forEach(r => {
+    today[r.key] = fastingOn(r, w + 1, day.day);
+    next[r.key] = days[i + 1] ? fastingOn(r, w + 1, days[i + 1].day) : { food: false, skip: new Set() };
+  });
+  // The helpers the three meals below share.
+  const at = {
+    rules, used, tally, day, i, next,
+    tomorrow: days[i + 1],
+    // True if this person can have the dish today.
+    fits: (dish, r) => allowed(dish, r, today[r.key].food),
+    // This person's own meals for today.
+    mine: r => (today[r.key].food ? own.fasting[r.key] : own.usual[r.key]),
+    // Writes down what this person has in place of the family meal.
+    instead: (r, slot, text) => { overrides[r.key] = Object.assign(overrides[r.key] || {}, { [slot]: text }); },
+    // Marks a meal someone goes without today. Returns true if they do.
+    skipped: (r, slot) => {
+      if (!today[r.key].skip.has(slot)) return false;
+      at.instead(r, slot, FASTING);
+      return true;
+    },
+    // Gives this person their own dish for a meal, and cooks it for them.
+    swap: (r, slot, alt) => {
+      at.instead(r, slot, alt.name);
+      cook(tally, alt, r.portion);
+      used.set(alt.name, alt);
+    },
+  };
+  breakfastFor(at, meal);
+  dinnerFor(at, meal);
+  lunchFor(at, meal);
+  if (Object.keys(overrides).length) meal.people = overrides;
+  return meal;
+}
+
+// Breakfast for one day: the family breakfast for everyone it suits, their own for anyone else.
+function breakfastFor(at, meal) {
+  const dish = at.day.breakfast;
+  let serves = 0;
+  at.rules.forEach(r => {
+    if (at.skipped(r, 'breakfast')) return;
+    const alt = at.mine(r).breakfast;
+    if (at.fits(dish, r)) serves += r.portion;
+    else if (alt) at.swap(r, 'breakfast', alt);
+  });
+  meal.breakfast = dish.name;
+  if (!dish.ownChoice) { cook(at.tally, dish, serves); at.used.set(dish.name, dish); }
+}
+
+// Dinner for one day, with extra cooked when it is tomorrow's leftover lunch, and any reminder
+// for the cook (slow cooker, overnight oats).
+function dinnerFor(at, meal) {
+  const dish = at.day.dinner;
+  let serves = 0;
+  at.rules.forEach(r => {
+    if (at.skipped(r, 'dinner')) return;
+    const mine = at.mine(r).dinners;
+    if (at.fits(dish, r)) serves += r.portion;
+    else if (mine.length) at.swap(r, 'dinner', mine[at.i % mine.length]);
+  });
+  meal.dinner = dish.name;
+  at.used.set(dish.name, dish);
+  const tomorrow = at.tomorrow;
+  // Leftovers are packed for the adults who can have them for lunch tomorrow (not for someone
+  // who gives up that food tomorrow, or goes without lunch).
+  const leftoverFor = tomorrow && tomorrow.lunch.leftover === dish ? at.rules.filter(r => !r.kid && allowed(dish, r, at.next[r.key].food) && !r.lunchProvided.has(tomorrow.day) && !at.next[r.key].skip.has('lunch')) : [];
+  const extra = leftoverFor.reduce((n, r) => n + r.portion, 0);
+  cook(at.tally, dish, serves + extra);
+  if (extra) meal.note = 'Cook extra tonight: pack ' + (leftoverFor.length === 1 ? 'a serve' : leftoverFor.length + ' serves') + ' for tomorrow’s lunch.';
+  if (dish.kit.includes('slow cooker')) meal.note = 'Start the slow cooker this morning.' + (meal.note ? ' ' + meal.note : '');
+  if (tomorrow && tomorrow.breakfast.name === 'Overnight oats with berries') meal.note = (meal.note ? meal.note + ' ' : '') + 'Make tomorrow’s overnight oats tonight.';
+}
+
+// Lunch for one day: last night's leftovers or the family lunch. Children at school are left to
+// schoolLunches, adults whose work provides lunch get that, and anyone else it doesn't suit gets
+// their own.
+function lunchFor(at, meal) {
+  const leftover = at.day.lunch.leftover;
+  const dish = leftover || at.day.lunch;
+  if (leftover) {
+    meal.lunch = 'Leftovers: ' + leftover.name;
+    at.used.set(meal.lunch, Object.assign({}, leftover, { name: meal.lunch, leftoverOf: leftover.name }));
+  } else {
+    meal.lunch = dish.name;
+    if (!dish.ownChoice) at.used.set(dish.name, dish);
+  }
+  let serves = 0;
+  at.rules.forEach(r => {
+    if (r.kid && ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(at.day.day)) return;   // school lunch
+    if (at.skipped(r, 'lunch')) return;
+    if (!r.kid && r.lunchProvided.has(at.day.day)) { at.instead(r, 'lunch', 'Work provides lunch'); return; }
+    // Leftovers are only packed for adults, so a child at home gets their own lunch.
+    if (at.fits(dish, r) && !(leftover && r.kid)) { serves += r.portion; return; }
+    const mine = at.mine(r).lunches;
+    const alt = mine[at.i % Math.max(1, mine.length)];
+    if (alt) at.swap(r, 'lunch', alt);
+  });
+  // Leftovers were already cooked (and counted) with last night's dinner.
+  if (!leftover && !dish.ownChoice) cook(at.tally, dish, serves);
+}
+
+// Children's school lunches and snacks (Mon to Fri). They are chosen once, in week 1, and are the
+// same each week; every week their ingredients go on that week's totals.
+function schoolLunches(job, own, planPeople, tally) {
+  job.rules.filter(r => r.kid).forEach(r => {
+    const p = planPeople[r.key];
+    if (!p.weekday) {
+      // A child who gives up some foods on some days gets school lunches and snacks that fit
+      // on every day, because the school week is the same each week.
+      const packs = (r.foodFast ? own.fasting : own.usual)[r.key].lunches.filter(d => d.packable);
+      const kidSnacks = snackOrder(LIB.snacks.filter(s => s.kids && s.kind !== 'side' && available(s) && allowed(s, r, true)), r, job.rnd);
+      p.weekday = {};
+      DAYS.slice(0, 5).forEach((d, i) => {
+        const l = packs[i % Math.max(1, packs.length)];
+        const s = kidSnacks[i % Math.max(1, kidSnacks.length)];
+        p.weekday[d] = {};
+        if (r.lunchProvided.has(d)) p.weekday[d].lunch = 'School provides lunch';
+        else if (l) { p.weekday[d].lunch = l.name; job.used.set(l.name, l); }
+        if (s) p.weekday[d].snack = s.what;
+      });
+    }
+    DAYS.slice(0, 5).forEach(d => {
+      const wd = p.weekday[d];
+      const l = wd.lunch && LIB.dishes.find(x => x.name === wd.lunch);
+      if (l) cook(tally, l, r.portion);
+      const s = wd.snack && LIB.snacks.find(x => x.what === wd.snack);
+      if (s) addNeed(tally.need, s, 1);
+    });
+  });
+}
+
+// Step 6 of a plan: one person's snacks, topped up to their vegetable and fruit serves at the
+// pace they chose in About me.
+function chooseSnacks(job, r, key, planPeople, weeks, exWeeks) {
+  const p = planPeople[key];
+  p.snacks = snacksFor(r, exWeeks, job.rnd).map(s => offFastDays(s, r));
+  // Top up to their serves at the pace they chose. Building up: weeks 1 and 2 aim lower than
+  // weeks 3 and 4, so anything added only for the later weeks is marked with those weeks.
+  if (r.pace === 'full') topUp(r, key, planPeople, weeks, job.used, null);
+  else if (r.pace === 'build') {
+    [[1], [2], [3, 4]].forEach(stage => topUp(r, key, planPeople, weeks, job.used, stage));
+    p.snacks = mergeWeeks(p.snacks);
+  }
+}
+
+// Adds one person's snacks to each week's ingredient totals, counting only the days they have
+// each snack (some are only for certain days, weeks, or days with exercise).
+function addSnackNeeds(snacks, exWeeks, needs) {
+  for (let w = 0; w < 4; w++) {
+    for (const s of snacks) {
+      const lib = LIB.snacks.find(x => x.what === s.what);
+      if (!lib) continue;
+      const days = DAYS.filter(d => {
+        if (s.days && !s.days.includes(d)) return false;
+        if (s.weeks && !s.weeks.includes(w + 1)) return false;
+        const exDay = exWeeks[w].days.find(x => x.day === d) || {};
+        if (s.exercise === 'strength') return !!exDay.strength;
+        if (s.exercise === 'rest') return !exDay.strength;
+        if (s.exercise === 'active') return !!(exDay.strength || exDay.cardio);
+        if (s.exercise === 'inactive') return !(exDay.strength || exDay.cardio);
+        return true;
+      }).length;
+      // A snack marked optional is bought for half the days.
+      addNeed(needs[w], lib, days * (s.optional ? 0.5 : 1));
+    }
+  }
+}
+
+// Adds suggested eating times to one person's part of the plan: for anyone who asked for
+// reminders, and for anyone who keeps a daily fast (their meals are spread through their eating
+// window, with a line for each snack that follows exercise).
+function addEatingTimes(p, r) {
+  if (r.fast) {
+    p.times = timesFor(p.snacks, r.fast).concat(exerciseSnackTimes(p.snacks, r.fast));
+    p.timesNote = 'These times fit the fast you said you aim for (about ' + r.fast.hours + ' hours without food). Shift them to suit your day.';
+  } else if (r.remind) {
+    p.times = timesFor(p.snacks);
+    p.timesNote = 'You asked for eating reminders, so these are ordinary times to start from. Shift them to suit your day.';
+  }
+  // Weeks of fasting from sunrise to sunset: in place of the usual times when it's the whole
+  // plan, or listed after them when it's only some weeks.
+  if (r.sunWeeks.length) {
+    p.times = (r.sunWeeks.length >= 4 ? [] : p.times || []).concat(sunTimes(r.sunWeeks));
+    if (r.sunWeeks.length >= 4 || !p.timesNote) p.timesNote = 'Sunrise and sunset change with where you live and the time of year, so these have no clock times.';
+  }
+}
+
+// Step 7 of a plan: the shopping lists. Buys in whole packs, carrying over what keeps, and lays
+// the plan out as Stock-up 1, Week 1, Week 2, Stock-up 2, Week 3, Week 4, each with its cost.
+function withShopping(weeks, needs, house) {
   const shopping = shoppingFor(needs, house.stock);
   house.saved = shopping.saved;   // what the food at home was worth to this plan (see build)
   const plan = { weeks: [] };
@@ -1383,12 +1505,15 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
     Object.values(w.shopping).forEach(items => items.forEach(it => { sum += it[1]; }));
     w.cost = money(sum);
   });
+  return plan;
+}
 
-  // Macros and food groups for every dish and snack used.
+// Step 8 of a plan: the macros and food groups for every dish and snack used, by name.
+function macrosAndGroups(job, planPeople) {
   const macros = {}, groups = {};
   // A meal someone goes without counts as nothing, rather than as a dish with no numbers yet.
-  if (rules.some(r => r.fastDays && r.fastDays.skip.size)) { macros[FASTING] = { p: 0, c: 0, f: 0, kj: 0 }; groups[FASTING] = {}; }
-  for (const [name, d] of used) { macros[name] = d.macros; groups[name] = d.groups; }
+  if (job.rules.some(r => r.fastDays && r.fastDays.skip.size)) { macros[FASTING] = { p: 0, c: 0, f: 0, kj: 0 }; groups[FASTING] = {}; }
+  for (const [name, d] of job.used) { macros[name] = d.macros; groups[name] = d.groups; }
   for (const p of Object.values(planPeople)) {
     for (const s of p.snacks || []) {
       const lib = LIB.snacks.find(x => x.what === s.what);
@@ -1401,20 +1526,7 @@ function attempt(people, rules, house, rnd, repeat, forAdmin) {
       if (lib) { macros[wd.snack] = lib.macros; groups[wd.snack] = lib.groups; }
     }
   }
-
-  const today = new Date();
-  const stamp = today.toISOString().slice(0, 16).replace(/[-:T]/g, '');
-  plan.id = 'family-plan-built-' + stamp;
-  plan.title = 'Meal and exercise plan';
-  const f1 = plan.weeks.slice(0, 3).reduce((n, w) => n + w.cost, 0);
-  const f2 = plan.weeks.slice(3, 6).reduce((n, w) => n + w.cost, 0);
-  plan.subtitle = 'Built by the app from everyone’s answers. Fortnight 1 about ' + priceText(f1) + ', fortnight 2 about ' + priceText(f2) + '. Prices are estimates.';
-  plan.currency = CURRENCY;
-  plan.people = planPeople;
-  plan.exercise = topExercise;
-  plan.macros = macros;
-  plan.groups = groups;
-  return plan;
+  return { macros, groups };
 }
 
 // A recipe in the plan's format, with amounts for `serves` average serves.

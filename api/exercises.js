@@ -10,31 +10,9 @@
 // changed by an admin.
 const db = require('./db');
 const planbuilder = require('./planbuilder');
+const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const EXERCISES = planbuilder.EXERCISES;
-
-// Sends an answer back to the page: a status code (200 means OK, 400 means a problem with what
-// was sent) and an object, turned into JSON text.
-function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(obj));
-}
-
-// Reads what the page sent with its request (JSON text) and turns it into an object. Stops early
-// if it is far bigger than expected.
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let text = '';
-    req.on('data', chunk => {
-      text += chunk;
-      if (text.length > 2e4) { reject(new Error('too big')); req.destroy(); }
-    });
-    req.on('end', () => {
-      try { resolve(JSON.parse(text || '{}')); } catch (e) { reject(e); }
-    });
-    req.on('error', reject);
-  });
-}
 
 // The exercises a person asked to leave out of future plans (a list of exercise ids).
 function avoidList(person) {
