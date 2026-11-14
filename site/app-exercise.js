@@ -157,15 +157,7 @@ function renderExercise() {
   var day = days[nav.index] || {};
   var done = exTicks[week] || [];
 
-  var card = el("section", "day daycard");
-  var any = false;
-  EXSLOTS.forEach(function (slot) {
-    if (day[slot[0]]) {
-      card.appendChild(sessionRow(day, slot, done));
-      any = true;
-    }
-  });
-  if (!any) card.appendChild(el("p", "restday", "Rest day. Nothing planned today."));
+  var card = exerciseDayCard(day, done);
   panel.appendChild(card);
   swipeDays(card, nav.step);
 
@@ -181,21 +173,7 @@ function renderExercise() {
     });
   }
 
-  // The week's focus, which opens to show its targets.
-  if (ex.focus || (ex.targets && ex.targets.length)) {
-    var fold = el("details", "exfold");
-    var inner = el("div");
-    var focus = el("div", "exfocus");
-    if (ex.targets && ex.targets.length) {
-      var targets = el("ul", "bul");
-      ex.targets.forEach(function (t) { targets.appendChild(el("li", null, t)); });
-      focus.appendChild(targets);
-    }
-    fold.appendChild(el("summary", null, ex.focus || "This week's plan"));
-    inner.appendChild(focus);
-    fold.appendChild(inner);
-    panel.appendChild(fold);
-  }
+  if (ex.focus || (ex.targets && ex.targets.length)) panel.appendChild(focusFold(ex));
 
   var others = workouts.filter(function (wk) { return todays.indexOf(wk) < 0; });
   if (others.length) {
@@ -217,6 +195,36 @@ function renderExercise() {
   }
   panel.appendChild(el("p", "note2", CHECK_WITH_GP));
   updateExCount();
+}
+
+// The card for one day on Exercise: each session to tick, or "Rest day". `done` is the week's ticks.
+function exerciseDayCard(day, done) {
+  var card = el("section", "day daycard");
+  var any = false;
+  EXSLOTS.forEach(function (slot) {
+    if (day[slot[0]]) {
+      card.appendChild(sessionRow(day, slot, done));
+      any = true;
+    }
+  });
+  if (!any) card.appendChild(el("p", "restday", "Rest day. Nothing planned today."));
+  return card;
+}
+
+// The week's focus on Exercise, in a box that opens to show the week's targets.
+function focusFold(ex) {
+  var fold = el("details", "exfold");
+  var inner = el("div");
+  var focus = el("div", "exfocus");
+  if (ex.targets && ex.targets.length) {
+    var targets = el("ul", "bul");
+    ex.targets.forEach(function (t) { targets.appendChild(el("li", null, t)); });
+    focus.appendChild(targets);
+  }
+  fold.appendChild(el("summary", null, ex.focus || "This week's plan"));
+  inner.appendChild(focus);
+  fold.appendChild(inner);
+  return fold;
 }
 
 // One exercise session to tick, such as "Easy cardio: 20 minute walk". Saved as "Mon-cardio".
