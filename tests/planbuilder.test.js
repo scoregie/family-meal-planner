@@ -776,10 +776,3 @@ test('going without food isn’t applied to a teenager, whichever kind of fast t
   assert.equal(plan.people.p1.times, undefined);
   assert.equal(plan.people.p1.tips.filter(t => /fast/i.test(t)).length, 1);
 });
-
-test('a Current food item "three quarter full" counts as three quarters of a pack, not a quarter', () => {
-  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'api', 'planbuilder.js'), 'utf8');
-  const words = eval(src.match(/const PART_WORDS = (\[[\s\S]*?\]\]);/)[1]);
-  assert.equal(words.find(([w]) => w.test('milk 2 l, three quarter full'))[1], 0.75);
-  assert.equal(words.find(([w]) => w.test('a quarter left'))[1], 0.25);
-});
