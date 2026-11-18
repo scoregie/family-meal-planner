@@ -16,7 +16,7 @@ const OWNER = { email: 'owner@example.com', name: 'Alex Smith', password: 'corre
 async function asOwner() {
   server.forgetCookie();
   const status = await server.request('GET', '/auth/status');
-  if (status.json.setup) assert.equal((await server.request('POST', '/auth/register', OWNER)).status, 200);
+  if (status.json.setup) assert.equal((await server.request('POST', '/auth/register', { ...OWNER, setupCode: server.setupCode ? server.setupCode() : undefined })).status, 200);
   else await server.request('POST', '/auth/login', new URLSearchParams({ username: OWNER.email, password: OWNER.password, next: '/' }));
 }
 
