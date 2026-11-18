@@ -202,6 +202,12 @@ async function decideSignup(req, res, me, ctx, id) {
   if (db.listAccounts().some(a => a.person === person)) {
     return send(res, 409, { error: 'Someone called ' + s.name + ' already has a login. Decline this one and send them an invite with a different name (like “' + s.name + ' B”).' });
   }
+  // Someone already in the family without a login (like a child added without an email) has
+  // About me answers and files. A sign-up with the same name would get them, so it is refused:
+  // if it really is them, an invite from the Family page links their login on purpose.
+  if (ctx.people().includes(person)) {
+    return send(res, 409, { error: s.name + ' is already in the family, without a login. If this sign-up is them, decline it and send them an invite from the Family page instead. If not, decline it and ask them to sign up with a different name (like “' + s.name + ' B”).' });
+  }
   ensurePerson(s.name, 1, ctx);
   db.addAccount({ email: s.email, hash: s.hash, person, role, createdBy: me.user });
   db.deleteSignup(id);
@@ -339,6 +345,16 @@ async function setEmail(req, res, me) {
   return send(res, 200, { ok: true, email, role }, auth.loginCookie(req, 'acct-' + id));
 }
 
+// Stops a person's Health sync key from working (when their login is removed), unless another
+// login still belongs to them.
+function stopHealthSync(person) {
+  if (!person || db.listAccounts().some(a => a.person === person)) return;
+  const syncHash = db.getSetting('healthsync-person:' + person);
+  if (syncHash) db.deleteSetting('healthsync:' + syncHash);
+  db.deleteSetting('healthsync-person:' + person);
+  db.deleteSetting('healthsync-made:' + person);
+}
+
 // Someone deleting their own account (and, if they choose, their history), after typing their password.
 async function deleteMine(req, res, me) {
   const b = await readBody(req, 1e4);
@@ -354,11 +370,7 @@ async function deleteMine(req, res, me) {
     return send(res, 409, { error: 'You’re the only login, so your account can’t be deleted here: the next person to open the site would take over the family’s data. To start over, delete the data folder on the server.' });
   }
   db.deleteAccount(account.id);
-  // The Health sync key stops working with the account.
-  const syncHash = db.getSetting('healthsync-person:' + account.person);
-  if (syncHash) db.deleteSetting('healthsync:' + syncHash);
-  db.deleteSetting('healthsync-person:' + account.person);
-  db.deleteSetting('healthsync-made:' + account.person);
+  stopHealthSync(account.person);   // the Health sync key stops working with the account
   if (b.history) {
     db.forgetPerson(account.person, me.user);
     db.deleteSetting('healthsync-last:' + account.person);
@@ -482,6 +494,7 @@ async function memberAction(req, res, me, id, action, ctx) {
     if (target.role === 'admin' && !isOwner) return send(res, 403, { error: 'Only the owner can remove an admin.' });
     if (target.id === me.accountId) return send(res, 400, { error: 'To remove your own login, use Delete my account on the Account page.' });
     db.deleteAccount(target.id);
+    stopHealthSync(target.person);   // their phone can't keep sending health numbers either
     return send(res, 200, { ok: true });
   }
 
