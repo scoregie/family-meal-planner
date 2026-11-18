@@ -211,7 +211,7 @@ function setSync(message) {
 function api(method, url, body) {
   var options = {
     method: method,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
   };

@@ -164,6 +164,20 @@ function verify(password, stored) {
   return crypto.timingSafeEqual(got, want);
 }
 
+// The same check as verify(), done off the main thread, so many login tries at once don't
+// freeze the server for everyone else. Resolves to true if it matches.
+function verifyAsync(password, stored) {
+  const parts = String(stored || '').split('.');
+  if (parts.length !== 3 || parts[0] !== 'scrypt') return Promise.resolve(false);
+  const want = Buffer.from(parts[2], 'base64url');
+  if (!want.length) return Promise.resolve(false);
+  return new Promise(resolve => {
+    crypto.scrypt(String(password), Buffer.from(parts[1], 'base64url'), want.length, SCRYPT, (err, got) => {
+      resolve(!err && crypto.timingSafeEqual(got, want));
+    });
+  });
+}
+
 // A hash of a random password, checked when the username does not exist. That way a wrong
 // username takes just as long as a wrong password, and does not reveal which usernames exist.
 const DUMMY = hash(crypto.randomBytes(12).toString('hex'));
@@ -171,6 +185,21 @@ const DUMMY = hash(crypto.randomBytes(12).toString('hex'));
 // Checks an email (or old username) and password. Returns who to log in as ("acct-12" or the
 // username) if they are right, otherwise null.
 function checkLogin(login, password) {
+  const found = storedFor(login);
+  const passwordOk = verify(password, found.stored || DUMMY);
+  return passwordOk && found.stored ? found.subject : null;
+}
+
+// The same as checkLogin(), but the password check runs off the main thread. Used by the login form.
+async function checkLoginAsync(login, password) {
+  const found = storedFor(login);
+  const passwordOk = await verifyAsync(password, found.stored || DUMMY);
+  return passwordOk && found.stored ? found.subject : null;
+}
+
+// The stored password hash for an email (or old username), and who it logs in as:
+// {stored, subject}, both undefined when there is no such login.
+function storedFor(login) {
   login = String(login || '').trim().toLowerCase();
   let stored;
   let subject;
@@ -196,8 +225,7 @@ function checkLogin(login, password) {
     else if (named) [stored, subject] = [named.hash, 'acct-' + named.id];
     else if (hashFor(login)) [stored, subject] = [hashFor(login), login];
   }
-  const passwordOk = verify(password, stored || DUMMY);
-  return passwordOk && stored ? subject : null;
+  return { stored, subject };
 }
 
 // What goes into a cookie's signature besides the text: the password hash (and, for accounts, a
@@ -272,10 +300,13 @@ function refresh(req, res, s) {
   if (s && s.exp - Date.now() < MAX_AGE - RENEW_AFTER) res.setHeader('Set-Cookie', cookieFor(req, s.subject));
 }
 
-// Slows down password guessing: 10 wrong tries per address per 15 minutes.
+// Slows down password guessing: 10 wrong tries per address per 15 minutes, and 30 per login
+// (email or username) from all addresses together, so changing address doesn't give more guesses.
 const fails = new Map();   // address -> times of recent wrong passwords
+const loginFails = new Map();   // "login:<email>" -> times of recent wrong passwords for that login
 const WINDOW = 15 * 60e3;
 const LIMIT = 10;
+const LOGIN_LIMIT = 30;
 
 // The visitor's IP address. Caddy works it out (skipping trusted proxies, see the Caddyfile)
 // and sends it as X-Real-IP, replacing anything the visitor sent. X-Forwarded-For isn't used:
@@ -285,13 +316,14 @@ function clientIp(req) {
 }
 
 // The wrong-password times for an address in the last 15 minutes (older ones are forgotten).
-function recent(address) {
+// `list` is which record to look in: addresses (the default) or logins.
+function recent(address, list = fails) {
   const now = Date.now();
-  const times = (fails.get(address) || []).filter(t => now - t < WINDOW);
-  if (times.length) fails.set(address, times);
-  else fails.delete(address);
-  // Now and then, forget addresses whose wrong passwords are all old, so the list can't grow forever.
-  if (fails.size > 1000) for (const [a, t] of fails) if (!t.some(x => now - x < WINDOW)) fails.delete(a);
+  const times = (list.get(address) || []).filter(t => now - t < WINDOW);
+  if (times.length) list.set(address, times);
+  else list.delete(address);
+  // Now and then, forget entries whose wrong passwords are all old, so the list can't grow forever.
+  if (list.size > 1000) for (const [a, t] of list) if (!t.some(x => now - x < WINDOW)) list.delete(a);
   return times;
 }
 
@@ -353,13 +385,16 @@ async function login(req, res) {
   const next = safeNext(form.get('next'));
   const keepNext = '&next=' + encodeURIComponent(next);
   const ip = clientIp(req);
-  if (recent(ip).length >= LIMIT) return redirect(res, '/login?e=locked' + keepNext);
-  const user = checkLogin(form.get('username'), form.get('password') || '');
+  const loginName = String(form.get('username') || '').trim().toLowerCase().slice(0, 200);
+  if (recent(ip).length >= LIMIT || recent(loginName, loginFails).length >= LOGIN_LIMIT) return redirect(res, '/login?e=locked' + keepNext);
+  const user = await checkLoginAsync(loginName, form.get('password') || '');
   if (!user) {
     fails.set(ip, recent(ip).concat(Date.now()));
+    loginFails.set(loginName, recent(loginName, loginFails).concat(Date.now()));
     return redirect(res, '/login?e=1' + keepNext);
   }
   fails.delete(ip);
+  loginFails.delete(loginName);
   redirect(res, next, cookieFor(req, user));
 }
 

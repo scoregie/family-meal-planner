@@ -68,7 +68,7 @@ Then start it:
 
     docker compose up -d
 
-Open `http://<server-ip>/` and create the family's first account (you'll be the owner), then invite everyone else from **Family** in More. Logs: `docker compose logs -f`.
+Open `http://<server-ip>/` and create the family's first account (you'll be the owner), then invite everyone else from **Family** in More. The first-account form asks for a **setup code**, so a stranger who finds a new server can't make themselves the owner: it's in the server log (`docker compose logs api`) and in `data/setup-code.txt`. Logs: `docker compose logs -f`.
 
 ### Running it in a Proxmox container
 
@@ -103,7 +103,7 @@ Your `.env`, `site/plan.json` and `data/` aren't in git, so updating doesn't tou
 
 Everyone logs in with their **email address (or, for kids, a username) and a password**. One family uses each server.
 
-1. **The first account:** open the site on a new server and you're asked to create the first account. That person is the family's **owner**.
+1. **The first account:** open the site on a new server and you're asked to create the first account, with the setup code from `docker compose logs api` (or `data/setup-code.txt`). That person is the family's **owner**.
 2. **Inviting people:** the owner and admins open **Family** (More) and make an invite: a name, an optional email, a portion size and (for the owner) whether they're an admin. They get a link to send by text or any messaging app. The person opens it, chooses a password and is logged in. Links work for 7 days and only once. New people are added to the plan's `"people"` block automatically (with a backup of the plan first).
 3. **Signing up:** anyone can tap **Sign up** on the login page and enter their name, email and a password. They can't log in until an admin approves them under **Waiting for approval** on the Family page (or declines it), so someone who finds the address can't let themselves in. If email is set up, admins get an email about each sign-up, and the person gets one when they're approved. An invite link skips the wait.
 4. **Kids without an email:** on **Plan setup** (More, admins), **Add someone without an email** adds a child to the plan. Tick **Give them a login** to choose a username and password for them; they log in with the username. Usernames must be different from everyone else's, and so must names in the family (answers, ticks and logins are matched by name). Without a login, an admin answers About me for them.

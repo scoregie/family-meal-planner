@@ -84,6 +84,11 @@ button[type=submit]:disabled{opacity:.6}
 
   <!-- Create the family's first account, invite, reset and "forgot password" forms (sent with fetch) -->
   <form id="f2" hidden novalidate>
+    <div id="setupRow" hidden>
+      <label for="sc">Setup code</label>
+      <input id="sc" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20">
+      <p class="hint">This keeps strangers from taking over a new server. Find it in the server log (<code>docker compose logs api</code>) or in the file <code>data/setup-code.txt</code>.</p>
+    </div>
     <div id="nameRow" hidden>
       <label for="n">Your name</label>
       <input id="n" autocomplete="name" maxlength="40">
@@ -189,7 +194,7 @@ button[type=submit]:disabled{opacity:.6}
     $("f").hidden = true;
     $("f2").hidden = false;
     $("sub").textContent = sub;
-    ["nameRow", "emailRow", "countryRow", "pwRow"].forEach(function (r) { $(r).hidden = rows.indexOf(r) < 0; });
+    ["setupRow", "nameRow", "emailRow", "countryRow", "pwRow"].forEach(function (r) { $(r).hidden = rows.indexOf(r) < 0; });
     $("go2").textContent = button;
     $("backRow").hidden = mode === "register";
     var first = rows[0] && $(rows[0]).querySelector("input");
@@ -230,7 +235,7 @@ button[type=submit]:disabled{opacity:.6}
     b.disabled = true;
     b.textContent = "Please wait…";
     var done;
-    if (MODE === "register") done = api("POST", "/auth/register", { name: $("n").value, email: $("e").value, password: password, country: $("c").value }).then(goHome);
+    if (MODE === "register") done = api("POST", "/auth/register", { setupCode: $("sc").value, name: $("n").value, email: $("e").value, password: password, country: $("c").value }).then(goHome);
     else if (MODE === "signup") done = api("POST", "/auth/signup", { name: $("n").value, email: $("e").value, password: password }).then(function (d) {
       if (!d.pending) return goHome();   // a brand-new server: they're the owner, and logged in
       $("f2").hidden = true;
@@ -268,7 +273,7 @@ button[type=submit]:disabled{opacity:.6}
   } else {
     api("GET", "/auth/status").then(function (st) {
       if (st.setup) {
-        showForm("register", "Welcome! Create the first account. You’ll be the family’s owner, and you can invite everyone else afterwards.", ["nameRow", "emailRow", "countryRow", "pwRow"], "Create account");
+        showForm("register", "Welcome! Create the first account. You’ll be the family’s owner, and you can invite everyone else afterwards.", ["setupRow", "nameRow", "emailRow", "countryRow", "pwRow"], "Create account");
         fillCountries();
       } else {
         showLogin();

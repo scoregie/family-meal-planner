@@ -37,6 +37,8 @@
 //   POST /api/family/member/<id>/reset   admins: make a password-reset link for someone
 //   DELETE /api/family/member/<id> admins: remove someone's login
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const auth = require('./auth');
 const db = require('./db');
 const mailer = require('./mailer');
@@ -97,6 +99,36 @@ function needsSetup() {
   return db.countAccounts() === 0 && auth.users().length === 0 && db.listLogins().length === 0;
 }
 
+// The setup code a brand-new server asks for before making the first account, so a stranger who
+// finds the address first can't make themselves the owner. It is made once, kept in
+// data/setup-code.txt and written to the server log (`docker compose logs api`).
+const SETUP_FILE = path.join(process.env.DATA_DIR || '/data', 'setup-code.txt');
+function setupCode() {
+  try {
+    const saved = fs.readFileSync(SETUP_FILE, 'utf8').trim();
+    if (saved) return saved;
+  } catch (e) { /* not made yet */ }
+  // Easy to read and type: no 0/O or 1/I/L.
+  const letters = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const code = Array.from(crypto.randomBytes(8), b => letters[b % letters.length]).join('');
+  fs.mkdirSync(path.dirname(SETUP_FILE), { recursive: true });
+  fs.writeFileSync(SETUP_FILE, code + '\n', { mode: 0o600 });
+  return code;
+}
+
+// On a brand-new server, makes the setup code and says where to find it.
+function announceSetupCode() {
+  if (!needsSetup()) return;
+  console.log('No accounts yet. The setup code for the first account is ' + setupCode() + ' (also in data/setup-code.txt).');
+}
+
+// True if a typed setup code matches (spaces and case don't matter).
+function setupCodeOk(typed) {
+  const want = Buffer.from(setupCode());
+  const got = Buffer.from(String(typed || '').replace(/\s+/g, '').toUpperCase());
+  return got.length === want.length && crypto.timingSafeEqual(got, want);
+}
+
 // True if someone already owns this family's planner.
 function hasOwner() {
   return db.listAccounts().some(a => a.role === 'owner');
@@ -137,6 +169,10 @@ async function register(req, res, ctx) {
   if (!needsSetup()) return send(res, 403, { error: 'This family already has an account. Ask its owner for an invite.' });
   if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait 15 minutes, then try again.' });
   const b = await readBody(req, 1e4);
+  if (!setupCodeOk(b.setupCode)) {
+    countTry(req);
+    return send(res, 403, { error: 'That setup code isn’t right. It’s in the server log (docker compose logs api) and in data/setup-code.txt.' });
+  }
   const email = cleanEmail(b.email);
   const name = String(b.name || '').trim().slice(0, 40);
   if (!email) return send(res, 400, { error: 'Enter a valid email address.' });
@@ -148,6 +184,7 @@ async function register(req, res, ctx) {
   // Check again just before saving, in case two people registered at the same moment.
   if (!needsSetup()) return send(res, 403, { error: 'This family already has an account.' });
   const id = db.addAccount({ email, hash: auth.hash(b.password), person, role: 'owner', createdBy: 'register' });
+  try { fs.unlinkSync(SETUP_FILE); } catch (e) { /* already gone */ }
   // The household's country, chosen on the first-account form (it can be changed on Plan setup).
   require('./appearance').setCountry(String(b.country || ''));
   return send(res, 200, { ok: true }, auth.loginCookie(req, 'acct-' + id));
@@ -167,7 +204,9 @@ async function signup(req, res, ctx) {
   if (!email) return send(res, 400, { error: 'Enter a valid email address.' });
   const bad = passwordProblem(b.password);
   if (bad) return send(res, 400, { error: bad });
-  if (db.accountByEmail(email)) return send(res, 409, { error: 'There’s already an account with that email. Log in instead.' });
+  // An email that already has an account gets the same answer as a new sign-up, so this can't be
+  // used to find out who has an account. Nothing is saved for it.
+  if (db.accountByEmail(email)) return send(res, 200, { ok: true, pending: true });
   if (db.countSignups() >= 20) return send(res, 429, { error: 'There are too many sign-ups waiting. Ask someone in your family for an invite link.' });
   // Already waiting: answer the same way (so this can't be used to see who signed up), change nothing.
   if (!db.addSignup({ name, email, hash: auth.hash(b.password) })) return send(res, 200, { ok: true, pending: true });
@@ -607,4 +646,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { handle, handlePublic, needsSetup };
+module.exports = { handle, handlePublic, needsSetup, announceSetupCode };
