@@ -139,21 +139,7 @@ twoTap("clear", "Clear ticks", "Tap again to clear", function () {
 // "Reset all" (admins): clears everyone's ticks, ratings and "At home" marks, here and on the server.
 twoTap("resetall", "Reset all", "Tap again to reset everyone", function () {
   if (!(ME && ME.admin)) return;
-  USERS.forEach(function (name) {
-    try {
-      localStorage.removeItem(TICKS_BASE + "-" + ukey(name));
-      localStorage.removeItem(EX_BASE + "-" + ukey(name));
-      localStorage.removeItem(EATEN_BASE + "-" + ukey(name));
-    } catch (e) {}
-  });
-  try {
-    localStorage.removeItem(TICKS_BASE);
-    localStorage.removeItem(EX_BASE);
-  } catch (e) {}
-  ticks = {};
-  exTicks = {};
-  eaten = {};
-  have = [];
+  forgetEveryoneHere();
   saveLocal();
   api("POST", "api/reset")
     .then(function () {
@@ -166,12 +152,15 @@ twoTap("resetall", "Reset all", "Tap again to reset everyone", function () {
 
 // "Ticks for" picker (admins): switch whose meal and exercise ticks are shown.
 $("user").onchange = function () {
+  // Send the person shown until now first, so their changes aren't lost in the switch.
+  if (dirty) pushNow();
   try {
     localStorage.setItem("coles-plan-user", this.value);
     localStorage.setItem("coles-plan-person", PMAP[this.value]);
   } catch (e) {}
   if (PLAN) {
     loadUser();
+    dirty = !!unsentPeople()[ukey(USER)];
     show();
     pull();
   }

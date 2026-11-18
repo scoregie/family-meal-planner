@@ -197,6 +197,43 @@ function saveLocal() {
 var pushTimer = 0;   // waits a moment after a tick, so several quick ticks go to the server together
 var dirty = false;   // true when there are changes the server hasn't got yet
 
+// Whose meal and exercise ticks and ratings changed on this device but haven't reached the server
+// yet: {person key: true}. Kept on the device, so an admin switching "Ticks for" (or going offline)
+// doesn't lose them: that person's changes are sent next time instead of being overwritten.
+function unsentPeople() {
+  try { return JSON.parse(lsGet("coles-plan-unsent")) || {}; } catch (e) { return {}; }
+}
+// Marks one person's changes as sent (done = true) or still waiting (done = false).
+function markSent(key, done) {
+  var all = unsentPeople();
+  if (done) delete all[key]; else all[key] = true;
+  try { localStorage.setItem("coles-plan-unsent", JSON.stringify(all)); } catch (e) {}
+}
+
+// Forgets every person's ticks, ratings and "eaten" marks on this device (after "Reset all").
+function forgetEveryoneHere() {
+  var planId = (PLAN && PLAN.id) || "default";
+  USERS.forEach(function (name) {
+    var key = ukey(name);
+    try {
+      localStorage.removeItem(TICKS_BASE + "-" + key);
+      localStorage.removeItem(EX_BASE + "-" + key);
+      localStorage.removeItem(EATEN_BASE + "-" + key);
+      localStorage.removeItem("coles-plan-rates-v1-" + planId + "-" + key);
+    } catch (e) {}
+  });
+  try {
+    localStorage.removeItem(TICKS_BASE);
+    localStorage.removeItem(EX_BASE);
+    localStorage.removeItem("coles-plan-unsent");
+  } catch (e) {}
+  ticks = {};
+  exTicks = {};
+  eaten = {};
+  rates = {};
+  have = [];
+}
+
 // Updates the little "Synced" / "Offline" label. The full message shows when you hover over it.
 function setSync(message) {
   var label = $("sync");
@@ -229,8 +266,13 @@ function toLogin() {
 
 // Sends everything to the server: shopping ticks, this person's ticks and ratings, then "At home".
 function pushNow() {
+  // What is sent is fixed now, so switching "Ticks for" while it is on its way can't mix people up.
   var key = ukey(USER);
-  api("PUT", "api/shared", { ticks: ticks })
+  var mine = { ex: exTicks, eaten: eaten, ratings: rates };
+  var shared = { ticks: ticks };
+  var home = { have: have };
+  clearTimeout(pushTimer);
+  api("PUT", "api/shared", shared)
     .then(function (answer) {
       // The server says who ticked each item. Update the "Ticked by" lines if that changed.
       if (answer && answer.by) {
@@ -239,10 +281,11 @@ function pushNow() {
         if (changed && PLAN && view === "shop") refreshBylines();
       }
     })
-    .then(function () { return api("PUT", "api/user/" + key, { ex: exTicks, eaten: eaten, ratings: rates }); })
-    .then(function () { return api("PUT", "api/have", { have: have }); })
+    .then(function () { return api("PUT", "api/user/" + key, mine); })
+    .then(function () { return api("PUT", "api/have", home); })
     .then(function () {
-      dirty = false;
+      markSent(key, true);
+      if (ukey(USER) === key) dirty = false;
       setSync("Saved to server");
     })
     .catch(function () {
@@ -254,6 +297,7 @@ function pushNow() {
 function save() {
   saveLocal();
   dirty = true;
+  markSent(ukey(USER), false);
   clearTimeout(pushTimer);
   pushTimer = setTimeout(pushNow, 400);
 }
@@ -267,11 +311,7 @@ function save() {
 function takeReset(s, found) {
   var localEpoch = lsGet("coles-plan-epoch");
   if (localEpoch !== null && localEpoch !== String(s.epoch || 0)) {
-    ticks = {};
-    exTicks = {};
-    eaten = {};
-    rates = {};
-    have = [];
+    forgetEveryoneHere();
     found.changed = true;
   }
   try { localStorage.setItem("coles-plan-epoch", String(s.epoch || 0)); } catch (e) {}
@@ -304,6 +344,11 @@ function takeShared(s, found) {
 // This person's meal and exercise ticks and ratings.
 function takeMine(s, found) {
   var key = ukey(USER);
+  // Changes this device hasn't sent yet win over the server's older copy.
+  if (unsentPeople()[key]) {
+    found.needPush = true;
+    return;
+  }
   if (s.users && s.users[key]) {
     var serverEx = s.users[key].ex || {};
     var serverEaten = s.users[key].eaten || {};

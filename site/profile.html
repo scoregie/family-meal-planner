@@ -125,6 +125,7 @@ var PERSON = null;      // whose answers are shown (admins can switch)
 var QUESTIONS = null;   // the contents of questions.json
 var ANSWERS = {};       // {question id: answer}
 var saveTimer = 0;      // waits a moment after a change, so typing doesn't save on every key
+var unsaved = false;    // true from a change until the server has it
 
 // Shortcut for document.getElementById.
 function $(id) {
@@ -140,12 +141,13 @@ function el(tag, cls, txt) {
 }
 
 // Calls the server and returns its JSON answer, or throws an error with the server's message.
-function api(method, url, body) {
+function api(method, url, body, keepalive) {
   var options = {
     method: method,
     cache: "no-store",
     headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
+    keepalive: !!keepalive,   // lets a save finish even as the page closes
   };
   return fetch(url, options).then(function (response) {
     return response.json().catch(function () { return {}; }).then(function (data) {
@@ -193,17 +195,20 @@ function updateProgress() {
 function saveSoon() {
   updateProgress();
   renderSteps();
+  unsaved = true;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNow, 800);
+  saveTimer = setTimeout(function () { saveNow().catch(function () {}); }, 800);
 }
 
-// Sends the answers to the server.
-function saveNow() {
+// Sends the answers to the server. If it fails, the answers stay marked as unsaved and the
+// promise fails too, so switching person or "I'm finished" waits until they are saved.
+// `closing` is true when the page is being closed.
+function saveNow(closing) {
   clearTimeout(saveTimer);
   saveTimer = 0;
-  return api("PUT", "/api/profile?person=" + encodeURIComponent(PERSON), { answers: ANSWERS })
-    .then(function () { status("Saved"); })
-    .catch(function (e) { status("Not saved: " + e.message, true); });
+  return api("PUT", "/api/profile?person=" + encodeURIComponent(PERSON), { answers: ANSWERS }, closing)
+    .then(function () { if (!saveTimer) unsaved = false; status("Saved"); })
+    .catch(function (e) { status("Not saved: " + e.message, true); throw e; });
 }
 
 // Changes one answer. An empty answer is removed.
@@ -438,6 +443,7 @@ function updateReminders() {
 function load(names) {
   return api("GET", "/api/profile?person=" + encodeURIComponent(PERSON)).then(function (data) {
     ANSWERS = data.answers || {};
+    unsaved = false;
     var name = names[PERSON] || PERSON;
     $("sub").textContent = PERSON === ME.person ? "Your answers" : name + "’s answers";
     $("pwCard").hidden = !data.canChangePassword;
@@ -471,7 +477,7 @@ function showFinish() {
 }
 
 $("finishBtn").onclick = function () {
-  var before = saveTimer ? saveNow() : Promise.resolve();
+  var before = unsaved ? saveNow() : Promise.resolve();
   before.then(function () {
     return api("PUT", "/api/profile?person=" + encodeURIComponent(PERSON), { finished: !FINISHED });
   }).then(function (d) {
@@ -492,12 +498,12 @@ function renderPicker(list, names) {
     b.type = "button";
     b.setAttribute("aria-pressed", person === PERSON);
     b.onclick = function () {
-      var before = saveTimer ? saveNow() : Promise.resolve();   // don't lose unsaved typing
+      var before = unsaved ? saveNow() : Promise.resolve();   // don't lose unsaved typing
       before.then(function () {
         PERSON = person;
         renderPicker(list, names);
         return load(names);
-      });
+      }).catch(function () { /* not saved: stay on this person (the message says why) */ });
     };
     picker.appendChild(b);
   });
@@ -519,7 +525,7 @@ $("pwForm").onsubmit = function (e) {
 
 // Save straight away if the page is closed while a save is waiting.
 window.addEventListener("pagehide", function () {
-  if (saveTimer) saveNow();
+  if (unsaved) saveNow(true).catch(function () {});
 });
 
 // Start: who is logged in, the questions, and (for admins) everyone's names.
