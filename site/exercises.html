@@ -47,6 +47,8 @@ input[type=search]{flex:1;min-width:10rem}
 .tag{font-size:.75rem;border-radius:1rem;padding:.08rem .5rem;background:var(--chip)}
 .tag.warn{background:transparent;border:1px solid var(--mid);color:var(--ink)}
 .ex p{margin:.25rem 0;font-size:.93rem}
+.ex .watch{font-size:.88rem;color:var(--mute)}
+.ex .watch a{display:inline-block;padding:.35rem .1rem;font-weight:700;color:var(--accent)}
 .ex .acts{display:flex;justify-content:flex-end;margin-top:.3rem}
 .ex .acts .btn{font-size:.82rem;min-height:2.3rem;padding:.25rem .7rem}
 .msg{border-radius:.6rem;padding:.6rem .8rem;margin:0 0 .8rem;font-size:.9rem;background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
@@ -138,6 +140,28 @@ function drawTypes() {
   });
 }
 
+// Links to watch how an exercise is done, opened in a new tab: a chosen demo video when the
+// library has one, and a YouTube search for the exercise's name.
+function watchHow(e) {
+  var p = el("p", "watch");
+  p.appendChild(document.createTextNode("Watch how: "));
+  // One link that opens in a new tab.
+  var link = function (text, href, label) {
+    var a = el("a", null, text);
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.setAttribute("aria-label", label + " (opens in a new tab)");
+    return a;
+  };
+  if (e.video && /^https:\/\//.test(e.video)) {
+    p.appendChild(link("Demo video", e.video, "Demo video of " + e.name));
+    p.appendChild(document.createTextNode(" · "));
+  }
+  p.appendChild(link("YouTube", "https://www.youtube.com/results?search_query=" + encodeURIComponent(e.name + " exercise how to"), "Find videos of " + e.name + " on YouTube"));
+  return p;
+}
+
 // Draws the list of exercises for the chosen kind, marking which suit the person and which they
 // left out, with a button to leave each one out (or bring it back).
 function draw() {
@@ -167,6 +191,7 @@ function draw() {
     e.flags.forEach(function (f) { if (FLAG[f]) meta.appendChild(el("span", "tag" + (f === "chair" ? "" : " warn"), FLAG[f])); });
     card.appendChild(meta);
     card.appendChild(el("p", null, e.how));
+    card.appendChild(watchHow(e));
     if (!fitOnly || off) {
       if (!fits[e.id]) card.appendChild(el("p", "note", "Not picked for you: it needs equipment you didn’t list, or loads something you mentioned in About me."));
     }

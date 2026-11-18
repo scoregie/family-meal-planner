@@ -231,7 +231,7 @@ The top-level `exercise` holds things that apply to every week. Like the weekly 
 | Field | What it does |
 | --- | --- |
 | `workouts` | Each workout's `name`, rough `time`, and `items` (the exercises, one per line). |
-| `videos` | Exercise name → link to a demo video. A workout item written as `"Goblet squat (3 × 10): ..."` gets a **Demo** link when the text before the colon (without the brackets) matches a name here, plus a YouTube search link. |
+| `videos` | Exercise name → link to a demo video. A workout item written as `"Goblet squat (3 × 10): ..."` gets a **Demo** link when the text before the colon (without the brackets) matches a name here. Items that match a name here, or an exercise in the library, also get a YouTube search link. |
 | `notes` | General tips, shown in a "Good to know" box (closed until tapped) near the bottom of the Exercise tab. |
 | `medical` | What the person said their doctor, physio or other health professional told them, and when to stop and get checked. Shown in its own "Medical considerations" box (closed until tapped) at the bottom of the Exercise tab, with a line saying it is general information and their health professional comes first. Write it as what the person reported ("You said your physio is happy for you to do squats"), not as fact or instruction ("Your physio has cleared squats"). |
 
