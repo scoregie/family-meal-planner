@@ -474,7 +474,7 @@ async function otherAiRound(turn) {
 async function claudeRound(turn) {
   const { messages, event } = turn;
   const stream = turn.ready.client.beta.messages.stream({
-    model: MODEL,
+    model: turn.ready.model || MODEL,   // the model chosen in Settings, if any
     max_tokens: 16000,
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',          // if a safety check declines, Anthropic retries on a suitable model
@@ -483,7 +483,7 @@ async function claudeRound(turn) {
     system: [{ type: 'text', text: system(), cache_control: { type: 'ephemeral' } }],
     tools: TOOLS,
     messages,
-  });
+  }, { signal: turn.signal });   // stops the answer when the person leaves or presses Stop
   stream.on('text', delta => event('text', delta));
 
   let message;

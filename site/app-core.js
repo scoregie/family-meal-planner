@@ -514,6 +514,14 @@ function calBlock(personKey) {
 var FULLDAY = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
 var dayName = TODAY;   // the day shown in Meals and Exercise ("Mon"); starts on today
 
+// If the app was left open past midnight, moves TODAY on (and the day shown, if it was today).
+function catchUpToday() {
+  var now = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
+  if (now === TODAY) return;
+  if (dayName === TODAY) dayName = now;
+  TODAY = now;
+}
+
 // A day's short name: "Monday" gives "Mon".
 function short(day) {
   return String(day || "").slice(0, 3);

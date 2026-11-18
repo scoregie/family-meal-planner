@@ -1057,7 +1057,7 @@ function recipeItem(r, forPerson) {
   var ingredients = r.ingredients;
   if (r.items && r.items.length) {
     ingredients = r.items.map(function (it) {
-      if (forPerson && r.units) return personQty(it.q * forPerson.portion / r.units, it.l, it.i);
+      if (forPerson && r.units) return personQty(it.q * (Number(forPerson.portion) || 1) / r.units, it.l, it.i);   // no portion counts as 1
       return fq(it.q, it.l, it.i) + " " + it.l;
     });
   }

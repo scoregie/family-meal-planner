@@ -14,3 +14,6 @@ site/*.bak
 
 # Recordings and the pretend browser for tools/page-check.sh
 .page-check/
+
+# Half-written files the server leaves if it stops mid-save.
+site/*.tmp

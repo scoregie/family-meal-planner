@@ -134,7 +134,7 @@ def bought(week):
             elif 'wraps' in n: amounts['wraps'] += 8 * packs
             elif 'milk 2 l' in n: amounts['milk ml'] += 2000 * packs
             elif 'yoghurt' in n: amounts['yoghurt g'] += 1000 * packs
-            elif 'chicken breast' in n: amounts['chicken g'] += 1500 if 'large' in n or '1.5' in n else 600 * packs
+            elif 'chicken breast' in n: amounts['chicken g'] += (1500 if 'large' in n or '1.5' in n else 600) * packs
             elif 'turkey' in n: amounts['turkey g'] += 500 * packs
             elif 'pork' in n: amounts['pork g'] += 500 * packs
             elif 'sausages' in n: amounts['sausages'] += 6        # a 550 g pack is about 6 sausages
@@ -142,7 +142,7 @@ def bought(week):
             elif 'basa' in n: amounts['basa g'] += 1000
             elif 'tuna' in n: amounts['tuna cans'] += packs
             elif 'mozzarella' in n: amounts['mozzarella g'] += size_in_grams(n)
-            elif 'cheese slices' in n: amounts['cheese slices'] += 24 if '24' in n else 12 * packs
+            elif 'cheese slices' in n: amounts['cheese slices'] += (24 if '24' in n else 12) * packs
             elif 'tasty' in n: amounts['tasty g'] += 500
             elif 'apples' in n: amounts['apple g'] += 1000 * packs
             elif n.startswith('potatoes'): amounts['potato g'] += 2000

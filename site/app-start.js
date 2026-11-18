@@ -6,6 +6,7 @@
 
 // Reads the address (#week-2-meals) and draws that week and view. "#week-2" alone is Today.
 function show() {
+  catchUpToday();
   var match = /^#week-(\d+)(-shop|-meals|-macros|-exercise|-ratings|-more)?$/.exec(location.hash);
   var n = match ? +match[1] : 1;
   week = (n >= 1 && n <= PLAN.weeks.length) ? n - 1 : 0;
