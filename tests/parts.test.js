@@ -408,3 +408,22 @@ test('updates: pages and scripts are sent with "check for a newer copy each time
   assert.match(caddy, /@fresh path [^\n]*\*\.html[^\n]*\*\.js/);
   assert.match(caddy, /header @fresh Cache-Control "no-cache"/);
 });
+
+test('plan check: a food someone is allergic to in a dish they are given is reported, and free-from foods are not', () => {
+  const check = require('../api/plancheck');
+  const plan = smallPlan();
+  plan.weeks[1].meals[0].breakfast = 'Eggs on toast';
+  plan.weeks[1].recipes.push({ name: 'Eggs on toast', ingredients: ['2 eggs', '2 slices gluten-free bread', '1 tsp butter'], steps: ['Fry the eggs.'] });
+  const found = names => check.problems(plan, [{ key: 'sam', name: 'Sam', answers: { age: '40', allergies: names } }]).filter(s => /allergic/.test(s)).join('\n');
+  assert.match(found(['Eggs']), /can’t have eggs, and "egg" seems to be in Eggs on toast \(Week 1\)/);
+  assert.match(found(['Milk']), /can’t have milk, and "butter" seems to be in Eggs on toast/);
+  // Gluten-free bread isn't gluten, and someone with no allergies gets no allergy lines.
+  assert.equal(found(['Wheat or gluten']), '');
+  assert.equal(found([]), '');
+  // Plant milks and nut butters count for the nut, not for milk.
+  plan.weeks[1].recipes[1].ingredients = ['1 cup almond milk', '1 tbsp peanut butter'];
+  plan.weeks[1].meals[0].breakfast = 'Eggs on toast';
+  assert.equal(found(['Milk']), '');
+  assert.match(found(['Tree nuts']), /"almond"/);
+  assert.match(found(['Peanuts']), /"peanut"/);
+});

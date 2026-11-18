@@ -318,6 +318,8 @@ const BROAD_DISLIKE = /^(most |all |any )?(veg|veggy|vegy|veggie|vegie|vegetable
 
 // What a meal slot says for someone who goes without that meal on a fast day.
 const FASTING = 'Fasting';
+// Shown in place of a family meal that doesn't suit someone, when the library has nothing that does.
+const NO_SAFE_MEAL = 'Your own choice: nothing in the app’s library suits your allergies or diet';
 
 // The first-meal answers in About me, as hours on a 24-hour clock.
 const FIRST_MEAL = { 'About 6 am': 6, 'About 7 am': 7, 'About 8 am': 8, 'About 9 am': 9, 'About 10 am': 10, 'About 11 am': 11, 'About noon': 12, 'About 1 pm': 13, 'About 2 pm': 14 };
@@ -1230,7 +1232,11 @@ function chooseOwnMeals(job, pools) {
     const myDinners = pools.dinners.filter(d => allowed(d, r, fasting));
     const myBreakfasts = pools.breakfasts.filter(d => allowed(d, r, fasting));
     const myLunches = pools.lunches.filter(d => allowed(d, r, fasting));
-    if (!myDinners.length) forAdmin.push('No dinners in the library suit ' + r.name + '’s needs' + (fasting ? ' on the days they give up ' + r.foodFast.words : '') + '. Their meals will need adding by hand in Edit plan.');
+    // Tells the admin about any meal the library has nothing for, for this person.
+    const none = [['dinners', myDinners], ['breakfasts', myBreakfasts], ['lunches', r.kid ? myLunches.filter(d => d.packable) : myLunches]]
+      .filter(([, list]) => !list.length).map(([meal]) => meal);
+    if (none.length) forAdmin.push('No ' + andList(none) + ' in the library suit ' + r.name + '’s needs' + (fasting ? ' on the days they give up ' + r.foodFast.words : '') +
+      '. Where the family meal doesn’t suit them, the plan says it is their own choice. You can add a meal for them in Edit plan.');
     return {
       dinners: pick(myDinners, 7, [r], house, rnd, new Set()),
       breakfast: myBreakfasts.length ? pick(myBreakfasts, 1, [r], house, rnd, new Set())[0] : null,
@@ -1341,6 +1347,7 @@ function breakfastFor(at, meal) {
     const alt = at.mine(r).breakfast;
     if (at.fits(dish, r)) serves += r.portion;
     else if (alt) at.swap(r, 'breakfast', alt);
+    else at.instead(r, 'breakfast', NO_SAFE_MEAL);
   });
   meal.breakfast = dish.name;
   if (!dish.ownChoice) { cook(at.tally, dish, serves); at.used.set(dish.name, dish); }
@@ -1356,6 +1363,7 @@ function dinnerFor(at, meal) {
     const mine = at.mine(r).dinners;
     if (at.fits(dish, r)) serves += r.portion;
     else if (mine.length) at.swap(r, 'dinner', mine[at.i % mine.length]);
+    else at.instead(r, 'dinner', NO_SAFE_MEAL);
   });
   meal.dinner = dish.name;
   at.used.set(dish.name, dish);
@@ -1393,6 +1401,7 @@ function lunchFor(at, meal) {
     const mine = at.mine(r).lunches;
     const alt = mine[at.i % Math.max(1, mine.length)];
     if (alt) at.swap(r, 'lunch', alt);
+    else at.instead(r, 'lunch', NO_SAFE_MEAL);
   });
   // Leftovers were already cooked (and counted) with last night's dinner.
   if (!leftover && !dish.ownChoice) cook(at.tally, dish, serves);
@@ -1830,10 +1839,10 @@ const CHAINS = [
     ['Hotpot with a few peas added at the end', 'A spoonful in their bowl.', []],
     ['Hotpot with one new soft vegetable, like zucchini', 'Cut small and cooked soft.', []]] },
   { like: /nugget|schnitzel|crumbed|chicken/, from: 'chicken nuggets', steps: [
-    ['Home-made crumbed chicken strips', 'Baked or air-fried, next to the usual ones.', ['gluten', 'meat', 'poultry', 'animal']],
-    ['Crumbed chicken with mashed potato and pumpkin', 'Half potato, half pumpkin in the mash.', ['gluten', 'meat', 'poultry', 'animal']],
-    ['Crumbed zucchini sticks', 'Crumbed and baked the same way, one or two beside the chicken.', ['gluten']],
-    ['Crumbed chicken with steamed peas', 'A spoonful of peas on the side.', ['gluten', 'meat', 'poultry', 'animal']]] },
+    ['Home-made crumbed chicken strips', 'Baked or air-fried, next to the usual ones.', ['gluten', 'egg', 'meat', 'poultry', 'animal']],
+    ['Crumbed chicken with mashed potato and pumpkin', 'Half potato, half pumpkin in the mash.', ['gluten', 'egg', 'meat', 'poultry', 'animal']],
+    ['Crumbed zucchini sticks', 'Crumbed and baked the same way, one or two beside the chicken.', ['gluten', 'egg']],
+    ['Crumbed chicken with steamed peas', 'A spoonful of peas on the side.', ['gluten', 'egg', 'meat', 'poultry', 'animal']]] },
   { like: /yoghurt|yogurt|milk|custard|ice cream/, from: 'yoghurt', steps: [
     ['Yoghurt with a little mashed banana stirred in', 'Mashed smooth, a teaspoon to start.', ['milk', 'lactose', 'animal']],
     ['Yoghurt with blended berries', 'Blended smooth and swirled in.', ['milk', 'lactose', 'animal']],

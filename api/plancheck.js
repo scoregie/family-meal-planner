@@ -92,6 +92,59 @@ function dislikedFoods(plan, p) {
     '. If it is, swap it for something that fits (a "replace"), and take it off the shopping lists (a "remove") unless someone else eats it.');
 }
 
+// Words that show a food from each allergy choice in About me may be in a dish. They are a
+// first look, not a full list: the AI's own check still reads the whole plan.
+const ALLERGEN_WORDS = {
+  Peanuts: ['peanut', 'peanut butter', 'satay'],
+  'Tree nuts': ['almond', 'cashew', 'walnut', 'pecan', 'hazelnut', 'pistachio', 'macadamia', 'brazil nut', 'pine nut', 'mixed nuts', 'nut butter', 'pesto', 'praline', 'marzipan'],
+  Milk: ['milk', 'cheese', 'butter', 'cream', 'yoghurt', 'yogurt', 'custard', 'ice cream', 'ghee', 'whey', 'parmesan', 'mozzarella', 'cheddar', 'feta', 'ricotta', 'haloumi', 'labneh', 'paneer', 'tzatziki'],
+  Eggs: ['egg', 'omelette', 'frittata', 'quiche', 'mayonnaise', 'mayo', 'aioli', 'meringue', 'custard', 'pancake', 'crumbed', 'schnitzel', 'nugget'],
+  'Wheat or gluten': ['wheat', 'flour', 'bread', 'toast', 'pasta', 'spaghetti', 'macaroni', 'noodle', 'couscous', 'wrap', 'tortilla', 'pita', 'roll', 'bun', 'crumbed', 'breadcrumb', 'schnitzel', 'nugget', 'barley', 'rye', 'semolina', 'cracker', 'biscuit', 'muffin', 'pancake', 'pastry', 'pizza', 'weet-bix', 'soy sauce'],
+  Soy: ['soy', 'soya', 'tofu', 'tempeh', 'edamame', 'miso', 'soy sauce'],
+  Fish: ['fish', 'salmon', 'tuna', 'cod', 'snapper', 'barramundi', 'flathead', 'basa', 'hoki', 'sardine', 'anchov', 'mackerel', 'trout', 'fish sauce'],
+  Shellfish: ['prawn', 'shrimp', 'crab', 'lobster', 'mussel', 'oyster', 'scallop', 'squid', 'calamari', 'clam', 'crayfish', 'bug'],
+  Sesame: ['sesame', 'tahini', 'hummus', 'halva', 'sesame oil'],
+  // Hard cheeses like cheddar are very low in lactose, so the library counts them as fine.
+  Lactose: ['milk', 'cottage cheese', 'cream cheese', 'cream', 'yoghurt', 'yogurt', 'custard', 'ice cream', 'ricotta', 'labneh', 'paneer'],
+};
+
+// A dish's text, lower case, with foods made to leave an allergen out taken out of the way:
+// "gluten-free bread" and "lactose-free milk" go, "rice noodles" stays as "rice", "almond milk"
+// and "coconut cream" keep only the nut or coconut, and "peanut butter" keeps only the peanut.
+function withoutFreeFoods(text) {
+  return String(text).toLowerCase()
+    .replace(/\b(lactose|dairy|egg|gluten|wheat|nut|soy|sesame)[- ]free\s+[a-z]+/g, ' ')
+    .replace(/\b(gf|rice|corn|buckwheat)\s+(noodles?|wraps?|pasta|bread|flour|crackers?|tortillas?)\b/g, '$1')
+    .replace(/\b(soy|oat|almond|coconut|rice|cashew)\s+(milk|cream|yoghurt|yogurt)\b/g, '$1')
+    .replace(/\b(peanut|nut|almond|apple)\s+butter\b/g, '$1');
+}
+
+// Foods from someone's allergy choices that seem to turn up in dishes they are given, as sentences.
+function allergyFoods(plan, p) {
+  const chosen = [].concat((p.answers || {}).allergies || []).filter(a => ALLERGEN_WORDS[a]);
+  const person = (plan.people || {})[p.key];
+  if (!chosen.length || !person) return [];
+  const found = new Map();   // allergy -> the first place it was seen
+  mealWeeks(plan).forEach((week, i) => {
+    for (const meal of week.meals) {
+      for (const row of healthtargets.eatenOn(week, meal, person, p.key, i + 1)) {
+        const key = healthtargets.nameKey(row.name);
+        const recipe = (week.recipes || []).find(r => r && typeof r === 'object' && healthtargets.nameKey(r.name) === key);
+        // With a recipe, its ingredients say what is in it ("Eggs on toast" may use gluten-free
+        // bread); without one, the dish's name is all there is to go on.
+        const text = withoutFreeFoods(recipe ? textOf([recipe.ingredients, recipe.items]) : key);
+        for (const allergy of chosen) {
+          if (found.has(allergy)) continue;
+          const hit = ALLERGEN_WORDS[allergy].find(w => mentions(text, w));
+          if (hit) found.set(allergy, { hit, where: row.name + ' (' + week.name + ')' });
+        }
+      }
+    }
+  });
+  return [...found].map(([allergy, f]) => p.name + ' said they are allergic to or can’t have ' + allergy.toLowerCase() + ', and "' + f.hit +
+    '" seems to be in ' + f.where + '. If it is, swap it for something that fits (a "replace"), and take it off the shopping lists (a "remove") unless someone else eats it.');
+}
+
 // Health text that uses "always", "never" or "must", as sentences.
 function absoluteWords(plan, p) {
   const person = (plan.people || {})[p.key] || {};
@@ -241,7 +294,7 @@ function problems(plan, people, food) {
   const out = [];
   for (const p of people) {
     if (!plan.people || !plan.people[p.key]) continue;
-    out.push(...shortWeeks(plan, p), ...dislikedFoods(plan, p), ...absoluteWords(plan, p), ...proteinPowder(plan, p));
+    out.push(...allergyFoods(plan, p), ...shortWeeks(plan, p), ...dislikedFoods(plan, p), ...absoluteWords(plan, p), ...proteinPowder(plan, p));
   }
   out.push(...foodProblems(plan, food));
   return out;
@@ -430,4 +483,4 @@ async function improve(plan, people, notes, ask, checkPlan, food) {
   return { plan: fixed.plan, notes: newNotes, changed: true, note: 'The AI went back over this plan and made corrections' + count + '.' };
 }
 
-module.exports = { problems, fixRequest, parseFixes, applyFixes, improve, namedDislikes, mentions, unusedFood, boughtAgain, foodName };
+module.exports = { problems, allergyFoods, fixRequest, parseFixes, applyFixes, improve, namedDislikes, mentions, unusedFood, boughtAgain, foodName };

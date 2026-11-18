@@ -47,7 +47,7 @@ I = {
     'ham': ('Shaved ham 250 g', 173864, 250, 'g', 5.00, 'meat', ['meat', 'red', 'pork'], 'processed', 0),
     'salmon': ('Salmon fillets 2-pack 250 g', 175167, 250, 'g', 11.00, 'meat', ['fish', 'animal'], 'oily', 0),
     'white fish': ('Frozen white fish fillets 1 kg', 175176, 1000, 'g', 13.00, 'frozen', ['fish', 'animal'], 'fish', 0),
-    'crumbed fish': ('Frozen crumbed fish fillets 425 g', 174195, 425, 'g', 6.50, 'frozen', ['fish', 'animal', 'gluten'], 'fish', 0),
+    'crumbed fish': ('Frozen crumbed fish fillets 425 g', 174195, 425, 'g', 6.50, 'frozen', ['fish', 'animal', 'gluten', 'egg'], 'fish', 0),   # crumb coatings often hold egg
     'tuna': ('Tuna in springwater 95 g can', 171986, 95, 'g', 1.60, 'pantry', ['fish', 'animal'], 'fish', 0),
     'tuna big': ('Tuna in springwater 425 g can', 171986, 425, 'g', 5.00, 'pantry', ['fish', 'animal'], 'fish', 0),
     # eggs and dairy
