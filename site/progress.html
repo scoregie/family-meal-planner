@@ -74,7 +74,7 @@ section.card .note{color:var(--mute);font-size:.85rem;margin:.15rem 0 .4rem}
 /* Weigh-ins */
 .weigh form{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end;margin:.5rem 0 0}
 .weigh label{display:block;font-size:.85rem;color:var(--mute);margin:0 0 .2rem}
-input[type=number],input[type=date]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem}
+input[type=number],input[type=date]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem}
 input[type=number]{width:7rem}
 .weigh ul{list-style:none;margin:.7rem 0 0;padding:0}
 .weigh li{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.3rem 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
@@ -97,7 +97,7 @@ th{color:var(--mute);font-weight:700}
 .msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
 .msg.info{background:color-mix(in srgb,var(--accent) 12%,var(--card));border:1px solid var(--accent)}
 .status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.status.err{background:var(--low);color:#fff}
+.status.err{background:var(--low);color:var(--bg)}
 .privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
 #app.loading{opacity:.55;transition:opacity .2s}
 [hidden]{display:none!important}
@@ -408,6 +408,7 @@ function addChartHover(box, root, c, marks) {
   var hair = svg("line", { "class": "hair", y1: pad.t, y2: pad.t + c.plotH, visibility: "hidden" });
   root.appendChild(hair);
   var tip = el("div", "tip");
+  tip.setAttribute("aria-live", "polite");   // reads out each week as the arrow keys move
   tip.hidden = true;
   var current = -1;
   // Shows the value of point i in a little box next to it.
@@ -644,6 +645,7 @@ function renderManual(d) {
     remove.type = "button";
     remove.setAttribute("aria-label", "Remove the weigh-in on " + shortDate(m.date));
     remove.onclick = function () {
+      if (!confirm("Remove the weigh-in on " + shortDate(m.date) + " (" + fmt(m.weight, 1) + " kg)?")) return;
       api("DELETE", "/api/measurements?person=" + encodeURIComponent(PERSON) + "&id=" + m.id)
         .then(function () { status("Removed"); return load(); })
         .catch(function (e) { status(e.message, true); });

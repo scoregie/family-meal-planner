@@ -86,7 +86,7 @@ details.chats>summary::-webkit-details-marker{display:none}
 /* The box to type in, fixed to the bottom */
 form.ask{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:.6rem 1rem calc(.6rem + env(safe-area-inset-bottom,0px))}
 form.ask .in{max-width:46rem;margin:0 auto;display:flex;gap:.5rem;align-items:flex-end}
-textarea{flex:1;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:.7rem;padding:.55rem .7rem;min-height:2.75rem;max-height:10rem;resize:none}
+textarea{flex:1;font:inherit;color:var(--ink);background:var(--card);border:1px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.7rem;padding:.55rem .7rem;min-height:2.75rem;max-height:10rem;resize:none}
 form.ask .note{max-width:46rem;margin:.3rem auto 0;color:var(--mute);font-size:.75rem}
 /* Requests */
 #requests{display:grid;gap:.7rem}

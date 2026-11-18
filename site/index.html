@@ -22,10 +22,10 @@
 <title>Family Health Planner</title>
 <link href="fonts/fonts.css" rel="stylesheet">
 <style>
-:root{--m-p:#2a78d6;--m-c:#eb6834;--m-f:#1baf7a;--low:#b3261e;--mid:#8a5a00;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--done:#8f8f94;
+:root{--m-p:#2a78d6;--m-c:#eb6834;--m-f:#1baf7a;--low:#b3261e;--mid:#8a5a00;--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--done:#6b6b70;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--done:#6e6e73;color-scheme:dark}}
-:root[data-theme="dark"]{--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--done:#6e6e73;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--done:#8e8e93;color-scheme:dark}}
+:root[data-theme="dark"]{--m-p:#3987e5;--m-c:#d95926;--m-f:#199e70;--low:#ff8a80;--mid:#f2c14e;--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--done:#8e8e93;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;background:var(--bg)}
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1.0625rem;line-height:1.4;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior-y:none}
@@ -36,8 +36,8 @@ h1{font-size:1.6rem;line-height:1.15;margin:0 0 .25rem}
 .tab{font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.6rem;padding:.55rem .2rem;cursor:pointer;text-align:center;line-height:1.2;min-height:2.75rem}
 .tab b{display:block;font-size:1rem}
 .tab span{font-size:.8rem;color:var(--mute)}
-.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.tab[aria-selected="true"] span{color:var(--on-accent);opacity:.85}
+.tab[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.tab[aria-current="true"] span{color:var(--on-accent);opacity:.85}
 .sum{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem;margin-bottom:1rem}
 .sum-top{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap}
 .left{font-size:1.5rem;font-weight:700}
@@ -70,7 +70,7 @@ li+li{border-top:1px solid var(--line)}
 .homebtn{flex:none;width:4.4rem;font:inherit;font-size:.78rem;line-height:1.15;color:var(--mute);background:transparent;border:0;border-left:1px solid var(--line);padding:.4rem;cursor:pointer}
 .homebtn[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:700}
 .homebtn:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
-li.home .row{opacity:.5}
+li.home .row .name{color:var(--mute)}   /* "At home": shown by the pressed button, not by fading (which made it hard to read) */
 .hide-done li.done,.hide-done li.home{display:none}
 .empty{display:none;padding:1.5rem 1rem;text-align:center;color:var(--mute)}
 .note{color:var(--mute);font-size:.85rem;margin-top:1.5rem}
@@ -107,7 +107,7 @@ li.home .row{opacity:.5}
 .scores button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
 .scores button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .rate-box label{display:block;font-weight:700;font-size:.85rem;margin:0 0 .3rem}
-.rate-box textarea{display:block;width:100%;font:inherit;font-size:1rem;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.45rem;padding:.5rem .6rem;min-height:4.5rem;resize:vertical}
+.rate-box textarea{display:block;width:100%;font:inherit;font-size:1rem;color:var(--ink);background:var(--card);border:2px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.45rem;padding:.5rem .6rem;min-height:4.5rem;resize:vertical}
 .rate-box textarea:focus{outline:none;border-color:var(--accent)}
 .rate-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;gap:.5rem}
 .rate-foot .btn{min-height:2.4rem;padding:.3rem .7rem;font-size:.85rem}
@@ -138,7 +138,7 @@ li.home .row{opacity:.5}
 .acct{display:flex;align-items:center;justify-content:flex-end;gap:.6rem;margin:0 0 .5rem;font-size:.9rem;color:var(--mute)}
 .acct form{margin:0}.acct .btn{min-height:2.5rem;padding:.4rem .75rem;font-size:.85rem}
 .who{display:flex;align-items:center;gap:.6rem;margin:0 0 .8rem}.who label{font-weight:700}
-.who select{font-size:1rem;min-height:2.75rem;padding:.4rem .7rem;border-radius:.6rem;border:1px solid var(--line);background:var(--card);color:inherit;flex:1;max-width:14rem}
+.who select{font-size:1rem;min-height:2.75rem;padding:.4rem .7rem;border-radius:.6rem;border:1px solid color-mix(in srgb,var(--mute) 70%,var(--card));background:var(--card);color:inherit;flex:1;max-width:14rem}
 .eat{width:1.5rem;height:1.5rem;flex:none;accent-color:var(--accent);margin:0 .1rem 0 0}.meal.eaten .mv{color:var(--done);text-decoration:line-through}
 .pseg{grid-template-columns:repeat(4,1fr)}
 .rec details{padding:.1rem 0}.rec summary{cursor:pointer;padding:.4rem 0}.mk2{color:var(--mute);font-size:.85rem;font-weight:400}
@@ -215,7 +215,7 @@ details.exfold{padding:0}
 .sum{padding:.7rem .9rem;margin-bottom:1rem}
 .left{font-size:1.35rem}.meta{font-size:.85rem}
 .bar{margin-top:.5rem}
-.tools{margin-top:.65rem;gap:.4rem;flex-wrap:nowrap;align-items:center}
+.tools{margin-top:.65rem;gap:.4rem;flex-wrap:wrap;align-items:center}   /* wraps at larger text sizes instead of running off a phone screen */
 .tools .btn{min-height:2.5rem;padding:.35rem .75rem;font-size:.85rem;white-space:nowrap}
 .tools .more{margin-left:auto}
 .more summary{cursor:pointer;display:flex;align-items:center}
@@ -259,7 +259,7 @@ details.exfold{padding:0}
 .pinfor{margin:0 0 .3rem}
 .pinfield{display:block;margin:.8rem 0}
 .pinfield span{display:block;font-weight:700;font-size:.9rem;margin-bottom:.25rem}
-.pinfield input{font:inherit;width:100%;box-sizing:border-box;padding:.55rem .6rem;border:2px solid var(--line);border-radius:.5rem;background:var(--bg);color:var(--ink)}
+.pinfield input{font:inherit;width:100%;box-sizing:border-box;padding:.55rem .6rem;border:2px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.5rem;background:var(--bg);color:var(--ink)}
 .pinfield .find{display:inline-block;font-size:.85rem;padding:.35rem 0}
 .pinmsg{min-height:1.2em;font-size:.9rem;margin:.3rem 0}
 .pinacts{display:flex;flex-wrap:wrap;gap:.5rem}
@@ -442,9 +442,9 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
       <span id="sync" class="sync" role="status"></span>
       <a class="avatarlink" id="acct" href="#more" aria-label="More: your account, settings and log out"><span class="avatar" id="avatar" aria-hidden="true"></span></a>
     </div>
-    <div class="tabs" role="tablist" aria-label="Weeks" id="tabs"></div>
+    <div class="tabs" role="group" aria-label="Weeks" id="tabs"></div>
   </header>
-  <p class="err" id="err" hidden></p>
+  <p class="err" id="err" role="alert" hidden></p>
   <div class="ask" id="emailNudge" hidden><span>You can log in with your email now. Add it to your account (your username keeps working).</span> <a class="btn primary" href="account.html">Add email</a></div>
   <div class="ask" id="setupNudge" hidden><span>Set up your family’s plan: get everyone’s About me answers in, then make 4 weeks of meals, shopping and exercise (with AI, or with the app’s own plan builder).</span> <a class="btn primary" href="setup.html">Plan setup</a></div>
   <div class="ask" id="draftNudge" hidden><span>A new plan is waiting for you to check and approve.</span> <a class="btn primary" href="setup.html">Review it</a></div>

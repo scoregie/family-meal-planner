@@ -60,12 +60,12 @@ h3{font-size:1rem;margin:1rem 0 .4rem}
 .home canvas{display:block;border-radius:22%;box-shadow:0 2px 6px rgba(0,0,0,.3);margin:0 auto .25rem}
 .emoji .choice span{font-size:1.4rem;min-width:2.8rem;justify-content:center;padding:.2rem .4rem}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-input[type=password]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem}
-input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem;width:6rem}
+input[type=password]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem}
+input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.5rem;padding:.45rem .6rem;min-height:2.5rem;width:6rem}
 .msg{border-radius:.6rem;padding:.6rem .8rem;margin:0 0 .8rem;font-size:.9rem}
 .msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
 .status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2);max-width:90vw}
-.status.err{background:var(--low);color:#fff}
+.status.err{background:var(--low);color:var(--bg)}
 [hidden]{display:none!important}
 details.fold>summary{list-style:none;cursor:pointer;position:relative;padding-right:2rem;min-height:2.6rem;display:flex;flex-direction:column;justify-content:center}
 details.fold>summary::-webkit-details-marker{display:none}
@@ -140,7 +140,7 @@ details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offse
         <label class="choice"><input type="radio" name="keyProvider" value="gemini"><span>Gemini <small>Google</small></span></label>
       </fieldset>
       <p class="note" id="keyWhere"></p>
-      <label class="sr" for="aiKey">Your API key</label>
+      <label for="aiKey" style="display:block;font-weight:700;margin:.5rem 0 .25rem">Your API key</label>
       <input type="password" id="aiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" style="width:100%;max-width:26rem">
       <div id="modelRow" hidden>
         <label for="aiModel" class="note">Model</label>

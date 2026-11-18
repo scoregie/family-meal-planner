@@ -4,8 +4,14 @@
 
 // ---------- showing a view ----------
 
-// Reads the address (#week-2-meals) and draws that week and view. "#week-2" alone is Today.
+// Reads the address (#week-2-meals) and draws that week and view, keeping keyboard focus on the
+// button that was pressed. "#week-2" alone is Today.
 function show() {
+  keepFocus(drawView);
+}
+
+// Draws the week and view the address asks for (see show()).
+function drawView() {
   var match = /^#week-(\d+)(-shop|-meals|-macros|-exercise|-ratings|-more)?$/.exec(location.hash);
   var n = match ? +match[1] : 1;
   week = (n >= 1 && n <= PLAN.weeks.length) ? n - 1 : 0;

@@ -342,7 +342,7 @@ var Guidelines = (function () {
     var sources = fold("Sources", country.sources, true);
     sources.appendChild(el("p", "mac-note", country.title + ". " + (country.status || "") + " Checked " + data.checked + "."));
     box.appendChild(sources);
-    box.appendChild(el("p", "mac-note", "A guide only: advice from your doctor or dietitian comes first."));
+    box.appendChild(el("p", "mac-note", "A guide only: what your GP, dietitian or physio tells you comes first."));
   }
 
   // The card for one person and week. Shows "Loading…" until guidelines.json and their answers arrive.
