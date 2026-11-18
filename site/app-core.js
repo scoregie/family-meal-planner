@@ -340,6 +340,7 @@ function takeAllRatings(s, found) {
 // Gets the latest from the server and redraws if anything changed. If this device has changes
 // the server hasn't got (for example after being offline), it sends those instead.
 function pull() {
+  catchUpToday();   // the app may have been left open overnight
   if (dirty) {
     pushNow();
     return;
