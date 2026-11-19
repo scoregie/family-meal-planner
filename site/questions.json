@@ -1,5 +1,6 @@
 {
   "intro": "These questions help shape your meals, portions and exercise. Answer what you're comfortable with and skip the rest. Only you and the plan's admins can see your answers. Your answers are saved as you go.",
+  "introPhone": "These questions help shape your meals, portions and exercise. Answer what you're comfortable with and skip the rest. Your answers stay on this phone and are saved as you go.",
   "sections": [
     {
       "id": "goals",
@@ -46,7 +47,8 @@
           "help": "Only tick what you take now. The plan won't suggest starting any. Protein powder is counted in your day, and the others add things you may like to check with your pharmacist or GP. For anyone under 18 they are noted but not counted." },
         { "id": "protein_powder_when", "label": "If you have protein powder, when do you usually have it?", "type": "choice",
           "options": ["Every day", "On days I exercise", "After strength training", "Now and then"],
-          "help": "Leave it blank if you don't have any. It is counted as one scoop mixed with water (about 24 g of protein), in place of a snack. An admin can change the numbers to match your tub in Edit plan." },
+          "help": "Leave it blank if you don't have any. It is counted as one scoop mixed with water (about 24 g of protein), in place of a snack. An admin can change the numbers to match your tub in Edit plan.",
+          "helpPhone": "Leave it blank if you don't have any. It is counted as one scoop mixed with water (about 24 g of protein), in place of a snack." },
         { "id": "injuries", "label": "Injuries or pain that affect exercise", "type": "long", "placeholder": "e.g. sore left knee on stairs" },
         { "id": "gp", "label": "Has a doctor or dietitian given you advice about food or exercise?", "type": "long", "help": "What they told you comes first. The plan works around it." },
         { "id": "share_results", "webOnly": true, "label": "May the plan writer read the blood test results you upload in My files?", "type": "choice",
@@ -112,7 +114,8 @@
         { "id": "fast_day_skip", "label": "On those days, what do you go without?", "type": "multi",
           "options": ["Breakfast", "Lunch", "Dinner", "Snacks"], "help": "These are left out for you on those days and not shopped for. The plan doesn't set how much to eat on a fast day." },
         { "id": "fast_sun_weeks", "label": "Will you be fasting from sunrise to sunset (like Ramadan) during the next plan? Which weeks?", "type": "multi",
-          "options": ["Week 1", "Week 2", "Week 3", "Week 4"], "help": "Tick the weeks before an admin drafts the plan, and clear them when the fast is over. The same food is kept and moved to before dawn and after sunset." },
+          "options": ["Week 1", "Week 2", "Week 3", "Week 4"], "help": "Tick the weeks before an admin drafts the plan, and clear them when the fast is over. The same food is kept and moved to before dawn and after sunset.",
+          "helpPhone": "Tick the weeks before you make the plan, and clear them when the fast is over. The same food is kept and moved to before dawn and after sunset." },
         { "id": "fast_food", "label": "Do you give up some foods on fast days or in a fasting season (like Lent or an Orthodox fast)?", "type": "choice",
           "options": ["No meat (fish is fine)", "No meat or fish", "No meat, fish, dairy or eggs"] },
         { "id": "fast_food_days", "label": "On which days do you give them up?", "type": "multi",

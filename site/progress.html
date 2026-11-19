@@ -637,6 +637,8 @@ function renderTable(d) {
   var cols = [["weight", "Weight (kg)", 1], ["energy_in", unit + " a day (Lose It)", 0, true], ["plan_kj", unit + " a day (ticked)", 0, true],
     ["protein_in", "Protein g (Lose It)", 0], ["plan_protein", "Protein g (ticked)", 0], ["steps", "Steps a day", 0],
     ["workout_minutes", "Workout min", 0], ["sessions", "Sessions ticked", 0], ["meals", "Meals ticked", 0], ["score", "Meal score", 1]];
+  // The phone app doesn't read Lose It or Apple Health yet, so those columns would always be empty.
+  if (window.PHONE) cols = cols.filter(function (c) { return ["energy_in", "protein_in", "steps", "workout_minutes"].indexOf(c[0]) < 0; });
   var head = el("tr");
   head.appendChild(el("th", null, "Week"));
   cols.forEach(function (c) { head.appendChild(el("th", null, c[1])); });

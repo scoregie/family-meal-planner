@@ -311,7 +311,9 @@ function addTextBox(wrap, q, inputId) {
 // Makes the input for one question: chips for choices, a number box, or a text box.
 function questionField(q) {
   var inputId = "q-" + q.id;
-  var help = q.help ? el("span", "help", q.help) : null;
+  // A question can have "helpPhone": its help as worded for the phone app (no admins there).
+  var helpText = (window.PHONE && q.helpPhone) || q.help;
+  var help = helpText ? el("span", "help", helpText) : null;
   if (q.type === "choice" || q.type === "multi") return chipsQuestion(q, inputId, help);
 
   var wrap = el("div", "q");
@@ -555,7 +557,7 @@ fetch("/auth/me", { cache: "no-store" }).then(function (response) {
     QUESTIONS = got[0];
     // Questions marked "webOnly" (like sharing blood test files) are left out in the phone app.
     if (window.PHONE) QUESTIONS.sections.forEach(function (s) { s.questions = s.questions.filter(function (q) { return !q.webOnly; }); });
-    $("intro").textContent = QUESTIONS.intro;
+    $("intro").textContent = (window.PHONE && QUESTIONS.introPhone) || QUESTIONS.intro;
     var names = {};
     var list = [me.person];
     if (got[1]) {

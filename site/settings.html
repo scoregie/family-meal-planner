@@ -103,7 +103,7 @@ details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offse
 
   <details class="card fold">
     <summary><h2>On this device</h2><span class="hint">Colours, text size and theme for you</span></summary>
-    <p class="note">Only changes how the app looks for you, on this phone or computer. Leave a choice on “Household” to use what the admins picked.</p>
+    <p class="note" data-phone="Changes how the app looks on this phone.">Only changes how the app looks for you, on this phone or computer. Leave a choice on “Household” to use what the admins picked.</p>
     <div id="mine"></div>
     <div class="preview" aria-hidden="true">
       <p><b>Preview:</b> Tuesday dinner</p>
@@ -115,7 +115,7 @@ details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offse
 
   <details class="card fold" id="storesCard">
     <summary><h2>Where you shop</h2><span class="hint" id="storesSummary">Supermarkets for the shopping list links</span></summary>
-    <p class="note">Pick one or more. The shopping list shows a search link for each, and Ask AI knows where you shop. Plan prices are estimates, so what you pay will differ a little.</p>
+    <p class="note" data-phone="Pick one or more. The shopping list shows a search link for each. Plan prices are estimates, so what you pay will differ a little.">Pick one or more. The shopping list shows a search link for each, and Ask AI knows where you shop. Plan prices are estimates, so what you pay will differ a little.</p>
     <fieldset class="choices" id="myStores"><legend>Your stores</legend></fieldset>
     <p class="note" id="storesHint"></p>
     <div id="houseStoresBox" hidden>
@@ -125,7 +125,7 @@ details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offse
 
   <details class="card fold" id="energyCard">
     <summary><h2>Kilojoules or Calories</h2><span class="hint">How energy is shown</span></summary>
-    <p class="note">How energy is shown in Meals (Macros), on Today and the Progress page, and in Ask AI’s answers. Australian food labels use kilojoules; 1 Calorie (kcal) is about 4.2 kJ.</p>
+    <p class="note" data-phone="How energy is shown in Meals (Macros), on Today and the Progress page. Australian food labels use kilojoules; 1 Calorie (kcal) is about 4.2 kJ.">How energy is shown in Meals (Macros), on Today and the Progress page, and in Ask AI’s answers. Australian food labels use kilojoules; 1 Calorie (kcal) is about 4.2 kJ.</p>
     <fieldset class="choices" id="myEnergy"><legend>For you</legend></fieldset>
     <div id="houseEnergyBox" hidden>
       <fieldset class="choices" id="houseEnergy" style="margin-top:.8rem"><legend>The household’s (admins): used by anyone who hasn’t picked their own</legend></fieldset>
@@ -496,8 +496,8 @@ function renderStores() {
   var c = A.storeChoices();
   storeBoxes("myStores", c.mine, "me");
   var names = A.stores().map(function (k) { return A.STORES[k].name; }).join(", ");
-  var where = "Stores in " + A.region().where + ". " + (IS_ADMIN ? "You can change the country further down this page." : "An admin can change the country in Settings.");
-  $("storesHint").textContent = (c.mine.length ? "" : "You haven’t picked any, so you get the household’s: " + names + ". ") + where;
+  var where = "Stores in " + A.region().where + ". " + (IS_ADMIN || window.PHONE ? "You can change the country further down this page." : "An admin can change the country in Settings.");
+  $("storesHint").textContent = (c.mine.length ? "" : (window.PHONE ? "You haven’t picked any, so the list uses: " : "You haven’t picked any, so you get the household’s: ") + names + ". ") + where;
   if (IS_ADMIN) {
     $("houseStoresBox").hidden = false;
     storeBoxes("houseStores", c.house.length ? c.house : A.defaultStores(), "house");
@@ -898,6 +898,11 @@ A.refresh().then(function (got) {
     renderIconChoices();
     if (document.fonts) document.fonts.load('700 40px "Atkinson Hyperlegible"').then(drawIcon, drawIcon);
     drawIcon();
+  }
+  // The phone app has one person and no admins, so its country card is always there.
+  if (window.PHONE) {
+    $("countryCard").hidden = false;
+    renderCountry();
   }
 });
 
