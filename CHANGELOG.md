@@ -3,6 +3,19 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.12.1 (2026-11-19)
+
+Fixes to "How the week went" from v1.12.0.
+
+- **Skips and scores stay in the week they were made.** Each save re-stamped every meal with the
+  time of the save, so from the next week the first tick would have moved all of last week's
+  skips and scores into the new week. Now only a meal you change gets a new time. The ratings
+  numbers on Progress had the same problem and are fixed too.
+- **Vegetable and fruit days go by the plan's day,** so ticking Monday to Wednesday all at once
+  on Thursday counts as three days, not one.
+
+After updating, restart the api (`docker compose restart api`).
+
 ## v1.12.0 (2026-11-19)
 
 Tell the app when you didn't have a meal and why, see how each week went, and easier pages from a
