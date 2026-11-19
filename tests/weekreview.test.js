@@ -135,3 +135,31 @@ test('forgetting someone removes their dated log too', () => {
   db.forgetPerson('gone');
   assert.equal(db.getSetting('week-log:gone'), null);
 });
+
+test('saving again only re-stamps meals that changed, so a skip stays in the week it was made', () => {
+  const plan = { id: 'stamp', weeks: [{ name: 'Week 1', meals: [{ day: 'Mon', lunch: 'Soup', dinner: 'Stew' }] }] };
+  db.syncMeals('pat', plan, 0, { 0: [] }, { 0: { 'Mon|Dinner': { x: 'time' } } });
+  const stamp = () => db.open().prepare("SELECT slot, updated_at FROM meal_log WHERE person = 'pat' ORDER BY slot").all();
+  const old = Date.now() - 9 * DAY;   // pretend the skip was made last week
+  db.open().prepare("UPDATE meal_log SET updated_at = ? WHERE person = 'pat'").run(old);
+  // A week later, the page saves again with a new tick (Mon lunch); the skip is unchanged.
+  db.syncMeals('pat', plan, 0, { 0: ['Mon|Lunch'] }, { 0: { 'Mon|Dinner': { x: 'time' } } });
+  const rows = stamp();
+  assert.equal(rows.find(r => r.slot === 'Dinner').updated_at, old, 'the unchanged skip keeps its time');
+  assert.ok(rows.find(r => r.slot === 'Lunch').updated_at > old, 'the new tick gets a new time');
+  // Changing the reason is a change.
+  db.syncMeals('pat', plan, 0, { 0: ['Mon|Lunch'] }, { 0: { 'Mon|Dinner': { x: 'out' } } });
+  assert.ok(stamp().find(r => r.slot === 'Dinner').updated_at > old);
+});
+
+test('veg days go by the plan’s day, not the moment the meals were ticked', () => {
+  const plan = Object.assign({}, PLAN, { id: 'catchup' });
+  const ctx2 = { readPlan: () => plan, people: () => ['cat'] };
+  const at = lastWeek(3);   // everything ticked at once on Thursday
+  const ins = db.open().prepare(`INSERT INTO meal_log (person, plan_id, round, week, week_name, day, slot, dish, eaten, eaten_at, updated_at)
+    VALUES ('cat', 'catchup', 0, 0, 'Week 1', ?, ?, ?, 1, ?, ?)`);
+  for (const day of ['Mon', 'Tue']) for (const [slot, dish] of [['Breakfast', 'Oats'], ['Lunch', 'Salad'], ['Dinner', 'Stew']]) ins.run(day, slot, dish, at, at);
+  const w = weekreview.review('cat', 'last', TZ, ctx2).week;
+  assert.equal(w.daysCounted, 2, 'Monday and Tuesday, not one big Thursday');
+  assert.equal(w.shortVeg, 0);
+});
