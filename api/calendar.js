@@ -121,7 +121,7 @@ function ics(cal) {
   ];
   for (const e of cal.events) {
     // A stable id, so importing the file again updates events instead of doubling them.
-    const uid = crypto.createHash('sha1').update(cal.name + e.when + e.title + e.date).digest('hex').slice(0, 16) + '@shopping-list';
+    const uid = crypto.createHash('sha1').update([cal.name, e.when, e.title, e.date, e.start].join('|')).digest('hex').slice(0, 16) + '@shopping-list';
     lines.push(
       'BEGIN:VEVENT',
       'UID:' + uid,

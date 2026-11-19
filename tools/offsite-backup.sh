@@ -61,7 +61,7 @@ fi
 
 # If the upload fails part-way, remove the half-made release so it isn't mistaken for a backup.
 if ! gh release create "backup-$STAMP" "$WORK/$NAME".tar.gz.age* --repo "$BACKUP_REPO" \
-  --title "Backup $STAMP" --notes "Encrypted backup of the whole app folder ($SIZE). See RESTORE.md." >/dev/null; then
+  --title "Backup $STAMP" --notes "Encrypted backup of the whole app folder ($SIZE). See docs/restore.md." >/dev/null; then
   gh release delete "backup-$STAMP" --repo "$BACKUP_REPO" --yes --cleanup-tag >/dev/null 2>&1 || true
   echo "The upload to $BACKUP_REPO failed, so no backup was kept this time." >&2
   exit 1

@@ -504,8 +504,9 @@ function portionFor(p, r) {
 const PACK_WORDS = /\b(tins?|cans?|packs?|packets?|bags?|boxe?s?|bottles?|jars?|cartons?|tubs?|loaf|loaves|bunch(es)?|heads?|pieces?|of|a|an|some|half|dozen|about|x)\b/g;
 
 // Words on a Current food item that say only part of a pack is left, and about how much of it.
-const PART_WORDS = [[/\b(nearly|almost) (empty|gone|finished)\b|\ba (little|bit)\b|\bdregs\b/, 0.2], [/\b(a )?quarter\b/, 0.25],
-  [/\b(a )?third\b/, 0.33], [/\bthree[- ]quarters?\b/, 0.75], [/\bhalf\b/, 0.5]];
+// "Three quarter" is checked before "quarter", so it isn't read as a quarter.
+const PART_WORDS = [[/\b(nearly|almost) (empty|gone|finished)\b|\ba (little|bit)\b|\bdregs\b/, 0.2],
+  [/\bthree[- ]quarters?\b/, 0.75], [/\b(a )?quarter\b/, 0.25], [/\b(a )?third\b/, 0.33], [/\bhalf\b/, 0.5]];
 
 // Whether a part of a Current food item only says how much there is ("2 jars", "opened"), with
 // no food named in it ("cauliflower and broccoli 1 kg" names food).
@@ -732,7 +733,9 @@ function pick(pool, count, eaters, house, rnd, recent) {
   }
   // Not enough variety allowed: fill up with the best of the rest, then repeat.
   for (const { d } of scored) if (out.length < count && !out.includes(d)) out.push(d);
-  while (out.length && out.length < count) out.push(out[out.length % Math.max(1, out.length)]);
+  // Repeat the list in order (1st, 2nd, 3rd, 1st...), not the first dish over and over.
+  const chosen = out.length;
+  for (let i = 0; chosen && out.length < count; i++) out.push(out[i % chosen]);
   return out;
 }
 
