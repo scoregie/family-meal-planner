@@ -73,7 +73,7 @@ details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.
         <li>Open <b>Terminal</b> (in Applications → Utilities), paste this and press Return:
           <br><code>cd ~/Downloads &amp;&amp; shortcuts sign --mode anyone --input "Health sync (unsigned).shortcut" --output "Health sync.shortcut"</code>
           <br><span class="opt">Lines starting “ERROR: Unrecognized attribute string flag” are harmless.</span></li>
-        <li>Upload the new <b>Health sync.shortcut</b> from Downloads: <input type="file" id="signedUpload" accept=".shortcut"></li>
+        <li>Upload the new <b>Health sync.shortcut</b> from Downloads: <input type="file" id="signedUpload" accept=".shortcut" aria-label="Upload the signed Health sync shortcut"></li>
       </ol>
       <div id="signedState"></div>
       </details>
@@ -202,10 +202,13 @@ function when(ms) {
 // A line with a value and a Copy button.
 function copyRow(label, value) {
   var wrap = el("div");
-  wrap.appendChild(el("label", "f", label));
+  var caption = el("label", "f", label);
+  wrap.appendChild(caption);
   var row = el("div", "link");
   var input = el("input");
   input.type = "text";
+  input.id = "copy-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  caption.htmlFor = input.id;
   input.readOnly = true;
   input.value = value;
   input.addEventListener("focus", function () { input.select(); });
@@ -247,6 +250,7 @@ function renderDescribe(url) {
   box.textContent = "";
   var text = describeText(url, NEWKEY || "PASTE-YOUR-SYNC-KEY-HERE");
   var area = el("textarea");
+  area.setAttribute("aria-label", "Shortcut description");
   area.readOnly = true;
   area.rows = 9;
   area.value = text;

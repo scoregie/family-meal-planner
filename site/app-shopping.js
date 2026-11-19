@@ -421,8 +421,10 @@ function toggleHome(name) {
   if (at < 0) have.push(key);
   else have.splice(at, 1);
   save();
-  renderTabs();   // the week totals change
-  renderList();
+  keepFocus(function () {
+    renderTabs();   // the week totals change
+    renderList();
+  });
   window.scrollTo(0, y);
 }
 
@@ -492,17 +494,38 @@ function shopOpen() {
   SHOP = { queue: shopQueue(), at: 0, skipped: {} };
   $("shopMode").hidden = false;
   document.documentElement.classList.add("sm-open");
+  behindShopMode(true);
+  keepScreenOn();
+  shopDraw();
+  var first = $("shopMode").querySelector("button");
+  if (first) first.focus();
+}
+
+// Makes the page behind Shop mode unreachable (true) or usable again (false), so the keyboard
+// and screen readers stay in Shop mode while it is open.
+function behindShopMode(off) {
+  document.querySelectorAll("main, .bottomnav, header").forEach(function (part) {
+    if (off) part.setAttribute("inert", ""); else part.removeAttribute("inert");
+  });
+}
+
+// Asks the phone to keep the screen on while Shop mode is open. Phones let go of this when the
+// app is hidden, so it is asked for again when the app comes back.
+function keepScreenOn() {
   try {
     if (navigator.wakeLock) navigator.wakeLock.request("screen").then(function (l) { wakeLock = l; }).catch(function () {});
   } catch (e) {}
-  shopDraw();
 }
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden && SHOP) keepScreenOn();
+});
 
 // Closes Shop mode and goes back to the list.
 function shopClose() {
   SHOP = null;
   $("shopMode").hidden = true;
   document.documentElement.classList.remove("sm-open");
+  behindShopMode(false);
   try { if (wakeLock) wakeLock.release(); } catch (e) {}
   wakeLock = null;
   renderList();

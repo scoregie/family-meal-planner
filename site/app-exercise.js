@@ -404,7 +404,16 @@ function openSwap(workout, index, ex) {
   $("swapMsg").textContent = "";
   var list = $("swapList");
   list.textContent = "";
-  exAlternatives(ex).forEach(function (e) {
+  var others = exAlternatives(ex);
+  // Nothing else suits them: say so, and point to the library, instead of an empty box.
+  if (!others.length) {
+    var none = el("p", "note", "No other exercises of this kind suit what you said in About me. ");
+    var lib = el("a", null, "Look through the exercise library");
+    lib.href = "exercises.html";
+    none.appendChild(lib);
+    list.appendChild(none);
+  }
+  others.forEach(function (e) {
     var b = el("button", "swapopt");
     b.type = "button";
     b.appendChild(el("b", null, e.name));

@@ -133,6 +133,7 @@ function linkBox(path, label) {
   var row = el("div", "link");
   var input = el("input");
   input.type = "text";
+  input.setAttribute("aria-label", label);
   input.readOnly = true;
   input.value = url;
   input.addEventListener("focus", function () { input.select(); });

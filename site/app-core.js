@@ -416,6 +416,25 @@ document.addEventListener("visibilitychange", function () {
   if (!document.hidden && PLAN) pull();
 });
 
+// Runs `redraw`, then puts keyboard focus back on the new copy of the button (or box) that had it,
+// since redrawing replaces them and focus would otherwise jump to the top of the page.
+function keepFocus(redraw) {
+  var before = document.activeElement;
+  var tag = before && before !== document.body ? before.tagName : "";
+  var key = tag ? (before.id || before.getAttribute("aria-label") || before.textContent || "") : "";
+  redraw();
+  var now = document.activeElement;
+  if (!tag || (now && now !== document.body && now !== before)) return;
+  if (before.isConnected) return;   // the same element is still there and keeps focus
+  var found = null;
+  var all = document.querySelectorAll(tag);
+  for (var i = 0; i < all.length && !found; i++) {
+    var c = all[i];
+    if ((c.id || c.getAttribute("aria-label") || c.textContent || "") === key && c.offsetParent !== null) found = c;
+  }
+  if (found) found.focus({ preventScroll: true });
+}
+
 // Shows a red message at the top of the page.
 function showErr(message) {
   var box = $("err");
@@ -456,8 +475,8 @@ function renderTabs() {
     if (wk.kind === "stockup") return;   // shopped with the week after it
     var tab = el("button", "tab");
     tab.type = "button";
-    tab.setAttribute("role", "tab");
-    tab.setAttribute("aria-selected", i === week);
+    // Plain buttons: the chosen week is marked "current" (they aren't full tabs with panels).
+    if (i === week) tab.setAttribute("aria-current", "true");
     tab.appendChild(el("b", null, wk.name || ("Week " + (i + 1))));
     tab.appendChild(el("span", null, "~" + Appearance.money(total(i), PLAN && PLAN.currency, true)));
     tab.onclick = function () { go(i, view); };
@@ -465,7 +484,7 @@ function renderTabs() {
   });
 
   // If the chosen tab is off screen (on a phone), scroll the row so it sits in the middle.
-  var chosen = row.querySelector('[aria-selected="true"]');
+  var chosen = row.querySelector('[aria-current="true"]');
   if (chosen) {
     var left = chosen.offsetLeft - row.offsetLeft;
     var right = left + chosen.offsetWidth;

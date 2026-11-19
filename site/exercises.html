@@ -34,13 +34,14 @@ h1{font-size:1.5rem;margin:0 0 .2rem}
 .chips button{flex:none;font:inherit;font-size:.85rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:1.2rem;padding:.25rem .8rem;min-height:2.3rem;cursor:pointer}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .bar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:0 0 .7rem}
-input[type=search],select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .6rem;min-height:2.6rem}
+input[type=search],select{font:inherit;color:var(--ink);background:var(--card);border:1px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.5rem;padding:.45rem .6rem;min-height:2.6rem}
 input[type=search]{flex:1;min-width:10rem}
 .toggle{display:flex;align-items:center;gap:.4rem;font-size:.9rem;min-height:2.6rem;cursor:pointer}
 .toggle input{width:1.2rem;height:1.2rem;accent-color:var(--accent)}
 .count{color:var(--mute);font-size:.85rem;margin:0 0 .5rem}
 .ex{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.75rem 1rem;margin:0 0 .6rem}
-.ex.off{opacity:.65}
+.ex.off{border-style:dashed;background:var(--bg)}
+.ex.off h2{color:var(--mute)}   /* left out of plans: a dashed card, not faded text */
 .ex h2{font-size:1.02rem;margin:0;display:flex;justify-content:space-between;gap:.5rem;align-items:baseline}
 .ex h2 small{font-weight:400;color:var(--mute);font-size:.8rem;white-space:nowrap}
 .meta{display:flex;flex-wrap:wrap;gap:.3rem;margin:.35rem 0}

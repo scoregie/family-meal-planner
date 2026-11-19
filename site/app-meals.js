@@ -41,7 +41,8 @@ function rateUI(id, what, button, summary, box, dish) {
     button.textContent = rating.s ? rating.s + "/10" : (rating.n ? "Note" : "Rate");
     button.className = "rate-btn" + (rating.s || rating.n ? " has" : "");
     button.setAttribute("aria-expanded", open);
-    button.setAttribute("aria-label", (rating.s ? "Rated " + rating.s + " out of 10. " : "") + "Rate " + what);
+    // Starts with the words on the button, so voice control ("tap 7/10") finds it.
+    button.setAttribute("aria-label", button.textContent + ": rate " + what);
     summary.hidden = open || !rating.n;
     summary.textContent = rating.n ? "“" + rating.n.trim() + "”" : "";
     box.hidden = !open;

@@ -41,7 +41,7 @@ a{color:var(--accent)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem}
 .row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:0 0 .8rem}
 label.f{display:grid;gap:.15rem;font-size:.8rem;color:var(--mute);font-weight:700}
-input,select,textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:.4rem;padding:.4rem .5rem;min-height:2.3rem;width:100%;min-width:0}
+input,select,textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--field);border:1px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.4rem;padding:.4rem .5rem;min-height:2.3rem;width:100%;min-width:0}
 input[type=number]{font-variant-numeric:tabular-nums}
 input[type=checkbox]{width:auto;min-height:0}
 select{width:auto}
@@ -493,6 +493,7 @@ function renderMacros() {
   var search = el("input");
   search.type = "search";
   search.placeholder = "Search dishes";
+  search.setAttribute("aria-label", "Search dishes");
   search.value = MSEARCH;
   search.style.maxWidth = "16rem";
   search.oninput = function () {
