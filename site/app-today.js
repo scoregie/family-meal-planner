@@ -255,7 +255,9 @@ function renderToday() {
   // From the phone: only for your own numbers, or an admin's pick. (The phone app doesn't read
   // Apple Health or Health Connect yet, so it has no numbers to show.)
   var person4 = ME && ME.person && !window.PHONE ? (isAdmin() ? ukey(USER) : ME.person) : "";
-  if (person4) panel.appendChild(todayWeekCard(person4));
+  // How last week went: on the web and in the phone app (which works it out on the phone).
+  var weekPerson = ME && ME.person ? (isAdmin() ? ukey(USER) : ME.person) : "";
+  if (weekPerson) panel.appendChild(todayWeekCard(weekPerson));
   if (person4) panel.appendChild(todayPhoneCard(person4));
 
   var shop = todayShoppingCard();

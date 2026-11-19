@@ -163,3 +163,20 @@ test('veg days go by the plan’s day, not the moment the meals were ticked', ()
   assert.equal(w.daysCounted, 2, 'Monday and Tuesday, not one big Thursday');
   assert.equal(w.shortVeg, 0);
 });
+
+test('the working out (api/weeksummary.js) loads on its own, the way the phone app loads it', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'api', 'weeksummary.js'), 'utf8');
+  const code = src.split('\n').filter(line => !line.trim().startsWith('//')).join('\n');
+  assert.doesNotMatch(code, /\brequire\(/, 'no other code');
+  const holder = { exports: {} };
+  new Function('module', src)(holder);   // as the app does it
+  const out = holder.exports.summarise({
+    today: '2026-11-19', which: 'this', plan: {}, planKey: null, answers: {}, log: [], sessions: [],
+    rows: [{ plan_id: 'x', week: 0, day: 'Wed', slot: 'Dinner', dish: 'Stew', eaten: 0, eaten_at: null, score: null, skip_reason: 'missing', updated_at: Date.parse('2026-11-18T08:00:00Z') }],
+    localDate: ms => new Date(ms).toISOString().slice(0, 10),
+    HealthTargets: require('../api/healthtargets'), SkipReasons: require('../site/skipreasons.js'),
+  });
+  assert.equal(out.week.monday, '2026-11-16');
+  assert.deepEqual(out.week.reasons, [{ key: 'missing', label: 'Missing ingredients', n: 1 }]);
+  assert.equal(out.before.skipped, 0);
+});
