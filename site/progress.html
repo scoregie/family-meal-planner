@@ -54,7 +54,7 @@ section.card .note{color:var(--mute);font-size:.85rem;margin:.15rem 0 .4rem}
 /* Charts */
 .chart{position:relative;margin-top:.3rem}
 .chart svg{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
-.chart text{fill:var(--mute);font-size:11px;font-family:inherit}
+.chart text{fill:var(--mute);font-size:12px;font-family:inherit}
 .chart .grid{stroke:var(--grid);stroke-width:1}
 .chart .base{stroke:var(--line);stroke-width:1}
 .chart .goal{stroke:var(--faint);stroke-width:1.5;stroke-dasharray:5 4}
@@ -105,6 +105,11 @@ th{color:var(--mute);font-weight:700}
 .privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
 #app.loading{opacity:.55;transition:opacity .2s}
 [hidden]{display:none!important}
+.waiting{list-style:none;margin:0;padding:0}
+.waiting li{padding:.6rem 0;border-top:1px solid var(--line)}
+.waiting li:first-child{border-top:0}
+.waiting strong{display:block}
+.waiting span{display:block;color:var(--mute);font-size:.9rem;line-height:1.5}
 </style>
 <script src="regions.js"></script>
 <script src="appearance.js"></script>
@@ -511,25 +516,34 @@ function renderTiles(d) {
 
 // The charts that need Apple Health or Lose It: steps, cardio fitness, resting heart rate and
 // workout time. `points(field)` gives each week's value for a chart.
-function addHealthCharts(charts, points) {
-  charts.appendChild(chartCard({ title: "Steps (a day)", kind: "bar", unit: "steps", points: points("steps"),
-    note: "Average per day, from Apple Health or Lose It." }));
-  charts.appendChild(chartCard({ title: "Cardio fitness (VO2 max)", kind: "line", unit: "mL/kg/min", places: 1, points: points("vo2max"),
+function addHealthCharts(add, points) {
+  add({ title: "Steps (a day)", kind: "bar", unit: "steps", points: points("steps"),
+    note: "Average per day, from Apple Health or Lose It.",
+    empty: "Set up Apple Health sync (at the top), or upload a Lose It or Apple Health export on My files." });
+  add({ title: "Cardio fitness (VO2 max)", kind: "line", unit: "mL/kg/min", places: 1, points: points("vo2max"),
     note: "Apple Watch’s estimate of how fit you are for cardio, from walks and runs outdoors. Higher is fitter.",
-    empty: "No readings yet. An Apple Watch records these on brisk outdoor walks and runs; Health sync or an Apple Health export brings them here." }));
-  charts.appendChild(chartCard({ title: "Resting heart rate (beats a minute)", kind: "line", unit: "bpm", points: points("resting_hr"),
+    empty: "No readings yet. An Apple Watch records these on brisk outdoor walks and runs; Health sync or an Apple Health export brings them here." });
+  add({ title: "Resting heart rate (beats a minute)", kind: "line", unit: "bpm", points: points("resting_hr"),
     note: "Weekly average from an Apple Watch. It often drops a little as fitness improves.",
-    empty: "No readings yet. These come from an Apple Watch, through Health sync or an Apple Health export." }));
-  charts.appendChild(chartCard({ title: "Workout time (minutes a week)", kind: "bar", unit: "min",
+    empty: "No readings yet. These come from an Apple Watch, through Health sync or an Apple Health export." });
+  add({ title: "Workout time (minutes a week)", kind: "bar", unit: "min",
     points: points("workout_minutes", function (w) { return w.workouts ? fmt(w.workouts) + (w.workouts === 1 ? " workout" : " workouts") : null; }),
-    note: "Workouts recorded in Apple Health.", empty: "No workouts recorded. These come from an Apple Health export." }));
+    note: "Workouts recorded in Apple Health.", empty: "No workouts recorded. These come from an Apple Health export." });
 }
 
-// Every chart, in order. Charts with no data say so, rather than disappearing, except the
-// food charts, which pick Lose It when it has numbers and the app's estimate otherwise.
+// Every chart, in order. The food charts pick Lose It when it has numbers and the app's estimate
+// otherwise. A chart with nothing to show yet (apart from Weight) is listed in one "Not tracked
+// yet" card at the end, with how to start it, instead of an empty card of its own.
 function renderCharts(d) {
   var charts = $("charts");
   charts.textContent = "";
+  var waiting = [];
+  // Adds a chart, or notes it for "Not tracked yet" if it has nothing to show.
+  var add = function (spec) {
+    // A chart of nothing but zeros (no workouts, no sessions ticked) has nothing to show either.
+    if (spec.always || spec.points.some(function (p) { return p.value != null && p.value !== 0; })) charts.appendChild(chartCard(spec));
+    else waiting.push(spec);
+  };
   var weeks = d.weeks;
   var points = function (field, extra) {
     return weeks.map(function (w) { return { week: w.week, value: w[field], extra: extra ? extra(w) : null }; });
@@ -556,26 +570,44 @@ function renderCharts(d) {
     empty: window.PHONE ? "No weigh-ins yet. Add one below." : "No weigh-ins yet. Add one below, set up Apple Health sync (at the top), or upload a Lose It or Apple Health export on the My files page.",
   };
   if (d.goalWeight) weightSpec.key = [{ cls: "dash", text: "Goal " + fmt(d.goalWeight, 1) + " kg (from About me)" }];
-  charts.appendChild(chartCard(weightSpec));
+  add(weightSpec);
 
   // Energy is stored in kJ; shown in kJ or kcal, as chosen in Settings.
   var unit = window.Appearance ? Appearance.energyUnit() : "kJ";
+  var ticksOrLoseIt = window.PHONE ? "Tick meals on the Meals tab as you eat them." : "Tick meals on the Meals tab as you eat them, or log food in Lose It and set up Apple Health sync.";
   var energy = food("energy_in", "plan_kj").map(function (p) {
     return Object.assign({}, p, { value: p.value == null || !window.Appearance ? p.value : Math.round(Appearance.energyValue(p.value)) });
   });
-  charts.appendChild(chartCard({ title: "Energy eaten (" + unit + " a day)", kind: "bar", unit: unit, points: energy, key: estKey(energy),
-    note: window.PHONE ? "Average per day, estimated from the meals you ticked." : "Average per day logged. From Lose It, or estimated from the meals you ticked." }));
+  add({ title: "Energy eaten (" + unit + " a day)", kind: "bar", unit: unit, points: energy, key: estKey(energy), empty: ticksOrLoseIt,
+    note: window.PHONE ? "Average per day, estimated from the meals you ticked." : "Average per day logged. From Lose It, or estimated from the meals you ticked." });
   var protein = food("protein_in", "plan_protein");
-  charts.appendChild(chartCard({ title: "Protein (grams a day)", kind: "bar", unit: "g", points: protein, key: estKey(protein),
-    note: "Average per day logged." }));
+  add({ title: "Protein (grams a day)", kind: "bar", unit: "g", points: protein, key: estKey(protein), empty: ticksOrLoseIt,
+    note: "Average per day logged." });
   // Steps, the Apple Watch readings and workouts come from Apple Health or Lose It, which the
   // phone app doesn't read yet, so it leaves these charts out.
-  if (!window.PHONE) addHealthCharts(charts, points);
-  charts.appendChild(chartCard({ title: "Exercise sessions ticked (a week)", kind: "bar", unit: "sessions", points: points("sessions"),
-    note: "Sessions ticked as done on the Exercise tab.", empty: "Nothing ticked yet. Tick sessions on the Exercise tab as you do them." }));
-  charts.appendChild(chartCard({ title: "Meals ticked as eaten (a week)", kind: "bar", unit: "meals",
+  if (!window.PHONE) addHealthCharts(add, points);
+  add({ title: "Exercise sessions ticked (a week)", kind: "bar", unit: "sessions", points: points("sessions"),
+    note: "Sessions ticked as done on the Exercise tab.", empty: "Nothing ticked yet. Tick sessions on the Exercise tab as you do them." });
+  add({ title: "Meals ticked as eaten (a week)", kind: "bar", unit: "meals",
     points: points("meals", function (w) { return w.score != null ? "average score " + fmt(w.score, 1) + " out of 10" : null; }),
-    note: "Meals ticked on the Meals tab.", empty: "Nothing ticked yet. Tick meals on the Meals tab as you eat them." }));
+    note: "Meals ticked on the Meals tab.", empty: "Nothing ticked yet. Tick meals on the Meals tab as you eat them." });
+  if (waiting.length) charts.appendChild(notTrackedCard(waiting));
+}
+
+// One card listing the charts with nothing to show yet, each with how to start it.
+function notTrackedCard(specs) {
+  var card = el("section", "card");
+  card.appendChild(el("h2", null, "Not tracked yet"));
+  card.appendChild(el("p", "note", "These charts appear here once there is something to show."));
+  var list = el("ul", "waiting");
+  specs.forEach(function (spec) {
+    var li = el("li");
+    li.appendChild(el("strong", null, spec.title));
+    li.appendChild(el("span", null, spec.empty || "Nothing recorded in this time yet."));
+    list.appendChild(li);
+  });
+  card.appendChild(list);
+  return card;
 }
 
 // Adds days to a "YYYY-MM-DD" date.

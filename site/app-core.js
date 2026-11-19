@@ -60,6 +60,27 @@ function money(n) {
   return Appearance.money(n, PLAN && PLAN.currency);
 }
 
+// A box for a view with nothing to show yet: what belongs here, why it's worth having, and
+// buttons to get it. `buttons` is a list of [text, address].
+function emptyState(title, why, buttons) {
+  var box = el("div", "emptybox");
+  box.appendChild(el("h3", null, title));
+  box.appendChild(el("p", null, why));
+  var row = el("p", "empty-acts");
+  (buttons || []).forEach(function (b, i) {
+    var a = el("a", "btn" + (i === 0 ? " primary" : ""), b[0]);
+    a.href = b[1];
+    row.appendChild(a);
+  });
+  if (row.children.length) box.appendChild(row);
+  return box;
+}
+
+// Plan setup's name: "Family and plan" in the phone app.
+function setupName() {
+  return window.PHONE ? "Family and plan" : "Plan setup";
+}
+
 // Capital first letter: "alex" becomes "Alex".
 function cap(s) {
   s = String(s || "");
@@ -231,7 +252,7 @@ function setSync(message) {
   var offline = /^Offline/.test(message);
   label.textContent = offline ? "Offline" : (/Reset/.test(message) ? "Reset" : window.PHONE ? "Saved" : "Synced");
   label.title = message;
-  label.className = "sync" + (offline ? " off" : "");
+  label.className = "sync" + (offline ? " off" : " ok");
 }
 
 // Sends everything to the server: shopping ticks, this person's ticks and ratings, then "At home".
@@ -538,7 +559,7 @@ function moreCalendar() {
     return;
   }
   if (!person || !person.times || !person.times.length) {
-    box.appendChild(el("p", "note2", "When your plan has suggested eating times, you can add them to your phone’s calendar from here."));
+    box.hidden = true;   // no eating times in this plan: nothing to add, so no box
     return;
   }
   box.appendChild(el("p", "note2", "Get a reminder on your phone before each of your suggested eating times. The times are listed in Meals, under your guide."));

@@ -68,7 +68,6 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
 .msg{border-radius:.6rem;padding:.6rem .8rem;margin:.6rem 0 0;font-size:.9rem}
 .msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
 .msg.ok{background:color-mix(in srgb,var(--accent) 14%,var(--card));border:1px solid var(--accent)}
-.pw label{display:block;font-size:.9rem;margin:.6rem 0 .2rem}
 .privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
 .steps{display:flex;flex-wrap:wrap;gap:.35rem;margin:0 0 .8rem;scroll-margin-top:.6rem}
 .steps .btn{min-height:2rem;padding:.2rem .6rem;font-size:.85rem;border-radius:1.2rem;border-width:1px}
@@ -79,6 +78,7 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
 .linkish{background:none;border:0;padding:.3rem;color:var(--mute);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer}
 .finish.later{display:none}
 [hidden]{display:none!important}
+.pwlink{color:var(--mute);margin:1rem 0}
 </style>
 <script src="regions.js"></script>
 <script src="appearance.js"></script>
@@ -107,15 +107,7 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
       <p class="intro" id="finishText"></p>
       <div class="finish-row"><button class="btn primary" type="button" id="finishBtn">I’m finished</button> <a class="btn" id="setupLink" href="setup.html" hidden data-phone="Family and plan">Plan setup</a></div>
     </section>
-    <section class="card pw" id="pwCard" hidden>
-      <h2>Change your password</h2>
-      <form id="pwForm">
-        <label for="pwCur">Current password</label><input type="password" id="pwCur" autocomplete="current-password" required>
-        <label for="pwNew">New password (at least 8 characters)</label><input type="password" id="pwNew" autocomplete="new-password" minlength="8" required>
-        <p><button class="btn primary" type="submit">Change password</button></p>
-        <div id="pwMsg" role="status"></div>
-      </form>
-    </section>
+    <p class="pwlink" id="pwCard" hidden data-web-only>To change your password, open <a href="account.html">Account</a>.</p>
     <p class="privacy" data-phone="These answers stay on this phone: the app has no accounts and sends nothing to a server. The plan offers general considerations only: your GP, dietitian or physio knows your situation best.">Only you and the plan’s admins can see these answers. If an AI writes the plan or answers Ask AI (a key on the server, or someone’s own key in Settings), they’re also sent to that AI company; with no AI they stay on your server. Blood test results in My files are only sent if you say yes under Health. The plan offers general considerations only: your GP, dietitian or physio knows your situation best.</p>
   </div>
 </main>
@@ -475,20 +467,6 @@ function renderPicker(list, names) {
     picker.appendChild(b);
   });
 }
-
-// "Change your password".
-$("pwForm").onsubmit = function (e) {
-  e.preventDefault();
-  var box = $("pwMsg");
-  box.textContent = "";
-  api("POST", "/api/password", { current: $("pwCur").value, password: $("pwNew").value }).then(function () {
-    $("pwCur").value = "";
-    $("pwNew").value = "";
-    box.appendChild(el("div", "msg ok", "Password changed. Other devices will need to log in again."));
-  }).catch(function (err) {
-    box.appendChild(el("div", "msg err", err.message));
-  });
-};
 
 // Save straight away if the page is closed while a save is waiting.
 window.addEventListener("pagehide", function () {

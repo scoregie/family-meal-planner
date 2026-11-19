@@ -144,7 +144,12 @@ function renderExercise() {
   var ex = exFor(week);
   var extras = exExtras();
   if (!ex) {
-    panel.appendChild(el("p", "emptyline", w.exercise ? "No exercise plan for " + USER + " this week yet." : "No exercise plan is listed for this week."));
+    var buttons = [["Answer the Exercise questions", "profile.html?person=" + encodeURIComponent(ukey(USER))]];
+    if (isAdmin()) buttons.push(["Open " + setupName(), "setup.html"]);
+    panel.appendChild(emptyState(
+      w.exercise ? "No exercise plan for " + USER + " yet" : "No exercise plan this week",
+      "Workouts are made from the Exercise questions in About me (what you can do now, injuries and equipment). Once they’re answered, the next plan includes exercise.",
+      buttons));
     return;
   }
   var count = el("p", "count");

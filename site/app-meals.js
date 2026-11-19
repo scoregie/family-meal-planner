@@ -625,7 +625,7 @@ function renderMacros() {
   var w = PLAN.weeks[week];
   var ppl = PLAN.people || null;
   if (!w.meals || !w.meals.length) {
-    panel.appendChild(el("p", "emptyline", "No meals are listed for this week."));
+    panel.appendChild(emptyState("No meals this week", "This week of the plan has no meals listed. A new plan has meals for every week.", isAdmin() ? [["Open " + setupName(), "setup.html"]] : []));
     return;
   }
   var who = pickWho(ppl);
@@ -867,7 +867,7 @@ function renderMeals() {
   var w = PLAN.weeks[week];
   var ppl = PLAN.people || null;
   if (!w.meals || !w.meals.length) {
-    panel.appendChild(el("p", "emptyline", "No meals are listed for this week."));
+    panel.appendChild(emptyState("No meals this week", "This week of the plan has no meals listed. A new plan has meals for every week.", isAdmin() ? [["Open " + setupName(), "setup.html"]] : []));
     return;
   }
   var who = pickWho(ppl);
@@ -1051,7 +1051,7 @@ function recipeItem(r, forPerson) {
   var summary = el("summary");
   summary.appendChild(el("strong", null, r.name));
   var makes = forPerson ? ("1 serve for " + forPerson.name) : r.makes;
-  if (makes) summary.appendChild(el("span", "mk2", " · " + makes));
+  if (makes) summary.appendChild(el("span", "mk2 under", makes));
   fold.appendChild(summary);
 
   var ingredients = r.ingredients;

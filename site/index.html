@@ -92,6 +92,12 @@ li.home .row .name{color:var(--mute)}   /* "At home": shown by the pressed butto
 .rh{margin-top:1.5rem}
 .rec p{margin:0}
 .emptyline{color:var(--mute);text-align:center;padding:1.5rem 0}
+.mk2.under{display:block}   /* a recipe's "breakfast for 2 adults" line, under its name */
+.emptybox{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:1rem 1.1rem;margin:0 0 1rem}
+.emptybox h3{margin:0 0 .35rem;font-size:1.05rem}
+.emptybox p{margin:0 0 .75rem;color:var(--mute);line-height:1.5}
+.emptybox .empty-acts{display:flex;flex-wrap:wrap;gap:.5rem;margin:0}
+.emptybox .btn{text-decoration:none}
 
 .seg{grid-template-columns:repeat(3,1fr)}
 .pseg{grid-template-columns:repeat(4,1fr)}
@@ -111,7 +117,7 @@ li.home .row .name{color:var(--mute)}   /* "At home": shown by the pressed butto
 .scores button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .rate-box label{display:block;font-weight:700;font-size:.85rem;margin:0 0 .3rem}
 .rate-box textarea{display:block;width:100%;font:inherit;font-size:1rem;color:var(--ink);background:var(--card);border:2px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.45rem;padding:.5rem .6rem;min-height:4.5rem;resize:vertical}
-.rate-box textarea:focus{outline:none;border-color:var(--accent)}
+.rate-box textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .rate-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;gap:.5rem}
 .rate-foot .btn{min-height:2.4rem;padding:.3rem .7rem;font-size:.85rem}
 .seg.four{grid-template-columns:repeat(2,1fr)}
@@ -126,7 +132,7 @@ li.home .row .name{color:var(--mute)}   /* "At home": shown by the pressed butto
 .rs-dish{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere}
 .rs-where{display:block;font-weight:400;color:var(--mute);font-size:.82rem;margin-top:.15rem}
 .rs-avg{flex:none;text-align:center;min-width:3.6rem;border-radius:.5rem;padding:.25rem .4rem;font-variant-numeric:tabular-nums;line-height:1.1;border:2px solid var(--line)}
-.rs-avg b{display:block;font-size:1.15rem}.rs-avg small{font-size:.7rem;color:var(--mute)}
+.rs-avg b{display:block;font-size:1.15rem}.rs-avg small{font-size:.75rem;color:var(--mute)}
 .rs-avg.low{border-color:var(--low)}.rs-avg.low b{color:var(--low)}
 .rs-avg.mid{border-color:var(--mid)}.rs-avg.mid b{color:var(--mid)}
 .rs-avg.high{border-color:var(--accent)}.rs-avg.high b{color:var(--accent)}
@@ -196,6 +202,7 @@ main{padding:.5rem 1rem calc(5.5rem + env(safe-area-inset-bottom,0px))}
 .sync{flex:none;display:inline-flex;align-items:center;gap:.35rem;color:var(--mute);font-size:.8rem}
 .sync::before{content:"";width:.55rem;height:.55rem;border-radius:50%;background:var(--accent)}
 .sync:empty{display:none}
+@media (max-width:430px){.sync.ok{font-size:0;gap:0}}   /* narrow phones: just the green dot when all is saved, so the title fits */
 .sync.off::before{background:var(--mid)}
 .acctmenu>summary,.more>summary,.exfold>summary,.about>summary{list-style:none}
 .acctmenu>summary::-webkit-details-marker,.more>summary::-webkit-details-marker,.exfold>summary::-webkit-details-marker,.about>summary::-webkit-details-marker{display:none}
@@ -218,7 +225,7 @@ details.exfold{padding:0}
 .who{background:var(--card);border:1px solid var(--line);border-radius:.7rem;padding:.4rem .5rem .4rem .8rem;margin:0 0 .75rem;font-size:.92rem}
 .who select{min-height:2.4rem}
 .bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--line);padding:0 .25rem env(safe-area-inset-bottom,0px)}
-.bottomnav button{flex:1;max-width:8rem;display:flex;flex-direction:column;align-items:center;gap:.15rem;font:inherit;font-size:.72rem;color:var(--mute);background:none;border:0;padding:.5rem .2rem .45rem;min-height:3.6rem;cursor:pointer}
+.bottomnav button{flex:1;max-width:8rem;display:flex;flex-direction:column;align-items:center;gap:.15rem;font:inherit;font-size:.75rem;color:var(--mute);background:none;border:0;padding:.5rem .2rem .45rem;min-height:3.6rem;cursor:pointer}
 .bottomnav svg{width:1.5rem;height:1.5rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .bottomnav button[aria-pressed="true"]{color:var(--accent);font-weight:700}
 .bottomnav button[aria-pressed="true"] svg{stroke-width:2.3}
@@ -232,14 +239,19 @@ details.exfold{padding:0}
 .more summary{cursor:pointer;display:flex;align-items:center}
 .more .menu{min-width:10rem}
 /* shopping rows: name gets the width, small actions line underneath */
-#lists li{display:block}
+#lists li{display:grid;grid-template-columns:1fr auto;align-items:start}
+#lists li>.byline,#lists li>.acts{grid-column:1/-1}
+#lists li>.byline{padding:0 .9rem .35rem 3.4rem}
+.itemmore{width:2.75rem;height:2.75rem;margin:.3rem .3rem 0 0;font:inherit;font-size:1.25rem;line-height:1;color:var(--mute);background:transparent;border:1px solid transparent;border-radius:.6rem;cursor:pointer}
+.itemmore[aria-expanded="true"]{border-color:var(--line);color:var(--ink)}
+.itemmore:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 #lists .row{padding:.55rem .9rem 0 1rem;min-height:0;align-items:flex-start}
 #lists .box{margin-top:.05rem}
 #lists .name{flex:1;min-width:0}
 #lists .price{padding-top:.05rem}
 .acts{display:flex;flex-wrap:wrap;align-items:center;gap:0 .9rem;padding:.05rem .9rem .45rem 3.4rem;font-size:.8rem}
 .acts .find{padding:.35rem 0;font-size:.8rem}
-.acts .find.pinned{text-decoration-style:solid;font-weight:800}
+.acts .find.pinned{text-decoration-style:solid;font-weight:700}
 .shopgo{width:100%;margin-top:.6rem}
 .pinbtn{font:inherit;font-size:.8rem;color:var(--mute);background:transparent;border:0;border-radius:1rem;padding:.3rem .6rem;min-height:2rem;cursor:pointer;margin-left:-.6rem}
 .pinbtn:focus-visible{outline:3px solid var(--accent)}
@@ -288,12 +300,12 @@ li.done .acts .find{color:var(--done)}
 .row input:checked~.name{color:var(--done);text-decoration:line-through}
 .row input:checked~.price{color:var(--done)}
 /* meals and exercise */
-.pseg{display:flex;gap:.35rem;overflow-x:auto;scrollbar-width:none;margin:0 0 .75rem}
-.pseg .btn{flex:none;min-height:2.3rem;padding:.25rem .8rem;font-size:.85rem;border-radius:1.2rem;border-width:1px}
+.pseg{display:flex;flex-wrap:wrap;gap:.35rem;margin:0 0 .75rem}
+.pseg .btn{flex:none;min-height:2.75rem;padding:.25rem .8rem;font-size:.85rem;border-radius:1.2rem;border-width:1px}
 .count{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0 .75rem;margin:0 0 .6rem;font-size:.82rem;color:var(--mute)}
 .count b{color:var(--ink);font-size:1rem}
 .day.today{box-shadow:inset 4px 0 0 var(--accent)}
-.today-tag{display:inline-block;margin-left:.5rem;font-size:.72rem;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:1rem;padding:.05rem .5rem;vertical-align:.1rem}
+.today-tag{display:inline-block;margin-left:.5rem;font-size:.75rem;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:1rem;padding:.05rem .5rem;vertical-align:.1rem}
 .meal{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:.6rem;margin:.15rem 0;padding:.25rem 0}
 .meal .mt{min-width:0}
 .meal .mk{display:block;width:auto;font-size:.75rem;padding:0;letter-spacing:.02em}
@@ -385,13 +397,14 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 .gl-fold summary{min-height:2.4rem;display:flex;align-items:center}
 .gl-fold summary::before{content:"▸";margin-right:.45rem;transition:transform .15s}
 .gl-fold[open] summary::before{transform:rotate(90deg)}
+body:not([data-view="today"]) .ask{display:none}   /* notices show on Today only */
 .ask{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;background:var(--card);border:1px solid var(--accent);border-radius:.8rem;padding:.7rem .9rem;margin:0 0 1rem;font-size:.92rem}
 .ask span{flex:1 1 14rem}
 .ask .btn{text-decoration:none}
 /* shopping: which part of the list, and the stock-up tag */
 .partseg{display:flex;gap:.35rem;overflow-x:auto;scrollbar-width:none;margin:0 0 .75rem}
 .partseg .btn{flex:none;min-height:2.3rem;padding:.25rem .8rem;font-size:.85rem;border-radius:1.2rem;border-width:1px}
-.stocktag{display:inline-block;margin-left:.4rem;font-size:.7rem;font-weight:700;color:var(--mute);border:1px solid var(--line);border-radius:1rem;padding:0 .45rem;vertical-align:.1rem}
+.stocktag{display:inline-block;margin-left:.4rem;font-size:.75rem;font-weight:700;color:var(--mute);border:1px solid var(--line);border-radius:1rem;padding:0 .45rem;vertical-align:.1rem}
 /* one day at a time */
 .daynav{margin:0 0 .75rem}
 .daynav-top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.5rem}
@@ -413,7 +426,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 .avatarlink:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .more-me{color:var(--mute);font-size:.9rem;margin:0 0 .8rem}
 .more-h{font-size:1rem;margin:1rem 0 .4rem;justify-content:flex-start;gap:.5rem}
-.badge{font-size:.72rem;font-weight:700;background:var(--line);color:var(--ink);border-radius:1rem;padding:.1rem .5rem}
+.badge{font-size:.75rem;font-weight:700;background:var(--line);color:var(--ink);border-radius:1rem;padding:.1rem .5rem}
 .morelist li{display:block}
 .morelist a{display:flex;flex-direction:column;padding:.65rem 2.2rem .65rem 1rem;min-height:3.2rem;color:var(--ink);text-decoration:none;position:relative}
 .morelist a::after{content:"›";position:absolute;right:1rem;top:50%;transform:translateY(-50%);color:var(--mute);font-size:1.4rem}
@@ -523,7 +536,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
     <p class="note2" data-phone="The meals, exercise and health notes are general information, not medical advice. Check the plan with your GP, dietitian or physio, and in an emergency call your local emergency number. Prices are estimates. Store, brand and app names belong to their owners; this app isn’t connected with or endorsed by them. Everything you enter stays on this phone (see Settings → Backup).">The meals, exercise and health notes are general information, not medical advice, and AI can make mistakes. Check the plan with your GP, dietitian or physio, and in an emergency call your local emergency number. Prices are estimates. Store, brand and app names belong to their owners; this app isn’t connected with or endorsed by them.</p>
     <form method="post" action="/auth/logout" id="logout" data-web-only><button class="btn logoutbtn" type="submit">Log out</button></form>
   </div>
-  <details class="about"><summary>About this plan</summary><p id="sub"></p><p class="note">Tap the box to tick an item off. Tap &ldquo;At home?&rdquo; on anything you already have. It is removed from your total and stays marked in every week. Oil, salt, pepper and dried spices are assumed on hand. The store links open a search for that item, so pick the size and brand that suits you. Tap &ldquo;Pin product&rdquo; and paste a product page to make the link go straight to the one you buy. &ldquo;Shop mode&rdquo; shows one item at a time, in aisle order, while you walk the shop. Choose your stores in Settings.</p></details>
+  <details class="about"><summary>About this plan</summary><p id="sub"></p><p class="note">Tap the box to tick an item off. Tap &ldquo;&#8943;&rdquo; next to an item to search your store for it, pin a product, or mark it &ldquo;At home&rdquo; if you already have it. It is removed from your total and stays marked in every week. Oil, salt, pepper and dried spices are assumed on hand. The store links open a search for that item, so pick the size and brand that suits you. Tap &ldquo;Pin product&rdquo; and paste a product page to make the link go straight to the one you buy. &ldquo;Shop mode&rdquo; shows one item at a time, in aisle order, while you walk the shop. Choose your stores in Settings.</p></details>
 </main>
 <div class="shopmode" id="shopMode" role="dialog" aria-modal="true" aria-labelledby="smName" hidden>
   <div class="sm-top">
@@ -604,8 +617,9 @@ function setMe(d) {
   document.getElementById("me").textContent = window.PHONE ? "Saved on this phone" : "Logged in as " + (d.email || d.user) + (roles[d.role] || (d.admin ? " (admin)" : ""));
   document.getElementById("adminGroup").hidden = !d.admin;
   document.getElementById("emailNudge").hidden = !d.needsEmail;
-  // Admins still on the example plan are pointed at Plan setup.
-  document.getElementById("setupNudge").hidden = !(d.admin && PLAN && /^example/i.test(String(PLAN.id || "")));
+  // Admins still on the example plan are pointed at Plan setup (unless a new plan is already
+  // waiting for them, which has its own notice).
+  document.getElementById("setupNudge").hidden = draftWaiting || !(d.admin && PLAN && /^example/i.test(String(PLAN.id || "")));
   document.getElementById("avatar").textContent = (d.person || d.user).charAt(0);
   if (d.admin) checkForDraft();
 }
@@ -613,12 +627,15 @@ function setMe(d) {
 // Admins: shows a banner when a new plan (from the AI, the builder or Claude Code) is waiting
 // to be approved. Looked up once each time the app opens.
 var draftChecked = false;
+var draftWaiting = false;
 function checkForDraft() {
   if (draftChecked) return;
   draftChecked = true;
   fetch("/api/requests", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
     var waiting = d && (d.requests || []).some(function (r) { return r.status === "open" && (r.kind === "full-plan" || /^New 4-week plan/.test(r.title || "")); });
+    draftWaiting = waiting;
     document.getElementById("draftNudge").hidden = !waiting;
+    if (waiting) document.getElementById("setupNudge").hidden = true;   // one notice at a time
   }).catch(function () { /* offline: no banner */ });
 }
 if (ME && ME.user) setMe(ME);   // straight away, from the copy remembered on this device
