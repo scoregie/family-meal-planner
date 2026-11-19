@@ -169,8 +169,11 @@ test('a cardio session is labelled with its plan and the week as the plan names 
   const vm = require('node:vm');
   const fs = require('node:fs');
   const path = require('node:path');
-  const src = fs.readFileSync(path.join(__dirname, '..', 'site', 'app-exercise.js'), 'utf8');
-  const fn = src.slice(src.indexOf('function sessionId'), src.indexOf('\n}\n', src.indexOf('function sessionId')) + 3);
+  const fnOf = (file, name) => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'site', file), 'utf8');
+    return src.slice(src.indexOf('function ' + name), src.indexOf('\n}\n', src.indexOf('function ' + name)) + 3);
+  };
+  const fn = fnOf('app-core.js', 'weekNumber') + fnOf('app-exercise.js', 'sessionId');
   const ctx = { PLAN: { id: 'plan-2026-11', weeks: [{ kind: 'stockup' }, {}, {}, { kind: 'stockup' }, {}] } };
   vm.runInNewContext(fn + ';this.sessionId = sessionId;', ctx);
   assert.equal(ctx.sessionId(1, { day: 'Monday' }, 'morning'), 'plan-2026-11|1|Mon-morning', 'after Stock-up 1 comes Week 1');
@@ -182,4 +185,24 @@ test('a cardio session is labelled with its plan and the week as the plan names 
   let r = cardio.feelAfter(answer, saved, 'new|1|Mon-morning', 'easy'); saved = r.saved;
   r = cardio.feelAfter(answer, saved, 'new|1|Wed-morning', 'easy');
   assert.equal(r.moved, 1);
+});
+
+test('the address names weeks the way the plan does: Week 1 is #week-1 after Stock-up 1', () => {
+  const vm = require('node:vm');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'site', 'app-core.js'), 'utf8');
+  const fnOf = name => src.slice(src.indexOf('function ' + name), src.indexOf('\n}\n', src.indexOf('function ' + name)) + 3);
+  const ctx = { PLAN: { weeks: [{ kind: 'stockup' }, {}, {}, { kind: 'stockup' }, {}, {}] }, location: { hash: '' } };
+  vm.runInNewContext(fnOf('weekNumber') + fnOf('weekAt') + fnOf('go') + ';this.weekNumber = weekNumber; this.weekAt = weekAt; this.go = go;', ctx);
+  assert.equal(ctx.weekNumber(1), 1, 'Week 1');
+  assert.equal(ctx.weekNumber(0), 1, 'Stock-up 1 belongs to Week 1');
+  assert.equal(ctx.weekNumber(3), 3, 'Stock-up 2 belongs to Week 3');
+  assert.equal(ctx.weekNumber(5), 4);
+  assert.equal(ctx.weekAt(1), 1);
+  assert.equal(ctx.weekAt(3), 4);
+  assert.equal(ctx.weekAt(5), -1);
+  for (let i = 0; i < 6; i++) if (ctx.PLAN.weeks[i].kind !== 'stockup') assert.equal(ctx.weekAt(ctx.weekNumber(i)), i, 'round trip ' + i);
+  ctx.go(1, 'meals');
+  assert.equal(ctx.location.hash, 'week-1-meals');
 });

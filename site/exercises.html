@@ -227,7 +227,7 @@ $("who").onchange = function () { PERSON = this.value; load().catch(function (e)
 drawTypes();
 // Back to More, in the week the app was last on.
 try {
-  var place = /^#week-(\d+)/.exec(localStorage.getItem("coles-plan-place") || "");
+  var place = /^#week-(\d+)/.exec(localStorage.getItem("plan-place") || "");
   $("back").href = "./#week-" + (place ? place[1] : "1") + "-more";
 } catch (e) {}
 

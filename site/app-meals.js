@@ -237,8 +237,7 @@ function collectRatings(scope) {
           dishes[key] = { name: dish.trim(), rows: [], where: {} };
           order.push(key);
         }
-        var weekName = PLAN.weeks[weekIndex].name || ("Week " + (weekIndex + 1));
-        var where = weekName + ", " + day + " " + meal.toLowerCase();
+        var where = weekName(weekIndex) + ", " + day + " " + meal.toLowerCase();
         dishes[key].where[where] = 1;
         dishes[key].rows.push({ who: nameOf(personKey), s: rating.s, n: rating.n, where: where });
         people[personKey] = 1;

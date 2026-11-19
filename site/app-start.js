@@ -13,14 +13,14 @@ function show() {
 // Draws the week and view the address asks for (see show()).
 function drawView() {
   var match = /^#week-(\d+)(-shop|-meals|-macros|-exercise|-ratings|-more)?$/.exec(location.hash);
-  var n = match ? +match[1] : 1;
-  week = (n >= 1 && n <= PLAN.weeks.length) ? n - 1 : 0;
+  week = weekAt(match ? +match[1] : 1);
+  if (week < 0) week = 0;
   view = (match && match[2]) ? match[2].slice(1) : "today";
   // Ratings are for admins only. Stock-up weeks are shown as part of the week after them.
   if (view === "ratings" && !isAdmin()) view = "more";
   if (PLAN.weeks[week].kind === "stockup") week = planWeek(week);
   $("whoRow").hidden = !(isAdmin() && (view === "today" || view === "meals" || view === "exercise"));
-  try { localStorage.setItem("coles-plan-place", location.hash); } catch (e) {}   // reopen this week next time
+  try { localStorage.setItem(PLACE_KEY, location.hash); } catch (e) {}   // reopen this week next time
 
   renderTabs();
   $("tabs").hidden = view === "more";
@@ -181,7 +181,7 @@ window.addEventListener("hashchange", function () {
 (function start() {
   // With no #week-... in the address, go back to where this device was last time.
   if (!location.hash) {
-    var place = lsGet("coles-plan-place");
+    var place = lsGet(PLACE_KEY);
     var placed = place && /^#week-(\d+)/.exec(place);
     if (placed) history.replaceState(null, "", "#week-" + placed[1]);   // that week, on Today
   }
