@@ -81,9 +81,7 @@ function easyNeeded(level, steady) {
 function easyToGo(answer, saved, level, limit, steady) {
   if (level >= clamp(TOP, limit)) return 0;
   const feels = saved && saved.base === answer && Array.isArray(saved.feels) ? saved.feels : [];
-  let run = 0;
-  for (let i = feels.length - 1; i >= 0 && !feels[i].moved && feels[i].feel === 'easy'; i--) run++;
-  return Math.max(1, easyNeeded(level, steady) - run);
+  return Math.max(1, easyNeeded(level, steady) - unusedEasyRun(feels).length);
 }
 
 // A rough starting level from an Apple Watch cardio fitness reading (VO2 max, in mL/kg/min).
@@ -104,25 +102,49 @@ function describe(level) {
 }
 
 // Records how a session felt ("easy", "right" or "hard") and works out the new level.
-// `saved` is {base, offset, feels: [{id, feel, moved}]}: `id` is the session ("2|Mon-cardio"), so
-// saying again for the same session replaces the first answer, and `moved` marks the answer that
-// changed the level. Gives back the new saved record, `moved` (+1 stepped up, -1 stepped back,
-// or 0) and the new level.
+// `saved` is {base, offset, feels: [{id, feel, used}]}: `id` is the session ("2|Mon-cardio"), so
+// saying again for the same session replaces the first answer. `used` marks answers that have
+// already counted towards a step, so each session counts once: tapping "Too easy" again on the
+// same sessions can't keep stepping up. (Older records marked only the answer that moved the
+// level, with `moved`; that counts as used too.) Changing a counted "Too easy" to "Too hard"
+// does step back, as a correction. Gives back the new saved record, `moved` (+1 stepped up,
+// -1 stepped back, or 0) and the new level.
 function feelAfter(answer, saved, id, feel, limit, guess, steady) {
   const same = saved && saved.base === answer;   // a changed About me answer starts again
   const before = levelNow(answer, saved, limit, guess, steady);
   const need = easyNeeded(before, steady);
-  const feels = (same && Array.isArray(saved.feels) ? saved.feels : []).filter(f => f.id !== id);
-  // Only answers since the level last changed count, so each step needs two more "too easy".
-  let lastMove = -1;
-  feels.forEach((f, i) => { if (f.moved) lastMove = i; });
-  const since = feels.slice(lastMove + 1).map(f => f.feel).concat(feel);
+  const old = same && Array.isArray(saved.feels) ? saved.feels : [];
+  const prev = old.find(f => f.id === id);
+  const prevUsed = !!(prev && isUsed(prev));
+  const feels = old.filter(f => f.id !== id).map(f => (isUsed(f) ? { id: f.id, feel: f.feel, used: true } : { id: f.id, feel: f.feel }));
+  const entry = prevUsed ? { id, feel, used: true } : { id, feel };
+  feels.push(entry);
   let moved = 0;
-  if (feel === 'hard' && before > 0) moved = -1;
-  else if (since.length >= need && since.slice(-need).every(f => f === 'easy') && before < clamp(TOP, limit)) moved = 1;
-  const entry = moved ? { id, feel, moved: true } : { id, feel };
+  if (feel === 'hard' && before > 0 && (!prevUsed || prev.feel === 'easy')) {
+    moved = -1;
+    entry.used = true;
+  } else if (feel === 'easy' && !prevUsed && before < clamp(TOP, limit)) {
+    const run = unusedEasyRun(feels);
+    if (run.length >= need) {
+      moved = 1;
+      run.forEach(f => { f.used = true; });
+    }
+  }
   const offset = (same ? Number(saved.offset) || 0 : 0) + moved;
-  return { saved: { base: answer, offset, feels: feels.concat(entry).slice(-30) }, moved, level: clamp(before + moved, limit) };
+  return { saved: { base: answer, offset, feels: feels.slice(-30) }, moved, level: clamp(before + moved, limit) };
+}
+
+// True if an answer has already counted towards a step (see feelAfter).
+function isUsed(f) {
+  return !!(f.used || f.moved);
+}
+
+// The newest answers that are "too easy" and haven't counted towards a step yet, newest last.
+// The run stops at an "about right", a "too hard" or an answer that already counted.
+function unusedEasyRun(feels) {
+  const run = [];
+  for (let i = feels.length - 1; i >= 0 && feels[i].feel === 'easy' && !isUsed(feels[i]); i--) run.unshift(feels[i]);
+  return run;
 }
 
 const Cardio = { START, LEVELS, TOP, startLevel, levelNow, describe, feelAfter, clamp, session, levelFromVo2, easyToGo };
