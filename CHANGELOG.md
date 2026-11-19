@@ -3,6 +3,39 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.12.0 (2026-11-19)
+
+Tell the app when you didn't have a meal and why, see how each week went, and easier pages from a
+review of the whole app.
+
+- **"Didn't have it?"** Each meal's button is now **Rate or skip**. As well as the score out of
+  10, you can tap why you didn't have it: No time, Too much effort, Missing ingredients, Ate out
+  or takeaway, Didn't feel like it, Didn't want to eat it, Not hungry or Something else, with an
+  optional note. The next plan uses it: a dish someone didn't want counts against it for them,
+  and three or more "No time" or "Too much effort" mean quicker dinners. AI drafts get the
+  reasons too.
+- **How the week went:** a new page (from Progress, and a "How last week went" card on Today)
+  shows last week, or this week so far, next to the week before: what went well (meals eaten,
+  best-rated meals, exercise sessions, cardio stepping up, new foods tried), what was harder
+  (meals you didn't have and why, days under your vegetable or fruit serves, sessions not
+  ticked), and one thing to consider next week. Cardio steps and new foods count from this
+  version on, because they weren't dated before.
+- **Easier pages:**
+  - notices (set up the plan, a new plan waiting, add your email) show on Today only, not on
+    every tab;
+  - an empty Exercise or Meals tab says why and has buttons to fix it;
+  - each shopping item shows its tick, name and price, with one "⋯" button for Search, At home
+    and Pin product;
+  - Progress puts charts with nothing to show yet into one "Not tracked yet" card that says how
+    to start each;
+  - About me points to Account for changing a password;
+  - the title fits on narrow phones, person buttons wrap instead of running off the edge, and
+    text is never smaller than 12px.
+- New tests for all of it (183 in total).
+
+After updating, restart the api (`docker compose restart api`). The database adds one column the
+first time it starts.
+
 ## v1.11.0 (2026-11-19)
 
 Ready for the phone app to share the same pages, and a tidy-up of the code underneath. Nothing
