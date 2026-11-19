@@ -8,14 +8,16 @@ function getRate(id) {
   return (rates[week] || {})[id] || {};
 }
 
-// Changes a rating. `patch` is the part that changed, like {s: 7} or {n: "too salty"}.
-// A rating with no score and no note is removed. `dish` is saved too, for the Ratings view.
+// Changes a rating. `patch` is the part that changed, like {s: 7}, {n: "too salty"} or
+// {x: "time"} (didn't have it: why, from skipreasons.js). A rating with no score, note or reason
+// is removed. `dish` is saved too, for the Ratings view.
 function setRate(id, patch, dish) {
   var weekRates = rates[week] || {};
   var rating = Object.assign({}, weekRates[id] || {}, patch);
   if (!rating.s) delete rating.s;
   if (!rating.n || !rating.n.trim()) delete rating.n;
-  if (rating.s || rating.n) {
+  if (!rating.x) delete rating.x;
+  if (rating.s || rating.n || rating.x) {
     if (dish) rating.t = dish;
     weekRates[id] = rating;
   } else {
@@ -26,9 +28,11 @@ function setRate(id, patch, dish) {
   save();
 }
 
-// Makes a meal's Rate button work. `button` opens `box`, which has scores 1 to 10, a note and
+// Makes a meal's "Rate or skip" button work. `button` opens `box`, which has scores 1 to 10, a note and
 // Clear/Done buttons. `summary` shows the note when the box is closed. Only one box is open at a time.
-function rateUI(id, what, button, summary, box, dish) {
+// `untick` takes the meal off "eaten" (choosing why you didn't have it does that). Gives back
+// paint(), to draw the button again after the meal is ticked.
+function rateUI(id, what, button, summary, box, dish, untick) {
   var key = week + "|" + id;
   var boxId = "rate-" + key.replace(/[^a-z0-9]/gi, "-");
   box.id = boxId;
@@ -38,13 +42,16 @@ function rateUI(id, what, button, summary, box, dish) {
   function paint() {
     var rating = getRate(id);
     var open = openRate === key;
-    button.textContent = rating.s ? rating.s + "/10" : (rating.n ? "Note" : "Rate");
-    button.className = "rate-btn" + (rating.s || rating.n ? " has" : "");
+    button.textContent = rating.x ? "Skipped" : rating.s ? rating.s + "/10" : (rating.n ? "Note" : "Rate or skip");
+    button.className = "rate-btn" + (rating.s || rating.n || rating.x ? " has" : "");
     button.setAttribute("aria-expanded", open);
     // Starts with the words on the button, so voice control ("tap 7/10") finds it.
-    button.setAttribute("aria-label", button.textContent + ": rate " + what);
-    summary.hidden = open || !rating.n;
-    summary.textContent = rating.n ? "“" + rating.n.trim() + "”" : "";
+    button.setAttribute("aria-label", button.textContent + ": rate or skip " + what);
+    var said = [];
+    if (rating.x) said.push("Didn’t have it: " + SkipReasons.label(rating.x));
+    if (rating.n) said.push("“" + rating.n.trim() + "”");
+    summary.hidden = open || !said.length;
+    summary.textContent = said.join(" · ");
     box.hidden = !open;
   }
 
@@ -62,14 +69,40 @@ function rateUI(id, what, button, summary, box, dish) {
     }
     box.appendChild(scores);
 
+    addSkip(rating);
     addNote(rating);
     addFoot();
+  }
+
+  // Adds "Didn't have it?" and its reasons. Choosing one takes the meal off "eaten" and clears
+  // its score; choosing it again takes the reason away.
+  function addSkip(rating) {
+    box.appendChild(el("p", "skip-q", "Didn’t have it? Tap why:"));
+    var reasons = el("div", "reasons");
+    reasons.setAttribute("role", "group");
+    reasons.setAttribute("aria-label", "Why you didn’t have it");
+    SkipReasons.REASONS.forEach(function (r) {
+      var b = el("button", null, r[1]);
+      b.type = "button";
+      b.setAttribute("aria-pressed", rating.x === r[0]);
+      b.onclick = function () {
+        var now = getRate(id).x === r[0] ? "" : r[0];
+        setRate(id, now ? { x: now, s: 0 } : { x: "" }, dish);
+        if (now && untick) untick();
+        build();
+        paint();
+        var again = box.querySelectorAll(".reasons button")[SkipReasons.REASONS.indexOf(r)];
+        if (again) again.focus({ preventScroll: true });   // keep focus on the button pressed
+      };
+      reasons.appendChild(b);
+    });
+    box.appendChild(reasons);
   }
 
   // Adds the note box ("What didn't you like?") to the rating box. It saves as you type.
   function addNote(rating) {
     var noteId = boxId + "-note";
-    var label = el("label", null, "What didn't you like? (optional)");
+    var label = el("label", null, rating.x ? "Anything more about why? (optional)" : "What didn't you like? (optional)");
     label.htmlFor = noteId;
     box.appendChild(label);
     var note = el("textarea");
@@ -89,11 +122,11 @@ function rateUI(id, what, button, summary, box, dish) {
   // Adds the "Clear rating" and "Done" buttons to the bottom of the rating box.
   function addFoot() {
     var foot = el("div", "rate-foot");
-    var clear = el("button", "btn", "Clear rating");
+    var clear = el("button", "btn", "Clear");
     var done = el("button", "btn", "Done");
     clear.type = done.type = "button";
     clear.onclick = function () {
-      setRate(id, { s: 0, n: "" });
+      setRate(id, { s: 0, n: "", x: "" });
       build();
       paint();
     };
@@ -115,7 +148,9 @@ function rateUI(id, what, button, summary, box, dish) {
     b.setAttribute("aria-label", n + " out of 10");
     b.onclick = function () {
       var current = getRate(id).s;
-      setRate(id, { s: current === n ? 0 : n }, dish);
+      var hadSkip = !!getRate(id).x;
+      setRate(id, { s: current === n ? 0 : n, x: "" }, dish);   // a score means they had it
+      if (hadSkip) { build(); paint(); return; }
       scores.querySelectorAll("button").forEach(function (other, i) {
         other.setAttribute("aria-pressed", getRate(id).s === i + 1);
       });
@@ -146,6 +181,7 @@ function rateUI(id, what, button, summary, box, dish) {
 
   if (openRate === key) build();
   paint();
+  return paint;
 }
 
 // The Ratings view (admins only): every rated dish with everyone's scores and notes,
@@ -183,7 +219,7 @@ function renderRatings() {
   if (!order.length) {
     var none = scope === "week"
       ? "Nobody has rated a meal this week yet."
-      : "Nobody has rated a meal yet. Ratings show up here once people use the Rate button on the Meals tab.";
+      : "Nobody has rated a meal yet. Ratings show up here once people use the Rate or skip button on the Meals tab.";
     box.appendChild(el("p", "emptyline", none));
     return;
   }
@@ -239,7 +275,7 @@ function collectRatings(scope) {
         }
         var where = weekName(weekIndex) + ", " + day + " " + meal.toLowerCase();
         dishes[key].where[where] = 1;
-        dishes[key].rows.push({ who: nameOf(personKey), s: rating.s, n: rating.n, where: where });
+        dishes[key].rows.push({ who: nameOf(personKey), s: rating.s, n: rating.n, x: rating.x, where: where });
         people[personKey] = 1;
       });
     });
@@ -279,7 +315,8 @@ function ratingCard(dish) {
     var row = el("li");
     row.appendChild(el("span", "rs-who", r.who));
     row.appendChild(el("span", "rs-sc", r.s ? r.s + "/10" : "–"));
-    var text = el("span", "rs-txt", r.n ? "“" + r.n.trim() + "”" : (r.s ? "No note" : ""));
+    var said = (r.x ? "Skipped: " + SkipReasons.label(r.x) + (r.n ? ". " : "") : "") + (r.n ? "“" + r.n.trim() + "”" : (r.s ? "No note" : ""));
+    var text = el("span", "rs-txt", said);
     if (severalPlaces) {
       text.appendChild(document.createTextNode(r.n || r.s ? " " : ""));
       text.appendChild(el("i", null, "(" + r.where + ")"));
@@ -818,10 +855,16 @@ function mealRow(card, day, row, person, ppl, updateEaten) {
     if (box.checked && at < 0) list.push(id);
     if (!box.checked && at > -1) list.splice(at, 1);
     eaten[week] = list;
+    // Ticked as eaten: it isn't "didn't have it" any more.
+    if (box.checked && getRate(id).x) {
+      setRate(id, { x: "" }, row[1]);
+      if (repaint) repaint();
+    }
     save();
     line.className = "meal" + (box.checked ? " eaten" : "");
     updateEaten();
   };
+  var repaint = null;
 
   var text = el("span", "mt");
   text.appendChild(el("span", "mk", row[0]));
@@ -853,7 +896,9 @@ function mealRow(card, day, row, person, ppl, updateEaten) {
   var rateBox = el("div", "rate-box");
   card.appendChild(summary);
   card.appendChild(rateBox);
-  rateUI(id, (day.day || "") + " " + row[0].toLowerCase(), rateButton, summary, rateBox, row[1]);
+  repaint = rateUI(id, (day.day || "") + " " + row[0].toLowerCase(), rateButton, summary, rateBox, row[1], function () {
+    if (box.checked) { box.checked = false; box.onchange(); }
+  });
 }
 
 // ---------- meals ----------

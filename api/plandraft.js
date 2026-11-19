@@ -22,6 +22,7 @@
 // and approving it backs up the old plan first (see savePlan in server.js). The new plan has a
 // new id, so everyone's ticks start fresh.
 const fs = require('fs');
+const path = require('path');
 const db = require('./db');
 const auth = require('./auth');
 const assistant = require('./assistant');
@@ -29,6 +30,8 @@ const planchange = require('./planchange');
 const appearance = require('./appearance');
 const ai = require('./ai');
 const planbuilder = require('./planbuilder');
+// Why someone didn't have a meal (site/skipreasons.js, which the Meals tab uses too).
+const SkipReasons = require(path.join(path.dirname(process.env.PLAN_FILE || '/site/plan.json'), 'skipreasons.js'));
 const healthtargets = require('./healthtargets');
 const planextras = require('./planextras');
 const plancheck = require('./plancheck');
@@ -283,6 +286,8 @@ function userText(ctx, people, note, results) {
     if (scores.length) lines.push('', p.name + '’s scores for meals in earlier plans (bring back what they scored 8 or more; leave out, for them, what they scored 4 or less): ' + scores.join('; ') + '.');
     if (fb.notes.length) lines.push('', 'What ' + p.name + ' said they didn’t like (act on these: change the dish for them, or the whole meal if it suits everyone):',
       '<feedback>' + fb.notes.map(n => n.dish + ': ' + n.note).join('\n') + '</feedback>');
+    if ((fb.skipped || []).length) lines.push('', 'Meals ' + p.name + ' didn’t have, and why (fit the next plan to these: quicker or batch-cooked meals where it was “No time” or “Too much effort”, a shopping list that covers the recipe for “Missing ingredients”, and a different dish for them for “Didn’t want to eat it”):',
+      '<feedback>' + fb.skipped.map(s => s.dish + ': ' + s.reasons.map(SkipReasons.label).join(', ')).join('\n') + '</feedback>');
     const cardio = planbuilder.cardioNow(p.answers, p.cardio, p.measured);
     if (cardio.known) lines.push('', p.name + '’s cardio level now is ' + cardio.level + ' of 5, “' + cardio.name + '” (from About me and how their sessions felt). Fit their cardio sessions to it, such as “' +
       planbuilder.cardioSession('Walk', cardio) + '”, and say how hard it should feel: ' + cardio.how + (cardio.why ? ' ' + cardio.why : ''));

@@ -34,6 +34,8 @@ const STATIC_DIR = process.env.STATIC_DIR || '';   // only used for local testin
 const PORT = +process.env.PORT || 3000;
 const MAX_BODY = 1e6;                              // largest request body we read, in bytes (about 1 MB)
 const PLAN_FILE = process.env.PLAN_FILE || '/site/plan.json';
+// Why someone didn't have a meal (site/skipreasons.js, which the Meals tab uses too).
+const SkipReasons = require(path.join(path.dirname(PLAN_FILE), 'skipreasons.js'));
 const PLAN_EXAMPLE = PLAN_FILE.replace(/plan\.json$/, 'plan.example.json');
 const BACKUPS_DIR = path.join(DATA_DIR, 'plan-backups');
 const BACKUPS_TO_KEEP = 30;
@@ -113,10 +115,12 @@ function cleanRatings(ratings) {
       if (!isObj(rating) || mealId.length > 80) continue;
       const score = Number.isInteger(rating.s) && rating.s >= 1 && rating.s <= 10 ? rating.s : undefined;
       const note = typeof rating.n === 'string' ? rating.n.slice(0, 1000) : '';
-      if (!score && !note.trim()) continue;   // nothing worth keeping
+      const skipped = SkipReasons.valid(rating.x) ? rating.x : '';   // "Didn't have it": why
+      if (!score && !note.trim() && !skipped) continue;   // nothing worth keeping
       const kept = {};
       if (score) kept.s = score;
       if (note.trim()) kept.n = note;
+      if (skipped) kept.x = skipped;
       if (typeof rating.t === 'string' && rating.t) kept.t = rating.t.slice(0, 300);
       cleanWeek[mealId] = kept;
     }

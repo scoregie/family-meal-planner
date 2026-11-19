@@ -19,16 +19,18 @@ const DAY = 24 * 3600 * 1000;
 const RESULTS = ['tried', 'liked', 'not yet'];
 
 // One person's feedback on meals from earlier plans:
-//   {rated: {"lower-case dish name": average score out of 10}, notes: [{dish, note}]}.
+//   {rated: {"lower-case dish name": average score out of 10}, notes: [{dish, note}],
+//    skipped: [{dish, reasons: ["time", ...]}] (meals they didn't have, and why: site/skipreasons.js)}.
 function feedbackFor(person) {
-  const rated = {}, notes = [];
+  const rated = {}, notes = [], skipped = [];
   try {
     for (const f of db.mealFeedback(person)) {
       if (f.score != null) rated[f.dish.toLowerCase()] = f.score;
       for (const note of f.notes) if (notes.length < 20) notes.push({ dish: f.dish, note: note.slice(0, 200) });
+      if ((f.skips || []).length && skipped.length < 30) skipped.push({ dish: f.dish, reasons: f.skips.slice(0, 10) });
     }
   } catch (e) { /* feedback is a nice-to-have: a plan can still be made without it */ }
-  return { rated, notes };
+  return { rated, notes, skipped };
 }
 
 // A date as YYYY-MM-DD, `days` before today.

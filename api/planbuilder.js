@@ -117,6 +117,19 @@ const KEEPS_ITEM = {
 };
 const COOK_LIMIT = { '15 minutes or less': 20, 'About 30 minutes': 35, 'Up to an hour': 70, "I don't cook": 25 };
 
+// The dishes someone didn't have for one of `reasons` ("Didn't have it?" on the Meals tab, from
+// planextras.feedbackFor), as a set of lower-case names.
+function skippedFor(p, reasons) {
+  const skipped = (p.feedback && p.feedback.skipped) || [];
+  return new Set(skipped.filter(s => (s.reasons || []).some(x => reasons.includes(x))).map(s => String(s.dish).toLowerCase()));
+}
+
+// Whether someone skipped three or more meals for "No time" or "Too much effort".
+function rushed(p) {
+  const skipped = (p.feedback && p.feedback.skipped) || [];
+  return skipped.reduce((n, s) => n + (s.reasons || []).filter(x => x === 'time' || x === 'effort').length, 0) >= 3;
+}
+
 // ---------------------------------------------------------------------------
 // Small helpers
 // ---------------------------------------------------------------------------
@@ -404,9 +417,11 @@ function rulesFor(p) {
     likeWords: words(a.likes).concat(words(a.safe_foods)),
     usualWords: words(a.usual_day),   // what they eat now, so the plan can start near it
     rated: (p.feedback && p.feedback.rated) || {},   // their own scores for earlier meals, out of 10
+    refused: skippedFor(p, ['refused']),              // dishes they didn't want to eat ("Didn't have it?")
     tried: p.tried || {},             // new foods they've been offered: "tried", "liked" or "not yet"
     cuisines: new Set(list(a.cuisines).map(c => CUISINE[c] || c)),
-    cookLimit: COOK_LIMIT[a.cook_time] || null,
+    // Three or more meals skipped for "No time" or "Too much effort" means quicker cooking.
+    cookLimit: rushed(p) ? Math.min(COOK_LIMIT[a.cook_time] || 70, 35) : (COOK_LIMIT[a.cook_time] || null),
     cooks: a.cook_time !== "I don't cook",
     kitchen: new Set(list(a.kitchen).map(k => k.toLowerCase())),
     help: new Set(list(a.cooking_help)),
@@ -691,6 +706,7 @@ function score(d, eaters, house, rnd) {
   for (const r of eaters) {
     const own = r.rated[d.name.toLowerCase()];
     if (typeof own === 'number') s += (own - 6) * 0.8;
+    else if (r.refused.has(d.name.toLowerCase())) s -= 2.4;   // like a score of 3 from them
     else if (typeof family === 'number') s += (family - 6) * 0.4 / eaters.length;
   }
   // Food already in the kitchen: dishes that use it score higher, and it costs nothing to use,
