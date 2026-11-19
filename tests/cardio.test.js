@@ -145,3 +145,22 @@ test('three "Too easy" saved before this change step up on the next tap', () => 
   assert.equal(r.moved, 1);
   assert.equal(r.level, 3);
 });
+
+test('tapping "Too easy" again on the same sessions doesn’t keep stepping up', () => {
+  const answer = cardio.START[2];
+  let saved = null, level = 2;
+  const say = (id, feel) => { const r = cardio.feelAfter(answer, saved, id, feel); saved = r.saved; level = r.level; return r; };
+  say('2|Mon-morning', 'easy');
+  assert.equal(say('2|Wed-morning', 'easy').moved, 1, 'two different sessions step up');
+  // What happened on the live server: the same three sessions tapped again and again.
+  for (let i = 0; i < 4; i++) for (const d of ['Mon', 'Wed', 'Fri']) say('2|' + d + '-morning', 'easy');
+  assert.equal(level, 3, 'Mon and Wed already counted, and Fri alone isn’t two in a row');
+  assert.equal(say('2|Sat-morning', 'easy').moved, 1, 'a new session with Fri makes two');
+  assert.equal(level, 4);
+  // "Too hard" on the same session twice steps back once.
+  assert.equal(say('3|Tue-morning', 'hard').moved, -1);
+  assert.equal(say('3|Tue-morning', 'hard').moved, 0);
+  // Changing a counted "Too easy" to "Too hard" is a correction, so it steps back.
+  assert.equal(say('2|Sat-morning', 'hard').moved, -1);
+  assert.equal(level, 2);
+});
