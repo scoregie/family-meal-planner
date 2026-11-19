@@ -292,29 +292,39 @@ function workoutFold(workout, videos, today) {
     var swap = swapButton(workout, index, text);
     if (swap) item.appendChild(swap);
     var colon = text.indexOf(": ");
-    if (colon > 0) {
-      var name = text.slice(0, colon).replace(/\s*\(.*?\)/g, "").trim();
-      if (Object.prototype.hasOwnProperty.call(videos, name)) {
-        item.appendChild(document.createTextNode(" "));
-        if (/^https?:\/\//.test(videos[name])) {
-          var demo = el("a", "vlink", "Demo");
-          demo.href = videos[name];
-          demo.target = "_blank";
-          demo.rel = "noopener noreferrer";
-          item.appendChild(demo);
-          item.appendChild(document.createTextNode(" · "));
-        }
-        var youtube = el("a", "vlink", "YouTube");
-        youtube.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(name + " exercise form");
-        youtube.target = "_blank";
-        youtube.rel = "noopener noreferrer";
-        item.appendChild(youtube);
-      }
+    var name = colon > 0 ? text.slice(0, colon).replace(/\s*\(.*?\)/g, "").trim() : "";
+    // A plan's own demo link for this exercise, or a library exercise it matches: either gets links.
+    var planVideo = name && Object.prototype.hasOwnProperty.call(videos, name) ? videos[name] : null;
+    var known = exMatch(text);
+    if (planVideo !== null || known) {
+      item.appendChild(document.createTextNode(" "));
+      videoLinks(known ? known.name : name, planVideo || (known && known.video)).forEach(function (a, i) {
+        if (i) item.appendChild(document.createTextNode(" · "));
+        item.appendChild(a);
+      });
     }
     list.appendChild(item);
   });
   fold.appendChild(list);
   return fold;
+}
+
+// Links to watch how an exercise is done, opened in a new tab: "Demo" for a chosen video (from the
+// plan or the exercise library), and a YouTube search for the exercise's name.
+function videoLinks(name, demoUrl) {
+  var links = [];
+  // One link that opens in a new tab.
+  var link = function (text, href, label) {
+    var a = el("a", "vlink", text);
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.setAttribute("aria-label", label + " (opens in a new tab)");
+    return a;
+  };
+  if (demoUrl && /^https:\/\//.test(demoUrl)) links.push(link("Demo", demoUrl, "Demo video of " + name));
+  links.push(link("YouTube", "https://www.youtube.com/results?search_query=" + encodeURIComponent(name + " exercise how to"), "Find videos of " + name + " on YouTube"));
+  return links;
 }
 
 // ---------- swapping an exercise ----------
