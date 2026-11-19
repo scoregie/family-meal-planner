@@ -3,6 +3,16 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.12.2 (2026-11-19)
+
+Behind the scenes, for the phone app. Nothing changes on the web pages.
+
+- **"How the week went" is worked out in one shared file** (`api/weeksummary.js`) that the phone
+  app also uses, so the web and the app give the same answers.
+- **The "How last week went" card on Today also shows in the phone app.**
+
+After updating, restart the api (`docker compose restart api`).
+
 ## v1.12.1 (2026-11-19)
 
 Fixes to "How the week went" from v1.12.0.
