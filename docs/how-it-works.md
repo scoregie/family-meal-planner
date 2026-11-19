@@ -97,7 +97,8 @@ ticks and files are all stored under that key (`toKey` in `api/sharedrules.js`).
 | `libraryupdates.js` | New meals and exercises every 2 weeks, shared or written by the family's AI. |
 | `exercises.js` | The exercise library page: what suits whom, leaving exercises out, and swapping them. |
 | `progress.js` | The progress charts, weigh-ins, and reading Lose It and Apple Health exports. |
-| `weekreview.js` | “How the week went”: one person's week next to the week before (what went well, what was harder, one thing to consider), from their ticks and “Didn't have it?” reasons. |
+| `weekreview.js` | “How the week went”: gathers one person's ticks, ratings and “Didn't have it?” reasons, and answers /api/week-review. |
+| `weeksummary.js` | The working out for “How the week went” (what went well, what was harder, one thing to consider). The phone app uses this same file. |
 | `healthsync.js` | Receiving numbers from the iPhone Health sync Shortcut. |
 | `shortcutfile.js` | Builds the Health sync Shortcut file. |
 | `uploads.js` | Uploading, downloading and deleting files on "My files". |
@@ -146,8 +147,10 @@ still opens without a signal.
 #### Pages shared with the phone app
 
 The phone app (github.com/scoregie/family-health-planner-app) uses these same pages, unchanged:
-`index.html` and its `app-*.js` files, `profile.html`, `progress.html`, `settings.html`, `setup.html`,
-`exercises.html` and `food.html`. Two small files let one page work in both places:
+`index.html` and its `app-*.js` files, `profile.html`, `progress.html`, `week.html`, `settings.html`, `setup.html`,
+`exercises.html` and `food.html`. It also loads some of the server's rules from the same files, so the
+two can't drift apart: `api/sharedrules.js`, `api/weeksummary.js` (how the week went), `site/energy.js`
+and `site/skipreasons.js`. Two small files let one page work in both places:
 
 - `local-api.js` is loaded first. On the web it only sets `window.PHONE = null`. The app has its own
   file with this name, which answers the pages' `/api` calls on the phone and sets `window.PHONE`.
