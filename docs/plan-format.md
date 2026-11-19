@@ -215,7 +215,7 @@ or **one plan per person**, keyed by person key:
 | --- | --- |
 | `focus` | One line about what this week is for. |
 | `targets` | A list of goals for the week. |
-| `days` | One object per day. Besides `day`, it can have any of these slots, each shown as a line you can tick: `morning`, `afternoon`, `cardio` (shown as "Easy cardio"), `strength`, `mobility` and `session`. Leave out the slots you don't need. |
+| `days` | One object per day. Besides `day`, it can have any of these slots, each shown as a line you can tick: `morning`, `afternoon`, `cardio` (shown as "Cardio", with "At your level" and "How did that feel?" under it), `strength`, `mobility` and `session`. Leave out the slots you don't need. |
 
 ### Shared details (top level)
 

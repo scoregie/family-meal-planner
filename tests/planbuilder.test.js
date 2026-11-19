@@ -169,6 +169,7 @@ test('the builder also works without require(), as in the phone app', () => {
   vm.createContext(page);
   // The targets file is loaded first, on the same page, as the phone app does.
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'api', 'healthtargets.js'), 'utf8'), page);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'api', 'cardio.js'), 'utf8'), page);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'api', 'planbuilder.js'), 'utf8'), page);
   const app = page.window.PlanBuilder;
   app.useData({ library: read('library.json'), exercises: read('exercises.json'), prices: read('library-prices.json') });

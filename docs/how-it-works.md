@@ -89,6 +89,7 @@ ticks and files are all stored under that key (`toKey` in `api/server.js`).
 | `planbuilder.js` | The built-in plan builder: makes a whole plan from everyone's answers, with no AI. |
 | `plancheck.js` | Checks a plan an AI has just written (serves of vegetables and fruit, foods someone won't eat, wording) and sends the AI back to correct it before the draft is saved. |
 | `planextras.js` | What the plan writer is told about each person besides About me: their meal scores and notes, the health numbers they've logged or uploaded, their "small steps" record, and (if they said yes in About me) their blood test files from My files. |
+| `cardio.js` | Cardio levels: how fit someone already is for cardio (from About me), how hard their walks, swims or rides should be, and how "Too easy" or "Too hard" after a session moves the level. Used by the builder and the Exercise tab. |
 | `healthtargets.js` | The serves of vegetables and fruit each person's plan aims for (by age and sex), and how a plan measures up. Used by the builder, the AI's instructions and the draft preview. |
 | `planchange.js` | Small, checked edits to the plan (used when someone's suggested change is approved). |
 | `assistant.js` | Ask AI: the chat, the tools the AI can use to look things up, and suggested changes. |
