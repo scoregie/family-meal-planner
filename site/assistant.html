@@ -9,6 +9,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="page.js"></script>
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -157,34 +158,6 @@ var IDEAS = [
   "Make Thursday’s exercise easier",
   "What can I prep on Sunday?",
 ];
-
-function $(id) {
-  return document.getElementById(id);
-}
-
-// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
-function el(tag, cls, txt) {
-  var e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (txt != null) e.textContent = txt;
-  return e;
-}
-
-// Asks the server for something (or sends it a change) and waits for the answer. Returns a
-// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
-function api(method, url, body) {
-  return fetch(url, {
-    method: method,
-    cache: "no-store",
-    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  }).then(function (response) {
-    return response.json().catch(function () { return {}; }).then(function (data) {
-      if (!response.ok) throw new Error(data.error || "The server said " + response.status);
-      return data;
-    });
-  });
-}
 
 // A time for the chat list: just the time for today, else the date.
 function when(ms) {

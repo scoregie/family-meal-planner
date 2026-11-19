@@ -141,8 +141,8 @@ function todayPhoneCard(person4) {
   if (phoneFor !== person4) {
     var tz = "";
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
-    fetch("/api/progress?person=" + encodeURIComponent(person4) + "&weeks=4&tz=" + encodeURIComponent(tz), { cache: "no-store" })
-      .then(function (r) { return r.ok ? r.json() : null; })
+    api("GET", "/api/progress?person=" + encodeURIComponent(person4) + "&weeks=4&tz=" + encodeURIComponent(tz))
+      .catch(function () { return null; })
       .then(function (d) {
         phoneFor = person4;
         phoneDay = d && d.latest ? d.latest : null;

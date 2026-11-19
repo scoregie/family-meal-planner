@@ -55,19 +55,6 @@ try { ME = JSON.parse(localStorage.getItem("coles-plan-me")); } catch (e) {}
 
 // ---------- small helpers ----------
 
-// Shortcut for document.getElementById.
-function $(id) {
-  return document.getElementById(id);
-}
-
-// Makes a new element, with an optional class name and text: el("p", "note", "Hello").
-function el(tag, cls, txt) {
-  var e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (txt != null) e.textContent = txt;
-  return e;
-}
-
 // A price as "$12.50".
 function money(n) {
   return Appearance.money(n, PLAN && PLAN.currency);
@@ -245,26 +232,6 @@ function setSync(message) {
   label.textContent = offline ? "Offline" : (/Reset/.test(message) ? "Reset" : window.PHONE ? "Saved" : "Synced");
   label.title = message;
   label.className = "sync" + (offline ? " off" : "");
-}
-
-// Calls the server and returns its JSON answer. A 401 means the login has run out, so go to the login page.
-function api(method, url, body) {
-  var options = {
-    method: method,
-    headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
-    body: body ? JSON.stringify(body) : undefined,
-    cache: "no-store",
-  };
-  return fetch(url, options).then(function (response) {
-    if (response.status === 401) toLogin();
-    if (!response.ok) throw 0;
-    return response.json();
-  });
-}
-
-// Goes to the login page, coming back to this same place afterwards.
-function toLogin() {
-  location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search + location.hash);
 }
 
 // Sends everything to the server: shopping ticks, this person's ticks and ratings, then "At home".

@@ -110,17 +110,9 @@ function savePins(name, remove) {
   var chain = Promise.resolve(null);
   changes.forEach(function (c) {
     chain = chain.then(function () {
-      return fetch("/api/appearance/pins", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
-        body: JSON.stringify({ item: item, store: c.store, url: c.url }),
-        cache: "no-store",
-      }).then(function (r) {
-        return r.json().catch(function () { return {}; }).then(function (j) {
-          if (!r.ok) throw new Error(j.error || "That didn’t save. Try again.");
-          if (j.pins) Appearance.setPins(j.pins);   // so a later failure still shows what did save
-          return j;
-        });
+      return api("PUT", "/api/appearance/pins", { item: item, store: c.store, url: c.url }).then(function (j) {
+        if (j.pins) Appearance.setPins(j.pins);   // so a later failure still shows what did save
+        return j;
       });
     });
   });

@@ -289,14 +289,13 @@ function askCardio() {
   var key = ukey(USER);
   if (cardioAsked[key]) return;
   cardioAsked[key] = true;
-  fetch("/api/exercises/cardio?person=" + encodeURIComponent(key), { cache: "no-store" })
-    .then(function (r) { return r.ok ? r.json() : null; })
+  api("GET", "/api/exercises/cardio?person=" + encodeURIComponent(key))
     .then(function (d) {
-      if (!d) return;
       CARDIO_NOW[key] = d;
       redrawCardio();
     })
-    .catch(function () { cardioAsked[key] = false; });
+    // Ask again next time only if the server couldn't be reached (not if it said no).
+    .catch(function (e) { if (!e.status) cardioAsked[key] = false; });
 }
 
 // Fills in every cardio box on the page again (after the level arrives or changes).
@@ -368,16 +367,7 @@ function drawCardio(box, ticked) {
 function sayFeel(box, id, feel) {
   var key = ukey(USER);
   box.querySelectorAll(".cardio-feel button").forEach(function (b) { b.disabled = true; });
-  fetch("/api/exercises/cardio?person=" + encodeURIComponent(key), {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
-    body: JSON.stringify({ id: id, feel: feel }),
-  }).then(function (r) {
-    return r.json().catch(function () { return {}; }).then(function (d) {
-      if (!r.ok) throw new Error(d.error || "Couldn’t save that. Try again.");
-      return d;
-    });
-  }).then(function (d) {
+  api("POST", "/api/exercises/cardio?person=" + encodeURIComponent(key), { id: id, feel: feel }).then(function (d) {
     CARDIO_NOW[key] = d;
     // Only the newest message stays: older ones ("One more Too easy...") may be out of date.
     document.querySelectorAll(".cardio-extra").forEach(function (b) { delete b.dataset.said; });
@@ -497,11 +487,9 @@ function loadExlib() {
   var person = ukey(USER);
   if (exlibLoading || (EXLIB && EXLIB.person === person)) return;
   exlibLoading = true;
-  fetch("/api/exercises?person=" + encodeURIComponent(person), { cache: "no-store" })
-    .then(function (r) { return r.ok ? r.json() : null; })
+  api("GET", "/api/exercises?person=" + encodeURIComponent(person))
     .then(function (d) {
       exlibLoading = false;
-      if (!d) return;
       d.person = person;
       EXLIB = d;
       if (view === "exercise") {
@@ -581,15 +569,9 @@ function openSwap(workout, index, ex) {
     b.onclick = function () {
       list.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
       $("swapMsg").textContent = "Saving…";
-      fetch("/api/exercises/swap?person=" + encodeURIComponent(ukey(USER)), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
-        body: JSON.stringify({ workout: workout.name, item: index, to: e.id, avoid: $("swapAvoid").checked }),
-      }).then(function (r) {
-        return r.json().catch(function () { return {}; }).then(function (d) {
-          if (!r.ok) throw new Error(d.error || "Couldn’t swap it. Try again.");
-        });
-      }).then(function () {
+      api("POST", "/api/exercises/swap?person=" + encodeURIComponent(ukey(USER)),
+        { workout: workout.name, item: index, to: e.id, avoid: $("swapAvoid").checked }
+      ).then(function () {
         $("swapMsg").textContent = "Swapped. Reloading…";
         location.reload();
       }).catch(function (err) {
