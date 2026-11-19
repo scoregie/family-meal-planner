@@ -20,25 +20,12 @@ const db = require('./db');
 const planbuilder = require('./planbuilder');
 const uploads = require('./uploads');
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
+// The list rules (places, limits, tidying, adding and changing an item), which the phone app follows too.
+const { FOOD, tidyFood: tidy, emptyFood: empty, addFood, changeFood: change } = require('./sharedrules');
 
-// The places food is kept, in the order the page shows them, and what each is called.
-const PLACES = ['pantry', 'spices', 'fridge', 'freezer', 'bench', 'other'];
-const NAMES = { pantry: 'Pantry', spices: 'Spices and seasonings', fridge: 'Fridge', freezer: 'Freezer', bench: 'Fruit bowl and bench', other: 'Other' };
-const CHOOSE = 'Choose pantry, spices and seasonings, fridge, freezer, fruit bowl and bench, or other.';
-const MAX_ITEMS = 100;   // most items in one place
-const MAX_TEXT = 80;     // longest item, in characters
+const { PLACES, NAMES, CHOOSE, MAX_ITEMS } = FOOD;
 const MAX_PHOTOS = 40;   // most photos noted against one item
 const PHOTO_KIND = 'food-photos';   // the My files folder the photos are in (uploads.js)
-
-// One item as it is saved: no angle brackets, no extra spaces, at most 80 characters.
-function tidy(text) {
-  return String(text || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT);
-}
-
-// An empty set of lists: {pantry: [], spices: [], fridge: [], freezer: [], bench: [], other: []}.
-function empty() {
-  return Object.fromEntries(PLACES.map(place => [place, []]));
-}
 
 // The saved lists. The first time, an older kitchen list from Plan setup (one list of lines) is
 // sorted into places and saved in the new form.
@@ -152,25 +139,6 @@ function clearPhotoItems(food, links, me) {
   return removed;
 }
 
-// Changes one item: `text` in `place` becomes `to`, in `toPlace` (the same place if not given).
-// It keeps its spot in the list. Returns an error message for the page, or '' when it worked.
-function change(food, place, text, to, toPlace) {
-  const at = food[place].indexOf(text);
-  if (at < 0) return 'That isn’t on the list any more. Someone may have changed it.';
-  if (!to) return 'Type what the food is, like “rice 2 kg”.';
-  const same = x => x.toLowerCase() === to.toLowerCase();
-  if (toPlace === place) {
-    // If the new wording is already on this list, the two become one.
-    if (food[place].some((x, i) => i !== at && same(x))) food[place].splice(at, 1);
-    else food[place][at] = to;
-    return '';
-  }
-  if (!food[toPlace].some(same) && food[toPlace].length >= MAX_ITEMS) return 'That list is full. Remove something first.';
-  food[place].splice(at, 1);
-  if (!food[toPlace].some(same)) food[toPlace].push(to);
-  return '';
-}
-
 // Answers the /api/food requests. Returns true if it handled one. Anyone who is logged in can
 // read and change the lists: it is the family's shared kitchen.
 async function handle(req, res, urlPath, me) {
@@ -208,10 +176,8 @@ async function handle(req, res, urlPath, me) {
   const text = tidy(b.text);
 
   if (req.method === 'POST') {
-    if (!text) { send(res, 400, { error: 'Type what the food is, like “rice 2 kg”.' }); return true; }
-    if (food[place].length >= MAX_ITEMS) { send(res, 400, { error: 'That list is full. Remove something first.' }); return true; }
-    // The same thing twice in one place is left as one.
-    if (!food[place].some(x => x.toLowerCase() === text.toLowerCase())) food[place].push(text);
+    const problem = addFood(food, place, text);
+    if (problem) { send(res, 400, { error: problem }); return true; }
     const photos = photoList(b.photos, me && me.person);
     if (photos.length) links[linkKey(place, text)] = photos;
   } else if (req.method === 'PUT') {

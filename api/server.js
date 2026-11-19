@@ -24,7 +24,7 @@ const healthsync = require('./healthsync'); // daily numbers from an iPhone Shor
 const exercises = require('./exercises');   // the exercise library: browse, leave out, swap
 const libraryUpdates = require('./libraryupdates'); // new meals and exercises every 2 weeks
 const currentFood = require('./currentfood');       // the food the family already has (pantry, fridge, freezer)
-const { toKey } = require('./names');             // "Alex Smith" -> "alex-smith"
+const { toKey } = require('./sharedrules');       // "Alex Smith" -> "alex-smith"
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 // Settings, read from environment variables (set in docker-compose.yml or .env).
@@ -370,8 +370,8 @@ function startDatabase() {
   const plan = readPlan();
   safely('remember dishes', () => db.rememberDishes(plan));
   for (const [person, saved] of Object.entries(state.users || {})) {
-    safely('log meals', () => db.syncMeals(person, plan, state.epoch || 0, saved.eaten, saved.ratings, toKey));
-    safely('log exercise', () => db.syncExercise(person, plan, state.epoch || 0, saved.ex, toKey));
+    safely('log meals', () => db.syncMeals(person, plan, state.epoch || 0, saved.eaten, saved.ratings));
+    safely('log exercise', () => db.syncExercise(person, plan, state.epoch || 0, saved.ex));
   }
 }
 
@@ -416,8 +416,8 @@ async function putUser(req, res, me, person) {
   state.updated[person] = Date.now();
   persist();
   const plan = readPlan();
-  safely('log meals', () => db.syncMeals(person, plan, state.epoch || 0, b.eaten, ratings, toKey));
-  safely('log exercise', () => db.syncExercise(person, plan, state.epoch || 0, b.ex, toKey));
+  safely('log meals', () => db.syncMeals(person, plan, state.epoch || 0, b.eaten, ratings));
+  safely('log exercise', () => db.syncExercise(person, plan, state.epoch || 0, b.ex));
   return send(res, 200, { ok: true });
 }
 

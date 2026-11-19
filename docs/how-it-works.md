@@ -70,7 +70,7 @@ Every feature works this way: a page asks, a file in `api/` answers.
 | `.env` | Server settings: AI keys, email settings, the site address | Never shared or committed. |
 
 Each person has a **key** made from their name: "Alex Smith" becomes `alex-smith`. Their answers,
-ticks and files are all stored under that key (`toKey` in `api/server.js`).
+ticks and files are all stored under that key (`toKey` in `api/sharedrules.js`).
 
 ## The files, folder by folder
 
@@ -106,7 +106,7 @@ ticks and files are all stored under that key (`toKey` in `api/server.js`).
 | `secrets.js` | Locks (encrypts) saved AI keys before they go in the database. |
 | `handoff-cli.js` | Lets Claude Code draft the plan (see CLAUDE.md). |
 | `hash-password.js` | Makes a password hash for the older `.env` logins. |
-| `names.js` | Turns a person's name into their key (`toKey`). |
+| `sharedrules.js` | The rules the server and the phone app both follow, in one file so they can't drift apart: people's keys (`toKey`), the Current food lists, what someone was planned to eat, and swapping an exercise. It uses no database or files, so the phone app can load the same file. |
 | `requests.js` | Reads the JSON a page sent (`readBody`) and sends a JSON reply (`send`); every file above uses it. |
 
 Data files: `library.json` (the builder's ingredients, meals and snacks), `library-prices.json`
@@ -135,7 +135,7 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 | `account.html` | Your account. |
 | `admin.html` | Editing the plan by hand (admins). |
 
-Shared by every page: `page.js` (the small helpers every page's script uses: `$`, `el`, `api` for talking to the server, `status` for short messages, and `toLogin`), `appearance.js` (the look, country, money and dates) and `regions.js`
+Shared by every page: `page.js` (the small helpers every page's script uses: `$`, `el`, `api` for talking to the server, `status` for short messages, and `toLogin`), `appearance.js` (the look, country, money and dates), `energy.js` (the kJ in a serve, worked out from its macros; the server's Progress numbers use it too) and `regions.js`
 (countries and their stores). Also used: `page.css` (styles shared by a few pages),
 `guidelines.js` and `guidelines.json` (the healthy-eating guidelines on Meals → Macros),
 `questions.json` (the About me questions), and `sw.js`, the "service worker" that keeps a copy of the app so it

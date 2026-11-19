@@ -18,12 +18,15 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('./db');
+const rules = require('./sharedrules');   // rules the phone app follows too
 const zip = require('./zip');
 const uploads = require('./uploads');
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const DAY = 24 * 60 * 60 * 1000;
-const KJ_PER_KCAL = 4.184;
+// The energy rule the pages use too (site/energy.js), so Progress and the Meals tab agree.
+const Energy = require(path.join(path.dirname(process.env.PLAN_FILE || '/site/plan.json'), 'energy.js'));
+const KJ_PER_KCAL = Energy.KJ_PER_KCAL;
 const KG_PER_LB = 0.45359237;
 
 // ---------------------------------------------------------------------------
@@ -307,11 +310,6 @@ function round(n, places) {
   return n == null ? null : Math.round(n * 10 ** places) / 10 ** places;
 }
 
-// kJ in a serve with p, c and f grams of protein, carbohydrate and fat.
-function kjOf(m) {
-  return 17 * (m.p || 0) + 17 * (m.c || 0) + 37 * (m.f || 0);
-}
-
 // A person's measurements since a date, one value per date and kind, from the best source.
 // Returns {byKind: kind -> Map(date -> {value, source}), manual: the weigh-ins typed by hand}.
 function bestMeasurements(person, since) {
@@ -363,7 +361,7 @@ function addMeasurements(byKind, weekOf) {
 // their energy and protein: each meal's macros × this person's portion), ratings and exercise sessions.
 function addTicks(person, sinceMs, tz, ctx, weekOf) {
   const plan = ctx.readPlan() || {};
-  const planKey = db.planKeyFor(plan, person, ctx.toKey);
+  const planKey = rules.planKeyFor(plan, person);
   const portion = Number(plan.people && plan.people[planKey] && plan.people[planKey].portion) || 1;
   for (const meal of db.eatenMeals(person, sinceMs)) {
     const date = localDate(meal.eaten_at, tz);
@@ -371,7 +369,7 @@ function addTicks(person, sinceMs, tz, ctx, weekOf) {
     if (!w) continue;
     w.meals++;
     if (meal.macros) {
-      w.plan_kj[date] = (w.plan_kj[date] || 0) + kjOf(meal.macros) * portion;
+      w.plan_kj[date] = (w.plan_kj[date] || 0) + Energy.kj(meal.macros) * portion;
       w.plan_protein[date] = (w.plan_protein[date] || 0) + (meal.macros.p || 0) * portion;
     }
   }

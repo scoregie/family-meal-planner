@@ -25,6 +25,7 @@
 const path = require('path');
 const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
+const { dishKey, planKeyFor, plannedDish } = require('./sharedrules');   // rules the phone app follows too
 
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const DB_FILE = path.join(DATA_DIR, 'app.db');
@@ -236,41 +237,13 @@ function transaction(work) {
   }
 }
 
-// How the app matches a dish to its macros: lower case, ignoring a trailing "(packed)".
-function dishKey(name) {
-  return String(name || '').replace(/\s*\(packed\)\s*$/i, '').trim().toLowerCase();
-}
-
-// The plan's own key for a person ("adult1"), from the server's key ("alex", made from the name).
-function planKeyFor(plan, person, toKey) {
-  const block = (plan && plan.people) || {};
-  return Object.keys(block).find(k => block[k] && block[k].name && toKey(block[k].name) === person) || null;
-}
-
-// What `person` was planned to eat in a meal slot, following the same rules as the Meals tab:
-// their own breakfast, a packed school lunch or snack, or a meal an admin set just for them.
-function plannedDish(plan, weekIndex, dayName, slot, planKey) {
-  const week = plan.weeks[weekIndex];
-  const day = week && (week.meals || []).find(d => d.day === dayName);
-  if (!day) return null;
-  const person = planKey ? (plan.people || {})[planKey] : null;
-  const school = person && person.weekday && person.weekday[dayName];
-  let dish = slot === 'School snack' ? null : day[slot.toLowerCase()];
-  if (slot === 'Breakfast' && person && person.breakfast) dish = person.breakfast;
-  if (slot === 'Lunch' && school && school.lunch) dish = school.lunch;
-  if (slot === 'School snack' && school) dish = school.snack;
-  const own = planKey && day.people && day.people[planKey];
-  if (own && own[slot.toLowerCase()]) dish = own[slot.toLowerCase()];
-  return dish || null;
-}
-
 // Copies one person's current ticks and ratings into meal_log. `eaten` and `ratings` are what the
 // page saves ({week: ["Mon|Breakfast"]} and {week: {"Mon|Dinner": {s, n, t}}}). Rows for this
 // round that are no longer eaten or rated are removed; earlier rounds and plans are never touched.
-function syncMeals(person, plan, round, eaten, ratings, toKey) {
+function syncMeals(person, plan, round, eaten, ratings) {
   if (!plan || !Array.isArray(plan.weeks)) return;
   const planId = String(plan.id || 'default');
-  const planKey = planKeyFor(plan, person, toKey);
+  const planKey = planKeyFor(plan, person);
   const now = Date.now();
 
   // Every meal slot that is eaten or rated now: "week|Day|Slot" -> {week, day, slot, eaten, rating}
@@ -328,10 +301,10 @@ function syncMeals(person, plan, round, eaten, ratings, toKey) {
 
 // Copies one person's exercise ticks ({week: ["Mon-cardio", ...]}) into exercise_log, the same way
 // syncMeals does: unticked sessions in this round are removed, earlier rounds and plans are kept.
-function syncExercise(person, plan, round, ticks, toKey) {
+function syncExercise(person, plan, round, ticks) {
   if (!plan || !Array.isArray(plan.weeks)) return;
   const planId = String(plan.id || 'default');
-  const planKey = planKeyFor(plan, person, toKey);
+  const planKey = planKeyFor(plan, person);
   const now = Date.now();
   const current = new Map();   // "week|Day|slot" -> {week, day, slot}
   for (const [week, ids] of Object.entries(ticks || {})) {
@@ -810,8 +783,8 @@ function setProfileFinished(person, finished) {
 
 module.exports = {
   setProfileFinished, addSignup, listSignups, getSignup, deleteSignup, countSignups,
-  open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, dishKey, DB_FILE,
-  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, mealFeedback, sessionsSince, getSetting, setSetting, deleteSetting, planKeyFor,
+  open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, DB_FILE,
+  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, mealFeedback, sessionsSince, getSetting, setSetting, deleteSetting,
   getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
   getAccount, accountByEmail, accountByLegacy, listAccounts, countAccounts, addAccount, updateAccount, deleteAccount, setAiKey, getAiKey, forgetPerson,
   addInvite, inviteByToken, listInvites, useInvite, deleteInvite, deleteInvitesFor, addReset, resetByToken, useReset,

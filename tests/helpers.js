@@ -27,7 +27,7 @@ async function startServer(extraEnv = {}) {
   const data = path.join(dir, 'data');
   fs.mkdirSync(site);
   fs.mkdirSync(data);
-  for (const f of ['plan.example.json', 'questions.json', 'regions.js', 'guidelines.json']) {
+  for (const f of ['plan.example.json', 'questions.json', 'regions.js', 'energy.js', 'guidelines.json']) {
     fs.copyFileSync(path.join(ROOT, 'site', f), path.join(site, f));
   }
   const port = await freePort();

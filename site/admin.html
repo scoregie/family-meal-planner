@@ -99,6 +99,7 @@ label.check{display:flex;gap:.45rem;align-items:center;font-size:.9rem}
 </style>
 <script src="regions.js"></script>
 <script src="appearance.js"></script>
+<script src="energy.js"></script>
 </head>
 <body>
 <main>
@@ -179,7 +180,7 @@ function people() {
 }
 
 // The positions of the weeks that have meals (stock-up weeks have none).
-function mealWeeks() {
+function weekIndexesWithMeals() {
   var list = [];
   PLAN.weeks.forEach(function (week, i) {
     if (Array.isArray(week.meals) && week.meals.length) list.push(i);
@@ -288,7 +289,7 @@ function field(labelText, value, onInput, opts) {
 function renderMeals() {
   var panel = $("pMeals");
   panel.textContent = "";
-  var weeks = mealWeeks();
+  var weeks = weekIndexesWithMeals();
   if (!weeks.length) {
     panel.appendChild(el("p", "hint", "This plan has no weeks with meals."));
     return;
@@ -417,18 +418,9 @@ function findMacro(key) {
   return null;
 }
 
-// Kilojoules for a macros entry. Same factors as the app and Australian food labels:
-// 17 kJ per gram of protein and of carbs, 37 kJ per gram of fat. A saved kj (or older kcal) wins.
-function kjOf(v) {
-  if (!v) return 0;
-  if (+v.kj) return +v.kj;
-  if (+v.kcal) return v.kcal * 4.184;
-  return 17 * (+v.p || 0) + 17 * (+v.c || 0) + 37 * (+v.f || 0);
-}
-
 // A kJ number for the table, like "1,234", or "–" when there are no macros.
 function kjText(entry) {
-  return entry ? Math.round(kjOf(entry.v)).toLocaleString(Appearance.locale()) : "–";
+  return entry ? Math.round(Energy.kj(entry.v)).toLocaleString(Appearance.locale()) : "–";
 }
 
 // Draws the Macros tab: a filter and search box, then a table of dishes with
