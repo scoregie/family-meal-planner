@@ -15,6 +15,7 @@ const uploads = require('./uploads');    // the "My files" page
 const db = require('./db');              // the long-term database (data/app.db)
 const peopleRoutes = require('./people'); // adding people, the About me questions, passwords
 const progress = require('./progress');   // the progress dashboard, weigh-ins and imports
+const weekreview = require('./weekreview'); // "How the week went": one person's week next to the week before
 const assistant = require('./assistant'); // the Claude assistant and requests for plan changes
 const appearance = require('./appearance'); // the household's colours, font, text size and icon
 const accounts = require('./accounts');     // email accounts: registering, invites, password resets, the family
@@ -530,6 +531,7 @@ async function handleRequest(req, res) {
     if (await uploads.handle(req, res, urlPath, url, me, people())) return;
     if (await peopleRoutes.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await progress.handle(req, res, urlPath, url, me, { readPlan, toKey, people })) return;
+    if (await weekreview.handle(req, res, urlPath, url, me, { readPlan, people })) return;
     if (await appearance.handle(req, res, urlPath, url, me)) return;
     if (await accounts.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;

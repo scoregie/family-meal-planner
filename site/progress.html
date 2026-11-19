@@ -105,6 +105,11 @@ th{color:var(--mute);font-weight:700}
 .privacy{color:var(--mute);font-size:.85rem;margin:1.2rem 0 0}
 #app.loading{opacity:.55;transition:opacity .2s}
 [hidden]{display:none!important}
+.weeklink{display:block;background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 2.2rem .8rem 1rem;margin:0 0 .8rem;color:var(--ink);text-decoration:none;position:relative}
+.weeklink::after{content:"›";position:absolute;right:1rem;top:50%;transform:translateY(-50%);font-size:1.4rem;color:var(--accent)}
+.weeklink b{display:block}
+.weeklink span{display:block;color:var(--mute);font-size:.9rem}
+.weeklink:hover{border-color:var(--mute)}
 .waiting{list-style:none;margin:0;padding:0}
 .waiting li{padding:.6rem 0;border-top:1px solid var(--line)}
 .waiting li:first-child{border-top:0}
@@ -135,6 +140,7 @@ th{color:var(--mute);font-weight:700}
     </div>
     <div id="importMsg"></div>
     <div class="tiles" id="tiles"></div>
+    <a class="card weeklink" id="weekLink" href="week.html"><b>How the week went</b><span>What went well, what was harder, and one thing to consider</span></a>
     <div id="charts"></div>
     <section class="card weigh">
       <h2>Add a weigh-in</h2>
@@ -746,6 +752,7 @@ function renderSync() {
 
 // Loads the numbers. Old charts stay (faded) while new ones load, so the page doesn't jump.
 function load() {
+  $("weekLink").href = "week.html" + (PERSON !== ME.person ? "?person=" + encodeURIComponent(PERSON) : "");
   $("app").classList.add("loading");
   var url = "/api/progress?person=" + encodeURIComponent(PERSON) + "&weeks=" + WEEKS + "&tz=" + encodeURIComponent(TZ);
   return api("GET", url).then(function (d) {

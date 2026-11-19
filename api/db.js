@@ -376,6 +376,15 @@ function eatenMeals(person, sinceMs) {
     .map(r => Object.assign({}, r, { macros: r.macros ? JSON.parse(r.macros) : null }));
 }
 
+// Every meal slot ticked, rated or skipped between two times, for "How the week went":
+// [{plan_id, week, day, slot, dish, eaten, eaten_at, score, skip_reason, updated_at}].
+function mealsBetween(person, fromMs, toMs) {
+  return open().prepare(`
+    SELECT plan_id, week, day, slot, dish, eaten, eaten_at, score, skip_reason, updated_at FROM meal_log
+    WHERE person = ? AND ((eaten = 1 AND eaten_at BETWEEN ? AND ?) OR (eaten = 0 AND updated_at BETWEEN ? AND ?)
+      OR (score IS NOT NULL AND updated_at BETWEEN ? AND ?))`).all(person, fromMs, toMs, fromMs, toMs, fromMs, toMs);
+}
+
 // Ratings given since a time (whether or not the meal was ticked as eaten).
 function ratingsSince(person, sinceMs) {
   return open().prepare('SELECT updated_at, score FROM meal_log WHERE person = ? AND score IS NOT NULL AND updated_at >= ?').all(person, sinceMs);
@@ -684,6 +693,7 @@ function forgetPerson(person, user) {
     for (const table of ['profiles', 'measurements', 'meal_log', 'exercise_log', 'chats', 'requests']) {
       d.prepare('DELETE FROM ' + table + ' WHERE person = ?').run(person);
     }
+    d.prepare('DELETE FROM settings WHERE key = ?').run('week-log:' + person);   // "How the week went" (weekreview.js)
     if (user) d.prepare('DELETE FROM ai_usage WHERE user = ?').run(user);
   });
 }
@@ -792,7 +802,7 @@ function setProfileFinished(person, finished) {
 module.exports = {
   setProfileFinished, addSignup, listSignups, getSignup, deleteSignup, countSignups,
   open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, DB_FILE,
-  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, ratingsSince, mealFeedback, sessionsSince, getSetting, setSetting, deleteSetting,
+  saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, mealsBetween, ratingsSince, mealFeedback, sessionsSince, getSetting, setSetting, deleteSetting,
   getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
   getAccount, accountByEmail, accountByLegacy, listAccounts, countAccounts, addAccount, updateAccount, deleteAccount, setAiKey, getAiKey, forgetPerson,
   addInvite, inviteByToken, listInvites, useInvite, deleteInvite, deleteInvitesFor, addReset, resetByToken, useReset,

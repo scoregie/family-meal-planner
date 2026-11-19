@@ -97,6 +97,7 @@ ticks and files are all stored under that key (`toKey` in `api/sharedrules.js`).
 | `libraryupdates.js` | New meals and exercises every 2 weeks, shared or written by the family's AI. |
 | `exercises.js` | The exercise library page: what suits whom, leaving exercises out, and swapping them. |
 | `progress.js` | The progress charts, weigh-ins, and reading Lose It and Apple Health exports. |
+| `weekreview.js` | “How the week went”: one person's week next to the week before (what went well, what was harder, one thing to consider), from their ticks and “Didn't have it?” reasons. |
 | `healthsync.js` | Receiving numbers from the iPhone Health sync Shortcut. |
 | `shortcutfile.js` | Builds the Health sync Shortcut file. |
 | `uploads.js` | Uploading, downloading and deleting files on "My files". |
@@ -127,6 +128,7 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 | `settings.html` | Settings. For admins it also has the country and the plan builder's new meals and exercises. |
 | `assistant.html` | Ask AI. |
 | `progress.html` | Progress charts. |
+| `week.html` | How the week went (opened from Progress and from the card on Today). |
 | `exercises.html` | The exercise library. |
 | `food.html` | Current food: what the family already has in the pantry, fridge and freezer. |
 | `files.html` | My files. |
@@ -135,7 +137,7 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 | `account.html` | Your account. |
 | `admin.html` | Editing the plan by hand (admins). |
 
-Shared by every page: `page.js` (the small helpers every page's script uses: `$`, `el`, `api` for talking to the server, `status` for short messages, and `toLogin`), `appearance.js` (the look, country, money and dates), `energy.js` (the kJ in a serve, worked out from its macros; the server's Progress numbers use it too) and `regions.js`
+Shared by every page: `page.js` (the small helpers every page's script uses: `$`, `el`, `api` for talking to the server, `status` for short messages, and `toLogin`), `appearance.js` (the look, country, money and dates), `energy.js` (the kJ in a serve, worked out from its macros; the server's Progress numbers use it too), `skipreasons.js` (the reasons for “Didn't have it?” on a meal; the server checks against the same list) and `regions.js`
 (countries and their stores). Also used: `page.css` (styles shared by a few pages),
 `guidelines.js` and `guidelines.json` (the healthy-eating guidelines on Meals → Macros),
 `questions.json` (the About me questions), and `sw.js`, the "service worker" that keeps a copy of the app so it
