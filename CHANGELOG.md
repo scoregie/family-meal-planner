@@ -3,6 +3,84 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.10.0 (2026-11-19)
+
+New: cardio that fits how fit you are, and Apple Watch cardio fitness. Also the fixes from a
+review of the whole app (allergies first), stronger security, and easier-to-use pages.
+
+- **Cardio starts at your level.** About me (Exercise) asks "For cardio, which is closest to what
+  you can do now?", from "A 20-minute walk leaves me puffed" to "I run, ride or swim hard 3 or
+  more times a week". The plan builder writes cardio at that level: easy walk, brisk walk, hills,
+  walk-jog, jog, then run, and easy, steady or faster versions of swims and rides. Each session
+  says how hard it should feel ("you can talk, but not sing"). An AI-written plan is told the
+  level too.
+- **"How did that feel?" after each cardio session.** Tick a cardio session on Today or Exercise
+  and choose Too easy, About right or Too hard. Two "too easy" in a row step your cardio up a
+  level; one "too hard" steps it back. Every cardio session shows "At your level: …", so the plan
+  you have now changes straight away, without making a new one.
+  - Someone who said they have a heart condition, are pregnant or breastfeeding, or have low
+    energy or chronic pain is kept at a steady level, with a note to check with their GP before
+    going harder. A sore foot, ankle, knee or hip keeps walks as walks (no jogging).
+- **Apple Watch cardio fitness and resting heart rate.** Health sync now also sends Cardio Fitness
+  (VO2 max) and Resting Heart Rate, and an Apple Health export brings them in too. Progress has a
+  chart for each. If you haven't picked a cardio level in About me, your watch's cardio fitness
+  sets where you start. When your resting heart rate is 7 or more beats a minute above your usual,
+  cardio sessions say it can come with illness, poor sleep or a hard week, and that you might
+  consider an easier session or a rest.
+  - **To get these, update the shortcut:** on Health sync, download the unsigned shortcut, sign it
+    on a Mac and upload it, then everyone reinstalls it. Allow Cardio Fitness and Resting Heart
+    Rate when the Health app asks.
+- **More: Apple Health sync and calendar reminders are easy to find.** They have their own "Phone
+  and calendar" section on More.
+- **Exercise: a "watch how" link on every exercise**, in your workouts and the Exercise library
+  (a demo when the plan has one, and a YouTube search).
+
+**Allergies and health**
+- **No unsafe family meal by default.** When nothing in the meal library suits someone's
+  allergies or diet for a meal, the builder now says "Your own choice" instead of giving them the
+  family's meal, and tells the admin which meals need a choice.
+- **Crumbed foods are marked as containing egg** (crumbed fish, and fish and chips), so they're
+  left out for an egg allergy.
+- **AI-written plans are checked for allergies.** A plan that gives someone a food they're
+  allergic to is sent back to the AI, like the other checks.
+
+**Your data**
+- **About me always saves.** Answers typed just before leaving the page, finishing or switching
+  person are sent, rather than lost.
+- **Ticks aren't lost or mixed up.** Changing "Ticks for", Reset all and syncing between phones
+  keep each person's ticks, and a broken shopping-tick save can no longer stop the server.
+- **Someone can't sign up as an existing family member** and see their data, and removing a login
+  also turns off its Health sync.
+- **Imports that fail say why** on Progress, instead of trying again and again.
+
+**Security**
+- **Harder to guess passwords.** Besides 10 wrong tries per address, one email is paused for 15
+  minutes after 30 wrong tries from anywhere. Password checks no longer slow the server for
+  everyone else.
+- **A new server asks for a setup code** before making the first account, so a stranger who finds
+  it first can't become the owner. The code is in `docker compose logs api` and
+  `data/setup-code.txt`. Servers that already have accounts aren't affected.
+- **Every change must come from the app's own pages** (one check for all of them), and sign-up no
+  longer says whether an email already has an account.
+
+**Easier to use**
+- Readable red messages in dark mode, text boxes with visible edges, and no faded text that's hard
+  to read.
+- Pop-up messages are read out by screen readers, and errors stay until you tap them.
+- Bigger tap areas for store links, Pin product, Rate, Swap and the eaten box.
+- Keyboard focus stays on the button you pressed, and stays inside Shop mode.
+- The shopping tools wrap at larger text sizes, labels for the fields that had none, and removing a
+  weigh-in asks first.
+
+**Fixes**
+- Ask AI uses the model chosen in Settings, and Stop really stops the answer.
+- The app moves on to the new day when it was left open overnight.
+- "Three quarter full" on Current food counts as three quarters of a pack.
+- Weeks with 3 strength days now have all the cardio sessions they promise.
+- The strength-day snack note only names snacks that are on that week.
+- Recipes for someone with no portion set no longer show "NaN g".
+- Smaller fixes to calendar files, backups, the library tool and the automatic tests.
+
 ## v1.9.0 (2026-11-14)
 
 - **Current food now makes the shopping cheaper in the built-in plan builder.** For a family with a
