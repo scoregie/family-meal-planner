@@ -330,6 +330,28 @@ test('a tick on the shopping list is saved for everyone', async () => {
   assert.deepEqual(state.json.shared.ticks['0'], ['milk']);
 });
 
+test('an odd shopping-tick save is cleaned up, so later ticks still save', async () => {
+  const odd = await server.request('PUT', '/api/shared', { ticks: { 0: { 1: 5 }, 1: ['bread', { x: 1 }] } });
+  assert.equal(odd.status, 200, odd.text);
+  const next = await server.request('PUT', '/api/shared', { ticks: { 0: ['milk'], 1: ['bread'] } });
+  assert.equal(next.status, 200, next.text);
+  const state = await server.request('GET', '/api/state');
+  assert.deepEqual(state.json.shared.ticks, { 0: ['milk'], 1: ['bread'] });
+});
+
+test('an export file that can’t be read is tried once, not again and again', async () => {
+  const folder = path.join(server.dir, 'data', 'uploads', 'alex-smith', 'apple-health');
+  fs.mkdirSync(folder, { recursive: true });
+  fs.copyFileSync(path.join(__dirname, 'fixtures', 'not-a-zip.zip'), path.join(folder, '2026-11-18 export.zip'));
+  const before = await server.request('GET', '/api/progress?person=alex-smith&weeks=4');
+  assert.deepEqual(before.json.waiting, ['apple-health']);
+  const tried = await server.request('POST', '/api/progress/import?person=alex-smith', {});
+  assert.ok(tried.json.results[0].error, 'the broken file gives an error');
+  const after = await server.request('GET', '/api/progress?person=alex-smith&weeks=4');
+  assert.deepEqual(after.json.waiting, [], 'it isn’t waiting to be read again');
+  assert.match(after.json.imported[0].error, /./, 'the page can say it couldn’t be read');
+});
+
 test('changes without the pages’ X-Requested-With header are refused (so other websites can’t make them)', async () => {
   const res = await server.request('PUT', '/api/appearance/energy', { energy: 'kcal' }, { 'X-Requested-With': '' });
   assert.equal(res.status, 403);

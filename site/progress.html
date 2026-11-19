@@ -657,7 +657,8 @@ function renderManual(d) {
 function renderSources(d) {
   var names = { "lose-it": "Lose It", "apple-health": "Apple Health" };
   var parts = (d.imported || []).filter(function (i) { return i.at; }).map(function (i) {
-    return names[i.source] + " (" + i.name + ", read " + new Date(i.at).toLocaleDateString(Appearance.locale()) + ")";
+    var when = new Date(i.at).toLocaleDateString(Appearance.locale());
+    return names[i.source] + " (" + i.name + (i.error ? ", couldn’t be read on " + when + ": " + i.error + ". Upload it again to retry" : ", read " + when) + ")";
   });
   $("sources").textContent = "Weight: weigh-ins typed in here, then Apple Health (an export file, then Health sync), then Lose It. Steps and workouts: Apple Health, then Lose It. " +
     "Food: Lose It, or an estimate from the meals ticked in this app, using each dish’s macros and your portion size. " +
@@ -730,7 +731,7 @@ function load() {
     $("app").classList.remove("loading");
     $("app").hidden = false;
     render(d);
-    if (d.waiting && d.waiting.length) importNow(d.waiting);
+    if (d.waiting && d.waiting.length && !triedImport) importNow(d.waiting);
   }).catch(function (e) {
     $("app").classList.remove("loading");
     $("pmsg").textContent = "";
@@ -740,10 +741,12 @@ function load() {
 
 // New export files were uploaded: read them, then reload the charts.
 var importing = false;
+var triedImport = false;   // reads files at most once each time the page is opened, so a problem can't loop
 // Reads the newest uploaded Lose It or Apple Health export now, and shows how it went.
 function importNow(waiting) {
   if (importing) return;
   importing = true;
+  triedImport = true;
   var box = $("importMsg");
   box.textContent = "";
   var apple = waiting.indexOf("apple-health") > -1;

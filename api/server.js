@@ -431,9 +431,12 @@ async function putShared(req, res, me) {
   const stillTicked = new Set();
   const now = Date.now();
 
+  // Only lists of item ids are kept, so one odd save can't stop later ticks from saving.
+  const ticks = {};
   for (const week of Object.keys(b.ticks)) {
-    const ids = Array.isArray(b.ticks[week]) ? b.ticks[week] : [];
-    const wasTicked = new Set(previousTicks[week] || []);
+    const ids = Array.isArray(b.ticks[week]) ? b.ticks[week].filter(id => typeof id === 'string' || typeof id === 'number') : [];
+    ticks[week] = ids;
+    const wasTicked = new Set(Array.isArray(previousTicks[week]) ? previousTicks[week] : []);
     for (const id of ids) {
       const key = week + '|' + id;
       stillTicked.add(key);
@@ -445,7 +448,7 @@ async function putShared(req, res, me) {
     if (!stillTicked.has(key)) delete by[key];
   }
 
-  state.shared = { ticks: b.ticks, by };
+  state.shared = { ticks, by };
   state.updated.shared = now;
   persist();
   return send(res, 200, { ok: true, by });

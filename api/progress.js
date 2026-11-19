@@ -252,7 +252,11 @@ async function runImport(person) {
         db.setSetting('import:' + person + ':' + f.source, JSON.stringify({ name: f.name, mtime: f.mtime, at: Date.now(), rows: rows.length }));
         results.push({ source: f.source, file: f.name, rows: rows.length, seconds: Math.round((Date.now() - started) / 100) / 10 });
       } catch (e) {
-        results.push({ source: f.source, file: f.name, error: String(e.message || e) });
+        const error = String(e.message || e);
+        // Remembered as tried, so the page doesn't keep asking to read the same broken file.
+        // Uploading a new file (or the same one again) tries again.
+        db.setSetting('import:' + person + ':' + f.source, JSON.stringify({ name: f.name, mtime: f.mtime, at: Date.now(), error }));
+        results.push({ source: f.source, file: f.name, error });
       }
     }
     return results;
