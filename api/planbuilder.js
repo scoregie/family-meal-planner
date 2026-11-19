@@ -783,14 +783,16 @@ function cardioFor(a, equipment, seated) {
 }
 
 // The highest cardio level (see cardio.js) that suits someone, and why it is lower than the top:
-// {limit, why}. A heart condition, pregnancy, low energy or chronic pain keep it steady (level 2);
+// {limit, steady, why}. A heart condition or pregnancy keep it steady (no higher than level 2).
+// Low energy or chronic pain start steady (`steady`: level 2) but can step up after three
+// "too easy" in a row;
 // a sore foot, ankle, knee or hip means walks stay walks (walkOnly: no jogging), but swims and rides can still get harder.
 function cardioLimit(a) {
   const conditions = new Set(list(a.conditions));
   const support = new Set(list(a.support_needs));
   if (conditions.has('Heart condition')) return { limit: 2, why: 'You said you have a heart condition, so the app keeps your cardio steady. Consider asking your GP or cardiologist before going harder.' };
   if (conditions.has('Pregnant or breastfeeding')) return { limit: 2, why: 'You said you’re pregnant or breastfeeding, so the app keeps your cardio steady. Consider asking your midwife or GP before going harder.' };
-  if (support.has('Low energy or chronic fatigue') || support.has('Chronic pain')) return { limit: 2, why: 'You mentioned low energy or chronic pain, so the app keeps your cardio steady.' };
+  if (support.has('Low energy or chronic fatigue') || support.has('Chronic pain')) return { limit: CARDIO.TOP, steady: 2, why: 'You mentioned low energy or chronic pain, so your cardio starts steady. It steps up only after three “Too easy” in a row, one level at a time. Consider checking with your GP before going harder.' };
   const injuryText = (String(a.injuries || '') + ' ' + String(a.gp || '')).toLowerCase();
   const lowerBody = INJURY_FLAGS.some(([re, flags]) => flags.some(f => LOWER_BODY.includes(f)) && mentions(re, injuryText));
   if (lowerBody) return { limit: CARDIO.TOP, walkOnly: true, why: 'You mentioned a sore foot, ankle, knee or hip, so walks stay walks (no jogging). Consider asking your GP or physio before adding running.' };
@@ -811,12 +813,14 @@ function cardioNow(a, saved, measured) {
   const answer = a.cardio_level;
   const vo2 = measured && measured.vo2max ? measured.vo2max : null;
   const guess = vo2 ? CARDIO.levelFromVo2(vo2, a.age, a.sex) : null;
-  const level = CARDIO.levelNow(answer, saved, limits.limit, guess);
+  const steady = limits.steady == null ? null : limits.steady;
+  const level = CARDIO.levelNow(answer, saved, limits.limit, guess, steady);
   const known = CARDIO.startLevel(answer) !== null || guess !== null || !!(saved && saved.base === answer && saved.offset);
   const walkCap = limits.walkOnly ? 2 : null;
   const walkAt = CARDIO.describe(walkCap == null ? level : Math.min(level, walkCap));
   return Object.assign(CARDIO.describe(level), { walk: walkAt.walk, walkDetail: walkAt.walkDetail, walkHow: walkAt.how,
-    known, limit: limits.limit, walkCap, why: limits.why, guess,
+    known, limit: limits.limit, steady, walkCap, why: limits.why, guess,
+    toGo: CARDIO.easyToGo(answer, saved, level, limits.limit, steady),
     vo2: vo2 ? { value: vo2, date: measured.vo2maxDate || null } : null,
     from: CARDIO.startLevel(answer) !== null ? 'about-me' : guess !== null ? 'watch' : 'none' });
 }
