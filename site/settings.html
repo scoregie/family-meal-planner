@@ -65,6 +65,7 @@ input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px s
 .msg{border-radius:.6rem;padding:.6rem .8rem;margin:0 0 .8rem;font-size:.9rem}
 .msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
 .status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2);max-width:90vw}
+.status:empty{opacity:0;pointer-events:none}
 .status.err{background:var(--low);color:var(--bg)}
 [hidden]{display:none!important}
 details.fold>summary{list-style:none;cursor:pointer;position:relative;padding-right:2rem;min-height:2.6rem;display:flex;flex-direction:column;justify-content:center}
@@ -197,7 +198,7 @@ details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offse
     <p class="note">On iPhone, the home-screen icon only changes after you remove the app from the home screen and add it again (Share → Add to Home Screen).</p>
   </details>
 </main>
-<div class="status" id="status" role="status" hidden></div>
+<div class="status" id="status" role="status"></div>
 <script>
 // The Settings page. Everyone can choose their own look on their device (kept in the browser by
 // appearance.js). Admins can also set the household's look and make a new app icon, which is
@@ -237,14 +238,20 @@ function api(method, url, body) {
   });
 }
 
-// Shows a short message at the bottom of the screen (red for errors), then hides it.
+// Shows a short message at the bottom of the screen (red for errors). The box stays on the page
+// and is filled a moment after it is cleared, so screen readers read each new message. Other
+// messages go after 5 seconds; errors stay until they are tapped or the next message comes.
 function status(text, isError) {
   var s = $("status");
-  s.textContent = text;
-  s.className = "status" + (isError ? " err" : "");
-  s.hidden = false;
   clearTimeout(status.timer);
-  status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 2500);
+  clearTimeout(status.fill);
+  s.className = "status" + (isError ? " err" : "");
+  s.textContent = "";
+  s.onclick = function () { s.textContent = ""; };
+  status.fill = setTimeout(function () {
+    s.textContent = text;
+    if (!isError) status.timer = setTimeout(function () { s.textContent = ""; }, 5000);
+  }, 50);
 }
 
 // True if the page is showing in dark mode (chosen, or matching the device).

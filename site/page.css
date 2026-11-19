@@ -32,6 +32,7 @@ input[type=text],input[type=email],input[type=password],input[type=number],selec
 .msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
 .msg.ok{background:color-mix(in srgb,var(--accent) 12%,var(--card));border:1px solid var(--accent)}
 .status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2);max-width:90vw;z-index:9}
+.status:empty{opacity:0;pointer-events:none}   /* the message box stays on the page, so screen readers hear new messages */
 .status.err{background:var(--low);color:var(--bg)}
 .link{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin:.5rem 0}
 .link input{flex:1;min-width:12rem;font-size:.85rem}
