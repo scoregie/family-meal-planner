@@ -368,6 +368,9 @@ function sayFeel(box, id, feel) {
     redrawCardio();
     var said = box.querySelector(".cardio-said");
     if (said) said.setAttribute("role", "status");
+    // The buttons were drawn again, so keep keyboard focus on the one that was pressed.
+    var pressed = box.querySelector('.cardio-feel [aria-pressed="true"]');
+    if (pressed) pressed.focus({ preventScroll: true });
   }).catch(function (e) {
     box.dataset.said = e.message;
     redrawCardio();
