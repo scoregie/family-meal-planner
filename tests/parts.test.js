@@ -41,6 +41,8 @@ test('zip: an Apple Health export is read, counting steps from the busiest devic
   assert.equal(Math.round(find('2026-10-02', 'weight').value), 80, '176 lb is about 80 kg');
   assert.equal(find('2026-10-01', 'steps').value, 7000, 'the phone’s 7,000, not phone + watch');
   assert.equal(find('2026-10-01', 'workout_minutes').value, 30);
+  assert.equal(find('2026-10-01', 'vo2max').value, 41.2, 'Apple Watch cardio fitness');
+  assert.equal(find('2026-10-01', 'resting_hr').value, 57);
 });
 
 test('zip: an empty file inside a zip reads as empty, and a file that isn’t a zip is refused', async () => {

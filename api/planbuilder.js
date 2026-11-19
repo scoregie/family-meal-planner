@@ -802,16 +802,23 @@ function cardioLimit(a) {
 // other, how, limit, walkCap, why}. `walk`, `walkDetail` and `walkHow` are for walks, which a sore
 // leg keeps at level 2; `other` and `how` are for swims and rides. `known` is false when they
 // haven't answered and haven't said how a session felt.
-function cardioNow(a, saved) {
+// `measured` is their logged numbers (planextras.measuredFor): an Apple Watch cardio fitness
+// reading (vo2max) sets the start when they haven't picked an About me answer.
+function cardioNow(a, saved, measured) {
   if (!CARDIO) return { known: false };   // a phone app that doesn't load cardio.js yet: plain walks
-  const limits = cardioLimit(a || {});
-  const answer = (a || {}).cardio_level;
-  const level = CARDIO.levelNow(answer, saved, limits.limit);
-  const known = CARDIO.startLevel(answer) !== null || !!(saved && saved.base === answer && saved.offset);
+  a = a || {};
+  const limits = cardioLimit(a);
+  const answer = a.cardio_level;
+  const vo2 = measured && measured.vo2max ? measured.vo2max : null;
+  const guess = vo2 ? CARDIO.levelFromVo2(vo2, a.age, a.sex) : null;
+  const level = CARDIO.levelNow(answer, saved, limits.limit, guess);
+  const known = CARDIO.startLevel(answer) !== null || guess !== null || !!(saved && saved.base === answer && saved.offset);
   const walkCap = limits.walkOnly ? 2 : null;
   const walkAt = CARDIO.describe(walkCap == null ? level : Math.min(level, walkCap));
   return Object.assign(CARDIO.describe(level), { walk: walkAt.walk, walkDetail: walkAt.walkDetail, walkHow: walkAt.how,
-    known, limit: limits.limit, walkCap, why: limits.why });
+    known, limit: limits.limit, walkCap, why: limits.why, guess,
+    vo2: vo2 ? { value: vo2, date: measured.vo2maxDate || null } : null,
+    from: CARDIO.startLevel(answer) !== null ? 'about-me' : guess !== null ? 'watch' : 'none' });
 }
 
 // A 30-minute example session at someone's level now (`now` from cardioNow), for the AI's instructions.
@@ -930,7 +937,7 @@ function exerciseFor(p, r, rnd) {
     : [[2, 3], [2, 4], [3, 4], [3, 5]];
   const cardio = cardioFor(a, equipment, seated);
   // How fit they are for cardio already, from About me and how their sessions felt.
-  const now = cardioNow(a, p.cardio);
+  const now = cardioNow(a, p.cardio, p.measured);
   if (now.known && !seated) {
     cardio.level = now.level;
     cardio.walkCap = now.walkCap;

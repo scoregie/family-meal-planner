@@ -74,9 +74,35 @@ function measuredFor(person) {
     proteinIn: round(average(recent('protein_in')), 1),
   };
   for (const [k, v] of Object.entries(numbers)) if (v) out[k] = v;
+  // From an Apple Watch: the newest cardio fitness estimate (VO2 max) and the usual resting heart rate.
+  const vo2 = [...(byKind.vo2max || new Map())].sort((a, b) => (a[0] < b[0] ? -1 : 1)).pop();
+  if (vo2) {
+    out.vo2max = Math.round(vo2[1] * 10) / 10;
+    out.vo2maxDate = vo2[0];
+  }
+  const resting = round(average(recent('resting_hr')), 1);
+  if (resting) out.restingHr = resting;
   const workouts = recent('workouts').reduce((n, x) => n + x, 0);
   if (workouts) out.workoutsPerWeek = Math.round(workouts / 4 * 10) / 10;
   return Object.keys(out).length ? out : null;
+}
+
+// Whether someone's resting heart rate is up on its newest day (today or yesterday) compared
+// with their usual (the middle value of the 2 weeks before). A rise of 7 or more beats a minute
+// can come with illness, poor sleep or overdoing it. Gives {today, usual, up} or null.
+function restingCheck(person) {
+  let rows = [];
+  try { rows = db.measurements(person, daysAgo(16)).filter(r => r.kind === 'resting_hr'); } catch (e) { return null; }
+  const byDate = new Map();
+  for (const r of rows) byDate.set(r.date, r.value);
+  const dates = [...byDate.keys()].sort();
+  const newest = dates[dates.length - 1];
+  if (!newest || newest < daysAgo(1)) return null;
+  const before = dates.slice(0, -1).map(d => byDate.get(d)).sort((a, b) => a - b);
+  if (before.length < 5) return null;   // not enough days to know what's usual
+  const usual = before[Math.floor(before.length / 2)];
+  const today = byDate.get(newest);
+  return { today: Math.round(today), usual: Math.round(usual), up: today - usual >= 7 };
 }
 
 // A sentence for the AI about someone's logged numbers, or '' when there are none.
@@ -88,6 +114,8 @@ function measuredText(m) {
   if (m.activeEnergy) bits.push('about ' + m.activeEnergy + ' kJ of active energy a day');
   if (m.energyIn) bits.push('food logged at about ' + m.energyIn + ' kJ a day' + (m.proteinIn ? ' with ' + m.proteinIn + ' g of protein' : ''));
   if (m.workoutsPerWeek) bits.push('about ' + m.workoutsPerWeek + ' logged workouts a week');
+  if (m.vo2max) bits.push('Apple Watch cardio fitness (VO2 max) ' + m.vo2max + ' mL/kg/min on ' + m.vo2maxDate);
+  if (m.restingHr) bits.push('resting heart rate about ' + m.restingHr + ' beats a minute');
   return bits.join('; ');
 }
 
@@ -226,4 +254,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { handle, feedbackFor, measuredFor, measuredText, triedFor, sharesResults, sharedResults, resultBlocks, skippedNote, unreadNote };
+module.exports = { handle, feedbackFor, measuredFor, measuredText, restingCheck, triedFor, sharesResults, sharedResults, resultBlocks, skippedNote, unreadNote };
