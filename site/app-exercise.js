@@ -227,6 +227,16 @@ function focusFold(ex) {
   return fold;
 }
 
+// The label a cardio session's "How did that feel?" is saved under, such as "plan-2026-11|1|Mon-cardio":
+// which plan, the week as the plan names it (Stock-up weeks aren't counted, so Week 1 is 1), and
+// the session. A new plan gets new labels, so its sessions count afresh.
+function sessionId(index, day, slot) {
+  var n = 0;
+  for (var i = 0; i <= index && i < PLAN.weeks.length; i++) if (PLAN.weeks[i].kind !== "stockup") n++;
+  var plan = String(PLAN.id || "plan").replace(/[^A-Za-z0-9-]/g, "").slice(0, 40) || "plan";
+  return plan + "|" + Math.max(n, 1) + "|" + String(day.day).slice(0, 3) + "-" + slot;
+}
+
 // One exercise session to tick, such as "Cardio: Brisk walk 30 minutes". Saved as "Mon-cardio".
 // A cardio session also gets "At your level: ..." and, once ticked, "How did that feel?".
 function sessionRow(day, slot, done) {
@@ -237,7 +247,7 @@ function sessionRow(day, slot, done) {
   var cardioBox = isCardio(slot[0], day[slot[0]]) ? el("div", "cardio-extra") : null;
   if (cardioBox) {
     cardioBox.dataset.text = day[slot[0]];
-    cardioBox.dataset.session = (week + 1) + "|" + String(day.day).slice(0, 3) + "-" + slot[0];
+    cardioBox.dataset.session = sessionId(week, day, slot[0]);
     row.appendChild(cardioBox);
   }
   var box = el("input");

@@ -101,7 +101,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
 
   if (urlPath === '/api/exercises/cardio' && req.method === 'POST') {
     const id = String(body.id || '');
-    if (!['easy', 'right', 'hard'].includes(body.feel) || !/^\d{1,2}\|[A-Za-z]{3}-[a-z]{1,12}$/.test(id)) {
+    if (!['easy', 'right', 'hard'].includes(body.feel) || !/^([A-Za-z0-9-]{1,40}\|)?\d{1,2}\|[A-Za-z]{3}-[a-z]{1,12}$/.test(id)) {
       send(res, 400, { error: 'bad request' });
       return true;
     }

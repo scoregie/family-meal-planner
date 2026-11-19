@@ -164,3 +164,22 @@ test('tapping "Too easy" again on the same sessions doesn’t keep stepping up',
   assert.equal(say('2|Sat-morning', 'hard').moved, -1);
   assert.equal(level, 2);
 });
+
+test('a cardio session is labelled with its plan and the week as the plan names it', () => {
+  const vm = require('node:vm');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'site', 'app-exercise.js'), 'utf8');
+  const fn = src.slice(src.indexOf('function sessionId'), src.indexOf('\n}\n', src.indexOf('function sessionId')) + 3);
+  const ctx = { PLAN: { id: 'plan-2026-11', weeks: [{ kind: 'stockup' }, {}, {}, { kind: 'stockup' }, {}] } };
+  vm.runInNewContext(fn + ';this.sessionId = sessionId;', ctx);
+  assert.equal(ctx.sessionId(1, { day: 'Monday' }, 'morning'), 'plan-2026-11|1|Mon-morning', 'after Stock-up 1 comes Week 1');
+  assert.equal(ctx.sessionId(4, { day: 'Friday' }, 'cardio'), 'plan-2026-11|3|Fri-cardio');
+  // Sessions in a new plan count afresh, even after the same days were used up in the old one.
+  const answer = cardio.START[2];
+  let saved = null;
+  for (const id of ['old|1|Mon-morning', 'old|1|Wed-morning']) saved = cardio.feelAfter(answer, saved, id, 'easy').saved;
+  let r = cardio.feelAfter(answer, saved, 'new|1|Mon-morning', 'easy'); saved = r.saved;
+  r = cardio.feelAfter(answer, saved, 'new|1|Wed-morning', 'easy');
+  assert.equal(r.moved, 1);
+});
