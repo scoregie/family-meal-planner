@@ -36,9 +36,14 @@ test('app-start.js, which starts the page, is loaded after the other parts', () 
 
 test('More has Apple Health sync and calendar reminders, so they are easy to find', () => {
   const html = fs.readFileSync(path.join(site, 'index.html'), 'utf8');
-  const more = html.slice(html.indexOf('id="moreView"'), html.indexOf('id="adminGroup"'));
+  const from = html.indexOf('id="moreView"'), to = html.indexOf('id="adminGroup"');
+  assert.ok(from >= 0 && to > from, 'More (#moreView) should come before the admin links (#adminGroup)');
+  const more = html.slice(from, to);
   assert.ok(more.includes('href="health-sync.html"'), 'More has no link to Apple Health sync');
   assert.ok(more.includes('id="moreCal"'), 'More has no calendar reminders box');
   const start = fs.readFileSync(path.join(site, 'app-start.js'), 'utf8');
-  assert.ok(start.includes('moreCalendar()'), 'opening More does not fill the calendar reminders box');
+  assert.match(start, /view === "more"\) moreCalendar\(\)/, 'opening More does not fill the calendar reminders box');
+  // The sync page works offline from an installed app too.
+  const sw = fs.readFileSync(path.join(site, 'sw.js'), 'utf8');
+  assert.ok(sw.includes('"health-sync.html"') && sw.includes('"page.css"'), 'health-sync.html is not saved for offline use');
 });
