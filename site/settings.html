@@ -9,6 +9,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="local-api.js"></script>
+<script src="edition.js"></script>
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -130,7 +132,22 @@ details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offse
     </div>
   </details>
 
-  <details class="card fold" id="claudeCard" hidden>
+  <details class="card fold" id="backupCard" data-phone-only>
+    <summary><h2>Backup</h2><span class="hint">Save everything on this phone to a file, or put it back</span></summary>
+    <p class="note">Everything is saved only on this phone: your family, answers, plan, ticks and progress. Save a backup file now and then (to Files, iCloud Drive, Google Drive or email), so you can put it back on a new phone or after reinstalling the app.</p>
+    <div class="row">
+      <button class="btn primary" type="button" id="backupSave">Save a backup</button>
+      <label class="btn" for="backupFile">Restore from a backup</label>
+      <input type="file" id="backupFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="note" id="backupNote" role="status"></p>
+    <details style="margin-top:1rem">
+      <summary class="btn small">Delete everything</summary>
+      <p class="note">This removes your family, answers, plan, ticks and progress from this phone. It can’t be undone unless you have a backup file.</p>
+      <button class="btn" type="button" id="eraseAll">Delete everything on this phone</button>
+    </details>
+
+  <details class="card fold" id="claudeCard" hidden data-web-only>
     <summary><h2>Your AI key</h2><span class="hint">Use your own Claude, OpenAI or Gemini key</span></summary>
     <p class="note">Add your own key here and it writes the plans you draft and answers your Ask AI. Without one, Ask AI uses the family’s key on the server, if there is one. Keys come from Claude, OpenAI or Google Gemini: you pay for your own use, and the daily limit doesn’t apply. Chat subscriptions (Claude Pro, ChatGPT Plus, Gemini Advanced) can’t be used by other apps, so it needs an API key.</p>
     <p id="keyState" class="note"></p>
@@ -157,26 +174,26 @@ details.fold>summary:focus-visible{outline:3px solid var(--accent);outline-offse
   </details>
 
   <details class="card fold" id="countryCard" hidden>
-    <summary><h2>Your country <span class="badge">Admins</span></h2><span class="hint" id="countrySummary">Currency, stores and prices</span></summary>
-    <label for="country" class="note">Sets the currency, date style, energy unit and grocery stores for everyone. AI-written plans use local stores and prices.</label>
+    <summary><h2>Your country <span class="badge" data-web-only>Admins</span></h2><span class="hint" id="countrySummary">Currency, stores and prices</span></summary>
+    <label for="country" class="note" data-phone="Sets the currency, date style, energy unit and grocery stores for everyone.">Sets the currency, date style, energy unit and grocery stores for everyone. AI-written plans use local stores and prices.</label>
     <div><select id="country"></select></div>
     <p class="note" id="countryNote"></p>
   </details>
 
-  <details class="card fold" id="libCard" hidden>
+  <details class="card fold" id="libCard" hidden data-web-only>
     <summary><h2>New meals and exercises <span class="badge">Admins</span></h2><span class="hint" id="libSummary">The plan builder’s library</span></summary>
     <p class="note">The app’s own plan builder chooses from a library of meals, snacks and exercises. It can grow by itself every 2 weeks. New ones are used the next time you build or rebuild the plan.</p>
     <div id="libBody"></div>
   </details>
 
   <details class="card fold" id="houseCard" hidden>
-    <summary><h2>For everyone <span class="badge">Admins</span></h2><span class="hint">The household’s look</span></summary>
+    <summary><h2>For everyone <span class="badge" data-web-only>Admins</span></h2><span class="hint">The household’s look</span></summary>
     <p class="note">The look everyone gets unless they choose their own above.</p>
     <div id="house"></div>
     <div class="row"><button class="btn primary" id="saveHouse" type="button">Save for everyone</button></div>
   </details>
 
-  <details class="card fold" id="iconCard" hidden>
+  <details class="card fold" id="iconCard" hidden data-web-only>
     <summary><h2>App icon <span class="badge">Admins</span></h2><span class="hint">The home-screen picture</span></summary>
     <p class="note">The picture on phones’ home screens and in browser tabs. The old icon is kept in data/icon-backups on the server.</p>
     <div class="iconmaker">
@@ -858,7 +875,7 @@ function renderLibrary() {
 renderMine();
 renderStores();
 renderEnergy();
-loadAccount();
+if (!window.PHONE) loadAccount();   // AI keys are web-only
 A.refresh().then(function (got) {
   if (!got) {
     if (!navigator.onLine) $("msg").appendChild(el("div", "msg err", "You’re offline, so only this device’s settings can be changed."));
@@ -876,7 +893,7 @@ A.refresh().then(function (got) {
     $("countryCard").hidden = false;
     $("libCard").hidden = false;
     renderCountry();
-    loadLibrary();
+    if (!window.PHONE) loadLibrary();   // new meals and exercises reach the phone app with app updates
     renderHouse();
     renderIconChoices();
     if (document.fonts) document.fonts.load('700 40px "Atkinson Hyperlegible"').then(drawIcon, drawIcon);
@@ -889,6 +906,55 @@ A.refresh().then(function (got) {
   var target = location.hash && document.getElementById(location.hash.slice(1));
   if (target && target.tagName === "DETAILS") target.open = true;
 })();
+
+// ---------- Backup (phone app only) ----------
+// In the phone app everything is kept on the phone, so Settings can save it to a file and put it back.
+if (window.PHONE) {
+  // Backup: everything in one JSON file the person keeps somewhere safe, and putting it back.
+  function backupName() {
+    var d = new Date();
+    return "family-health-planner-" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + ".json";
+  }
+  $("backupSave").addEventListener("click", function () {
+    api("GET", "/api/backup").then(function (data) {
+      var text = JSON.stringify(data);
+      var P = window.Capacitor && window.Capacitor.Plugins;
+      if (P && P.Filesystem && P.Share && window.Capacitor.isNativePlatform()) {
+        return P.Filesystem.writeFile({ path: backupName(), directory: "CACHE", data: text, encoding: "utf8" })
+          .then(function (w) { return P.Share.share({ title: "Family Health Planner backup", url: w.uri, dialogTitle: "Save your backup" }); })
+          .then(function () { $("backupNote").textContent = "Backup ready. Keep it somewhere safe, like iCloud Drive or Google Drive."; });
+      }
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      a.download = backupName();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      $("backupNote").textContent = "Backup saved.";
+    }).catch(function (e) {
+      if (e && /cancel/i.test(String(e.message || e))) return;
+      $("backupNote").textContent = "Couldn’t save the backup: " + (e && e.message || e);
+    });
+  });
+  $("backupFile").addEventListener("change", function () {
+    var file = this.files && this.files[0];
+    this.value = "";
+    if (!file) return;
+    if (!confirm("Replace everything on this phone with the backup “" + file.name + "”?")) return;
+    file.text().then(function (text) {
+      var data;
+      try { data = JSON.parse(text); } catch (e) { throw new Error("That file isn’t a backup."); }
+      return api("PUT", "/api/backup", data);
+    }).then(function () {
+      $("backupNote").textContent = "Restored.";
+      location.href = "index.html";
+    }).catch(function (e) { $("backupNote").textContent = "Couldn’t restore: " + (e && e.message || e); });
+  });
+  $("eraseAll").addEventListener("click", function () {
+    if (!confirm("Delete everything on this phone? This can’t be undone.")) return;
+    api("POST", "/api/erase", {}).then(function () { location.href = "setup.html"; });
+  });
+}
 </script>
 </body>
 </html>

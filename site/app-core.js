@@ -239,7 +239,7 @@ function setSync(message) {
   var label = $("sync");
   if (!label) return;
   var offline = /^Offline/.test(message);
-  label.textContent = offline ? "Offline" : (/Reset/.test(message) ? "Reset" : "Synced");
+  label.textContent = offline ? "Offline" : (/Reset/.test(message) ? "Reset" : window.PHONE ? "Saved" : "Synced");
   label.title = message;
   label.className = "sync" + (offline ? " off" : "");
 }
@@ -286,7 +286,7 @@ function pushNow() {
     .then(function () {
       markSent(key, true);
       if (ukey(USER) === key) dirty = false;
-      setSync("Saved to server");
+      setSync(window.PHONE ? "Saved on this phone" : "Saved to server");
     })
     .catch(function () {
       setSync("Offline: saved on this device only");
@@ -403,7 +403,7 @@ function pull() {
       if (PLAN && !(focused && focused.tagName === "TEXTAREA")) show();
     }
     if (found.needPush) pushNow();
-    setSync("Synced");
+    setSync(window.PHONE ? "Saved" : "Synced");
   }).catch(function () {
     setSync("Offline: saved on this device only");
   });
@@ -550,6 +550,7 @@ function moreCalendar() {
 // "Add to calendar" for a person's suggested eating times: an Apple Calendar file (which also
 // works in Outlook), and a list of Google Calendar links that loads when opened.
 function calBlock(personKey) {
+  if (window.PHONE) return document.createElement("span");   // calendar reminders are web-only for now
   var start = localYmd(new Date(Date.now() + 864e5));   // tomorrow
   var startQuery = "?start=" + start;
   var wrap = el("div", "cal");

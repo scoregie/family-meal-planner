@@ -49,7 +49,7 @@
           "help": "Leave it blank if you don't have any. It is counted as one scoop mixed with water (about 24 g of protein), in place of a snack. An admin can change the numbers to match your tub in Edit plan." },
         { "id": "injuries", "label": "Injuries or pain that affect exercise", "type": "long", "placeholder": "e.g. sore left knee on stairs" },
         { "id": "gp", "label": "Has a doctor or dietitian given you advice about food or exercise?", "type": "long", "help": "What they told you comes first. The plan works around it." },
-        { "id": "share_results", "label": "May the plan writer read the blood test results you upload in My files?", "type": "choice",
+        { "id": "share_results", "webOnly": true, "label": "May the plan writer read the blood test results you upload in My files?", "type": "choice",
           "options": ["Yes, use my blood test results", "No, leave them out"],
           "help": "They are left out unless you say yes. With yes, your newest results (up to 3 files) go to Anthropic when an admin drafts the plan with Claude or in a Claude Code session. The built-in builder and the other AIs can't read them. Your tips in the plan may mention what the results show, and the family can see the plan. For a child, an adult chooses." }
       ]

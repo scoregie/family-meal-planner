@@ -9,6 +9,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="local-api.js"></script>
+<script src="edition.js"></script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -460,8 +462,8 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
     <div class="tabs" role="group" aria-label="Weeks" id="tabs"></div>
   </header>
   <p class="err" id="err" role="alert" hidden></p>
-  <div class="ask" id="emailNudge" hidden><span>You can log in with your email now. Add it to your account (your username keeps working).</span> <a class="btn primary" href="account.html">Add email</a></div>
-  <div class="ask" id="setupNudge" hidden><span>Set up your family’s plan: get everyone’s About me answers in, then make 4 weeks of meals, shopping and exercise (with AI, or with the app’s own plan builder).</span> <a class="btn primary" href="setup.html">Plan setup</a></div>
+  <div class="ask" id="emailNudge" hidden data-web-only><span>You can log in with your email now. Add it to your account (your username keeps working).</span> <a class="btn primary" href="account.html">Add email</a></div>
+  <div class="ask" id="setupNudge" hidden><span data-phone="Set up your family’s plan: get everyone’s About me answers in, then make 4 weeks of meals, shopping and exercise with the app’s plan builder.">Set up your family’s plan: get everyone’s About me answers in, then make 4 weeks of meals, shopping and exercise (with AI, or with the app’s own plan builder).</span> <a class="btn primary" href="setup.html" data-phone="Family and plan">Plan setup</a></div>
   <div class="ask" id="draftNudge" hidden><span>A new plan is waiting for you to check and approve.</span> <a class="btn primary" href="setup.html">Review it</a></div>
   <div class="ask" id="ask" hidden><span>Help shape your meals and exercise: answer a few questions about you.</span> <a class="btn primary" href="profile.html">Start</a> <button class="btn" type="button" id="askLater">Later</button></div>
   <div class="who" id="whoRow" hidden><label for="user">Ticks for</label><select id="user"></select><span class="me-name" id="meName" hidden></span></div>
@@ -492,31 +494,33 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
     <h2 class="more-h">You</h2>
     <ul class="morelist">
       <li><a href="profile.html"><b>About me</b><span>Your answers that shape your meals and exercise</span></a></li>
-      <li><a href="progress.html"><b>Progress</b><span>Weight, steps and how the weeks are going</span></a></li>
+      <li><a href="progress.html"><b>Progress</b><span data-phone="Weight and how the weeks are going">Weight, steps and how the weeks are going</span></a></li>
       <li><a href="food.html"><b>Current food</b><span>What’s in your pantry, fridge and freezer, for the next plan to use first</span></a></li>
-      <li><a href="assistant.html"><b>Ask AI</b><span>Questions about your plan, or ask for a change</span></a></li>
+      <li data-web-only><a href="assistant.html"><b>Ask AI</b><span>Questions about your plan, or ask for a change</span></a></li>
       <li><a href="exercises.html"><b>Exercise library</b><span>Every exercise the plan builder uses, with how-to steps</span></a></li>
-      <li><a href="settings.html"><b>Settings</b><span>Look, stores, kJ or Calories, your AI key</span></a></li>
-      <li><a href="account.html"><b>Account</b><span>Email, password and log-in</span></a></li>
-      <li><a href="files.html"><b>My files</b><span>Uploads and exports</span></a></li>
+      <li><a href="settings.html"><b>Settings</b><span data-phone="Look, stores, kJ or Calories, and backup">Look, stores, kJ or Calories, your AI key</span></a></li>
+      <li data-web-only><a href="account.html"><b>Account</b><span>Email, password and log-in</span></a></li>
+      <li data-web-only><a href="files.html"><b>My files</b><span>Uploads and exports</span></a></li>
     </ul>
-    <h2 class="more-h">Phone and calendar</h2>
-    <ul class="morelist">
-      <li><a href="health-sync.html"><b>Apple Health sync</b><span>Send your steps, weight and food from your iPhone each day</span></a></li>
-    </ul>
-    <div class="advice more-cal" id="moreCal" hidden></div>
-    <div id="adminGroup" hidden>
-      <h2 class="more-h">Family <span class="badge">Admins</span></h2>
+    <div data-web-only>
+      <h2 class="more-h">Phone and calendar</h2>
       <ul class="morelist">
-        <li><a id="familyLink" href="family.html"><b>Family</b><span>People, logins and approvals</span></a></li>
-        <li><a id="setupLink" href="setup.html"><b>Plan setup</b><span>Make a new 4-week plan and approve it</span></a></li>
-        <li><a id="adminLink" href="admin.html"><b>Edit plan</b><span>Change meals, shopping and exercise by hand</span></a></li>
+        <li><a href="health-sync.html"><b>Apple Health sync</b><span>Send your steps, weight and food from your iPhone each day</span></a></li>
+      </ul>
+      <div class="advice more-cal" id="moreCal" hidden></div>
+    </div>
+    <div id="adminGroup" hidden>
+      <h2 class="more-h">Family <span class="badge" data-web-only>Admins</span></h2>
+      <ul class="morelist">
+        <li data-web-only><a id="familyLink" href="family.html"><b>Family</b><span>People, logins and approvals</span></a></li>
+        <li><a id="setupLink" href="setup.html"><b data-phone="Family and plan">Plan setup</b><span data-phone="Add people, your country, and make a new 4-week plan">Make a new 4-week plan and approve it</span></a></li>
+        <li data-web-only><a id="adminLink" href="admin.html"><b>Edit plan</b><span>Change meals, shopping and exercise by hand</span></a></li>
         <li><a id="ratesLink" href="#"><b>Meal ratings</b><span>What everyone thought of each meal</span></a></li>
       </ul>
     </div>
     <h2 class="more-h">About this app</h2>
-    <p class="note2">The meals, exercise and health notes are general information, not medical advice, and AI can make mistakes. Check the plan with your GP, dietitian or physio, and in an emergency call your local emergency number. Prices are estimates. Store, brand and app names belong to their owners; this app isn’t connected with or endorsed by them.</p>
-    <form method="post" action="/auth/logout" id="logout"><button class="btn logoutbtn" type="submit">Log out</button></form>
+    <p class="note2" data-phone="The meals, exercise and health notes are general information, not medical advice. Check the plan with your GP, dietitian or physio, and in an emergency call your local emergency number. Prices are estimates. Store, brand and app names belong to their owners; this app isn’t connected with or endorsed by them. Everything you enter stays on this phone (see Settings → Backup).">The meals, exercise and health notes are general information, not medical advice, and AI can make mistakes. Check the plan with your GP, dietitian or physio, and in an emergency call your local emergency number. Prices are estimates. Store, brand and app names belong to their owners; this app isn’t connected with or endorsed by them.</p>
+    <form method="post" action="/auth/logout" id="logout" data-web-only><button class="btn logoutbtn" type="submit">Log out</button></form>
   </div>
   <details class="about"><summary>About this plan</summary><p id="sub"></p><p class="note">Tap the box to tick an item off. Tap &ldquo;At home?&rdquo; on anything you already have. It is removed from your total and stays marked in every week. Oil, salt, pepper and dried spices are assumed on hand. The store links open a search for that item, so pick the size and brand that suits you. Tap &ldquo;Pin product&rdquo; and paste a product page to make the link go straight to the one you buy. &ldquo;Shop mode&rdquo; shows one item at a time, in aisle order, while you walk the shop. Choose your stores in Settings.</p></details>
 </main>
@@ -581,7 +585,7 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 <script src="app-start.js"></script>
 <script>
 // Works offline once installed: sw.js keeps a copy of the page and plan on the phone.
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && !window.PHONE) {
   window.addEventListener("load", function () {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   });
@@ -595,7 +599,7 @@ window.addEventListener("units-changed", function () { if (PLAN) show(); });
 // Shows who is logged in, on the More view and in the avatar (top right).
 function setMe(d) {
   var roles = { owner: " (owner)", admin: " (admin)" };
-  document.getElementById("me").textContent = "Logged in as " + (d.email || d.user) + (roles[d.role] || (d.admin ? " (admin)" : ""));
+  document.getElementById("me").textContent = window.PHONE ? "Saved on this phone" : "Logged in as " + (d.email || d.user) + (roles[d.role] || (d.admin ? " (admin)" : ""));
   document.getElementById("adminGroup").hidden = !d.admin;
   document.getElementById("emailNudge").hidden = !d.needsEmail;
   // Admins still on the example plan are pointed at Plan setup.
