@@ -403,6 +403,8 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
 .morelist a::after{content:"›";position:absolute;right:1rem;top:50%;transform:translateY(-50%);color:var(--mute);font-size:1.4rem}
 .morelist a span{color:var(--mute);font-size:.82rem}
 .morelist a:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.more-cal{margin-top:.6rem}
+.more-cal .cal{margin-top:0;padding-top:0;border-top:0}
 .logoutbtn{width:100%;margin-top:1.2rem}
 .td-date{margin:0 0 .8rem}
 .td-date h2{margin:0;font-size:1.35rem;display:block}
@@ -485,6 +487,11 @@ details.gl-fold{background:none;border:0;border-radius:0;padding:0;margin:.2rem 
       <li><a href="account.html"><b>Account</b><span>Email, password and log-in</span></a></li>
       <li><a href="files.html"><b>My files</b><span>Uploads and exports</span></a></li>
     </ul>
+    <h2 class="more-h">Phone and calendar</h2>
+    <ul class="morelist">
+      <li><a href="health-sync.html"><b>Apple Health sync</b><span>Send your steps, weight and food from your iPhone each day</span></a></li>
+    </ul>
+    <div class="advice more-cal" id="moreCal" hidden></div>
     <div id="adminGroup" hidden>
       <h2 class="more-h">Family <span class="badge">Admins</span></h2>
       <ul class="morelist">
@@ -609,9 +616,9 @@ fetch("/auth/me", { cache: "no-store" }).then(function (response) {
   return response.ok ? response.json() : null;
 }).then(function (d) {
   if (!d || !d.user) return;
-  setMe(d);
   var before = JSON.stringify(ME);
-  ME = d;
+  ME = d;   // set before setMe() and show(), so they use who is logged in now
+  setMe(d);
   try { localStorage.setItem("coles-plan-me", JSON.stringify(d)); } catch (e) {}
   if (before !== JSON.stringify(d) && PLAN) {
     loadUser();
