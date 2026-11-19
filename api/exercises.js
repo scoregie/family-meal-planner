@@ -12,6 +12,7 @@
 // People can change their own; admins can change anyone's. A workout shared by everyone can only be
 // changed by an admin.
 const db = require('./db');
+const rules = require('./sharedrules');   // rules the phone app follows too
 const planbuilder = require('./planbuilder');
 const cardio = require('./cardio');
 const planextras = require('./planextras');   // logged numbers: Apple Watch cardio fitness and resting heart rate
@@ -35,21 +36,6 @@ function setAvoid(person, id, on) {
   if (on) list.push(id);
   db.setSetting('exercise-avoid:' + person, JSON.stringify(list));
   return list;
-}
-
-// The library exercise a workout line is about ("Warm-up: March on the spot (5 minutes): ..." or
-// "Goblet squat: hold one dumbbell...") or null.
-function match(line) {
-  const name = String(line || '').replace(/^(warm-up|cool-down)\s*:\s*/i, '').split(/\s*[(:]/)[0].trim().toLowerCase();
-  if (!name) return null;
-  return EXERCISES.find(e => e.name.toLowerCase() === name)
-    || EXERCISES.find(e => name.startsWith(e.name.toLowerCase()) || e.name.toLowerCase().startsWith(name)) || null;
-}
-
-// A workout line for an exercise, keeping a "Warm-up: " or "Cool-down: " start.
-function lineFor(e, old) {
-  const start = (/^(warm-up|cool-down)\s*:\s*/i.exec(old) || [''])[0];
-  return start + e.name + ' (' + e.dose + '): ' + e.how;
 }
 
 // What is saved about how someone's cardio sessions felt ({base, offset, feels}), or null.
@@ -121,45 +107,24 @@ async function handle(req, res, urlPath, url, me, ctx) {
   }
 
   if (urlPath === '/api/exercises/swap' && req.method === 'POST') {
-    const to = EXERCISES.find(e => e.id === body.to);
-    if (!to) { send(res, 400, { error: 'unknown exercise' }); return true; }
     const plan = ctx.readPlan();
     const ex = plan && plan.exercise;
     if (!ex) { send(res, 404, { error: 'The plan has no exercise section.' }); return true; }
-    let target;
-    if (Array.isArray(ex.workouts)) {
-      if (!me.admin) { send(res, 403, { error: 'These workouts are shared by everyone, so only an admin can change them.' }); return true; }
-      target = ex;
-    } else {
-      const key = db.planKeyFor(plan, person, ctx.toKey);
-      target = ex[key];
-    }
-    const workout = target && Array.isArray(target.workouts) ? target.workouts.find(w => w && w.name === body.workout) : null;
-    const index = Number(body.item);
-    if (!workout || !Array.isArray(workout.items) || !Number.isInteger(index) || index < 0 || index >= workout.items.length) {
-      send(res, 409, { error: 'That workout has changed. Reload the page and try again.' });
-      return true;
-    }
-    const old = match(workout.items[index]);
-    if (!old) { send(res, 400, { error: 'That line isn’t an exercise from the library, so it can’t be swapped here.' }); return true; }
-    if (old.type !== to.type && !(old.type === 'lunge' && to.type === 'squat') && !(old.type === 'squat' && to.type === 'lunge')) {
-      send(res, 400, { error: 'Pick an exercise of the same kind.' });
-      return true;
-    }
+    const shared = Array.isArray(ex.workouts);   // one set of workouts for everyone
+    if (shared && !me.admin) { send(res, 403, { error: 'These workouts are shared by everyone, so only an admin can change them.' }); return true; }
+    const target = shared ? ex : ex[rules.planKeyFor(plan, person)];
     // A person's own workout: the new exercise has to suit them (equipment, injuries, pregnancy,
     // seated) and not be one they left out. The page only offers these, but check here too.
-    if (target !== ex) {
+    let suits = null;
+    if (!shared) {
       const profile = db.getProfile(person);
-      const fits = planbuilder.exerciseFits({ answers: (profile && profile.answers) || {}, avoid: avoidList(person) });
-      if (!fits.includes(to.id)) {
-        send(res, 400, { error: 'That exercise doesn’t suit their About me answers (equipment, injuries or health), or it’s on their leave-out list. Pick another.' });
-        return true;
-      }
+      suits = planbuilder.exerciseFits({ answers: (profile && profile.answers) || {}, avoid: avoidList(person) });
     }
-    workout.items[index] = lineFor(to, workout.items[index]);
+    const done = rules.swapExercise(target, body, EXERCISES, suits);
+    if (done.error) { send(res, done.code, { error: done.error }); return true; }
     ctx.savePlan(plan);
-    if (body.avoid && old.id !== to.id) setAvoid(person, old.id, true);
-    send(res, 200, { ok: true, line: workout.items[index] });
+    if (body.avoid && done.old.id !== body.to) setAvoid(person, done.old.id, true);
+    send(res, 200, { ok: true, line: done.line });
     return true;
   }
 
@@ -167,4 +132,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { handle, match };
+module.exports = { handle };

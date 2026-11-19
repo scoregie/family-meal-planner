@@ -21,6 +21,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('./db');
+const rules = require('./sharedrules');   // rules the phone app follows too
 const planchange = require('./planchange');
 const secrets = require('./secrets');
 const progress = require('./progress');
@@ -221,11 +222,6 @@ function stepLabel(name, input, plan) {
 // Running the tools
 // ---------------------------------------------------------------------------
 
-// The plan's key for a person ("adult1") from the server's key ("alex").
-function planKey(plan, person, toKey) {
-  return db.planKeyFor(plan, person, toKey);
-}
-
 // Finds a recipe by its dish name in every week of the plan: [{week, position, recipe}].
 function findRecipe(plan, name) {
   const want = String(name || '').trim().toLowerCase();
@@ -289,8 +285,8 @@ function weekTool(input, about) {
   });
   // Finds a dish's entry in a block like macros or groups, whatever capitals its name was typed with.
   const lookup = (block, dish) => {
-    const want = db.dishKey(dish);
-    const found = Object.keys(block || {}).find(k => db.dishKey(k) === want);
+    const want = rules.dishKey(dish);
+    const found = Object.keys(block || {}).find(k => rules.dishKey(k) === want);
     return found ? block[found] : null;
   };
   const exercise = week.exercise && (Array.isArray(week.exercise.days) ? week.exercise : week.exercise[about.key]);
@@ -367,7 +363,7 @@ function runTool(name, input, chat, ctx) {
   if (!Object.hasOwn(TOOL_RUNNERS, name)) return { content: 'Error: unknown tool ' + name, isError: true };
   const plan = ctx.readPlan() || {};
   const person = chat.person;
-  return TOOL_RUNNERS[name](input, { plan, person, key: planKey(plan, person, ctx.toKey), chat, ctx });
+  return TOOL_RUNNERS[name](input, { plan, person, key: rules.planKeyFor(plan, person), chat, ctx });
 }
 
 // ---------------------------------------------------------------------------

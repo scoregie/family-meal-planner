@@ -1,4 +1,4 @@
-// Checks people's keys: the server (api/names.js) and the browser (site/appearance.js) must turn
+// Checks people's keys: the server (api/sharedrules.js) and the browser (site/appearance.js) must turn
 // every name into the same key, or someone's ticks and answers would be saved in two places.
 
 const test = require('node:test');
@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { toKey } = require('../api/names');
+const { toKey } = require('../api/sharedrules');
 const { ROOT } = require('./helpers');
 
 // Loads site/appearance.js as a browser would, with just enough of a pretend browser around it.
