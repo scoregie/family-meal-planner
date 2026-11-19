@@ -3,6 +3,30 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.11.0 (2026-11-19)
+
+Ready for the phone app to share the same pages, and a tidy-up of the code underneath. Nothing
+looks different on the web, apart from the fixes below.
+
+- **Week 1 is "#week-1" in the address.** It showed "#week-2" when Week 1 was picked, because the
+  stock-up week counted as a week. The cardio "How did that feel?" labels use the same numbering.
+- **Fixed: Progress counted meals from older plans as 0 kJ eaten** when their plan gave energy in
+  kcal only. Progress, the Meals tab and Edit plan now share one energy rule (`site/energy.js`).
+- **Being logged out works the same on every page:** you go to the login page and come back to
+  where you were. Some pages showed "The server said 401" instead.
+- **Settings shows new dishes' energy in kcal** if that's the unit you chose.
+- **The pages are ready to be shared with the phone app unchanged** (see "Pages shared with the
+  phone app" in docs/how-it-works.md). The country can now be changed in the app's Settings.
+- Behind the scenes:
+  - every page's small helpers are in one file (`site/page.js`) instead of 14 copies that had
+    drifted apart;
+  - the rules the server and the phone app both follow are in `api/sharedrules.js`, which
+    replaces `api/names.js`;
+  - names that meant different things in different files now say what they do;
+  - new tests for all of it (174 in total).
+
+After updating, restart the api (`docker compose restart api`).
+
 ## v1.10.1 (2026-11-19)
 
 Fixes to cardio levels from v1.10.0.
