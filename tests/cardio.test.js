@@ -102,3 +102,14 @@ test('the Exercise tab knows which sessions are cardio and what to say after "To
   assert.equal(page.cardioWhat(d, 'Walk 20 minutes'), 'Brisk walk: add hills or stairs');
   assert.equal(page.cardioWhat({ ...d, other: 'steady pace' }, 'Ride 30 minutes'), 'Steady pace');
 });
+
+test('the week’s cardio target matches the cardio days, even with 3 strength days', () => {
+  const plan = pb.build([{ key: 'a', name: 'A', answers: { age: '40', sex: 'Male' } }], { seed: 42 }).plan;
+  for (const w of plan.weeks.filter(x => x.exercise)) {
+    const week = w.exercise.a;
+    const days = week.days.filter(d => d.cardio).length;
+    assert.match(week.targets[1], new RegExp('^' + days + ' × '), w.name + ': ' + week.targets[1] + ' but ' + days + ' days');
+  }
+  const last = plan.weeks.filter(x => x.exercise).pop().exercise.a;
+  assert.equal(last.days.filter(d => d.cardio).length, 5, 'week 4 promises 5 sessions and has 5');
+});

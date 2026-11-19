@@ -879,15 +879,18 @@ function exerciseWeek(w, sessions, minutes, c) {
   // stairs"), otherwise the plain "Walk 30 minutes".
   const sessionOf = kind => c.level == null ? kind + ' ' + mins + ' minutes' : CARDIO.session(kind, c.level, mins, c.walkCap);
   const lower = text => text.charAt(0).toLowerCase() + text.slice(1);
-  let cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, count);
+  // Days without strength come first. With 3 strength days there are only 3 of those, so a 4th or
+  // 5th cardio session goes on a strength day (after the workout) rather than going missing.
+  const order = cardioOrder.filter(d => !sDays.includes(d)).concat(cardioOrder.filter(d => sDays.includes(d)));
+  let cDays = order.slice(0, count);
   // Public pool: swims only on the days they can get there; any other cardio days are walks.
   let swimDays = cDays;
   if (c.cardio === 'Swim at the pool' && c.poolDays.length) {
     swimDays = c.poolDays.filter(d => !sDays.includes(d)).slice(0, count);
-    cDays = swimDays.concat(cardioOrder.filter(d => !sDays.includes(d) && !swimDays.includes(d)).slice(0, count - swimDays.length));
+    cDays = swimDays.concat(order.filter(d => !swimDays.includes(d)).slice(0, count - swimDays.length));
   }
   const cardioTarget = swimDays.length === cDays.length
-    ? count + ' × ' + lower(sessionOf(c.cardio))
+    ? cDays.length + ' × ' + lower(sessionOf(c.cardio))
     : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × ' + c.otherCardio.toLowerCase()].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
   let ab = 0;
   return {

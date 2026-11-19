@@ -27,6 +27,15 @@ cleanup() {
 }
 trap cleanup EXIT
 git fetch -q origin main
+# An earlier library pull request still waiting would hold the same new entries (it isn't on main
+# yet), so don't open a second one: merge or close that one first.
+if [ -z "$DRY_RUN" ]; then
+  WAITING="$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("library-"))] | length' 2>/dev/null || echo 0)"
+  if [ "$WAITING" != "0" ]; then
+    echo "A library pull request is already open. Merge or close it first, then run this again."
+    exit 0
+  fi
+fi
 git worktree add -q --detach "$WORK" origin/main
 
 # Add anything new (by dish name, snack description or exercise id), and bump the version.
@@ -53,7 +62,14 @@ for kind, key in keys.items():
             continue
         if k in have:
             continue
-        # Only what the library needs; the app works out macros, groups, tags and cost again anyway.
+        # Only what the library needs: the app works out macros, groups, tags and cost again from
+        # the ingredients, so those are left out (a spicy dish keeps "spicy": true instead of its tag).
+        item = dict(item)
+        if kind != 'exercises':
+            if 'spicy' in (item.get('tags') or []):
+                item['spicy'] = True
+            for computed in ('macros', 'groups', 'tags', 'cost'):
+                item.pop(computed, None)
         com.setdefault(kind, []).append(item)
         have.add(k)
         added += 1
