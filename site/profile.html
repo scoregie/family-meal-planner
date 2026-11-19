@@ -9,6 +9,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="local-api.js"></script>
+<script src="edition.js"></script>
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -102,7 +104,7 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
     <section class="card finish" id="finishCard" hidden>
       <h2 id="finishTitle">Finished?</h2>
       <p class="intro" id="finishText"></p>
-      <div class="finish-row"><button class="btn primary" type="button" id="finishBtn">I’m finished</button> <a class="btn" id="setupLink" href="setup.html" hidden>Plan setup</a></div>
+      <div class="finish-row"><button class="btn primary" type="button" id="finishBtn">I’m finished</button> <a class="btn" id="setupLink" href="setup.html" hidden data-phone="Family and plan">Plan setup</a></div>
     </section>
     <section class="card pw" id="pwCard" hidden>
       <h2>Change your password</h2>
@@ -113,7 +115,7 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
         <div id="pwMsg" role="status"></div>
       </form>
     </section>
-    <p class="privacy">Only you and the plan’s admins can see these answers. If an AI writes the plan or answers Ask AI (a key on the server, or someone’s own key in Settings), they’re also sent to that AI company; with no AI they stay on your server. Blood test results in My files are only sent if you say yes under Health. The plan offers general considerations only: your GP, dietitian or physio knows your situation best.</p>
+    <p class="privacy" data-phone="These answers stay on this phone: the app has no accounts and sends nothing to a server. The plan offers general considerations only: your GP, dietitian or physio knows your situation best.">Only you and the plan’s admins can see these answers. If an AI writes the plan or answers Ask AI (a key on the server, or someone’s own key in Settings), they’re also sent to that AI company; with no AI they stay on your server. Blood test results in My files are only sent if you say yes under Health. The plan offers general considerations only: your GP, dietitian or physio knows your situation best.</p>
   </div>
 </main>
 <div class="status" id="status" role="status"></div>
@@ -309,7 +311,9 @@ function addTextBox(wrap, q, inputId) {
 // Makes the input for one question: chips for choices, a number box, or a text box.
 function questionField(q) {
   var inputId = "q-" + q.id;
-  var help = q.help ? el("span", "help", q.help) : null;
+  // A question can have "helpPhone": its help as worded for the phone app (no admins there).
+  var helpText = (window.PHONE && q.helpPhone) || q.help;
+  var help = helpText ? el("span", "help", helpText) : null;
   if (q.type === "choice" || q.type === "multi") return chipsQuestion(q, inputId, help);
 
   var wrap = el("div", "q");
@@ -440,7 +444,7 @@ function updateReminders() {
       reminderEl.appendChild(a);
       reminderEl.appendChild(el("p", "help", "On iPhone, tap Add All. For Google Calendar, use the Meals tab (pick yourself, then the Google links under your eating times)."));
     } else if (wantsEating) {
-      reminderEl.appendChild(el("p", null, "Your plan doesn’t have eating times yet. Once an admin adds them (or the AI suggests some), you can add reminders here."));
+      reminderEl.appendChild(el("p", null, window.PHONE ? "Calendar reminders for eating times will come in a later version of the app." : "Your plan doesn’t have eating times yet. Once an admin adds them (or the AI suggests some), you can add reminders here."));
     }
     if (wantsExercise) reminderEl.appendChild(el("p", "help", "Exercise reminders are coming with the new Exercise tab."));
   }).catch(function () { reminderEl.hidden = true; });
@@ -476,7 +480,8 @@ function showFinish() {
     $("finishBtn").className = "btn";
   } else {
     $("finishTitle").textContent = "Finished?";
-    $("finishText").textContent = "When " + (mine ? "you’ve" : name + " has") + " answered what you can, tap below. Once everyone in the family is finished, an admin can make a 4-week plan from everyone’s answers. Skipped questions are fine.";
+    $("finishText").textContent = "When " + (mine ? "you’ve" : name + " has") + " answered what you can, tap below. Once everyone in the family is finished, " +
+      (window.PHONE ? "make the 4-week plan on the Family and plan page." : "an admin can make a 4-week plan from everyone’s answers.") + " Skipped questions are fine.";
     $("finishBtn").textContent = "I’m finished";
     if (!mine) $("finishBtn").textContent = "Mark " + name + " as finished";
     $("finishBtn").className = "btn primary";
@@ -550,7 +555,9 @@ fetch("/auth/me", { cache: "no-store" }).then(function (response) {
   var people = me.admin ? api("GET", "/api/people") : Promise.resolve(null);
   return Promise.all([questions, people]).then(function (got) {
     QUESTIONS = got[0];
-    $("intro").textContent = QUESTIONS.intro;
+    // Questions marked "webOnly" (like sharing blood test files) are left out in the phone app.
+    if (window.PHONE) QUESTIONS.sections.forEach(function (s) { s.questions = s.questions.filter(function (q) { return !q.webOnly; }); });
+    $("intro").textContent = (window.PHONE && QUESTIONS.introPhone) || QUESTIONS.intro;
     var names = {};
     var list = [me.person];
     if (got[1]) {

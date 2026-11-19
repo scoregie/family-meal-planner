@@ -205,8 +205,9 @@ function renderToday() {
   var ex = exFor(week);
   if (ex) panel.appendChild(todayExerciseCard(ex));
 
-  // From the phone: only for your own numbers, or an admin's pick.
-  var person4 = ME && ME.person ? (isAdmin() ? ukey(USER) : ME.person) : "";
+  // From the phone: only for your own numbers, or an admin's pick. (The phone app doesn't read
+  // Apple Health or Health Connect yet, so it has no numbers to show.)
+  var person4 = ME && ME.person && !window.PHONE ? (isAdmin() ? ukey(USER) : ME.person) : "";
   if (person4) panel.appendChild(todayPhoneCard(person4));
 
   var shop = todayShoppingCard();
@@ -214,6 +215,7 @@ function renderToday() {
 
   var ask = el("a", "btn", "Ask AI about today");
   ask.href = "assistant.html";
+  ask.setAttribute("data-web-only", "");
   ask.style.cssText = "display:block;text-align:center;text-decoration:none;margin-top:.4rem";
   panel.appendChild(ask);
 }

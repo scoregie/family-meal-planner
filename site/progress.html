@@ -9,6 +9,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="local-api.js"></script>
+<script src="edition.js"></script>
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -114,7 +116,7 @@ th{color:var(--mute);font-weight:700}
   </div>
   <div id="pmsg"></div>
   <div id="app" hidden>
-    <section class="card hsync">
+    <section class="card hsync" data-web-only>
       <details id="syncFold">
         <summary><b>Apple Health sync</b> <span class="hsline" id="syncLine">Checking…</span></summary>
         <div id="syncBody"></div>
@@ -130,7 +132,7 @@ th{color:var(--mute);font-weight:700}
     <div id="charts"></div>
     <section class="card weigh">
       <h2>Add a weigh-in</h2>
-      <p class="note">Weigh-ins typed in here are used before Apple Health or Lose It on the same day.</p>
+      <p class="note" data-phone="Add your weight here every week or so. Weight goes up and down day to day, so the trend matters more than one number.">Weigh-ins typed in here are used before Apple Health or Lose It on the same day.</p>
       <form id="weighForm">
         <div><label for="wDate">Date</label><input type="date" id="wDate" required></div>
         <div><label for="wKg">Weight (kg)</label><input type="number" id="wKg" step="0.1" min="20" max="400" inputmode="decimal" required></div>
@@ -148,7 +150,7 @@ th{color:var(--mute);font-weight:700}
       <h2>Where these numbers come from</h2>
       <p class="note" id="sources"></p>
     </section>
-    <p class="privacy">Only you and the plan’s admins can see this page. Weight goes up and down day to day, so look at the trend over a few weeks. What your GP or dietitian tells you comes first.</p>
+    <p class="privacy" data-phone="This is saved only on this phone. Weight goes up and down day to day, so look at the trend over a few weeks. What your GP or dietitian tells you comes first.">Only you and the plan’s admins can see this page. Weight goes up and down day to day, so look at the trend over a few weeks. What your GP or dietitian tells you comes first.</p>
   </div>
 </main>
 <div class="status" id="status" role="status"></div>
@@ -551,6 +553,22 @@ function renderTiles(d) {
   if (now) tile("This week so far", fmt(now.meals || 0) + " meals", "", fmt(now.sessions || 0) + " exercise sessions ticked");
 }
 
+// The charts that need Apple Health or Lose It: steps, cardio fitness, resting heart rate and
+// workout time. `points(field)` gives each week's value for a chart.
+function addHealthCharts(charts, points) {
+  charts.appendChild(chartCard({ title: "Steps (a day)", kind: "bar", unit: "steps", points: points("steps"),
+    note: "Average per day, from Apple Health or Lose It." }));
+  charts.appendChild(chartCard({ title: "Cardio fitness (VO2 max)", kind: "line", unit: "mL/kg/min", places: 1, points: points("vo2max"),
+    note: "Apple Watch’s estimate of how fit you are for cardio, from walks and runs outdoors. Higher is fitter.",
+    empty: "No readings yet. An Apple Watch records these on brisk outdoor walks and runs; Health sync or an Apple Health export brings them here." }));
+  charts.appendChild(chartCard({ title: "Resting heart rate (beats a minute)", kind: "line", unit: "bpm", points: points("resting_hr"),
+    note: "Weekly average from an Apple Watch. It often drops a little as fitness improves.",
+    empty: "No readings yet. These come from an Apple Watch, through Health sync or an Apple Health export." }));
+  charts.appendChild(chartCard({ title: "Workout time (minutes a week)", kind: "bar", unit: "min",
+    points: points("workout_minutes", function (w) { return w.workouts ? fmt(w.workouts) + (w.workouts === 1 ? " workout" : " workouts") : null; }),
+    note: "Workouts recorded in Apple Health.", empty: "No workouts recorded. These come from an Apple Health export." }));
+}
+
 // Every chart, in order. Charts with no data say so, rather than disappearing, except the
 // food charts, which pick Lose It when it has numbers and the app's estimate otherwise.
 function renderCharts(d) {
@@ -579,7 +597,7 @@ function renderCharts(d) {
       var n = d.weighIns.filter(function (x) { return x.date >= w.week && x.date < addDays(w.week, 7); }).length;
       return { week: w.week, value: w.weight, extra: n ? n + (n === 1 ? " weigh-in" : " weigh-ins") : null };
     }),
-    empty: "No weigh-ins yet. Add one below, set up Apple Health sync (at the top), or upload a Lose It or Apple Health export on the My files page.",
+    empty: window.PHONE ? "No weigh-ins yet. Add one below." : "No weigh-ins yet. Add one below, set up Apple Health sync (at the top), or upload a Lose It or Apple Health export on the My files page.",
   };
   if (d.goalWeight) weightSpec.key = [{ cls: "dash", text: "Goal " + fmt(d.goalWeight, 1) + " kg (from About me)" }];
   charts.appendChild(chartCard(weightSpec));
@@ -590,21 +608,13 @@ function renderCharts(d) {
     return Object.assign({}, p, { value: p.value == null || !window.Appearance ? p.value : Math.round(Appearance.energyValue(p.value)) });
   });
   charts.appendChild(chartCard({ title: "Energy eaten (" + unit + " a day)", kind: "bar", unit: unit, points: energy, key: estKey(energy),
-    note: "Average per day logged. From Lose It, or estimated from the meals you ticked." }));
+    note: window.PHONE ? "Average per day, estimated from the meals you ticked." : "Average per day logged. From Lose It, or estimated from the meals you ticked." }));
   var protein = food("protein_in", "plan_protein");
   charts.appendChild(chartCard({ title: "Protein (grams a day)", kind: "bar", unit: "g", points: protein, key: estKey(protein),
     note: "Average per day logged." }));
-  charts.appendChild(chartCard({ title: "Steps (a day)", kind: "bar", unit: "steps", points: points("steps"),
-    note: "Average per day, from Apple Health or Lose It." }));
-  charts.appendChild(chartCard({ title: "Cardio fitness (VO2 max)", kind: "line", unit: "mL/kg/min", places: 1, points: points("vo2max"),
-    note: "Apple Watch’s estimate of how fit you are for cardio, from walks and runs outdoors. Higher is fitter.",
-    empty: "No readings yet. An Apple Watch records these on brisk outdoor walks and runs; Health sync or an Apple Health export brings them here." }));
-  charts.appendChild(chartCard({ title: "Resting heart rate (beats a minute)", kind: "line", unit: "bpm", points: points("resting_hr"),
-    note: "Weekly average from an Apple Watch. It often drops a little as fitness improves.",
-    empty: "No readings yet. These come from an Apple Watch, through Health sync or an Apple Health export." }));
-  charts.appendChild(chartCard({ title: "Workout time (minutes a week)", kind: "bar", unit: "min",
-    points: points("workout_minutes", function (w) { return w.workouts ? fmt(w.workouts) + (w.workouts === 1 ? " workout" : " workouts") : null; }),
-    note: "Workouts recorded in Apple Health.", empty: "No workouts recorded. These come from an Apple Health export." }));
+  // Steps, the Apple Watch readings and workouts come from Apple Health or Lose It, which the
+  // phone app doesn't read yet, so it leaves these charts out.
+  if (!window.PHONE) addHealthCharts(charts, points);
   charts.appendChild(chartCard({ title: "Exercise sessions ticked (a week)", kind: "bar", unit: "sessions", points: points("sessions"),
     note: "Sessions ticked as done on the Exercise tab.", empty: "Nothing ticked yet. Tick sessions on the Exercise tab as you do them." }));
   charts.appendChild(chartCard({ title: "Meals ticked as eaten (a week)", kind: "bar", unit: "meals",
@@ -627,6 +637,8 @@ function renderTable(d) {
   var cols = [["weight", "Weight (kg)", 1], ["energy_in", unit + " a day (Lose It)", 0, true], ["plan_kj", unit + " a day (ticked)", 0, true],
     ["protein_in", "Protein g (Lose It)", 0], ["plan_protein", "Protein g (ticked)", 0], ["steps", "Steps a day", 0],
     ["workout_minutes", "Workout min", 0], ["sessions", "Sessions ticked", 0], ["meals", "Meals ticked", 0], ["score", "Meal score", 1]];
+  // The phone app doesn't read Lose It or Apple Health yet, so those columns would always be empty.
+  if (window.PHONE) cols = cols.filter(function (c) { return ["energy_in", "protein_in", "steps", "workout_minutes"].indexOf(c[0]) < 0; });
   var head = el("tr");
   head.appendChild(el("th", null, "Week"));
   cols.forEach(function (c) { head.appendChild(el("th", null, c[1])); });
@@ -675,6 +687,10 @@ function renderSources(d) {
     var when = new Date(i.at).toLocaleDateString(Appearance.locale());
     return names[i.source] + " (" + i.name + (i.error ? ", couldn’t be read on " + when + ": " + i.error + ". Upload it again to retry" : ", read " + when) + ")";
   });
+  if (window.PHONE) {
+    $("sources").textContent = "Weight: the weigh-ins you add here. Food: an estimate from the meals ticked in this app, using each dish’s macros and your portion size. Exercise sessions and meals: your ticks in this app.";
+    return;
+  }
   $("sources").textContent = "Weight: weigh-ins typed in here, then Apple Health (an export file, then Health sync), then Lose It. Steps and workouts: Apple Health, then Lose It. " +
     "Food: Lose It, or an estimate from the meals ticked in this app, using each dish’s macros and your portion size. " +
     "Exercise sessions and meals: your ticks in this app. " +
@@ -708,6 +724,7 @@ function syncWhen(ms) {
 }
 // The Health sync section: when the phone last sent numbers, and how to set it up.
 function renderSync() {
+  if (window.PHONE) return;   // the Apple Health sync card is web-only
   var fold = $("syncFold"), line = $("syncLine"), body = $("syncBody");
   var who = PERSON && ME && PERSON !== ME.person ? "?person=" + encodeURIComponent(PERSON) : "";
   if (!fold.dataset.wired) {

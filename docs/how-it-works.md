@@ -141,6 +141,23 @@ Shared by every page: `appearance.js` (the look, country, money and dates) and `
 `questions.json` (the About me questions), and `sw.js`, the "service worker" that keeps a copy of the app so it
 still opens without a signal.
 
+#### Pages shared with the phone app
+
+The phone app (github.com/scoregie/family-health-planner-app) uses these same pages, unchanged:
+`index.html` and its `app-*.js` files, `profile.html`, `progress.html`, `settings.html`, `setup.html`,
+`exercises.html` and `food.html`. Two small files let one page work in both places:
+
+- `local-api.js` is loaded first. On the web it only sets `window.PHONE = null`. The app has its own
+  file with this name, which answers the pages' `/api` calls on the phone and sets `window.PHONE`.
+- `edition.js` switches a page to the phone's wording. In a page's HTML, `data-web-only` marks a
+  part only the web version shows (logins, AI, Apple Health sync, uploads), `data-phone-only` a part
+  only the app shows (like Backup in Settings), and `data-phone="..."` the words to use in the app.
+  Scripts check `window.PHONE` for what they draw themselves.
+- In `questions.json`, a question can have `"webOnly": true` (not asked in the app) and
+  `"helpPhone"` (its help as worded for the app); `"introPhone"` is the app's About me intro.
+
+When you change one of these pages, think about whether the app should see it too, and mark it if not.
+
 ### `tools/`: scripts you run by hand
 
 These are explained in `tools/README.md`. They build the meal library and price lists, check plans,

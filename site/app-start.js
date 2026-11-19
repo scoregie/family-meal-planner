@@ -150,7 +150,7 @@ twoTap("resetall", "Reset all", "Tap again to reset everyone", function () {
   saveLocal();
   api("POST", "api/reset")
     .then(function () {
-      setSync("Reset on server");
+      setSync(window.PHONE ? "Reset" : "Reset on server");
       pull();
     })
     .catch(function () { setSync("Offline: reset on this device only"); });
