@@ -96,7 +96,9 @@ test('the Exercise tab knows which sessions are cardio and what to say after "To
   assert.equal(page.isCardio('session', 'Strength 2B'), false);
   const d = { name: 'Comfortable', walk: 'Brisk walk', walkDetail: 'add hills or stairs', level: 2, limit: 5, top: 5 };
   assert.match(page.feelMessage({ ...d, moved: 1 }, 'easy'), /Stepping up.*Comfortable.*hills/);
-  assert.match(page.feelMessage({ ...d, moved: 0 }, 'easy'), /One more/);
+  assert.match(page.feelMessage({ ...d, moved: 0, toGo: 1 }, 'easy'), /One more/);
+  assert.match(page.feelMessage({ ...d, moved: 0, toGo: 2 }, 'easy'), /Two more “Too easy” in a row/);
+  assert.match(page.feelMessage({ ...d, moved: 1, level: 3, steady: 2 }, 'easy'), /checking with your GP/);
   assert.match(page.feelMessage({ ...d, moved: 0, limit: 2, why: 'kept steady' }, 'easy'), /kept steady/);
   // What a plan from before cardio levels shows: its walk, plus the person's level under it.
   assert.equal(page.cardioWhat(d, 'Walk 20 minutes'), 'Brisk walk: add hills or stairs');
@@ -112,4 +114,34 @@ test('the week’s cardio target matches the cardio days, even with 3 strength d
   }
   const last = plan.weeks.filter(x => x.exercise).pop().exercise.a;
   assert.equal(last.days.filter(d => d.cardio).length, 5, 'week 4 promises 5 sessions and has 5');
+});
+
+test('low energy or chronic pain starts steady, then three "Too easy" in a row step up one level at a time', () => {
+  const answers = { cardio_level: cardio.START[4], support_needs: ['Low energy or chronic fatigue'] };
+  const start = pb.cardioNow(answers, null);
+  assert.equal(start.level, 2, 'starts no higher than steady, whatever they picked');
+  assert.match(start.why, /three “Too easy” in a row.*GP/);
+  let saved = null, last;
+  const say = (id, feel) => { const now = pb.cardioNow(answers, saved); last = cardio.feelAfter(answers.cardio_level, saved, id, feel, now.limit, now.guess, now.steady); saved = last.saved; return last; };
+  assert.equal(say('1|Mon-morning', 'easy').moved, 0);
+  assert.equal(say('1|Wed-morning', 'easy').moved, 0, 'two isn’t enough past the steady level');
+  assert.equal(pb.cardioNow(answers, saved).toGo, 1);
+  assert.equal(say('1|Fri-morning', 'easy').moved, 1);
+  assert.equal(pb.cardioNow(answers, saved).level, 3);
+  assert.equal(pb.cardioNow(answers, saved).toGo, 3, 'the next step needs three more');
+  // A heart condition is still held at steady.
+  const heart = pb.cardioNow({ cardio_level: cardio.START[4], conditions: ['Heart condition'] }, null);
+  assert.equal(heart.limit, 2);
+  assert.equal(heart.toGo, 0);
+});
+
+test('three "Too easy" saved before this change step up on the next tap', () => {
+  // What was saved on a real server: three "easy" with no step (the old hard limit).
+  const answers = { cardio_level: cardio.START[2], support_needs: ['Chronic pain'] };
+  const saved = { base: cardio.START[2], offset: 0, feels: ['2|Mon-morning', '2|Wed-morning', '2|Fri-morning'].map(id => ({ id, feel: 'easy' })) };
+  const now = pb.cardioNow(answers, saved);
+  assert.equal(now.toGo, 1);
+  const r = cardio.feelAfter(answers.cardio_level, saved, '3|Mon-morning', 'easy', now.limit, now.guess, now.steady);
+  assert.equal(r.moved, 1);
+  assert.equal(r.level, 3);
 });

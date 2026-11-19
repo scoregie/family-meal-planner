@@ -330,6 +330,8 @@ function drawCardio(box, ticked) {
     // A level that came from the Apple Watch (they haven't picked one in About me) says so.
     if (c.from === "watch" && c.vo2) line.appendChild(document.createTextNode(" Set from your Apple Watch cardio fitness (" + c.vo2.value + "); you can pick your own in About me."));
     box.appendChild(line);
+    // Why their cardio is held steady or kept to walks, on every session (not just after a tap).
+    if (c.why) box.appendChild(el("p", "cardio-why", c.why));
   }
   // Resting heart rate up today (from an Apple Watch): a consideration, not a rule.
   if (c.resting) {
@@ -384,14 +386,20 @@ function sayFeel(box, id, feel) {
   });
 }
 
+// "One", "Two" or "Three" (more taps needed), for the message after a tap.
+function countWord(n) {
+  return ["One", "Two", "Three"][n - 1] || String(n);
+}
+
 // The message after saying how a session felt.
 function feelMessage(d, feel) {
   var what = d.walk + (d.walkDetail ? " (" + d.walkDetail + ")" : "");
-  if (d.moved > 0) return "Stepping up: your cardio is now “" + d.name + "”: " + what + ". The plan’s sessions show it as “At your level”.";
+  if (d.moved > 0) return "Stepping up: your cardio is now “" + d.name + "”: " + what + ". The plan’s sessions show it as “At your level”." +
+    (d.steady != null && d.level > d.steady ? " This is past where your cardio starts, so consider checking with your GP if you haven’t already." : "");
   if (d.moved < 0) return "Stepping back to “" + d.name + "”: " + what + ". Any movement counts.";
   if (feel === "easy" && d.level >= d.limit && d.limit < d.top && d.why) return d.why;
   if (feel === "easy" && d.level >= d.top) return "Saved. You’re at the top level, so add a few minutes if you’d like more.";
-  if (feel === "easy") return "Saved. One more “Too easy” and your cardio steps up.";
+  if (feel === "easy") return "Saved. " + countWord(d.toGo || 1) + " more “Too easy” in a row and your cardio steps up.";
   return "Saved, thanks.";
 }
 

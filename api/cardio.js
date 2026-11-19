@@ -6,8 +6,10 @@
 // moves them down. The plan builder uses the level to choose what the cardio is, and the main
 // app shows "At your level: ..." under each cardio session.
 //
-// Some people are kept to a steady level (see limitFor in planbuilder.js): a heart condition,
-// pregnancy, low energy or chronic pain, or a sore knee, ankle or hip (no jogging).
+// Some people are kept to a steady level (see cardioLimit in planbuilder.js): a heart condition
+// or pregnancy (no higher than level 2), or a sore knee, ankle or hip (no jogging). Low energy or
+// chronic pain starts no higher than level 2 (`steady`), and steps up from there only after
+// three "too easy" in a row, one level at a time.
 
 // The About me answers, in order, and the level each starts at.
 const START = [
@@ -60,11 +62,28 @@ function clamp(level, limit) {
 // `saved` is what feelAfter() last returned ({base, offset}); a changed About me answer starts again.
 // `guess` is a starting level from somewhere else (an Apple Watch cardio fitness reading, see
 // levelFromVo2), used only when they haven't picked an About me answer.
-function levelNow(answer, saved, limit, guess) {
+// `steady` (if given) is the highest level they start at; "too easy" can still step them past it.
+function levelNow(answer, saved, limit, guess, steady) {
   const base = startLevel(answer);
-  const start = base != null ? base : guess != null ? guess : 1;   // "Not sure": building up, like the old plans
+  let start = base != null ? base : guess != null ? guess : 1;   // "Not sure": building up, like the old plans
+  if (steady != null) start = Math.min(start, steady);
   const offset = saved && saved.base === answer ? Number(saved.offset) || 0 : 0;
   return clamp(start + offset, limit);
+}
+
+// How many "too easy" in a row step someone up: two, or three once they're at or past their
+// `steady` level (low energy or chronic pain).
+function easyNeeded(level, steady) {
+  return steady != null && level >= steady ? 3 : 2;
+}
+
+// How many more "too easy" in a row would step someone up now (0 at the top, or at a limit).
+function easyToGo(answer, saved, level, limit, steady) {
+  if (level >= clamp(TOP, limit)) return 0;
+  const feels = saved && saved.base === answer && Array.isArray(saved.feels) ? saved.feels : [];
+  let run = 0;
+  for (let i = feels.length - 1; i >= 0 && !feels[i].moved && feels[i].feel === 'easy'; i--) run++;
+  return Math.max(1, easyNeeded(level, steady) - run);
 }
 
 // A rough starting level from an Apple Watch cardio fitness reading (VO2 max, in mL/kg/min).
@@ -89,9 +108,10 @@ function describe(level) {
 // saying again for the same session replaces the first answer, and `moved` marks the answer that
 // changed the level. Gives back the new saved record, `moved` (+1 stepped up, -1 stepped back,
 // or 0) and the new level.
-function feelAfter(answer, saved, id, feel, limit, guess) {
+function feelAfter(answer, saved, id, feel, limit, guess, steady) {
   const same = saved && saved.base === answer;   // a changed About me answer starts again
-  const before = levelNow(answer, saved, limit, guess);
+  const before = levelNow(answer, saved, limit, guess, steady);
+  const need = easyNeeded(before, steady);
   const feels = (same && Array.isArray(saved.feels) ? saved.feels : []).filter(f => f.id !== id);
   // Only answers since the level last changed count, so each step needs two more "too easy".
   let lastMove = -1;
@@ -99,12 +119,12 @@ function feelAfter(answer, saved, id, feel, limit, guess) {
   const since = feels.slice(lastMove + 1).map(f => f.feel).concat(feel);
   let moved = 0;
   if (feel === 'hard' && before > 0) moved = -1;
-  else if (since.length >= 2 && since.slice(-2).every(f => f === 'easy') && before < clamp(TOP, limit)) moved = 1;
+  else if (since.length >= need && since.slice(-need).every(f => f === 'easy') && before < clamp(TOP, limit)) moved = 1;
   const entry = moved ? { id, feel, moved: true } : { id, feel };
   const offset = (same ? Number(saved.offset) || 0 : 0) + moved;
   return { saved: { base: answer, offset, feels: feels.concat(entry).slice(-30) }, moved, level: clamp(before + moved, limit) };
 }
 
-const Cardio = { START, LEVELS, TOP, startLevel, levelNow, describe, feelAfter, clamp, session, levelFromVo2 };
+const Cardio = { START, LEVELS, TOP, startLevel, levelNow, describe, feelAfter, clamp, session, levelFromVo2, easyToGo };
 if (typeof module === 'object' && module.exports) module.exports = Cardio;
 else window.Cardio = Cardio;

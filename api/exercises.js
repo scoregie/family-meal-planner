@@ -108,7 +108,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     const profile = db.getProfile(person);
     const answers = (profile && profile.answers) || {};
     const before = planbuilder.cardioNow(answers, cardioSaved(person), planextras.measuredFor(person));
-    const after = cardio.feelAfter(answers.cardio_level, cardioSaved(person), id, body.feel, before.limit, before.guess);
+    const after = cardio.feelAfter(answers.cardio_level, cardioSaved(person), id, body.feel, before.limit, before.guess, before.steady);
     db.setSetting('cardio-feel:' + person, JSON.stringify(after.saved));
     send(res, 200, Object.assign(cardioFor(person), { moved: after.moved }));
     return true;
