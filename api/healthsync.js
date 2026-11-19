@@ -25,7 +25,7 @@ const { sensible } = require('./progress');
 const shortcutfile = require('./shortcutfile');
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
-const KJ_PER_KCAL = 4.184;
+const { KJ_PER_KCAL } = require(path.join(path.dirname(process.env.PLAN_FILE || '/site/plan.json'), 'energy.js'));   // 4.184
 const NAMES = { steps: 'steps', active_energy: 'Move', weight: 'weight', energy_in: 'food', protein_in: 'protein', carbs_in: 'carbs', fat_in: 'fat',
   vo2max: 'cardio fitness', resting_hr: 'resting heart rate' };
 const PER_HOUR = 30;              // syncs per key per hour

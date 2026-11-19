@@ -717,8 +717,8 @@ function libPost(path, body, done) {
   }).catch(function (e) { status(e.message, true); renderLibrary(); });
 }
 
-// Energy in kJ as text, like "2,760 kJ".
-function kjOf(m) { return m ? Math.round(m.kj).toLocaleString(Appearance.locale()) + " kJ" : ""; }
+// A serve's energy as text in the family's chosen unit, like "2,760 kJ" or "660 kcal".
+function energyLabel(m) { return m ? Appearance.energyText(m.kj) : ""; }
 
 // One waiting addition, folded: what it is, then its ingredients and steps (or how-to).
 function pendingItem(p) {
@@ -726,8 +726,8 @@ function pendingItem(p) {
   var sum = el("summary");
   var it = p.item;
   var title = p.kind === "dish" ? it.name : p.kind === "snack" ? it.what : it.name;
-  var meta = p.kind === "dish" ? cap(it.meal) + " · " + it.cuisine + " · " + it.minutes + " min · " + kjOf(it.macros) + " · about " + Appearance.money(it.cost, "AUD") + " a serve"
-    : p.kind === "snack" ? "Snack · " + kjOf(it.macros)
+  var meta = p.kind === "dish" ? cap(it.meal) + " · " + it.cuisine + " · " + it.minutes + " min · " + energyLabel(it.macros) + " · about " + Appearance.money(it.cost, "AUD") + " a serve"
+    : p.kind === "snack" ? "Snack · " + energyLabel(it.macros)
     : "Exercise · " + it.type + " · " + it.equipment + " · level " + it.level;
   sum.appendChild(el("b", null, title));
   sum.appendChild(el("span", null, meta));

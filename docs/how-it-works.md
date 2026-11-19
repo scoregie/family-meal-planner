@@ -135,7 +135,7 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 | `account.html` | Your account. |
 | `admin.html` | Editing the plan by hand (admins). |
 
-Shared by every page: `page.js` (the small helpers every page's script uses: `$`, `el`, `api` for talking to the server, `status` for short messages, and `toLogin`), `appearance.js` (the look, country, money and dates) and `regions.js`
+Shared by every page: `page.js` (the small helpers every page's script uses: `$`, `el`, `api` for talking to the server, `status` for short messages, and `toLogin`), `appearance.js` (the look, country, money and dates), `energy.js` (the kJ in a serve, worked out from its macros; the server's Progress numbers use it too) and `regions.js`
 (countries and their stores). Also used: `page.css` (styles shared by a few pages),
 `guidelines.js` and `guidelines.json` (the healthy-eating guidelines on Meals → Macros),
 `questions.json` (the About me questions), and `sw.js`, the "service worker" that keeps a copy of the app so it

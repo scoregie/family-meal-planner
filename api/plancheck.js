@@ -17,7 +17,7 @@ const PERSON_PARTS = ['snacks', 'tips', 'guide', 'steps'];   // the parts of a p
 const MAX_FIXES = 200;                                       // most items in any one list of corrections
 
 // The meal weeks of a plan (stock-up weeks have no meals), in order: week 1 is first.
-function mealWeeks(plan) {
+function weeksWithMeals(plan) {
   return (plan.weeks || []).filter(w => Array.isArray(w.meals));
 }
 
@@ -33,7 +33,7 @@ function textOf(value) {
 // asks for that week, as sentences for the plan writer.
 function shortWeeks(plan, p) {
   const out = [];
-  for (let n = 1; n <= mealWeeks(plan).length; n++) {
+  for (let n = 1; n <= weeksWithMeals(plan).length; n++) {
     const aim = healthtargets.weekTarget(p.answers, n);
     if (!aim) return [];   // they chose to keep close to what they eat now
     const got = healthtargets.dailyAverage(plan, p.key, [n]);
@@ -76,7 +76,7 @@ function dislikedFoods(plan, p) {
   const person = (plan.people || {})[p.key];
   if (!terms.length || !person) return [];
   const found = new Map();   // phrase -> the first place it was seen
-  mealWeeks(plan).forEach((week, i) => {
+  weeksWithMeals(plan).forEach((week, i) => {
     for (const meal of week.meals) {
       for (const row of healthtargets.eatenOn(week, meal, person, p.key, i + 1)) {
         const key = healthtargets.nameKey(row.name);
@@ -125,7 +125,7 @@ function allergyFoods(plan, p) {
   const person = (plan.people || {})[p.key];
   if (!chosen.length || !person) return [];
   const found = new Map();   // allergy -> the first place it was seen
-  mealWeeks(plan).forEach((week, i) => {
+  weeksWithMeals(plan).forEach((week, i) => {
     for (const meal of week.meals) {
       for (const row of healthtargets.eatenOn(week, meal, person, p.key, i + 1)) {
         const key = healthtargets.nameKey(row.name);
@@ -227,7 +227,7 @@ function usesFood(text, name) {
 // The things on Current food that no meal, recipe or snack in the plan uses, as they were typed.
 // `food` is a list of {text, place}. Drinks and baking things are left out: they aren't for meals.
 function unusedFood(plan, food) {
-  const weeks = mealWeeks(plan);
+  const weeks = weeksWithMeals(plan);
   const text = textOf([weeks.map(w => [w.meals, w.recipes]), Object.values(plan.people || {}).map(p => p && p.snacks)]);
   const out = [];
   for (const item of Array.isArray(food) ? food : []) {
@@ -447,7 +447,7 @@ function applyFixes(plan, fixes, known) {
   }
   const recipes = listOf(fixes.recipes).filter(x => typeof x === 'string' && x.trim());
   if (recipes.length) {
-    for (const week of mealWeeks(next)) week.recipes = [...(week.recipes || []), ...recipes];
+    for (const week of weeksWithMeals(next)) week.recipes = [...(week.recipes || []), ...recipes];
     changed++;
   }
   return { plan: next, changed };

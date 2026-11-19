@@ -352,9 +352,7 @@ function macrosOf(dish) {
   if (!v || typeof v !== "object") return null;
   var p = +v.p || 0, c = +v.c || 0, f = +v.f || 0;
   if (!p && !c && !f && !v.kj && !v.kcal) return null;
-  // Energy in kJ from the factors on Australian food labels (FSANZ): 17 kJ/g protein and carbs, 37 kJ/g fat.
-  var kj = +v.kj || (+v.kcal ? v.kcal * 4.184 : 17 * p + 17 * c + 37 * f);
-  return { p: p, c: c, f: f, kj: kj };
+  return { p: p, c: c, f: f, kj: Energy.kj(v) };   // site/energy.js
 }
 
 // The food groups in one average serve of a dish, from the plan's "groups" block (made by

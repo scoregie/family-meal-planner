@@ -618,8 +618,8 @@ function short(day) {
   return String(day || "").slice(0, 3);
 }
 
-// The meal weeks (not stock-ups), in order.
-function mealWeeks() {
+// The positions in PLAN.weeks of the meal weeks (not stock-ups), in order.
+function mealWeekIndexes() {
   var out = [];
   PLAN.weeks.forEach(function (w, i) { if (w.kind !== "stockup") out.push(i); });
   return out;
@@ -631,7 +631,7 @@ function mealWeeks() {
 function dayNav(days, rerender) {
   var names = days.map(function (d) { return short(d.day); });
   var at = Math.max(0, names.indexOf(dayName));
-  var weeks = mealWeeks();
+  var weeks = mealWeekIndexes();
   var wAt = weeks.indexOf(week);
 
   // Moves to the day before (dir -1) or after (dir 1), if there is one.
