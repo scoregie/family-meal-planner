@@ -63,7 +63,7 @@ li+li{border-top:1px solid var(--line)}
 .row input:focus-visible+.box{outline:3px solid var(--accent);outline-offset:2px}
 .txt{flex:1;min-width:0;display:flex;flex-direction:column}
 .name{overflow-wrap:anywhere}
-.find{align-self:flex-start;color:var(--accent);font-size:.82rem;font-weight:700;text-decoration:underline;padding:.3rem .6rem .1rem 0}
+.find{align-self:flex-start;color:var(--accent);font-size:.82rem;font-weight:700;text-decoration:underline;padding:.3rem .6rem .1rem 0;min-height:2.75rem;display:inline-flex;align-items:center}
 .price{flex:none;color:var(--mute);font-variant-numeric:tabular-nums;min-width:3.6rem;text-align:right}
 .row input:checked~.txt .name{color:var(--done);text-decoration:line-through}
 .row input:checked~.txt .find,.row input:checked~.price{color:var(--done)}
@@ -238,6 +238,11 @@ details.exfold{padding:0}
 .shopgo{width:100%;margin-top:.6rem}
 .pinbtn{font:inherit;font-size:.8rem;color:var(--mute);background:transparent;border:0;border-radius:1rem;padding:.3rem .6rem;min-height:2rem;cursor:pointer;margin-left:-.6rem}
 .pinbtn:focus-visible{outline:3px solid var(--accent)}
+.pinbtn{min-height:2.75rem}
+/* Small pill buttons keep their look, but the area you can tap reaches 44px tall. */
+.rate-btn,.swapbtn{position:relative}
+.rate-btn::after,.swapbtn::after{content:"";position:absolute;left:-.2rem;right:-.2rem;top:50%;height:2.75rem;transform:translateY(-50%)}
+.eathit{display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:2.75rem;min-height:2.75rem;margin:-.6rem -.25rem -.6rem -.6rem;cursor:pointer}
 .sm-open,.sm-open body{overflow:hidden}
 .shopmode{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;padding:max(1rem,env(safe-area-inset-top)) 1rem max(1rem,env(safe-area-inset-bottom));max-width:40rem;margin:0 auto}
 .shopmode[hidden]{display:none}

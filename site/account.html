@@ -69,7 +69,7 @@
 
   <p class="note" id="familyLink" hidden><a href="family.html">Manage the family’s logins →</a></p>
 </main>
-<div class="status" id="status" role="status" hidden></div>
+<div class="status" id="status" role="status"></div>
 <script>
 // The Account page: your email, password and devices, and deleting your account.
 "use strict";
@@ -103,14 +103,20 @@ function api(method, url, body) {
   });
 }
 
-// Shows a short message at the bottom of the screen (red for errors), then hides it.
+// Shows a short message at the bottom of the screen (red for errors). The box stays on the page
+// and is filled a moment after it is cleared, so screen readers read each new message. Other
+// messages go after 5 seconds; errors stay until they are tapped or the next message comes.
 function status(text, isError) {
   var s = $("status");
-  s.textContent = text;
-  s.className = "status" + (isError ? " err" : "");
-  s.hidden = false;
   clearTimeout(status.timer);
-  status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 3000);
+  clearTimeout(status.fill);
+  s.className = "status" + (isError ? " err" : "");
+  s.textContent = "";
+  s.onclick = function () { s.textContent = ""; };
+  status.fill = setTimeout(function () {
+    s.textContent = text;
+    if (!isError) status.timer = setTimeout(function () { s.textContent = ""; }, 5000);
+  }, 50);
 }
 
 var ROLES = { owner: "the family’s owner", admin: "an admin", member: "a member" };

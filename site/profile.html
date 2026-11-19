@@ -60,6 +60,7 @@ input[type=password]{width:100%;max-width:20rem}
 textarea{width:100%;min-height:4.2rem;resize:vertical}
 .unit{margin-left:.4rem;color:var(--mute)}
 .status{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.45rem .9rem;border-radius:1.2rem;font-size:.85rem;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.status:empty{opacity:0;pointer-events:none}
 .status.err{background:var(--low);color:var(--bg)}
 .msg{border-radius:.6rem;padding:.6rem .8rem;margin:.6rem 0 0;font-size:.9rem}
 .msg.err{background:color-mix(in srgb,var(--low) 14%,var(--card));border:1px solid var(--low)}
@@ -115,7 +116,7 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
     <p class="privacy">Only you and the plan’s admins can see these answers. If an AI writes the plan or answers Ask AI (a key on the server, or someone’s own key in Settings), they’re also sent to that AI company; with no AI they stay on your server. Blood test results in My files are only sent if you say yes under Health. The plan offers general considerations only: your GP, dietitian or physio knows your situation best.</p>
   </div>
 </main>
-<div class="status" id="status" role="status" hidden></div>
+<div class="status" id="status" role="status"></div>
 <script>
 // The "About me" page. It shows the questions from questions.json, fills in the saved answers
 // (GET /api/profile), and saves each change a moment after you stop typing (PUT /api/profile).
@@ -157,14 +158,20 @@ function api(method, url, body, keepalive) {
   });
 }
 
-// Shows a little message at the bottom ("Saved"), which fades after a few seconds.
+// Shows a short message at the bottom of the screen (red for errors). The box stays on the page
+// and is filled a moment after it is cleared, so screen readers read each new message. Other
+// messages go after 5 seconds; errors stay until they are tapped or the next message comes.
 function status(text, isError) {
   var s = $("status");
-  s.textContent = text;
-  s.className = "status" + (isError ? " err" : "");
-  s.hidden = false;
   clearTimeout(status.timer);
-  status.timer = setTimeout(function () { s.hidden = true; }, isError ? 6000 : 1800);
+  clearTimeout(status.fill);
+  s.className = "status" + (isError ? " err" : "");
+  s.textContent = "";
+  s.onclick = function () { s.textContent = ""; };
+  status.fill = setTimeout(function () {
+    s.textContent = text;
+    if (!isError) status.timer = setTimeout(function () { s.textContent = ""; }, 5000);
+  }, 50);
 }
 
 // True if a question has an answer.

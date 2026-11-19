@@ -513,7 +513,7 @@ function macroModeChoice(mode) {
     b.onclick = function () {
       macroMode = option[0];
       var y = window.scrollY;
-      renderMacros();
+      keepFocus(renderMacros);
       window.scrollTo(0, y);
     };
     choice.appendChild(b);
@@ -560,7 +560,7 @@ function personSeg(ppl, who, rerender) {
     b.setAttribute("aria-pressed", who === option[0]);
     b.onclick = function () {
       try { localStorage.setItem("coles-plan-person", option[0]); } catch (e) {}
-      rerender();
+      keepFocus(rerender);   // focus stays on the person picked, not the top of the page
     };
     seg.appendChild(b);
   });
@@ -846,7 +846,10 @@ function mealRow(card, day, row, person, ppl, updateEaten) {
       }
     });
   }
-  line.appendChild(box);
+  // A label around the box makes the space round it tappable too (44px, not just the 24px box).
+  var hit = el("label", "eathit");
+  hit.appendChild(box);
+  line.appendChild(hit);
   line.appendChild(text);
 
   var rateButton = el("button", "rate-btn");
