@@ -322,8 +322,12 @@ function renderList() {
   updateSummary();
 }
 
-// One shopping item. Its tick is saved under the plan week it comes from and its position
-// there ("section-item"). `tagStock` adds a small "Stock-up" tag to stock-up items.
+// The items whose "⋯" actions are open, by name, so they stay open when the list is drawn again.
+var openActs = {};
+
+// One shopping item: its tick box, name and price, and a "⋯" button that opens its actions
+// (search your stores, "At home?", "Pin product"). Its tick is saved under the plan week it comes
+// from and its position there ("section-item"). `tagStock` adds a small "Stock-up" tag to stock-up items.
 function shopItem(it, tagStock) {
   var name = it.name;
   var home = isHome(name);
@@ -339,6 +343,7 @@ function shopItem(it, tagStock) {
   label.appendChild(el("span", "box"));   // the drawn tick box
   var nameEl = el("span", "name", name);
   if (tagStock && it.stock) nameEl.appendChild(el("span", "stocktag", "Stock-up"));
+  if (home) nameEl.appendChild(el("span", "stocktag", "At home"));
   label.appendChild(nameEl);
   label.appendChild(el("span", "price", money(it.price)));
 
@@ -354,13 +359,28 @@ function shopItem(it, tagStock) {
   byline.dataset.k = it.src + "|" + it.id;
 
   var actions = el("div", "acts");
+  actions.id = "acts-" + it.src + "-" + it.id;
+  actions.hidden = !openActs[name];
   if (links.length > 1) actions.appendChild(el("span", "findlab", "Search"));
   links.forEach(function (a) { actions.appendChild(a); });
   actions.appendChild(homeButton);
   var pin = pinButton(name);
   if (pin) actions.appendChild(pin);
-  actions.appendChild(byline);
+
+  // The "⋯" button: shows or hides this item's actions.
+  var more = el("button", "itemmore", "⋯");
+  more.type = "button";
+  more.setAttribute("aria-label", "More for " + name + ": search, at home, pin");
+  more.setAttribute("aria-expanded", !actions.hidden);
+  more.setAttribute("aria-controls", actions.id);
+  more.onclick = function () {
+    actions.hidden = !actions.hidden;
+    if (actions.hidden) delete openActs[name]; else openActs[name] = true;
+    more.setAttribute("aria-expanded", !actions.hidden);
+  };
   row.appendChild(label);
+  row.appendChild(more);
+  row.appendChild(byline);
   row.appendChild(actions);
   return row;
 }

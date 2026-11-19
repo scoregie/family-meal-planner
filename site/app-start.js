@@ -18,6 +18,7 @@ function drawView() {
   view = (match && match[2]) ? match[2].slice(1) : "today";
   // Ratings are for admins only. Stock-up weeks are shown as part of the week after them.
   if (view === "ratings" && !isAdmin()) view = "more";
+  document.body.dataset.view = view;   // the page's styles show some things on one view only
   if (PLAN.weeks[week].kind === "stockup") week = planWeek(week);
   $("whoRow").hidden = !(isAdmin() && (view === "today" || view === "meals" || view === "exercise"));
   try { localStorage.setItem(PLACE_KEY, location.hash); } catch (e) {}   // reopen this week next time
