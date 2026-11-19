@@ -3,6 +3,23 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.10.1 (2026-11-19)
+
+Fixes to cardio levels from v1.10.0.
+
+- **Low energy or chronic pain no longer stops "Too easy" working.** Cardio still starts at a
+  steady level, but three "Too easy" in a row now step it up, one level at a time, with a note to
+  consider checking with your GP. Before, it stayed at the steady level for good. A heart
+  condition or pregnancy still keeps cardio steady.
+- **Why cardio is held steady (or kept to walks) shows under every cardio session**, not only for
+  a moment after a tap.
+- **The message after "Too easy" counts down**: "Two more 'Too easy' in a row and your cardio
+  steps up."
+- **Fixed: tapping "Too easy" again on the same session stepped up again.** A few sessions tapped
+  a few times could jump several levels. Each session now counts once.
+- **"How did that feel?" answers are saved with the plan they belong to**, so a new plan's
+  sessions count afresh.
+
 ## v1.10.0 (2026-11-19)
 
 New: cardio that fits how fit you are, and Apple Watch cardio fitness. Also the fixes from a
