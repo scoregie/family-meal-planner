@@ -287,7 +287,11 @@ function syncMeals(person, plan, round, eaten, ratings) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (person, plan_id, round, week, day, slot) DO UPDATE SET
         week_name = excluded.week_name, dish = excluded.dish, eaten = excluded.eaten, eaten_at = excluded.eaten_at,
-        score = excluded.score, note = excluded.note, skip_reason = excluded.skip_reason, updated_at = excluded.updated_at`);
+        score = excluded.score, note = excluded.note, skip_reason = excluded.skip_reason, updated_at = excluded.updated_at
+      -- Only a slot that changed gets a new time, so updated_at says when it was ticked, rated or
+      -- skipped (the weekly page goes by it), not when the page last saved.
+      WHERE meal_log.eaten IS NOT excluded.eaten OR meal_log.dish IS NOT excluded.dish OR meal_log.score IS NOT excluded.score
+        OR meal_log.note IS NOT excluded.note OR meal_log.skip_reason IS NOT excluded.skip_reason OR meal_log.week_name IS NOT excluded.week_name`);
     for (const [key, row] of current) {
       const week = plan.weeks[row.week];
       if (!week) continue;

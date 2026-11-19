@@ -73,24 +73,25 @@ function mealWeekNumber(plan, weekIndex) {
   return Math.max(1, n);
 }
 
-// The days that came in under the vegetable or fruit target: {veg: [dates], fruit: [dates], counted}.
-// A day counts once two or more meals were ticked that day; it adds the ticked meals (by the
-// person's portion) and that day's planned snacks and sides from the plan's food groups.
-function shortDays(eatenRows, plan, planKey, answers, tz) {
+// The days that came in under the vegetable or fruit target: {veg: [days], fruit: [days], counted}.
+// Days are the plan's days (Monday's meals count for Monday even when ticked on Thursday). A day
+// counts once two or more of its meals were ticked; it adds the ticked meals (by the person's
+// portion) and that day's planned snacks and sides from the plan's food groups.
+function shortDays(eatenRows, plan, planKey, answers) {
   const out = { veg: [], fruit: [], counted: 0 };
   if (!plan || !Array.isArray(plan.weeks) || !plan.groups || HealthTargets.paceFor(answers) === 'own') return out;
   const person = (plan.people || {})[planKey] || {};
   const portion = Number(person.portion) || 1;
   const groups = {};
   for (const name of Object.keys(plan.groups)) groups[HealthTargets.nameKey(name)] = plan.groups[name];
-  const byDate = new Map();
+  const byDay = new Map();
   for (const r of eatenRows) {
     if (String(r.plan_id) !== String(plan.id || 'default') || !plan.weeks[r.week]) continue;
-    const date = progress.localDate(r.eaten_at, tz);
-    if (!byDate.has(date)) byDate.set(date, []);
-    byDate.get(date).push(r);
+    const day = r.week + '|' + r.day;   // the plan's week and day
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day).push(r);
   }
-  for (const [date, rows] of byDate) {
+  for (const [day, rows] of byDay) {
     if (rows.length < 2) continue;
     out.counted++;
     let veg = 0, fruit = 0;
@@ -108,8 +109,8 @@ function shortDays(eatenRows, plan, planKey, answers, tz) {
     }
     const target = HealthTargets.weekTarget(answers, mealWeekNumber(plan, rows[0].week));
     if (!target) continue;
-    if (veg < target.veg - HealthTargets.CLOSE) out.veg.push(date);
-    if (fruit < target.fruit - HealthTargets.CLOSE) out.fruit.push(date);
+    if (veg < target.veg - HealthTargets.CLOSE) out.veg.push(day);
+    if (fruit < target.fruit - HealthTargets.CLOSE) out.fruit.push(day);
   }
   return out;
 }
@@ -151,7 +152,7 @@ function oneWeek(person, monday, tz, plan, answers) {
   const reasons = {};
   for (const r of skipped) reasons[r.skip_reason] = (reasons[r.skip_reason] || 0) + 1;
   const log = readLog(person).filter(e => e && inWeek(e.at));
-  const short = shortDays(eaten, plan, planKey, answers, tz);
+  const short = shortDays(eaten, plan, planKey, answers);
   return {
     monday, sunday,
     meals: eaten.length,
