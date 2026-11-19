@@ -197,6 +197,10 @@ const MIGRATIONS = [
     created_at INTEGER NOT NULL
   );
   `,
+  // Step 7: why someone didn't have a planned meal ("Didn't have it?": a key from site/skipreasons.js)
+  `
+  ALTER TABLE meal_log ADD COLUMN skip_reason TEXT;
+  `,
 ];
 
 let db = null;
@@ -279,11 +283,11 @@ function syncMeals(person, plan, round, eaten, ratings) {
     }
 
     const save = d.prepare(`
-      INSERT INTO meal_log (person, plan_id, round, week, week_name, day, slot, dish, eaten, eaten_at, score, note, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO meal_log (person, plan_id, round, week, week_name, day, slot, dish, eaten, eaten_at, score, note, skip_reason, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (person, plan_id, round, week, day, slot) DO UPDATE SET
         week_name = excluded.week_name, dish = excluded.dish, eaten = excluded.eaten, eaten_at = excluded.eaten_at,
-        score = excluded.score, note = excluded.note, updated_at = excluded.updated_at`);
+        score = excluded.score, note = excluded.note, skip_reason = excluded.skip_reason, updated_at = excluded.updated_at`);
     for (const [key, row] of current) {
       const week = plan.weeks[row.week];
       if (!week) continue;
@@ -294,7 +298,9 @@ function syncMeals(person, plan, round, eaten, ratings) {
       const eatenAt = row.eaten ? (firstEaten.get(key) || now) : null;
       const score = Number.isInteger(rating.s) ? rating.s : null;
       const note = typeof rating.n === 'string' && rating.n.trim() ? rating.n : null;
-      save.run(person, planId, round, row.week, week.name || null, row.day, row.slot, dish, row.eaten ? 1 : 0, eatenAt, score, note, now);
+      // Why they didn't have it (already checked by the server). Ticked as eaten wins.
+      const skipped = !row.eaten && typeof rating.x === 'string' && rating.x ? rating.x : null;
+      save.run(person, planId, round, row.week, week.name || null, row.day, row.slot, dish, row.eaten ? 1 : 0, eatenAt, score, note, skipped, now);
     }
   });
 }
@@ -375,22 +381,24 @@ function ratingsSince(person, sinceMs) {
   return open().prepare('SELECT updated_at, score FROM meal_log WHERE person = ? AND score IS NOT NULL AND updated_at >= ?').all(person, sinceMs);
 }
 
-// What one person thought of the meals they rated or left a note on, newest first:
-// [{dish, score (their average out of 10, or null), notes: ["what they didn't like", ...]}].
+// What one person thought of the meals they rated, left a note on or didn't have, newest first:
+// [{dish, score (their average out of 10, or null), notes: ["what they didn't like", ...],
+//   skips: ["time", ...] (why they didn't have it each time: keys from site/skipreasons.js)}].
 function mealFeedback(person) {
   const rows = open().prepare(`
-    SELECT dish, score, note FROM meal_log
-    WHERE person = ? AND dish IS NOT NULL AND (score IS NOT NULL OR (note IS NOT NULL AND note != ''))
+    SELECT dish, score, note, skip_reason FROM meal_log
+    WHERE person = ? AND dish IS NOT NULL AND (score IS NOT NULL OR (note IS NOT NULL AND note != '') OR skip_reason IS NOT NULL)
     ORDER BY updated_at DESC LIMIT 500`).all(person);
   const byDish = new Map();
   for (const r of rows) {
     const key = r.dish.toLowerCase();
-    if (!byDish.has(key)) byDish.set(key, { dish: r.dish, scores: [], notes: [] });
+    if (!byDish.has(key)) byDish.set(key, { dish: r.dish, scores: [], notes: [], skips: [] });
     if (r.score != null) byDish.get(key).scores.push(r.score);
     if (r.note) byDish.get(key).notes.push(r.note);
+    if (r.skip_reason) byDish.get(key).skips.push(r.skip_reason);
   }
   return [...byDish.values()].map(d => ({
-    dish: d.dish, notes: d.notes,
+    dish: d.dish, notes: d.notes, skips: d.skips,
     score: d.scores.length ? Math.round(d.scores.reduce((n, x) => n + x, 0) / d.scores.length * 10) / 10 : null,
   }));
 }

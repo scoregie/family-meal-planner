@@ -115,6 +115,11 @@ li.home .row .name{color:var(--mute)}   /* "At home": shown by the pressed butto
 .scores button{font:inherit;font-size:.95rem;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.45rem;min-height:2.6rem;cursor:pointer;padding:0}
 .scores button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
 .scores button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.rate-box .skip-q{margin:.75rem 0 .45rem}
+.reasons{display:flex;flex-wrap:wrap;gap:.35rem;margin:0 0 .75rem}
+.reasons button{font:inherit;font-size:.875rem;min-height:2.75rem;padding:.3rem .75rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:1.4rem;cursor:pointer}
+.reasons button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.reasons button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .rate-box label{display:block;font-weight:700;font-size:.85rem;margin:0 0 .3rem}
 .rate-box textarea{display:block;width:100%;font:inherit;font-size:1rem;color:var(--ink);background:var(--card);border:2px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.45rem;padding:.5rem .6rem;min-height:4.5rem;resize:vertical}
 .rate-box textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
@@ -591,6 +596,7 @@ body:not([data-view="today"]) .ask{display:none}   /* notices show on Today only
 <script type="application/json" id="plan-data">{"id":"no-plan","title":"Family Health Planner","subtitle":"No plan.json was found. Copy site/plan.example.json to site/plan.json, or upload your own plan.","weeks":[{"name":"Week 1","shopping":{"Getting started":[["Add a plan.json to the site folder",0]]}}]}</script>
 <script src="guidelines.js"></script>
 <script src="energy.js"></script>
+<script src="skipreasons.js"></script>
 <!-- The page's script is in six files (app-core.js lists what each one holds). -->
 <script src="app-core.js"></script>
 <script src="app-shopping.js"></script>
