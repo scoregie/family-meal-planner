@@ -935,8 +935,11 @@ function dayConsiderations(day, person, ppl, who, dayIndex) {
       var sessions = sessionLines(exDay);
       lines.push(sessions.length ? "Exercise today: " + sessions.join("; ") : "No exercise planned today: a rest day.");
       // Snacks that follow strength training, leaving out any not eaten on this day of the week
-      // (someone who goes without snacks on a fast day).
-      var tied = (person.snacks || []).filter(function (s) { return s && s.exercise === "strength" && (!Array.isArray(s.days) || s.days.indexOf(short(day.day)) > -1); });
+      // (someone who goes without snacks on a fast day) or not in this meal week (a "weeks" list).
+      var tied = (person.snacks || []).filter(function (s) {
+        return s && s.exercise === "strength" && (!Array.isArray(s.days) || s.days.indexOf(short(day.day)) > -1) &&
+          (!Array.isArray(s.weeks) || s.weeks.indexOf(mealWeekNumber(week)) > -1);
+      });
       if (tied.length) {
         lines.push(isWeightsDay(exDay)
           ? "Strength day: " + tied.map(function (s) { return s.what; }).join(", ") + " is in today’s snacks, after training."
