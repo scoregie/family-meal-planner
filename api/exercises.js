@@ -16,6 +16,7 @@ const rules = require('./sharedrules');   // rules the phone app follows too
 const planbuilder = require('./planbuilder');
 const cardio = require('./cardio');
 const planextras = require('./planextras');   // logged numbers: Apple Watch cardio fitness and resting heart rate
+const weekreview = require('./weekreview');   // "How the week went": notes when cardio steps up or back
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const EXERCISES = planbuilder.EXERCISES;
@@ -96,6 +97,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     const before = planbuilder.cardioNow(answers, cardioSaved(person), planextras.measuredFor(person));
     const after = cardio.feelAfter(answers.cardio_level, cardioSaved(person), id, body.feel, before.limit, before.guess, before.steady);
     db.setSetting('cardio-feel:' + person, JSON.stringify(after.saved));
+    if (after.moved) weekreview.remember(person, { kind: 'cardio', moved: after.moved, level: after.level });   // for "How the week went"
     send(res, 200, Object.assign(cardioFor(person), { moved: after.moved }));
     return true;
   }

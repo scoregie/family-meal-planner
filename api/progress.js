@@ -512,4 +512,4 @@ async function handle(req, res, urlPath, url, me, ctx) {
   return true;
 }
 
-module.exports = { sensible, handle, summary, readLoseIt, readAppleHealth, mondayOf, csvFields };
+module.exports = { sensible, handle, summary, readLoseIt, readAppleHealth, mondayOf, addDays, localDate, zoneOrDefault, csvFields };

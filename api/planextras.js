@@ -12,6 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('./db');
+const weekreview = require('./weekreview');   // "How the week went": notes small-step foods tried
 const uploads = require('./uploads');
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
@@ -246,6 +247,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     if (!food || (result && !RESULTS.includes(result))) { send(res, 400, { error: 'bad request' }); return true; }
     const tried = triedFor(person);
     if (result) tried[food] = result; else delete tried[food];
+    if (result === 'tried' || result === 'liked') weekreview.remember(person, { kind: 'tried', food, result });   // for "How the week went"
     // Keep the newest 200, so the record can't grow forever.
     const kept = Object.fromEntries(Object.entries(tried).slice(-200));
     db.setSetting('small-steps:' + person, JSON.stringify(kept));

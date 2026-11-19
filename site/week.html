@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<!--
+  How the week went: one person's week (Monday to Sunday) next to the week before. What went well,
+  what was harder (with the reasons people gave for meals they didn't have), and one thing to
+  consider next week. Opened from Progress and from the card on Today.
+  How this file is laid out: the style section at the top sets the look, the body is the layout,
+  and the script section near the end asks the server (GET /api/week-review) and fills it in.
+  The server side is api/weekreview.js. docs/how-it-works.md explains how the pieces fit together.
+-->
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="local-api.js"></script>
+<script src="edition.js"></script>
+<script src="page.js"></script>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>How the week went</title>
+<link href="fonts/fonts.css" rel="stylesheet">
+<style>
+/* Colours, the same as Progress. Dark mode has its own chosen colours. */
+:root{--bg:#f5f5f4;--card:#fff;--ink:#1a1a1c;--mute:#5e5e63;--line:#dddcd9;--accent:#0e6b57;--on-accent:#fff;--good:#0e6b57;--hard:#8a4b00;--chip:#e3f1ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--good:#52c7a8;--hard:#f0b46a;--chip:#1d3a31;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121214;--card:#1c1c1f;--ink:#ececee;--mute:#a3a3a8;--line:#2f2f33;--accent:#52c7a8;--on-accent:#05221a;--good:#52c7a8;--hard:#f0b46a;--chip:#1d3a31;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1rem;line-height:1.45}
+main{max-width:40rem;margin:0 auto;padding:1.25rem 1rem calc(4rem + env(safe-area-inset-bottom,0px))}
+h1{font-size:1.5rem;margin:0 0 .2rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin:0 0 .8rem}
+.sub{color:var(--mute);margin:0;font-size:.95rem}
+.btn{font:inherit;font-size:.9rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;min-height:2.75rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn:hover{border-color:var(--mute)}
+.btn:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pseg{display:flex;gap:.35rem;flex-wrap:wrap;margin:0 0 .8rem}
+.pseg .btn{border-radius:1.4rem;border-width:1px}
+.pseg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.9rem 1rem;margin:0 0 .8rem}
+section.card h2{font-size:1.1rem;margin:0 0 .5rem;display:flex;align-items:center;gap:.5rem}
+section.card h2 .dot{width:.6rem;height:.6rem;border-radius:50%;flex:none}
+.well h2 .dot{background:var(--good)}
+.hard h2 .dot{background:var(--hard)}
+.items{list-style:none;margin:0;padding:0}
+.items li{padding:.55rem 0;border-top:1px solid var(--line)}
+.items li:first-child{border-top:0;padding-top:.1rem}
+.items b{display:block;font-weight:700}
+.items .was{display:block;color:var(--mute);font-size:.875rem}
+.items .more{display:block;font-size:.9rem;margin-top:.15rem}
+.items .meals{margin:.3rem 0 .2rem;padding-left:1.1rem;font-size:.9rem}
+.items .meals li{border:0;padding:.1rem 0}
+.consider p{margin:0}
+.empty{color:var(--mute);margin:0}
+.privacy{color:var(--mute);font-size:.875rem;margin:1.2rem 0 0}
+.msg{border-radius:.6rem;padding:.6rem .8rem;margin:0 0 .8rem;background:var(--card);border:1px solid var(--line)}
+.status{position:fixed;left:50%;bottom:1rem;transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:.5rem;padding:.5rem .9rem;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.status.show{opacity:1}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.status{transition:none}}
+</style>
+<script src="regions.js"></script>
+<script src="appearance.js"></script>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>How the week went</h1><p class="sub" id="sub">Loading…</p></div>
+    <a class="btn" href="progress.html" id="back">← Progress</a>
+  </div>
+  <div id="pmsg"></div>
+  <div id="app" hidden>
+    <div class="pseg" id="people" hidden role="group" aria-label="Whose week"></div>
+    <div class="pseg" id="which" role="group" aria-label="Which week"></div>
+    <section class="card well"><h2><span class="dot" aria-hidden="true"></span>Went well</h2><ul class="items" id="well"></ul></section>
+    <section class="card hard"><h2><span class="dot" aria-hidden="true"></span>Harder this week</h2><ul class="items" id="hard"></ul></section>
+    <section class="card consider"><h2>One thing to consider next week</h2><p id="consider"></p></section>
+    <p class="privacy">Worked out from the meals and sessions ticked in the app, the reasons given with “Didn’t have it?”, and the plan’s food groups (vegetable and fruit serves count a day once two or more meals are ticked, plus that day’s planned snacks). Only you and the plan’s admins can see this page. These are considerations to think about: your GP, dietitian or physio comes first.</p>
+  </div>
+</main>
+<div class="status" id="status" role="status"></div>
+<script>
+"use strict";
+var ME = null;        // who is logged in: {user, person, admin}
+var PERSON = null;    // whose week is shown (admins can switch)
+var NAMES = {};       // person key -> name, for admins
+var WHICH = "last";   // "last" (the week just finished) or "this" (this week so far)
+var TZ = (function () {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { return ""; }
+})();
+var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+var DAYS = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
+
+// "2026-11-02" to "2 Nov".
+function shortDate(date) {
+  var p = date.split("-");
+  return +p[2] + " " + MONTHS[+p[1] - 1];
+}
+
+// "1 meal" or "3 meals".
+function count(n, one, many) {
+  return n + " " + (n === 1 ? one : many);
+}
+
+// One line in a list: a bold headline, then optional extra lines (the week before, and details).
+function item(list, headline, was, more) {
+  var li = el("li");
+  li.appendChild(el("b", null, headline));
+  if (more) li.appendChild(el("span", "more", more));
+  if (was) li.appendChild(el("span", "was", was));
+  list.appendChild(li);
+}
+
+// What the week before had, for the grey line under an item: "The week before: 10".
+function before(text) {
+  return (WHICH === "this" ? "Last week: " : "The week before: ") + text;
+}
+
+// Fills in "Went well".
+function drawWell(w, b) {
+  var list = $("well");
+  list.textContent = "";
+  if (w.meals) item(list, count(w.meals, "meal", "meals") + " eaten as planned", before(b.meals));
+  if (w.best.length) item(list, "Best rated", null, w.best.map(function (m) { return m.dish + " " + m.score + "/10"; }).join(" · "));
+  if (w.sessions) item(list, count(w.sessions, "exercise session", "exercise sessions") + " done" + (w.planned ? " of " + w.planned + " planned" : ""), before(b.sessions));
+  w.cardio.filter(function (c) { return c.moved > 0; }).forEach(function (c) {
+    item(list, "Cardio stepped up to level " + c.level, null, "From your “Too easy” answers after sessions.");
+  });
+  if (w.tried.length) item(list, "New foods tried", null, w.tried.map(function (t) { return t.food + (t.result === "liked" ? " (liked it)" : ""); }).join(" · "));
+  if (!list.children.length) list.appendChild(el("li", "empty", "Nothing to show yet. Ticking meals and sessions as they happen fills this in."));
+}
+
+// Fills in "Harder this week".
+function drawHard(w, b) {
+  var list = $("hard");
+  list.textContent = "";
+  if (w.skipped) {
+    var why = w.reasons.map(function (r) { return r.label + (r.n > 1 ? " ×" + r.n : ""); }).join(" · ");
+    var meals = w.skippedMeals.map(function (m) { return (DAYS[m.day] || m.day) + " " + m.slot.toLowerCase() + ": " + (m.dish || "meal") + " (" + m.reason + ")"; });
+    item(list, count(w.skipped, "meal", "meals") + " you didn’t have", before(b.skipped), "You said: " + why);
+    if (meals.length) {
+      var ul = el("ul", "meals");
+      meals.forEach(function (m) { ul.appendChild(el("li", null, m)); });
+      list.lastChild.insertBefore(ul, list.lastChild.querySelector(".was"));
+    }
+  }
+  if (w.shortVeg) item(list, count(w.shortVeg, "day", "days") + " under the vegetable serves", before(b.shortVeg), "Out of " + count(w.daysCounted, "day", "days") + " with two or more meals ticked.");
+  if (w.shortFruit) item(list, count(w.shortFruit, "day", "days") + " under the fruit serves", before(b.shortFruit), "Out of " + count(w.daysCounted, "day", "days") + " with two or more meals ticked.");
+  if (w.planned && w.sessions < w.planned) item(list, count(w.planned - w.sessions, "planned session", "planned sessions") + " not ticked", before(b.planned ? b.sessions + " of " + b.planned + " done" : b.sessions + " done"));
+  if (w.low.length) item(list, "Scored low", null, w.low.map(function (m) { return m.dish + " " + m.score + "/10"; }).join(" · "));
+  w.cardio.filter(function (c) { return c.moved < 0; }).forEach(function (c) {
+    item(list, "Cardio stepped back to level " + c.level, null, "From a “Too hard” answer. Easing off is part of building up.");
+  });
+  if (!list.children.length) list.appendChild(el("li", "empty", "Nothing stood out as harder."));
+}
+
+// Asks the server for the week and draws the page.
+function load() {
+  $("app").classList.add("loading");
+  return api("GET", "/api/week-review?person=" + encodeURIComponent(PERSON) + "&week=" + WHICH + "&tz=" + encodeURIComponent(TZ)).then(function (d) {
+    var name = NAMES[PERSON] || (PERSON === ME.person ? "" : PERSON);
+    var range = shortDate(d.week.monday) + " to " + shortDate(d.week.sunday) + (WHICH === "this" ? " (so far)" : "");
+    $("sub").textContent = range + (name ? " · " + name : "");
+    drawWell(d.week, d.before);
+    drawHard(d.week, d.before);
+    $("consider").textContent = d.consider;
+    $("app").hidden = false;
+    $("app").classList.remove("loading");
+  }).catch(function (e) {
+    $("sub").textContent = "";
+    $("pmsg").textContent = "";
+    $("pmsg").appendChild(el("div", "msg", "Could not load the week: " + e.message));
+  });
+}
+
+// "Last week" and "This week so far".
+function renderWhich() {
+  var box = $("which");
+  box.textContent = "";
+  [["last", "Last week"], ["this", "This week so far"]].forEach(function (option) {
+    var b = el("button", "btn", option[1]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", WHICH === option[0]);
+    b.onclick = function () {
+      WHICH = option[0];
+      renderWhich();
+      load();
+    };
+    box.appendChild(b);
+  });
+}
+
+// For admins: buttons to choose whose week to see (hidden with only one person).
+function renderPicker(list) {
+  var picker = $("people");
+  picker.textContent = "";
+  picker.hidden = list.length < 2;
+  list.forEach(function (person) {
+    var b = el("button", "btn", (NAMES[person] || person) + (person === ME.person ? " (me)" : ""));
+    b.type = "button";
+    b.setAttribute("aria-pressed", person === PERSON);
+    b.onclick = function () {
+      PERSON = person;
+      renderPicker(list);
+      load();
+    };
+    picker.appendChild(b);
+  });
+}
+
+// Start: who is logged in, then (for admins) everyone's names, then the week.
+fetch("/auth/me", { cache: "no-store" }).then(function (response) {
+  return response.ok ? response.json() : null;
+}).then(function (me) {
+  if (!me) {
+    location.href = "/login?next=" + encodeURIComponent("/week.html");
+    return;
+  }
+  ME = me;
+  var q = new URLSearchParams(location.search);
+  PERSON = (me.admin && q.get("person")) || me.person;
+  if (q.get("week") === "this") WHICH = "this";
+  if (q.get("from") === "today") { $("back").href = "./"; $("back").textContent = "← Back to the app"; }
+  else if (PERSON !== me.person) $("back").href = "progress.html?person=" + encodeURIComponent(PERSON);
+  renderWhich();
+  var people = me.admin ? api("GET", "/api/people") : Promise.resolve(null);
+  return people.then(function (got) {
+    if (got) {
+      got.people.forEach(function (p) { NAMES[p.person] = p.name; });
+      renderPicker(got.people.map(function (p) { return p.person; }));
+    }
+    return load();
+  });
+}).catch(function (e) {
+  $("sub").textContent = "";
+  $("pmsg").appendChild(el("div", "msg", "Could not load: " + e.message));
+});
+</script>
+</body>
+</html>

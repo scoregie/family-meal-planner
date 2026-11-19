@@ -101,6 +101,53 @@ function todayExerciseCard(ex) {
   return exCard.card;
 }
 
+var weekNote = null;      // last week in short, from /api/week-review, once loaded
+var weekFor = "";         // whose week weekNote holds
+
+// The "How last week went" card on Today: a line on what went well and one on what was harder,
+// with a link to the full page (week.html). It asks the server the first time and fills itself in.
+function todayWeekCard(person4) {
+  var link = "week.html?from=today" + (person4 !== ME.person ? "&person=" + encodeURIComponent(person4) : "");
+  var card = todayCard("How last week went", "", "See the week", link);
+  // Draws the card's body from weekNote, or "Loading…".
+  function draw() {
+    card.body.textContent = "";
+    var d = weekFor === person4 ? weekNote : null;
+    if (!d) {
+      card.body.appendChild(el("p", "note2", weekFor === person4 ? "Couldn’t load last week." : "Loading…"));
+      return;
+    }
+    var w = d.week;
+    var well = [];
+    if (w.meals) well.push(w.meals + (w.meals === 1 ? " meal" : " meals") + " eaten");
+    if (w.sessions) well.push(w.sessions + (w.planned ? " of " + w.planned : "") + (w.sessions === 1 ? " session" : " sessions"));
+    if (w.best.length) well.push("best: " + w.best[0].dish);
+    var hard = [];
+    if (w.skipped) hard.push(w.skipped + (w.skipped === 1 ? " meal" : " meals") + " skipped" + (w.reasons.length ? " (mostly “" + w.reasons[0].label + "”)" : ""));
+    if (w.shortVeg) hard.push(w.shortVeg + (w.shortVeg === 1 ? " day" : " days") + " light on veg");
+    if (w.planned && w.sessions < w.planned) hard.push((w.planned - w.sessions) + " sessions not ticked");
+    if (!well.length && !hard.length) {
+      card.body.appendChild(el("p", "note2", "Nothing was ticked last week. Ticking meals and sessions as they happen (or “Didn’t have it?” when plans change) fills this in."));
+      return;
+    }
+    [["Went well", well.join(" · ") || "–"], ["Harder", hard.join(" · ") || "Nothing stood out"]].forEach(function (row) {
+      var line = el("div", "tline");
+      line.appendChild(el("span", "mk", row[0]));
+      line.appendChild(el("span", null, row[1]));
+      card.body.appendChild(line);
+    });
+  }
+  draw();
+  if (weekFor !== person4) {
+    var tz = "";
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { /* older browser */ }
+    api("GET", "/api/week-review?person=" + encodeURIComponent(person4) + "&week=last&tz=" + encodeURIComponent(tz))
+      .then(function (d) { weekNote = d; }, function () { weekNote = null; })
+      .then(function () { weekFor = person4; if (card.card.isConnected) draw(); });
+  }
+  return card.card;
+}
+
 // The "From the phone" card on Today: the newest steps, active energy and food logged for
 // `person4` (a person's key), from Health sync or an export. It asks the server for the numbers
 // the first time and fills itself in when they arrive.
@@ -208,6 +255,7 @@ function renderToday() {
   // From the phone: only for your own numbers, or an admin's pick. (The phone app doesn't read
   // Apple Health or Health Connect yet, so it has no numbers to show.)
   var person4 = ME && ME.person && !window.PHONE ? (isAdmin() ? ukey(USER) : ME.person) : "";
+  if (person4) panel.appendChild(todayWeekCard(person4));
   if (person4) panel.appendChild(todayPhoneCard(person4));
 
   var shop = todayShoppingCard();
