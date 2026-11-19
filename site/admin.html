@@ -9,6 +9,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="page.js"></script>
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -144,19 +145,6 @@ var MEALS = ["breakfast", "lunch", "dinner"];
 
 // ---------- small helpers ----------
 
-// Shortcut for document.getElementById.
-function $(id) {
-  return document.getElementById(id);
-}
-
-// Makes a new element, with an optional class name and text: el("p", "hint", "Hello").
-function el(tag, cls, txt) {
-  var e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (txt != null) e.textContent = txt;
-  return e;
-}
-
 // Capital first letter: "lunch" becomes "Lunch".
 function cap(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -171,27 +159,6 @@ function msg(kind, text, extra) {
   var m = el("div", "msg " + kind, text);
   if (extra) m.appendChild(extra);
   box.appendChild(m);
-}
-
-// Calls the server and returns its JSON answer. If the server says no, it throws an error
-// with the server's message and the HTTP status (for example 409 if someone else saved first).
-function api(method, url, body) {
-  var options = {
-    method: method,
-    cache: "no-store",
-    headers: body ? { "Content-Type": "application/json", "X-Requested-With": "app" } : { "X-Requested-With": "app" },
-    body: body ? JSON.stringify(body) : undefined,
-  };
-  return fetch(url, options).then(function (response) {
-    return response.json().catch(function () { return {}; }).then(function (data) {
-      if (!response.ok) {
-        var error = new Error(data.error || ("Request failed (" + response.status + ")"));
-        error.status = response.status;
-        throw error;
-      }
-      return data;
-    });
-  });
 }
 
 // How a dish name is matched to its macros (the same rule the app uses): lower case, and a
@@ -931,22 +898,6 @@ function renderBackups() {
 
 // ---------- People tab ----------
 
-// Calls the people API. Changes need the X-Requested-With header, which proves they came from this page.
-function peopleApi(method, url, body) {
-  var options = {
-    method: method,
-    cache: "no-store",
-    headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
-    body: body ? JSON.stringify(body) : undefined,
-  };
-  return fetch(url, options).then(function (response) {
-    return response.json().catch(function () { return {}; }).then(function (data) {
-      if (!response.ok) throw new Error(data.error || ("Request failed (" + response.status + ")"));
-      return data;
-    });
-  });
-}
-
 // A date like "8 Nov 2026".
 function shortDate(ms) {
   return new Date(ms).toLocaleDateString(Appearance.locale(), { day: "numeric", month: "short", year: "numeric" });
@@ -964,7 +915,7 @@ function renderPeople() {
   invite.href = "family.html";
   panel.appendChild(invite);
 
-  peopleApi("GET", "/api/people").then(function (data) {
+  api("GET", "/api/people").then(function (data) {
     card.textContent = "";
     data.people.forEach(function (p) {
       card.appendChild(personRow(p));

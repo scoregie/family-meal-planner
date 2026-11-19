@@ -13,6 +13,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="local-api.js"></script>
 <script src="edition.js"></script>
+<script src="page.js"></script>
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -101,51 +102,10 @@ var FROM_PHOTOS = 0;  // how many items on the lists were read from photos
 var EDITING = null;   // the item being edited, as {place, text}, or null when none is
   // hides the "Added" message after a moment
 
-// Shortcut for document.getElementById.
-function $(id) { return document.getElementById(id); }
-
-// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
-function el(tag, cls, txt) {
-  var n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (txt != null) n.textContent = txt;
-  return n;
-}
-
-// Asks the server for something (or sends it a change) and waits for the answer. Returns a
-// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
-function api(method, url, body) {
-  var o = { method: method, headers: { "X-Requested-With": "app" }, cache: "no-store" };
-  if (body) { o.headers["Content-Type"] = "application/json"; o.body = JSON.stringify(body); }
-  return fetch(url, o).then(function (r) {
-    if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent("/food.html"); throw new Error("login needed"); }
-    return r.json().catch(function () { return {}; }).then(function (d) {
-      if (!r.ok) throw new Error(d.error || "Something went wrong. Try again.");
-      return d;
-    });
-  });
-}
-
 // Shows an error message at the top (or clears it when text is empty).
 function showErr(text) {
   $("msg").textContent = "";
   if (text) $("msg").appendChild(el("div", "msg", text));
-}
-
-// Shows a short message at the bottom of the screen (red for errors). The box stays on the page
-// and is filled a moment after it is cleared, so screen readers read each new message. Other
-// messages go after 5 seconds; errors stay until they are tapped or the next message comes.
-function status(text, isError) {
-  var s = $("status");
-  clearTimeout(status.timer);
-  clearTimeout(status.fill);
-  s.className = "status" + (isError ? " err" : "");
-  s.textContent = "";
-  s.onclick = function () { s.textContent = ""; };
-  status.fill = setTimeout(function () {
-    s.textContent = text;
-    if (!isError) status.timer = setTimeout(function () { s.textContent = ""; }, 5000);
-  }, 50);
 }
 
 // Keeps the answer from the server and draws the lists again. `focus` is the place whose box
@@ -386,7 +346,7 @@ try {
 
 // Start: load the lists.
 api("GET", "/api/food").then(function (d) { show(d); }).catch(function (e) {
-  if (e.message !== "login needed") showErr("The lists couldn’t be loaded: " + e.message);
+  if (!e.loginNeeded) showErr("The lists couldn’t be loaded: " + e.message);
 });
 </script>
 </body>

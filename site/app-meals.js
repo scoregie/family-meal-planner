@@ -784,11 +784,7 @@ function smallStepsBlock(person) {
     b.onclick = function () {
       // Tapping the chosen answer again clears it.
       var now = (stepsTried[key] || {})[step.food] === option[0] ? "" : option[0];
-      fetch("/api/steps?person=" + encodeURIComponent(key), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
-        body: JSON.stringify({ food: step.food, result: now }),
-      }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      api("PUT", "/api/steps?person=" + encodeURIComponent(key), { food: step.food, result: now })
         .then(function (d) { stepsTried[key] = d.tried; show(); })
         .catch(function () { said.textContent = "That didn’t save. Only they or an admin can tick this."; });
     };
@@ -798,8 +794,8 @@ function smallStepsBlock(person) {
   wrap.appendChild(said);
   if (stepsTried[key]) show();
   else {
-    fetch("/api/steps?person=" + encodeURIComponent(key), { cache: "no-store" })
-      .then(function (r) { return r.ok ? r.json() : { tried: {} }; })
+    api("GET", "/api/steps?person=" + encodeURIComponent(key))
+      .catch(function () { return { tried: {} }; })
       .then(function (d) { stepsTried[key] = d.tried || {}; show(); })
       .catch(function () {});
   }

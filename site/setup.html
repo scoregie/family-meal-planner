@@ -11,6 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="local-api.js"></script>
 <script src="edition.js"></script>
+<script src="page.js"></script>
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121214">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -120,50 +121,6 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid color
 var DATA = null;
 var pollTimer = 0;
 var ROLE_NAMES = { owner: "Owner", admin: "Admin", member: "Member", username: "Username login" };
-
-function $(id) {
-  return document.getElementById(id);
-}
-
-// Makes a new page element (like a paragraph or button), with an optional CSS class and text.
-function el(tag, cls, txt) {
-  var e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (txt != null) e.textContent = txt;
-  return e;
-}
-
-// Asks the server for something (or sends it a change) and waits for the answer. Returns a
-// "promise": .then(...) runs with the answer, .catch(...) with the error message if it failed.
-function api(method, url, body) {
-  return fetch(url, {
-    method: method,
-    cache: "no-store",
-    headers: { "X-Requested-With": "app", "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  }).then(function (r) {
-    return r.json().catch(function () { return {}; }).then(function (d) {
-      if (!r.ok) throw new Error(d.error || "The server said " + r.status);
-      return d;
-    });
-  });
-}
-
-// Shows a short message at the bottom of the screen (red for errors). The box stays on the page
-// and is filled a moment after it is cleared, so screen readers read each new message. Other
-// messages go after 5 seconds; errors stay until they are tapped or the next message comes.
-function status(text, isError) {
-  var s = $("status");
-  clearTimeout(status.timer);
-  clearTimeout(status.fill);
-  s.className = "status" + (isError ? " err" : "");
-  s.textContent = "";
-  s.onclick = function () { s.textContent = ""; };
-  status.fill = setTimeout(function () {
-    s.textContent = text;
-    if (!isError) status.timer = setTimeout(function () { s.textContent = ""; }, 5000);
-  }, 50);
-}
 
 // An amount of money in the draft plan's currency, rounded to whole units.
 function money(n) {
