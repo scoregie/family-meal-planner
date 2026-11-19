@@ -24,8 +24,8 @@ It runs on your own server (two small Docker containers, for example in a Proxmo
 
 **Tracking progress**
 
-- **Progress dashboard:** weekly charts of weight, food energy and protein, steps, workouts and meals ticked, in kilojoules or Calories.
-- **Health sync:** an iPhone Shortcut sends each day's Apple Health numbers (steps, Move, weight, and food from Lose It if it writes to Apple Health) automatically.
+- **Progress dashboard:** weekly charts of weight, food energy and protein, steps, Apple Watch cardio fitness (VO2 max) and resting heart rate, workouts and meals ticked, in kilojoules or Calories.
+- **Health sync:** an iPhone Shortcut sends each day's Apple Health numbers (steps, Move, weight, food from Lose It if it writes to Apple Health, and an Apple Watch's cardio fitness and resting heart rate) automatically. Someone who hasn't picked a cardio level in About me starts from their watch's cardio fitness, and a resting heart rate well above usual suggests an easier day.
 - **Files:** upload Lose It and Apple Health exports, blood tests and photos. Each person sees only their own; admins can see everyone's.
 - **Calendar:** add suggested eating times to Apple, Google or Outlook calendars as reminders.
 
@@ -265,6 +265,7 @@ Open the **Shortcuts** app, tap **+**, and name the shortcut **Health sync**. Ad
 2. **Move:** the same three actions with type **Active Energy**, variable `Move`.
 3. **Weight:** *Find Health Samples*, type **Weight**, Start Date is today, sort by Start Date, **Latest First**, limit **1**. Then *Set Variable* named `Weight`.
 4. **Food (optional, if Lose It writes to Apple Health):** repeat step 1 four times with types **Dietary Energy**, **Protein**, **Carbohydrates** and **Total Fat**, and variables `Food`, `Protein`, `Carbs` and `Fat`.
+4b. **Cardio fitness (optional, with an Apple Watch):** repeat step 3 twice with types **Cardio Fitness** and **Resting Heart Rate**, and variables `Fitness` and `Resting`.
 5. **The date:** *Date* (Current Date), then *Format Date* → Custom → `yyyy-MM-dd`, then *Set Variable* named `Day`.
 6. **Send it:** *Get Contents of URL* with your sync address. Tap the arrow to show more:
    - Method: **POST**
@@ -282,6 +283,8 @@ Open the **Shortcuts** app, tap **+**, and name the shortcut **Health sync**. Ad
      | `protein` | Number | `Protein` (optional) |
      | `carbs` | Number | `Carbs` (optional) |
      | `fat` | Number | `Fat` (optional) |
+     | `vo2max` | Text | `Fitness` (optional, Apple Watch) |
+     | `resting_hr` | Text | `Resting` (optional, Apple Watch) |
 
 7. **(Optional)** *Get Dictionary Value* for key `message` from Contents of URL, then *Show Notification*, so you see "Synced steps, Move, weight…".
 

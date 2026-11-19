@@ -14,6 +14,7 @@
 const db = require('./db');
 const planbuilder = require('./planbuilder');
 const cardio = require('./cardio');
+const planextras = require('./planextras');   // logged numbers: Apple Watch cardio fitness and resting heart rate
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const EXERCISES = planbuilder.EXERCISES;
@@ -56,12 +57,15 @@ function cardioSaved(person) {
   try { return JSON.parse(db.getSetting('cardio-feel:' + person) || 'null'); } catch (e) { return null; }
 }
 
-// Someone's cardio level now, for the page: the level (cardio.js) plus which sessions they've
-// already said how felt (`felt`: {"2|Mon-cardio": "easy"}).
+// Someone's cardio level now, for the page: the level (cardio.js), which sessions they've
+// already said how felt (`felt`: {"2|Mon-cardio": "easy"}), and `resting` when their resting
+// heart rate is up today ({today, usual}).
 function cardioFor(person) {
   const profile = db.getProfile(person);
   const saved = cardioSaved(person);
-  const now = planbuilder.cardioNow((profile && profile.answers) || {}, saved);
+  const now = planbuilder.cardioNow((profile && profile.answers) || {}, saved, planextras.measuredFor(person));
+  const check = planextras.restingCheck(person);
+  if (check && check.up) now.resting = { today: check.today, usual: check.usual };
   const felt = {};
   for (const f of (saved && saved.feels) || []) felt[f.id] = f.feel;
   return Object.assign(now, { felt, top: cardio.TOP });
@@ -103,8 +107,8 @@ async function handle(req, res, urlPath, url, me, ctx) {
     }
     const profile = db.getProfile(person);
     const answers = (profile && profile.answers) || {};
-    const before = planbuilder.cardioNow(answers, cardioSaved(person));
-    const after = cardio.feelAfter(answers.cardio_level, cardioSaved(person), id, body.feel, before.limit);
+    const before = planbuilder.cardioNow(answers, cardioSaved(person), planextras.measuredFor(person));
+    const after = cardio.feelAfter(answers.cardio_level, cardioSaved(person), id, body.feel, before.limit, before.guess);
     db.setSetting('cardio-feel:' + person, JSON.stringify(after.saved));
     send(res, 200, Object.assign(cardioFor(person), { moved: after.moved }));
     return true;

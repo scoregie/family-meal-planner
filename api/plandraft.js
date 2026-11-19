@@ -283,7 +283,7 @@ function userText(ctx, people, note, results) {
     if (scores.length) lines.push('', p.name + '’s scores for meals in earlier plans (bring back what they scored 8 or more; leave out, for them, what they scored 4 or less): ' + scores.join('; ') + '.');
     if (fb.notes.length) lines.push('', 'What ' + p.name + ' said they didn’t like (act on these: change the dish for them, or the whole meal if it suits everyone):',
       '<feedback>' + fb.notes.map(n => n.dish + ': ' + n.note).join('\n') + '</feedback>');
-    const cardio = planbuilder.cardioNow(p.answers, p.cardio);
+    const cardio = planbuilder.cardioNow(p.answers, p.cardio, p.measured);
     if (cardio.known) lines.push('', p.name + '’s cardio level now is ' + cardio.level + ' of 5, “' + cardio.name + '” (from About me and how their sessions felt). Fit their cardio sessions to it, such as “' +
       planbuilder.cardioSession('Walk', cardio) + '”, and say how hard it should feel: ' + cardio.how + (cardio.why ? ' ' + cardio.why : ''));
     const tried = Object.entries(p.tried || {});

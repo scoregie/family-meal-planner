@@ -1,6 +1,8 @@
 // Builds the "Health sync" Apple Shortcut as a file, ready to sign on a Mac.
 //
-// The shortcut reads today's steps, Move (active energy), weight and food totals from Apple Health
+// The shortcut reads today's steps, Move (active energy), weight, food totals, and from an Apple
+// Watch, cardio fitness (VO2 max, only on days the watch makes a new estimate) and resting heart
+// rate from Apple Health
 // and posts them to this server's /auth/health-sync. It asks for the person's sync key when it is
 // added, so one signed file works for everyone in the family.
 //
@@ -99,7 +101,10 @@ function build(syncUrl) {
   const protein = sumToday('Protein');
   const carbs = sumToday('Carbohydrates');
   const fat = sumToday('Total Fat');
-  acts.push(...steps.acts, ...move.acts, weight.act, ...food.acts, ...protein.acts, ...carbs.acts, ...fat.acts);
+  // Apple Watch only: the newest reading today (none on days without one, or without a watch).
+  const vo2 = findToday('Cardio Fitness', true);
+  const resting = findToday('Resting Heart Rate', true);
+  acts.push(...steps.acts, ...move.acts, weight.act, ...food.acts, ...protein.acts, ...carbs.acts, ...fat.acts, vo2.act, resting.act);
 
   const dayUid = uuid();
   acts.push(action('format.date', {
@@ -125,6 +130,8 @@ function build(syncUrl) {
       row('protein', [protein.ref]),
       row('carbs', [carbs.ref]),
       row('fat', [fat.ref]),
+      row('vo2max', [out(vo2.uid, 'Health Samples')]),
+      row('resting_hr', [out(resting.uid, 'Health Samples')]),
     ]),
   }));
 

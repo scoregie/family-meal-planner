@@ -327,7 +327,14 @@ function drawCardio(box, ticked) {
       line.appendChild(document.createTextNode(what + ". "));
     }
     line.appendChild(document.createTextNode(isWalk(text) ? c.walkHow : c.how));
+    // A level that came from the Apple Watch (they haven't picked one in About me) says so.
+    if (c.from === "watch" && c.vo2) line.appendChild(document.createTextNode(" Set from your Apple Watch cardio fitness (" + c.vo2.value + "); you can pick your own in About me."));
     box.appendChild(line);
+  }
+  // Resting heart rate up today (from an Apple Watch): a consideration, not a rule.
+  if (c.resting) {
+    box.appendChild(el("p", "cardio-rest", "Your resting heart rate is " + c.resting.today + " today; it’s usually about " + c.resting.usual +
+      ". That can come with illness, poor sleep or a hard week, so you might consider an easier session or a rest today."));
   }
   if (!ticked) return;
   var id = box.dataset.session;

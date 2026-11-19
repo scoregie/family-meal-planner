@@ -58,11 +58,25 @@ function clamp(level, limit) {
 
 // The person's level now: their About me start plus any steps from how sessions felt.
 // `saved` is what feelAfter() last returned ({base, offset}); a changed About me answer starts again.
-function levelNow(answer, saved, limit) {
+// `guess` is a starting level from somewhere else (an Apple Watch cardio fitness reading, see
+// levelFromVo2), used only when they haven't picked an About me answer.
+function levelNow(answer, saved, limit, guess) {
   const base = startLevel(answer);
-  const start = base == null ? 1 : base;   // "Not sure": treat as building up, like the old plans
+  const start = base != null ? base : guess != null ? guess : 1;   // "Not sure": building up, like the old plans
   const offset = saved && saved.base === answer ? Number(saved.offset) || 0 : 0;
   return clamp(start + offset, limit);
+}
+
+// A rough starting level from an Apple Watch cardio fitness reading (VO2 max, in mL/kg/min).
+// The steps between levels are for a 30-year-old (lower for women) and come down about 3.5
+// a decade after 30, roughly following published fitness tables. It's only a starting point:
+// "Too easy" and "Too hard" correct it.
+const VO2_STEPS = { Male: [30, 36, 42, 47, 52], Female: [26, 31, 36, 41, 46] };
+function levelFromVo2(vo2, age, sex) {
+  if (!Number.isFinite(vo2)) return null;
+  const steps = VO2_STEPS[sex] || VO2_STEPS.Male.map((m, i) => (m + VO2_STEPS.Female[i]) / 2);
+  const older = Math.max(0, (Number(age) || 30) - 30) * 0.35;
+  return steps.filter(s => vo2 >= s - older).length;
 }
 
 // What to show for a level: {level, name, walk, other, how}.
@@ -75,9 +89,9 @@ function describe(level) {
 // saying again for the same session replaces the first answer, and `moved` marks the answer that
 // changed the level. Gives back the new saved record, `moved` (+1 stepped up, -1 stepped back,
 // or 0) and the new level.
-function feelAfter(answer, saved, id, feel, limit) {
+function feelAfter(answer, saved, id, feel, limit, guess) {
   const same = saved && saved.base === answer;   // a changed About me answer starts again
-  const before = levelNow(answer, saved, limit);
+  const before = levelNow(answer, saved, limit, guess);
   const feels = (same && Array.isArray(saved.feels) ? saved.feels : []).filter(f => f.id !== id);
   // Only answers since the level last changed count, so each step needs two more "too easy".
   let lastMove = -1;
@@ -91,6 +105,6 @@ function feelAfter(answer, saved, id, feel, limit) {
   return { saved: { base: answer, offset, feels: feels.concat(entry).slice(-30) }, moved, level: clamp(before + moved, limit) };
 }
 
-const Cardio = { START, LEVELS, TOP, startLevel, levelNow, describe, feelAfter, clamp, session };
+const Cardio = { START, LEVELS, TOP, startLevel, levelNow, describe, feelAfter, clamp, session, levelFromVo2 };
 if (typeof module === 'object' && module.exports) module.exports = Cardio;
 else window.Cardio = Cardio;

@@ -108,7 +108,8 @@ function csvRows(text) {
 function sensible(kind, value, date) {
   if (!Number.isFinite(value) || !date || date < '2005-01-01') return false;
   const limits = { weight: [20, 400], steps: [1, 150000], active_energy: [1, 40000], workouts: [1, 20],
-    workout_minutes: [1, 1440], energy_in: [1, 60000], protein_in: [0.1, 1000], carbs_in: [0.1, 2000], fat_in: [0.1, 1000] };
+    workout_minutes: [1, 1440], energy_in: [1, 60000], protein_in: [0.1, 1000], carbs_in: [0.1, 2000], fat_in: [0.1, 1000],
+    vo2max: [10, 90], resting_hr: [25, 150] };   // cardio fitness (mL/kg/min) and resting heart rate (beats a minute)
   const [low, high] = limits[kind] || [-Infinity, Infinity];
   return value >= low && value <= high;
 }
@@ -153,12 +154,14 @@ function attr(line, name) {
 }
 
 // Reads an Apple Health export (a zip with apple_health_export/export.xml, often hundreds of MB)
-// a line at a time, keeping only weight, steps, active energy and workouts.
+// a line at a time, keeping only weight, steps, active energy, workouts, cardio fitness (VO2 max)
+// and resting heart rate.
 async function readAppleHealth(file) {
   const entry = zip.list(file).find(e => /(^|\/)export\.xml$/.test(e.name));
   if (!entry) throw new Error('no export.xml in this zip');
 
   const weights = new Map();     // date -> the last weight that day
+  const hearts = new Map();      // "vo2max|date" or "resting_hr|date" -> the last value that day (Apple Watch)
   const perSource = new Map();   // "kind|date|source" -> total. Phone and watch both count steps,
                                  // so we add up each source, then keep the biggest (not the sum).
   const workouts = new Map();    // date -> {count, minutes}
@@ -171,6 +174,8 @@ async function readAppleHealth(file) {
       if (type === 'HKQuantityTypeIdentifierBodyMass') {
         const unit = attr(line, 'unit');
         weights.set(date, unit === 'lb' ? value * KG_PER_LB : value);
+      } else if (type === 'HKQuantityTypeIdentifierVO2Max' || type === 'HKQuantityTypeIdentifierRestingHeartRate') {
+        hearts.set((type === 'HKQuantityTypeIdentifierVO2Max' ? 'vo2max|' : 'resting_hr|') + date, value);
       } else if (type === 'HKQuantityTypeIdentifierStepCount' || type === 'HKQuantityTypeIdentifierActiveEnergyBurned') {
         const kind = type === 'HKQuantityTypeIdentifierStepCount' ? 'steps' : 'active_energy';
         const amount = kind === 'active_energy' && attr(line, 'unit') === 'kcal' ? value * KJ_PER_KCAL : value;
@@ -196,6 +201,10 @@ async function readAppleHealth(file) {
     if (sensible(kind, value, date)) rows.push({ date, kind, value: Math.round(value * 100) / 100, unit });
   };
   for (const [date, kg] of weights) add(date, 'weight', kg, 'kg');
+  for (const [k, value] of hearts) {
+    const [kind, date] = k.split('|');
+    add(date, kind, value, kind === 'vo2max' ? 'mL/kg/min' : 'bpm');
+  }
   const best = new Map();   // "kind|date" -> the biggest source total
   for (const [key, total] of perSource) {
     const [kind, date] = key.split('|');
@@ -276,6 +285,8 @@ const PREFER = {
   weight: ['manual', 'apple-health', 'apple-shortcut', 'lose-it'],
   steps: ['apple-health', 'apple-shortcut', 'lose-it', 'manual'],
   active_energy: ['apple-health', 'apple-shortcut'],
+  vo2max: ['apple-health', 'apple-shortcut'],
+  resting_hr: ['apple-health', 'apple-shortcut'],
   energy_in: ['lose-it', 'apple-shortcut'],
   protein_in: ['lose-it', 'apple-shortcut'],
   carbs_in: ['lose-it', 'apple-shortcut'],
@@ -322,7 +333,7 @@ function emptyWeeks(firstWeek, weeks, today) {
     const start = addDays(firstWeek, 7 * i);
     index[start] = list.length;
     list.push({ week: start, weight: [], steps: [], active_energy: [], workouts: 0, workout_minutes: 0,
-      energy_in: [], protein_in: [], meals: 0, plan_kj: {}, plan_protein: {}, scores: [], sessions: 0 });
+      energy_in: [], protein_in: [], vo2max: [], resting_hr: [], meals: 0, plan_kj: {}, plan_protein: {}, scores: [], sessions: 0 });
   }
   const weekOf = date => (date >= firstWeek && date <= today ? list[index[mondayOf(date)]] : null);
   return { list, weekOf };
@@ -330,7 +341,7 @@ function emptyWeeks(firstWeek, weeks, today) {
 
 // Puts each measurement into its week: daily numbers are listed, workouts are added up.
 function addMeasurements(byKind, weekOf) {
-  for (const kind of ['weight', 'steps', 'active_energy', 'energy_in', 'protein_in']) {
+  for (const kind of ['weight', 'steps', 'active_energy', 'energy_in', 'protein_in', 'vo2max', 'resting_hr']) {
     for (const [date, v] of byKind[kind] || []) {
       const w = weekOf(date);
       if (w) w[kind].push(v.value);
@@ -381,6 +392,8 @@ function weekAverages(w) {
     workout_minutes: round(w.workout_minutes, 0),
     energy_in: round(average(w.energy_in), 0),
     protein_in: round(average(w.protein_in), 0),
+    vo2max: round(average(w.vo2max), 1),
+    resting_hr: round(average(w.resting_hr), 0),
     meals: w.meals,
     plan_kj: round(average(Object.values(w.plan_kj)), 0),
     plan_protein: round(average(Object.values(w.plan_protein)), 0),

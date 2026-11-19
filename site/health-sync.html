@@ -35,7 +35,7 @@ details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.
 <body>
 <main>
   <div class="top">
-    <div><h1>Health sync</h1><p class="sub" id="sub">Send your steps, Move, weight and food from Apple Health to the Progress page every day</p></div>
+    <div><h1>Health sync</h1><p class="sub" id="sub">Send your steps, Move, weight, food and Apple Watch cardio fitness from Apple Health to the Progress page every day</p></div>
     <a class="btn" href="progress.html">← Progress</a>
   </div>
   <div id="msg"></div>
@@ -103,6 +103,7 @@ details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.
         <li><b>Move.</b> The same three actions again, with type <b>Active Energy</b> and the variable named <b>Move</b>.</li>
         <li><b>Weight.</b> <b>Find Health Samples</b> with type <b>Weight</b>, Start Date is today, <b>Sort by</b> Start Date, <b>Order</b> Latest First, <b>Limit</b> on, 1. Then <b>Set Variable</b> named <b>Weight</b>, set to <b>Health Samples</b>.</li>
         <li><span class="opt">(Optional, if Lose It writes to Apple Health)</span> <b>Food.</b> Repeat step 2 four times, with types <b>Dietary Energy</b>, <b>Protein</b>, <b>Carbohydrates</b> and <b>Total Fat</b>, and variables named <b>Food</b>, <b>Protein</b>, <b>Carbs</b> and <b>Fat</b>.</li>
+        <li><span class="opt">(Optional, with an Apple Watch)</span> <b>Cardio fitness.</b> Repeat step 3 (the Weight one) twice, with types <b>Cardio Fitness</b> and <b>Resting Heart Rate</b>, and variables named <b>Fitness</b> and <b>Resting</b>. The watch makes a new cardio fitness estimate on some days only, after brisk outdoor walks or runs.</li>
         <li><b>The date.</b> Add <b>Date</b> (it says Current Date), then <b>Format Date</b>: tap Date Format, choose <b>Custom</b>, and type <code>yyyy-MM-dd</code>. Then <b>Set Variable</b> named <b>Day</b>, set to <b>Formatted Date</b>.</li>
         <li><b>Send it.</b> Add <b>Get Contents of URL</b>. Paste your sync address (from step 1) as the URL, then tap the arrow to show more:
           <ul>
@@ -119,6 +120,8 @@ details.how>summary{cursor:pointer;font-weight:700;color:var(--accent);padding:.
                 <tr class="opt"><td><code>protein</code></td><td>Number</td><td>Protein (optional)</td></tr>
                 <tr class="opt"><td><code>carbs</code></td><td>Number</td><td>Carbs (optional)</td></tr>
                 <tr class="opt"><td><code>fat</code></td><td>Number</td><td>Fat (optional)</td></tr>
+                <tr class="opt"><td><code>vo2max</code></td><td>Text</td><td>Fitness (optional, Apple Watch)</td></tr>
+                <tr class="opt"><td><code>resting_hr</code></td><td>Text</td><td>Resting (optional, Apple Watch)</td></tr>
               </table></li>
           </ul></li>
         <li><span class="opt">(Optional)</span> Add <b>Get Dictionary Value</b>: key <code>message</code> from Contents of URL, then <b>Show Notification</b> with the Dictionary Value, so you see “Synced steps, Move…”.</li>
@@ -226,7 +229,8 @@ function copyRow(label, value) {
   return wrap;
 }
 
-var NAMES = { steps: "steps", active_energy: "Move", weight: "weight", energy_in: "food", protein_in: "protein", carbs_in: "carbs", fat_in: "fat" };
+var NAMES = { steps: "steps", active_energy: "Move", weight: "weight", energy_in: "food", protein_in: "protein", carbs_in: "carbs", fat_in: "fat",
+  vo2max: "cardio fitness", resting_hr: "resting heart rate" };
 
 // The description to paste into the Shortcuts app ("Describe a Shortcut" in iOS 27).
 function describeText(url, key) {
@@ -235,9 +239,10 @@ function describeText(url, key) {
     "2. Do the same for Active Energy and save it as Move.\n" +
     "3. Find the latest Weight sample from today (sort by start date, latest first, limit 1) and save it as Weight.\n" +
     "4. Do the same as step 1 for Dietary Energy, Protein, Carbohydrates and Total Fat, saved as Food, Protein, Carbs and Fat.\n" +
-    "5. Format the current date as yyyy-MM-dd and save it as Day.\n" +
-    "6. Use Get Contents of URL to POST to " + url + " with the header Authorization set to \"Bearer " + key + "\" and a JSON request body with these fields: date = Day, steps = Steps, active_energy = Move, weight = Weight, energy_unit = \"kJ\", food_energy = Food, protein = Protein, carbs = Carbs, fat = Fat.\n" +
-    "7. Show a notification with the message value from the response.";
+    "5. Do the same as step 3 for Cardio Fitness and Resting Heart Rate, saved as Fitness and Resting.\n" +
+    "6. Format the current date as yyyy-MM-dd and save it as Day.\n" +
+    "7. Use Get Contents of URL to POST to " + url + " with the header Authorization set to \"Bearer " + key + "\" and a JSON request body with these fields: date = Day, steps = Steps, active_energy = Move, weight = Weight, energy_unit = \"kJ\", food_energy = Food, protein = Protein, carbs = Carbs, fat = Fat, vo2max = Fitness, resting_hr = Resting.\n" +
+    "8. Show a notification with the message value from the response.";
 }
 
 // For the owner: the step-by-step description of the Shortcut, for making it by hand.

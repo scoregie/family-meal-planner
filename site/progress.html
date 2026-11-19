@@ -588,6 +588,12 @@ function renderCharts(d) {
     note: "Average per day logged." }));
   charts.appendChild(chartCard({ title: "Steps (a day)", kind: "bar", unit: "steps", points: points("steps"),
     note: "Average per day, from Apple Health or Lose It." }));
+  charts.appendChild(chartCard({ title: "Cardio fitness (VO2 max)", kind: "line", unit: "mL/kg/min", places: 1, points: points("vo2max"),
+    note: "Apple Watch’s estimate of how fit you are for cardio, from walks and runs outdoors. Higher is fitter.",
+    empty: "No readings yet. An Apple Watch records these on brisk outdoor walks and runs; Health sync or an Apple Health export brings them here." }));
+  charts.appendChild(chartCard({ title: "Resting heart rate (beats a minute)", kind: "line", unit: "bpm", points: points("resting_hr"),
+    note: "Weekly average from an Apple Watch. It often drops a little as fitness improves.",
+    empty: "No readings yet. These come from an Apple Watch, through Health sync or an Apple Health export." }));
   charts.appendChild(chartCard({ title: "Workout time (minutes a week)", kind: "bar", unit: "min",
     points: points("workout_minutes", function (w) { return w.workouts ? fmt(w.workouts) + (w.workouts === 1 ? " workout" : " workouts") : null; }),
     note: "Workouts recorded in Apple Health.", empty: "No workouts recorded. These come from an Apple Health export." }));
@@ -682,7 +688,8 @@ function render(d) {
 }
 
 // The Apple Health sync card at the top: a one-line status, and (opened) the details and the set-up link.
-var SYNCNAMES = { steps: "steps", active_energy: "Move", weight: "weight", energy_in: "food", protein_in: "protein", carbs_in: "carbs", fat_in: "fat" };
+var SYNCNAMES = { steps: "steps", active_energy: "Move", weight: "weight", energy_in: "food", protein_in: "protein", carbs_in: "carbs", fat_in: "fat",
+  vo2max: "cardio fitness", resting_hr: "resting heart rate" };
 // When the phone last sent numbers: "today, 7:05 am" or a date.
 function syncWhen(ms) {
   var d = new Date(ms);
@@ -712,8 +719,8 @@ function renderSync() {
       if (last.skipped && last.skipped.length) body.appendChild(el("p", "note err", "Couldn’t read: " + last.skipped.join(", ") + "."));
     }
     body.appendChild(el("p", "note", k.hasKey
-      ? "An iPhone shortcut sends your steps, Move, weight and food from Apple Health here when you plug your phone in at night."
-      : "Send your steps, Move, weight and food from Apple Health here every day, with a shortcut on your iPhone."));
+      ? "An iPhone shortcut sends your steps, Move, weight, food and Apple Watch cardio fitness from Apple Health here when you plug your phone in at night."
+      : "Send your steps, Move, weight, food and Apple Watch cardio fitness from Apple Health here every day, with a shortcut on your iPhone."));
     var a = el("a", "btn small" + (k.hasKey ? "" : " primary"), k.hasKey ? "Health sync settings" : "Set up Health sync");
     a.href = "health-sync.html" + who;
     body.appendChild(a);

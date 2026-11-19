@@ -1,5 +1,6 @@
 // Health sync: an iPhone Shortcut sends the day's numbers from Apple Health (steps, Move energy,
-// weight, and food totals, which Lose It can write into Apple Health) to the Progress page.
+// weight, food totals, which Lose It can write into Apple Health, and from an Apple Watch, cardio
+// fitness (VO2 max) and resting heart rate) to the Progress page.
 //
 // Shortcuts can't log in with a cookie, so each person makes a personal sync key on the Health
 // sync page. Only a hash of the key is stored. The key only lets someone add these numbers for
@@ -8,7 +9,8 @@
 //   POST /auth/health-sync              public (under /auth/, so Caddy lets it through without a
 //                                       login cookie). Header "Authorization: Bearer <key>".
 //                                       Body: {date: "2026-11-08", steps, active_energy, weight,
-//                                       energy_unit: "kJ" | "kcal", food_energy, protein, carbs, fat}
+//                                       energy_unit: "kJ" | "kcal", food_energy, protein, carbs, fat,
+//                                       vo2max, resting_hr}
 //   GET    /api/health/key?person=      logged in: whether there is a key, and the last sync
 //   POST   /api/health/key?person=      make a new key (shown once; replaces the old one)
 //   DELETE /api/health/key?person=      turn sync off
@@ -24,7 +26,8 @@ const shortcutfile = require('./shortcutfile');
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const KJ_PER_KCAL = 4.184;
-const NAMES = { steps: 'steps', active_energy: 'Move', weight: 'weight', energy_in: 'food', protein_in: 'protein', carbs_in: 'carbs', fat_in: 'fat' };
+const NAMES = { steps: 'steps', active_energy: 'Move', weight: 'weight', energy_in: 'food', protein_in: 'protein', carbs_in: 'carbs', fat_in: 'fat',
+  vo2max: 'cardio fitness', resting_hr: 'resting heart rate' };
 const PER_HOUR = 30;              // syncs per key per hour
 const recentSyncs = new Map();    // key hash -> [times]
 
@@ -90,6 +93,9 @@ async function sync(req, res) {
   add('protein_in', num(b.protein), 'g', b.protein);
   add('carbs_in', num(b.carbs), 'g', b.carbs);
   add('fat_in', num(b.fat), 'g', b.fat);
+  // From an Apple Watch: today's cardio fitness estimate (VO2 max, only on some days) and resting heart rate.
+  add('vo2max', num(b.vo2max), 'mL/kg/min', b.vo2max);
+  add('resting_hr', num(b.resting_hr), 'bpm', b.resting_hr);
   const notSaved = skipped.length ? ' Couldn’t read: ' + skipped.join(', ') + '.' : '';
   if (!rows.length) {
     db.setSetting('healthsync-last:' + person, JSON.stringify({ at: Date.now(), date, kinds: [], skipped }));
