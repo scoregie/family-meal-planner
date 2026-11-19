@@ -231,10 +231,8 @@ function focusFold(ex) {
 // which plan, the week as the plan names it (Stock-up weeks aren't counted, so Week 1 is 1), and
 // the session. A new plan gets new labels, so its sessions count afresh.
 function sessionId(index, day, slot) {
-  var n = 0;
-  for (var i = 0; i <= index && i < PLAN.weeks.length; i++) if (PLAN.weeks[i].kind !== "stockup") n++;
   var plan = String(PLAN.id || "plan").replace(/[^A-Za-z0-9-]/g, "").slice(0, 40) || "plan";
-  return plan + "|" + Math.max(n, 1) + "|" + String(day.day).slice(0, 3) + "-" + slot;
+  return plan + "|" + weekNumber(index) + "|" + String(day.day).slice(0, 3) + "-" + slot;
 }
 
 // One exercise session to tick, such as "Cardio: Brisk walk 30 minutes". Saved as "Mon-cardio".

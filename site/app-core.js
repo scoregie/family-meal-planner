@@ -3,7 +3,8 @@
 //
 // How the page works, in short:
 //   1. Load plan.json and draw the week tabs along the top.
-//   2. The address after "#" says which week and view to show, for example #week-2-meals.
+//   2. The address after "#" says which week and view to show, for example #week-2-meals. The
+//      number is the week as the plan names it (Week 2), not counting stock-up weeks.
 //      Changing it (by tapping a tab or a button along the bottom) redraws the page.
 //   3. Ticks, ratings and "At home" marks are saved on this device straight away (localStorage),
 //      then sent to the server (api/server.js) so every phone sees the same lists.
@@ -38,6 +39,8 @@ var openRate = "";  // which meal's rating box is open, as "week|Day|Meal"
 
 // The localStorage key for each of those. They include the plan id, so a new plan starts clean.
 var HAVE_KEY = "coles-plan-have-v1";
+var PLACE_KEY = "plan-place";   // the week and view last shown on this device (#week-1-meals).
+                                // (Before v1.10.2 it was "coles-plan-place", counting stock-up weeks.)
 var TICKS_KEY = "", EX_KEY = "", EATEN_KEY = "", RATES_KEY = "";
 var TICKS_BASE = "", EX_BASE = "", EATEN_BASE = "";   // the start of those keys, before the person's name
 
@@ -464,7 +467,35 @@ function usePlan(p) {
 
 // Goes to a week and view by changing the address (#week-2-meals). The "hashchange" listener redraws.
 function go(weekIndex, toView) {
-  location.hash = "week-" + (weekIndex + 1) + (toView === "today" ? "" : "-" + toView);
+  location.hash = "week-" + weekNumber(weekIndex) + (toView === "today" ? "" : "-" + toView);
+}
+
+// A week's number as the plan names it, from its place in PLAN.weeks: Week 1 is 1 even when
+// Stock-up 1 comes before it. Stock-up weeks aren't counted (they show as part of the week
+// after them), so a stock-up week gets the number of the week it belongs to.
+function weekNumber(index) {
+  var n = 0;
+  for (var i = 0; i < PLAN.weeks.length; i++) {
+    if (PLAN.weeks[i].kind !== "stockup") n++;
+    if (i >= index && PLAN.weeks[i].kind !== "stockup") return n;
+  }
+  return Math.max(n, 1);
+}
+
+// A week's name for headings and tabs: the plan's own ("Stock-up 1", "Week 1"), or "Week 1"
+// worked out from where it is if the plan doesn't give one.
+function weekName(index) {
+  var w = PLAN.weeks[index] || {};
+  return w.name || (w.kind === "stockup" ? "Stock-up for week " : "Week ") + weekNumber(index);
+}
+
+// The place in PLAN.weeks of "Week n" (the reverse of weekNumber), or -1 if the plan has no such week.
+function weekAt(n) {
+  var count = 0;
+  for (var i = 0; i < PLAN.weeks.length; i++) {
+    if (PLAN.weeks[i].kind !== "stockup" && ++count === n) return i;
+  }
+  return -1;
 }
 
 // Draws the row of week tabs (stock-up weeks are folded into the week after them), each with
@@ -478,7 +509,7 @@ function renderTabs() {
     tab.type = "button";
     // Plain buttons: the chosen week is marked "current" (they aren't full tabs with panels).
     if (i === week) tab.setAttribute("aria-current", "true");
-    tab.appendChild(el("b", null, wk.name || ("Week " + (i + 1))));
+    tab.appendChild(el("b", null, weekName(i)));
     tab.appendChild(el("span", null, "~" + Appearance.money(total(i), PLAN && PLAN.currency, true)));
     tab.onclick = function () { go(i, view); };
     row.appendChild(tab);
@@ -661,7 +692,7 @@ function dayNav(days, rerender) {
   var h = el("h2", null, FULLDAY[names[at]] || names[at] || "");
   if (names[at] === TODAY) h.appendChild(el("span", "today-tag", "Today"));
   title.appendChild(h);
-  title.appendChild(el("span", null, PLAN.weeks[week].name || "Week " + (week + 1)));
+  title.appendChild(el("span", null, weekName(week)));
   var next = el("button", "btn arrow", "›");
   next.type = "button";
   next.setAttribute("aria-label", "Next day");

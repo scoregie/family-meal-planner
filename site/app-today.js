@@ -188,7 +188,7 @@ function renderToday() {
 
   var top = el("div", "td-date");
   top.appendChild(el("h2", null, now.toLocaleDateString(Appearance.locale(), { weekday: "long", day: "numeric", month: "long" })));
-  top.appendChild(el("span", null, (USER ? "For " + USER + " · " : "") + (w.name || "Week " + (week + 1))));
+  top.appendChild(el("span", null, (USER ? "For " + USER + " · " : "") + weekName(week)));
   panel.appendChild(top);
 
   // Meals: today's rows for this person.

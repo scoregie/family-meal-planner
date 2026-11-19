@@ -377,7 +377,7 @@ function draw() {
 
 // Back to More, in the week the app was last on.
 try {
-  var last = /^#week-(\d+)/.exec(localStorage.getItem("coles-plan-place") || "");
+  var last = /^#week-(\d+)/.exec(localStorage.getItem("plan-place") || "");
   $("back").href = "./#week-" + (last ? last[1] : "1") + "-more";
 } catch (e) {}
 
