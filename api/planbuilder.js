@@ -45,6 +45,7 @@ let EXERCISES = ON_SERVER ? require('./exercises.json').exercises : [];
 // The vegetable and fruit serves to aim for, and how a plan measures up (healthtargets.js).
 // The phone app loads healthtargets.js before this file, which puts it on window.
 const TARGETS = ON_SERVER ? require('./healthtargets') : window.HealthTargets;
+const CARDIO = ON_SERVER ? require('./cardio') : window.Cardio;   // cardio levels (how fit someone is)
 
 // Local shop names, pack sizes and prices for other countries (made by tools/build_prices.py).
 // Australia's are in library.json. A copy of the app without the file prices everything in AUD.
@@ -781,6 +782,44 @@ function cardioFor(a, equipment, seated) {
   return { cardio, otherCardio, poolDays };
 }
 
+// The highest cardio level (see cardio.js) that suits someone, and why it is lower than the top:
+// {limit, why}. A heart condition, pregnancy, low energy or chronic pain keep it steady (level 2);
+// a sore foot, ankle, knee or hip means walks stay walks (walkOnly: no jogging), but swims and rides can still get harder.
+function cardioLimit(a) {
+  const conditions = new Set(list(a.conditions));
+  const support = new Set(list(a.support_needs));
+  if (conditions.has('Heart condition')) return { limit: 2, why: 'You said you have a heart condition, so the app keeps your cardio steady. Consider asking your GP or cardiologist before going harder.' };
+  if (conditions.has('Pregnant or breastfeeding')) return { limit: 2, why: 'You said you’re pregnant or breastfeeding, so the app keeps your cardio steady. Consider asking your midwife or GP before going harder.' };
+  if (support.has('Low energy or chronic fatigue') || support.has('Chronic pain')) return { limit: 2, why: 'You mentioned low energy or chronic pain, so the app keeps your cardio steady.' };
+  const injuryText = (String(a.injuries || '') + ' ' + String(a.gp || '')).toLowerCase();
+  const lowerBody = INJURY_FLAGS.some(([re, flags]) => flags.some(f => LOWER_BODY.includes(f)) && mentions(re, injuryText));
+  if (lowerBody) return { limit: CARDIO.TOP, walkOnly: true, why: 'You mentioned a sore foot, ankle, knee or hip, so walks stay walks (no jogging). Consider asking your GP or physio before adding running.' };
+  return { limit: CARDIO.TOP, why: '' };
+}
+
+// Someone's cardio level now (see cardio.js), from their About me answer and how their sessions
+// felt (`saved`, from the exercises page). Gives {known, level, name, walk, walkDetail, walkHow,
+// other, how, limit, walkCap, why}. `walk`, `walkDetail` and `walkHow` are for walks, which a sore
+// leg keeps at level 2; `other` and `how` are for swims and rides. `known` is false when they
+// haven't answered and haven't said how a session felt.
+function cardioNow(a, saved) {
+  if (!CARDIO) return { known: false };   // a phone app that doesn't load cardio.js yet: plain walks
+  const limits = cardioLimit(a || {});
+  const answer = (a || {}).cardio_level;
+  const level = CARDIO.levelNow(answer, saved, limits.limit);
+  const known = CARDIO.startLevel(answer) !== null || !!(saved && saved.base === answer && saved.offset);
+  const walkCap = limits.walkOnly ? 2 : null;
+  const walkAt = CARDIO.describe(walkCap == null ? level : Math.min(level, walkCap));
+  return Object.assign(CARDIO.describe(level), { walk: walkAt.walk, walkDetail: walkAt.walkDetail, walkHow: walkAt.how,
+    known, limit: limits.limit, walkCap, why: limits.why });
+}
+
+// A 30-minute example session at someone's level now (`now` from cardioNow), for the AI's instructions.
+function cardioSession(kind, now) {
+  return CARDIO.session(kind, now.level, 30, now.walkCap);
+}
+
+
 // What each health condition means for exercise, in the plan's words.
 const CONDITION_NOTES = {
   'Type 1 diabetes': 'You said you have type 1 diabetes. It may be worth checking with your diabetes team about insulin and carbs around exercise, and keeping fast-acting carbs with you during sessions.',
@@ -836,6 +875,10 @@ function exerciseWeek(w, sessions, minutes, c) {
   const [s, count] = sessions;
   const sDays = strengthDays[s];
   const mins = minutes + (minutes >= 20 ? w * 5 : 0);
+  // One cardio session: at their level if it's known ("Brisk walk 30 minutes: add hills or
+  // stairs"), otherwise the plain "Walk 30 minutes".
+  const sessionOf = kind => c.level == null ? kind + ' ' + mins + ' minutes' : CARDIO.session(kind, c.level, mins, c.walkCap);
+  const lower = text => text.charAt(0).toLowerCase() + text.slice(1);
   let cDays = cardioOrder.filter(d => !sDays.includes(d)).slice(0, count);
   // Public pool: swims only on the days they can get there; any other cardio days are walks.
   let swimDays = cDays;
@@ -844,7 +887,7 @@ function exerciseWeek(w, sessions, minutes, c) {
     cDays = swimDays.concat(cardioOrder.filter(d => !sDays.includes(d) && !swimDays.includes(d)).slice(0, count - swimDays.length));
   }
   const cardioTarget = swimDays.length === cDays.length
-    ? count + ' × ' + c.cardio.toLowerCase() + ' ' + mins + ' minutes'
+    ? count + ' × ' + lower(sessionOf(c.cardio))
     : [swimDays.length ? swimDays.length + ' × swim at the pool' : '', (cDays.length - swimDays.length) + ' × ' + c.otherCardio.toLowerCase()].filter(Boolean).join(', ') + ', ' + mins + ' minutes each';
   let ab = 0;
   return {
@@ -853,7 +896,7 @@ function exerciseWeek(w, sessions, minutes, c) {
     days: DAYS.map(day => {
       const o = { day };
       if (sDays.includes(day)) o.strength = 'Strength ' + (w < 2 ? '1' : '2') + (ab++ % 2 ? 'B' : 'A');
-      if (cDays.includes(day)) o.cardio = (swimDays.includes(day) ? c.cardio : c.otherCardio) + ' ' + mins + ' minutes';
+      if (cDays.includes(day)) o.cardio = sessionOf(swimDays.includes(day) ? c.cardio : c.otherCardio);
       if (day === 'Sun') o.mobility = 'Rest, or a gentle stretch';
       return o;
     }),
@@ -883,6 +926,16 @@ function exerciseFor(p, r, rnd) {
     : r.teen ? [[2, 3], [2, 3], [2, 4], [2, 4]]
     : [[2, 3], [2, 4], [3, 4], [3, 5]];
   const cardio = cardioFor(a, equipment, seated);
+  // How fit they are for cardio already, from About me and how their sessions felt.
+  const now = cardioNow(a, p.cardio);
+  if (now.known && !seated) {
+    cardio.level = now.level;
+    cardio.walkCap = now.walkCap;
+    // Walks kept easier for a sore leg say how hard the easier walk should feel.
+    const how = cardio.cardio === 'Walk' ? now.walkHow : now.how;
+    notes[1] = 'Warm up for 5 minutes first. How hard your cardio should feel: ' + how.charAt(0).toLowerCase() + how.slice(1);
+    if (now.why) notes.push(now.why);
+  }
   const weeks = [];
   for (let w = 0; w < 4; w++) weeks.push(exerciseWeek(w, plan[w], minutes, cardio));
   const injuries = String(a.injuries || '').trim() + ' ' + String(a.gp || '').trim();
@@ -2001,7 +2054,7 @@ function useData(data) {
 }
 
 const PlanBuilder = {
-  build, rulesFor, portionFor, allowed, exerciseFits, useData, kitchenStock, kitchenPlace, HOW_MUCH,
+  build, rulesFor, portionFor, allowed, exerciseFits, cardioNow, cardioSession, useData, kitchenStock, kitchenPlace, HOW_MUCH,
   get EXERCISES() { return EXERCISES; },
   get LIB() { return LIB; },
 };

@@ -5,11 +5,15 @@
 //   PUT  /api/exercises/avoid?person=    {id, avoid: true|false}: leave an exercise out of future plans (or not)
 //   POST /api/exercises/swap?person=     {workout, item, to, avoid}: swap item number `item` of a workout in
 //                                        the person's plan for exercise `to` (and optionally leave the old one out)
+//   GET  /api/exercises/cardio?person=   their cardio level now (cardio.js) and the sessions they've said how felt
+//   POST /api/exercises/cardio?person=   {id: "2|Mon-cardio", feel: "easy"|"right"|"hard"}: how a cardio session
+//                                        felt; two "too easy" in a row steps the level up, one "too hard" steps it back
 //
 // People can change their own; admins can change anyone's. A workout shared by everyone can only be
 // changed by an admin.
 const db = require('./db');
 const planbuilder = require('./planbuilder');
+const cardio = require('./cardio');
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const EXERCISES = planbuilder.EXERCISES;
@@ -47,10 +51,26 @@ function lineFor(e, old) {
   return start + e.name + ' (' + e.dose + '): ' + e.how;
 }
 
+// What is saved about how someone's cardio sessions felt ({base, offset, feels}), or null.
+function cardioSaved(person) {
+  try { return JSON.parse(db.getSetting('cardio-feel:' + person) || 'null'); } catch (e) { return null; }
+}
+
+// Someone's cardio level now, for the page: the level (cardio.js) plus which sessions they've
+// already said how felt (`felt`: {"2|Mon-cardio": "easy"}).
+function cardioFor(person) {
+  const profile = db.getProfile(person);
+  const saved = cardioSaved(person);
+  const now = planbuilder.cardioNow((profile && profile.answers) || {}, saved);
+  const felt = {};
+  for (const f of (saved && saved.feels) || []) felt[f.id] = f.feel;
+  return Object.assign(now, { felt, top: cardio.TOP });
+}
+
 // Answers the requests this file looks after. server.js offers every /api/ request to each
 // file in turn: this returns true if it answered, or false to let the next file try.
 async function handle(req, res, urlPath, url, me, ctx) {
-  if (!['/api/exercises', '/api/exercises/avoid', '/api/exercises/swap'].includes(urlPath)) return false;
+  if (!['/api/exercises', '/api/exercises/avoid', '/api/exercises/swap', '/api/exercises/cardio'].includes(urlPath)) return false;
   if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') {
     send(res, 403, { error: 'bad request' });
     return true;
@@ -67,8 +87,28 @@ async function handle(req, res, urlPath, url, me, ctx) {
     return true;
   }
 
+  if (urlPath === '/api/exercises/cardio' && req.method === 'GET') {
+    send(res, 200, cardioFor(person));
+    return true;
+  }
+
   let body;
   try { body = await readBody(req); } catch (e) { send(res, 400, { error: 'bad request' }); return true; }
+
+  if (urlPath === '/api/exercises/cardio' && req.method === 'POST') {
+    const id = String(body.id || '');
+    if (!['easy', 'right', 'hard'].includes(body.feel) || !/^\d{1,2}\|[A-Za-z]{3}-[a-z]{1,12}$/.test(id)) {
+      send(res, 400, { error: 'bad request' });
+      return true;
+    }
+    const profile = db.getProfile(person);
+    const answers = (profile && profile.answers) || {};
+    const before = planbuilder.cardioNow(answers, cardioSaved(person));
+    const after = cardio.feelAfter(answers.cardio_level, cardioSaved(person), id, body.feel, before.limit);
+    db.setSetting('cardio-feel:' + person, JSON.stringify(after.saved));
+    send(res, 200, Object.assign(cardioFor(person), { moved: after.moved }));
+    return true;
+  }
 
   if (urlPath === '/api/exercises/avoid' && req.method === 'PUT') {
     if (!EXERCISES.some(e => e.id === body.id)) { send(res, 400, { error: 'unknown exercise' }); return true; }

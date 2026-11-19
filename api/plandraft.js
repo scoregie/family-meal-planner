@@ -130,6 +130,8 @@ function household(ctx) {
         measured: planextras.measuredFor(person),
         tried: planextras.triedFor(person),
         avoid: (() => { try { return JSON.parse(db.getSetting('exercise-avoid:' + person) || '[]'); } catch (e) { return []; } })(),
+        // How their cardio sessions felt, which moves their cardio level (cardio.js).
+        cardio: (() => { try { return JSON.parse(db.getSetting('cardio-feel:' + person) || 'null'); } catch (e) { return null; } })(),
       };
     });
   // Blood test files from My files, for the people who said yes in About me (planextras.js).
@@ -281,6 +283,9 @@ function userText(ctx, people, note, results) {
     if (scores.length) lines.push('', p.name + '’s scores for meals in earlier plans (bring back what they scored 8 or more; leave out, for them, what they scored 4 or less): ' + scores.join('; ') + '.');
     if (fb.notes.length) lines.push('', 'What ' + p.name + ' said they didn’t like (act on these: change the dish for them, or the whole meal if it suits everyone):',
       '<feedback>' + fb.notes.map(n => n.dish + ': ' + n.note).join('\n') + '</feedback>');
+    const cardio = planbuilder.cardioNow(p.answers, p.cardio);
+    if (cardio.known) lines.push('', p.name + '’s cardio level now is ' + cardio.level + ' of 5, “' + cardio.name + '” (from About me and how their sessions felt). Fit their cardio sessions to it, such as “' +
+      planbuilder.cardioSession('Walk', cardio) + '”, and say how hard it should feel: ' + cardio.how + (cardio.why ? ' ' + cardio.why : ''));
     const tried = Object.entries(p.tried || {});
     if (tried.length) lines.push('', 'New foods ' + p.name + ' has been offered as small steps: ' + tried.map(([food, result]) => food + ' (' + result + ')').join('; ') + '. Use the ones they liked in their meals, offer "tried" and "not yet" ones again in a small amount, and add the next step.');
   }

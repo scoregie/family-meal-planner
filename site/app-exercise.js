@@ -76,7 +76,7 @@ function sessionLines(exDay) {
 var EXSLOTS = [
   ["morning", "Morning"],
   ["afternoon", "Afternoon"],
-  ["cardio", "Easy cardio"],
+  ["cardio", "Cardio"],
   ["strength", "Strength"],
   ["mobility", "Mobility"],
   ["session", "Session"],
@@ -227,10 +227,19 @@ function focusFold(ex) {
   return fold;
 }
 
-// One exercise session to tick, such as "Easy cardio: 20 minute walk". Saved as "Mon-cardio".
+// One exercise session to tick, such as "Cardio: Brisk walk 30 minutes". Saved as "Mon-cardio".
+// A cardio session also gets "At your level: ..." and, once ticked, "How did that feel?".
 function sessionRow(day, slot, done) {
   var id = day.day + "-" + slot[0];
+  var row = el("div", "sessrow");
   var label = el("label", "sess");
+  row.appendChild(label);
+  var cardioBox = isCardio(slot[0], day[slot[0]]) ? el("div", "cardio-extra") : null;
+  if (cardioBox) {
+    cardioBox.dataset.text = day[slot[0]];
+    cardioBox.dataset.session = (week + 1) + "|" + String(day.day).slice(0, 3) + "-" + slot[0];
+    row.appendChild(cardioBox);
+  }
   var box = el("input");
   box.type = "checkbox";
   box.checked = done.indexOf(id) > -1;
@@ -242,6 +251,7 @@ function sessionRow(day, slot, done) {
     exTicks[week] = list;
     save();
     updateExCount();
+    if (cardioBox) drawCardio(cardioBox, box.checked);
   };
   var text = el("span", "stxt");
   text.appendChild(el("span", "sk", slot[1]));
@@ -249,7 +259,133 @@ function sessionRow(day, slot, done) {
   label.appendChild(box);
   label.appendChild(el("span", "box"));
   label.appendChild(text);
-  return label;
+  if (cardioBox) drawCardio(cardioBox, box.checked);
+  return row;
+}
+
+// ---------- cardio level ----------
+// How fit each person is for cardio (api/cardio.js), from GET /api/exercises/cardio:
+// {person key: {known, level, name, walk, walkDetail, other, how, why, limit, top, felt}}.
+var CARDIO_NOW = {};
+var cardioAsked = {};   // person keys whose level has been asked for already
+
+// True if a session is cardio: the "cardio" slot, or a walk, jog, run, swim, ride or dance.
+function isCardio(slotKey, text) {
+  if (slotKey === "cardio") return true;
+  if (slotKey === "strength" || slotKey === "mobility") return false;
+  return /\b(walk|walking|jog|run|swim|ride|cycle|cycling|dance|cardio)\b/i.test(String(text || ""));
+}
+
+// Asks the server for this person's cardio level (once), then fills in every cardio box on the page.
+function askCardio() {
+  var key = ukey(USER);
+  if (cardioAsked[key]) return;
+  cardioAsked[key] = true;
+  fetch("/api/exercises/cardio?person=" + encodeURIComponent(key), { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d) return;
+      CARDIO_NOW[key] = d;
+      redrawCardio();
+    })
+    .catch(function () { cardioAsked[key] = false; });
+}
+
+// Fills in every cardio box on the page again (after the level arrives or changes).
+function redrawCardio() {
+  document.querySelectorAll(".cardio-extra").forEach(function (b) {
+    var tick = b.parentNode && b.parentNode.querySelector("input[type=checkbox]");
+    drawCardio(b, !!(tick && tick.checked));
+  });
+}
+
+// What a cardio session is at someone's level: "Brisk walk: add hills or stairs" for a walk,
+// jog or run, or "steady pace" for anything else.
+function cardioWhat(c, text) {
+  if (isWalk(text)) return c.walk + (c.walkDetail ? ": " + c.walkDetail : "");
+  return c.other.charAt(0).toUpperCase() + c.other.slice(1);
+}
+
+// True if a cardio session is on foot (a walk, jog or run), not a swim or ride.
+function isWalk(text) {
+  return /\b(walk|walking|jog|run)\b/i.test(String(text || ""));
+}
+
+// Draws one cardio box: "At your level: ..." and, once the session is ticked, the
+// "How did that feel?" buttons.
+function drawCardio(box, ticked) {
+  var c = CARDIO_NOW[ukey(USER)];
+  if (!c) { askCardio(); return; }
+  box.textContent = "";
+  var text = box.dataset.text || "";
+  if (c.known) {
+    var what = cardioWhat(c, text);
+    var already = text.toLowerCase().indexOf(c.walk.toLowerCase()) === 0 && (!c.walkDetail || text.toLowerCase().indexOf(c.walkDetail.toLowerCase()) > -1);
+    var line = el("p", "cardio-how");
+    if (!already) {
+      line.appendChild(el("b", null, "At your level: "));
+      line.appendChild(document.createTextNode(what + ". "));
+    }
+    line.appendChild(document.createTextNode(isWalk(text) ? c.walkHow : c.how));
+    box.appendChild(line);
+  }
+  if (!ticked) return;
+  var id = box.dataset.session;
+  var chosen = (c.felt || {})[id];
+  var ask = el("div", "cardio-feel");
+  ask.setAttribute("role", "group");
+  ask.setAttribute("aria-label", "How did that feel?");
+  ask.appendChild(el("span", null, "How did that feel?"));
+  [["easy", "Too easy"], ["right", "About right"], ["hard", "Too hard"]].forEach(function (f) {
+    var b = el("button", "btn small", f[1]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", chosen === f[0]);
+    b.onclick = function () { sayFeel(box, id, f[0]); };
+    ask.appendChild(b);
+  });
+  box.appendChild(ask);
+  if (box.dataset.said) box.appendChild(el("p", "cardio-said", box.dataset.said));
+}
+
+// Sends how a session felt, then shows what changed ("Your cardio steps up to ...").
+function sayFeel(box, id, feel) {
+  var key = ukey(USER);
+  box.querySelectorAll(".cardio-feel button").forEach(function (b) { b.disabled = true; });
+  fetch("/api/exercises/cardio?person=" + encodeURIComponent(key), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Requested-With": "app" },
+    body: JSON.stringify({ id: id, feel: feel }),
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      if (!r.ok) throw new Error(d.error || "Couldn’t save that. Try again.");
+      return d;
+    });
+  }).then(function (d) {
+    CARDIO_NOW[key] = d;
+    // Only the newest message stays: older ones ("One more Too easy...") may be out of date.
+    document.querySelectorAll(".cardio-extra").forEach(function (b) { delete b.dataset.said; });
+    box.dataset.said = feelMessage(d, feel);
+    redrawCardio();
+    var said = box.querySelector(".cardio-said");
+    if (said) said.setAttribute("role", "status");
+    // The buttons were drawn again, so keep keyboard focus on the one that was pressed.
+    var pressed = box.querySelector('.cardio-feel [aria-pressed="true"]');
+    if (pressed) pressed.focus({ preventScroll: true });
+  }).catch(function (e) {
+    box.dataset.said = e.message;
+    redrawCardio();
+  });
+}
+
+// The message after saying how a session felt.
+function feelMessage(d, feel) {
+  var what = d.walk + (d.walkDetail ? " (" + d.walkDetail + ")" : "");
+  if (d.moved > 0) return "Stepping up: your cardio is now “" + d.name + "”: " + what + ". The plan’s sessions show it as “At your level”.";
+  if (d.moved < 0) return "Stepping back to “" + d.name + "”: " + what + ". Any movement counts.";
+  if (feel === "easy" && d.level >= d.limit && d.limit < d.top && d.why) return d.why;
+  if (feel === "easy" && d.level >= d.top) return "Saved. You’re at the top level, so add a few minutes if you’d like more.";
+  if (feel === "easy") return "Saved. One more “Too easy” and your cardio steps up.";
+  return "Saved, thanks.";
 }
 
 // One workout as a fold-out list of exercises. An exercise written as "Goblet squat (3 × 10): ..."
