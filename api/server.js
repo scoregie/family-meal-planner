@@ -513,6 +513,11 @@ async function handleRequest(req, res) {
     if (urlPath.startsWith('/api/')) {
       me = auth.session(req);
       if (!me) return send(res, 401, { error: 'login needed' });
+      // Every change must come from the app's own pages, which send X-Requested-With ("files" for
+      // uploads). A form on another website can't send that header, so it can't make changes.
+      if (req.method !== 'GET' && req.method !== 'HEAD' && !['app', 'files'].includes(req.headers['x-requested-with'])) {
+        return send(res, 403, { error: 'bad request' });
+      }
       auth.refresh(req, res, me);   // keeps people logged in while they use the app
     }
 
@@ -562,4 +567,5 @@ http.createServer(handleRequest)
     try { count = db.countAccounts(); } catch (e) { /* the database problem is logged elsewhere */ }
     const older = auth.users().length ? ', older .env usernames: ' + auth.users().length : '';
     console.log('API on', PORT, '- accounts:', count + older + (accounts.needsSetup() ? ' (open the site to create the family’s first account)' : ''));
+    try { accounts.announceSetupCode(); } catch (e) { console.log('Couldn’t make the setup code:', e.message); }
   });

@@ -65,7 +65,8 @@ async function startServer() {
 
 // Fills the throwaway server with a family, answers, numbers, food and a draft waiting for review.
 async function seed(site) {
-  await api('POST', '/auth/register', { email: 'owner@example.com', name: 'Alex Smith', password: 'correct horse battery', country: 'au' });
+  const setupCode = fs.readFileSync(path.join(path.dirname(site), 'data', 'setup-code.txt'), 'utf8').trim();   // a new server asks for it
+  await api('POST', '/auth/register', { setupCode, email: 'owner@example.com', name: 'Alex Smith', password: 'correct horse battery', country: 'au' });
   await api('PUT', '/api/profile?person=alex-smith', { answers: { age: '41', sex: 'Male', height: '180', weight: '92', allergies: ['Peanuts'], diet: ['None'], injuries: 'Sore left knee', likes: 'curry, eggs', dislikes: 'olives' } });
   for (let i = 0; i < 12; i++) {
     const date = new Date(NOW - i * 86400000).toISOString().slice(0, 10);

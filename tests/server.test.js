@@ -18,8 +18,12 @@ test('a new server asks for the first account, then refuses a second one', async
   const status = await server.request('GET', '/auth/status');
   assert.equal(status.json.setup, true);
 
-  const made = await server.request('POST', '/auth/register', OWNER);
+  // Without the setup code from the server's data folder, no account is made.
+  const noCode = await server.request('POST', '/auth/register', OWNER);
+  assert.equal(noCode.status, 403);
+  const made = await server.request('POST', '/auth/register', { ...OWNER, setupCode: server.setupCode() });
   assert.equal(made.status, 200, made.text);
+  assert.equal(fs.existsSync(path.join(server.dir, 'data', 'setup-code.txt')), false, 'the code is used up');
 
   const me = await server.request('GET', '/auth/me');
   assert.equal(me.status, 200);
@@ -372,4 +376,33 @@ test('after 10 wrong passwords, logins from that address are paused', async () =
   const right = new URLSearchParams({ username: OWNER.email, password: OWNER.password, next: '/' });
   const locked = await server.request('POST', '/auth/login', right);
   assert.match(locked.location, /e=locked/, 'even the right password waits');
+});
+
+test('changing address doesn’t give more password guesses: 30 wrong tries for one login pause it', async () => {
+  server.forgetCookie();
+  const wrong = new URLSearchParams({ username: 'nobody@example.com', password: 'not it', next: '/' });
+  for (let i = 0; i < 30; i++) {
+    const res = await server.request('POST', '/auth/login', wrong, { 'X-Real-IP': '10.9.0.' + i });
+    assert.match(res.location, /e=1/);
+  }
+  const more = await server.request('POST', '/auth/login', wrong, { 'X-Real-IP': '10.9.1.1' });
+  assert.match(more.location, /e=locked/);
+});
+
+test('signing up with an email that has an account gives the same answer as a new sign-up', async () => {
+  const res = await server.request('POST', '/auth/signup', { name: 'Someone', email: OWNER.email, password: 'a long enough password' }, { 'X-Real-IP': '10.9.2.1' });
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.json.pending, true);
+});
+
+test('every change under /api/ needs the pages’ header, including Reset all and the shopping ticks', async () => {
+  server.forgetCookie();
+  const login = new URLSearchParams({ username: OWNER.email, password: OWNER.password, next: '/' });
+  await server.request('POST', '/auth/login', login, { 'X-Real-IP': '10.9.3.1' });
+  assert.equal((await server.request('GET', '/auth/me')).status, 200, 'logged in');
+  // Sent with the login cookie but without X-Requested-With, as a form on another website would.
+  for (const [method, url] of [['POST', '/api/reset'], ['PUT', '/api/shared'], ['PUT', '/api/plan'], ['POST', '/api/plan/restore']]) {
+    const res = await server.request(method, url, null, { 'Content-Type': 'application/json' });
+    assert.equal(res.status, 403, method + ' ' + url);
+  }
 });

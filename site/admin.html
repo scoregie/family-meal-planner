@@ -179,7 +179,7 @@ function api(method, url, body) {
   var options = {
     method: method,
     cache: "no-store",
-    headers: body ? { "Content-Type": "application/json" } : {},
+    headers: body ? { "Content-Type": "application/json", "X-Requested-With": "app" } : { "X-Requested-With": "app" },
     body: body ? JSON.stringify(body) : undefined,
   };
   return fetch(url, options).then(function (response) {

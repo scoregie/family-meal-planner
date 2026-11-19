@@ -86,7 +86,10 @@ async function startServer(extraEnv = {}) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 
-  return { url, dir, request, stop, log: () => log, forgetCookie: () => { cookie = ''; } };
+  // The setup code a new server asks for before the first account (see api/accounts.js).
+  const setupCode = () => fs.readFileSync(path.join(data, 'setup-code.txt'), 'utf8').trim();
+
+  return { url, dir, request, stop, setupCode, log: () => log, forgetCookie: () => { cookie = ''; } };
 }
 
 module.exports = { startServer, ROOT };
