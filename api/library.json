@@ -292,7 +292,8 @@
    "tags": [
     "fish",
     "animal",
-    "gluten"
+    "gluten",
+    "egg"
    ],
    "kind": "fish",
    "per100": {
@@ -4399,7 +4400,8 @@
    "tags": [
     "animal",
     "fish",
-    "gluten"
+    "gluten",
+    "egg"
    ],
    "cost": 4.42
   },

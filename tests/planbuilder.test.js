@@ -776,3 +776,30 @@ test('going without food isn’t applied to a teenager, whichever kind of fast t
   assert.equal(plan.people.p1.times, undefined);
   assert.equal(plan.people.p1.tips.filter(t => /fast/i.test(t)).length, 1);
 });
+
+test('someone the family breakfast doesn’t suit, with no library breakfast that does, is told it’s their own choice', () => {
+  // Leave only egg breakfasts in the library, for a family where one person is allergic to eggs.
+  const saved = LIB.dishes;
+  const hasEgg = d => d.per.some(([k]) => ((LIB.ingredients[k] || {}).tags || []).includes('egg'));
+  LIB.dishes = saved.filter(d => d.meal !== 'breakfast' || hasEgg(d));
+  try {
+    const result = pb.build([{ key: 'a', name: 'Alex', answers: { age: 40 } }, { key: 'b', name: 'Bo', answers: { age: 38, allergies: ['Eggs'] } }], { seed: 3 });
+    const days = result.plan.weeks.filter(w => w.meals).flatMap(w => w.meals);
+    for (const day of days) {
+      const family = LIB.dishes.find(d => d.name === day.breakfast);
+      if (!family || !hasEgg(family)) continue;
+      const mine = ((day.people || {}).b || {}).breakfast;
+      assert.ok(mine && /own choice/i.test(mine), day.day + ': Bo was left with ' + day.breakfast);
+    }
+    assert.match(result.notesForAdmin, /No breakfasts in the library suit Bo/);
+  } finally {
+    LIB.dishes = saved;
+  }
+});
+
+test('crumbed small steps are left out for someone with an egg allergy', () => {
+  const answers = { age: 8, dislikes: 'most veggies', likes: 'chicken nuggets', allergies: ['Eggs'] };
+  const steps = pb.build([{ key: 'a', name: 'A', answers: { age: 40 } }, { key: 'k', name: 'K', answers }], { seed: 1 }).plan.people.k.steps;
+  assert.ok(steps && steps.length, 'some steps are still offered');
+  assert.ok(!steps.some(s => /crumbed/i.test(s.food)), JSON.stringify(steps.map(s => s.food)));
+});
