@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!--
-  For admins: everyone's logins, invites, roles, sign-ups waiting for approval and reset links.
+  For admins: everyone's logins, invites, roles, sign-ups waiting for approval and reset links,
+  and who is in the plan (with "Remove from the family" and "Bring back").
   How this file is laid out: the style section at the top sets the look, the body is the
   layout, and the script section near the end makes it work (asking the server for data with
   fetch() and drawing it). docs/how-it-works.md explains how the pages and the server fit together.
@@ -44,6 +45,18 @@
     <section class="card">
       <h2>Logins</h2>
       <div id="members"></div>
+    </section>
+
+    <section class="card">
+      <h2>People in the plan</h2>
+      <p class="note">Removing someone takes them out of the plan and the app’s records, so the next plan you draft is just for the people left. A copy of everything about them is kept on the server, so you can bring them back.</p>
+      <div id="people"></div>
+    </section>
+
+    <section class="card" id="removedCard" hidden>
+      <h2>Removed from the family</h2>
+      <p class="note">Bringing someone back puts back their About me answers, history and files. Draft a new plan afterwards to give them meals and exercise again.</p>
+      <div id="removed"></div>
     </section>
 
     <section class="card">
@@ -222,6 +235,8 @@ function render() {
     su.appendChild(row);
   });
 
+  drawPeople();
+
   var inv = $("invites");
   inv.textContent = "";
   $("invitesCard").hidden = !DATA.invites.length;
@@ -238,6 +253,58 @@ function render() {
     });
     row.appendChild(cancel);
     inv.appendChild(row);
+  });
+}
+
+// Draws "People in the plan" (each with Remove from the family) and "Removed from the family"
+// (each with Bring back).
+function drawPeople() {
+  var box = $("people");
+  box.textContent = "";
+  var withLogin = {};
+  DATA.accounts.concat(DATA.older).forEach(function (a) { withLogin[a.person] = true; });
+  (DATA.invites || []).forEach(function (i) { withLogin[i.person] = true; });
+  DATA.people.forEach(function (p) {
+    var row = el("div", "member");
+    var text = el("div");
+    text.appendChild(el("h3", null, p.name));
+    var isMe = DATA.accounts.some(function (a) { return a.id === DATA.me.accountId && a.person === p.person; });
+    text.appendChild(el("small", null, isMe ? "You" : withLogin[p.person] ? "Has a login or invite: remove that first to remove them from the family" : "No login"));
+    row.appendChild(text);
+    if (!isMe && !withLogin[p.person] && DATA.people.length > 1) {
+      var b = el("button", "btn small danger", "Remove from the family");
+      b.type = "button";
+      b.addEventListener("click", function () {
+        if (!confirm("Remove " + p.name + " from the family? They come out of the plan, and their About me answers, history and files are put away. A copy is kept on the server, so you can bring them back here.")) return;
+        api("POST", "/api/family/person/" + encodeURIComponent(p.person) + "/remove").then(function () {
+          status(p.name + " was removed. The shopping list is still sized for everyone until you draft a new plan in Plan setup.");
+          return load();
+        }).catch(function (e) { status(e.message, true); });
+      });
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+  });
+
+  var gone = $("removed");
+  gone.textContent = "";
+  $("removedCard").hidden = !(DATA.removed || []).length;
+  (DATA.removed || []).forEach(function (r) {
+    var row = el("div", "member");
+    var text = el("div");
+    text.appendChild(el("h3", null, r.name));
+    text.appendChild(el("small", null, "Removed " + when(r.removedAt)));
+    row.appendChild(text);
+    var b = el("button", "btn small", "Bring back");
+    b.type = "button";
+    b.addEventListener("click", function () {
+      api("POST", "/api/family/removed/" + encodeURIComponent(r.id) + "/restore").then(function () {
+        status(r.name + " is back. Draft a new plan in Plan setup to give them meals and exercise.");
+        return load();
+      }).catch(function (e) { status(e.message, true); });
+    });
+    row.appendChild(b);
+    gone.appendChild(row);
   });
 }
 

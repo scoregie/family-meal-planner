@@ -81,6 +81,7 @@ ticks and files are all stored under that key (`toKey` in `api/sharedrules.js`).
 | `server.js` | The starting point. Receives every request and passes it to the right file. Also saves the plan and the ticks. |
 | `auth.js` | Logging in and out, login cookies, and the "too many wrong passwords" limit. |
 | `accounts.js` | Email accounts: the first account, invites, sign-ups, password resets and deleting an account. |
+| `familyremove.js` | “Remove from the family” and “Bring back” on the Family page: saves everything about someone to data/archived-people/, then takes them out of the plan and the records. |
 | `people.js` | The people in the plan and the About me questions and answers. |
 | `db.js` | Every database read and write. Each function does one small job, like "get this account". |
 | `appearance.js` | The household's look, country, stores, energy unit and pinned products. |

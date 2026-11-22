@@ -109,6 +109,7 @@ Everyone logs in with their **email address (or, for kids, a username) and a pas
 4. **Kids without an email:** on **Plan setup** (More, admins), **Add someone without an email** adds a child to the plan. Tick **Give them a login** to choose a username and password for them; they log in with the username. Usernames must be different from everyone else's, and so must names in the family (answers, ticks and logins are matched by name). Without a login, an admin answers About me for them.
 5. **Forgotten passwords:** an admin taps **Reset link** next to the person on the Family page and sends them the link (it works for 24 hours). If email is set up (below), **Forgot your password?** on the login page emails a link instead.
 6. **Your own account:** **Account** (More) changes your email or password, logs you out on your other devices, or deletes your account (and, if you choose, your history: About me answers, weigh-ins, ratings, exercise and chats).
+7. **Removing someone from the family:** under **People in the plan** on the Family page, **Remove from the family** takes someone out of the plan and the app's records (remove their login first, if they have one). Everything about them is saved in `data/archived-people/` first, and **Bring back** puts it all back. Draft a new plan afterwards so meals and shopping fit the people left.
 
 **Roles:**
 
