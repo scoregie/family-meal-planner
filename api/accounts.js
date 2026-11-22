@@ -36,6 +36,7 @@
 //   POST /api/family/member/<id>   {role}: change a role ("owner" hands over ownership)
 //   POST /api/family/member/<id>/reset   admins: make a password-reset link for someone
 //   DELETE /api/family/member/<id> admins: remove someone's login
+//   POST /api/family/person/<person>/remove, POST /api/family/removed/<id>/restore   (familyremove.js)
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -44,6 +45,7 @@ const db = require('./db');
 const mailer = require('./mailer');
 const secrets = require('./secrets');
 const uploads = require('./uploads');
+const familyRemove = require('./familyremove');   // "Remove from the family" and "Bring back"
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const DAY = 864e5;
@@ -485,7 +487,7 @@ function family(res, me, ctx) {
     .map(l => Object.assign(l, { person: auth.describe(l.username).person, name: nameOf(auth.describe(l.username).person, ctx) }));
   const plan = ctx.readPlan() || {};
   const people = Object.values(plan.people || {}).filter(p => p && p.name).map(p => ({ person: ctx.toKey(p.name), name: p.name }));
-  send(res, 200, { me: { accountId: me.accountId || null, role: me.role }, accounts, older, invites: db.listInvites(), signups: db.listSignups(), people, mail: mailer.configured() });
+  send(res, 200, { me: { accountId: me.accountId || null, role: me.role }, accounts, older, invites: db.listInvites(), signups: db.listSignups(), people, removed: familyRemove.list(), mail: mailer.configured() });
 }
 
 // An admin inviting someone: makes an invite link (emailed if email is set up, else shown to copy).
@@ -631,6 +633,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
     await invite(req, res, me, ctx);
     return true;
   }
+  if (familyRemove.handle(req, res, urlPath, me, ctx)) return true;
   const sm = urlPath.match(/^\/api\/family\/signup\/(\d+)$/);
   if (sm && req.method === 'POST') {
     await decideSignup(req, res, me, ctx, Number(sm[1]));
