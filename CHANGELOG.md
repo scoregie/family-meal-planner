@@ -3,6 +3,31 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.13.0 (2026-11-23)
+
+Say when you were sick, remove someone from the family, and better vegetable counts for plans.
+
+- **"Unwell" under "Didn't have it?"** A new reason for a meal you didn't have because you were
+  sick. On those days, planned exercise sessions don't count as missed in "How the week went"
+  (on the week page and the Today card), which shows "Unwell on N days". The "To consider" line
+  suggests easing back in, and a GP or pharmacist if it carries on. The next plan doesn't change a
+  dish just because you were unwell the day it was planned.
+- **Remove from the family, and Bring back.** The Family page now lists **People in the plan**.
+  **Remove from the family** first saves everything about someone to `data/archived-people/`
+  (their part of the plan, About me answers, history, settings and files), then takes them out of
+  the plan and the records, so the next plan you draft is only for the people left. **Bring back**
+  puts it all back. Remove a person's login or cancel their invite first; you can't remove
+  yourself or the last person in the plan. The shopping list stays sized for everyone until you
+  draft a new plan.
+- **Plan estimates read grams as grams.** The food-group and macro estimators (`tools/`) read
+  "60 g baby cos lettuce" as 60 whole lettuces, so some dishes showed over 100 vegetable serves.
+  Any amount in grams or millilitres is now read as that weight. Cucumber, shredded cheese, sour
+  cream and Mexican bean mix are also counted now.
+
+After updating, restart the api (`docker compose restart api`). People who still log in with an
+older username set in `.env` (`LOGIN_<NAME>=`) count as having a login: delete that line and
+restart the api before removing them from the family.
+
 ## v1.12.2 (2026-11-19)
 
 Behind the scenes, for the phone app. Nothing changes on the web pages.
