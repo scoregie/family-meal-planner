@@ -49,13 +49,13 @@ NUTRITION = {
     'lettuce': (1.0, 2.0, 0.2), 'cabbage': (1.3, 3.0, 0.1), 'avocado': (2.0, 1.8, 15.0),
     'mandarin': (0.8, 11.5, 0.3), 'strawberries': (0.7, 6.0, 0.3),
     'beef': (21.0, 0.0, 8.0), 'ham': (17.0, 1.5, 4.0), 'tofu': (12.0, 2.0, 7.0),
-    'croissant': (8.0, 45.0, 21.0),
+    'croissant': (8.0, 45.0, 21.0), 'sour cream': (2.4, 4.6, 19.0),
 }
 
 # Matching rules, checked in order: (pattern in the item label, food above, grams for each one).
 # The grams are None when the label is already in grams or millilitres ("g rice", "ml milk").
 RULES = [
-    (r'can (red kidney beans|cannellini beans|brown lentils)', 'beans (drained)', 240),
+    (r'can (red kidney beans|cannellini beans|brown lentils|mexican bean mix|mixed beans|four bean mix)', 'beans (drained)', 240),
     (r'can chickpeas', 'chickpeas', 240),
     (r'can black beans', 'black beans', 240),
     (r'can baked beans', 'baked beans', 420),     # eaten with the sauce, so the whole can
@@ -102,7 +102,9 @@ RULES = [
     (r'^(g|ml) .*chicken(?! stock)', 'chicken', None),   # thighs, drumsticks, cooked chicken
     (r'^(g|ml) .*beef', 'beef', None),
     (r'^(g|ml) .*ham\b', 'ham', None),
-    (r'^(g|ml) .*(grated|sliced) cheese|^(g|ml) .*cheddar', 'tasty cheese', None),
+    (r'^(g|ml) .*(grated|sliced|shredded) cheese|^(g|ml) .*cheddar', 'tasty cheese', None),
+    (r'^(g|ml) .*sour cream', 'sour cream', None),
+    (r'^(g|ml) .*cucumbers?', 'cucumber', None),
     (r'^(g|ml) .*tofu', 'tofu', None),
     (r'^(g|ml) .*zucchini', 'zucchini', None),
     (r'^(g|ml) .*mushrooms?', 'mushrooms', None),
@@ -139,9 +141,10 @@ RULES = [
 def food_and_grams(item):
     """Returns (food name, grams) for one recipe item, or (None, 0) if no rule matches."""
     label = item['l']
+    weighed = re.match(r'(g|ml)\b', label, re.I)    # "60 g cos lettuce" is 60 grams, not 60 heads
     for pattern, food, grams_each in RULES:
         if re.search(pattern, label, re.I):
-            if grams_each is None:
+            if grams_each is None or weighed:
                 return food, item['q']               # already in g or ml
             return food, item['q'] * grams_each      # a count of things
     return None, 0
