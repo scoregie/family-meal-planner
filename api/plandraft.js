@@ -286,7 +286,7 @@ function userText(ctx, people, note, results) {
     if (scores.length) lines.push('', p.name + '’s scores for meals in earlier plans (bring back what they scored 8 or more; leave out, for them, what they scored 4 or less): ' + scores.join('; ') + '.');
     if (fb.notes.length) lines.push('', 'What ' + p.name + ' said they didn’t like (act on these: change the dish for them, or the whole meal if it suits everyone):',
       '<feedback>' + fb.notes.map(n => n.dish + ': ' + n.note).join('\n') + '</feedback>');
-    if ((fb.skipped || []).length) lines.push('', 'Meals ' + p.name + ' didn’t have, and why (fit the next plan to these: quicker or batch-cooked meals where it was “No time” or “Too much effort”, a shopping list that covers the recipe for “Missing ingredients”, and a different dish for them for “Didn’t want to eat it”):',
+    if ((fb.skipped || []).length) lines.push('', 'Meals ' + p.name + ' didn’t have, and why (fit the next plan to these: quicker or batch-cooked meals where it was “No time” or “Too much effort”, a shopping list that covers the recipe for “Missing ingredients”, a different dish for them for “Didn’t want to eat it”, and no change for “Unwell”, which means they were sick, not that the meal didn’t suit them):',
       '<feedback>' + fb.skipped.map(s => s.dish + ': ' + s.reasons.map(SkipReasons.label).join(', ')).join('\n') + '</feedback>');
     const cardio = planbuilder.cardioNow(p.answers, p.cardio, p.measured);
     if (cardio.known) lines.push('', p.name + '’s cardio level now is ' + cardio.level + ' of 5, “' + cardio.name + '” (from About me and how their sessions felt). Fit their cardio sessions to it, such as “' +

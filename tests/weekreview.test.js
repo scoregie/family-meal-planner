@@ -88,6 +88,7 @@ test('"One thing to consider" follows the wording rules for health text', () => 
     Object.assign({}, base, { shortVeg: 4 }),
     Object.assign({}, base, { shortFruit: 3 }),
     Object.assign({}, base, { meals: 0, sessions: 0 }),
+    Object.assign({}, base, { skipped: 2, reasons: [{ key: 'unwell', n: 2 }], planned: 4, sessions: 0 }),
     base,
   ];
   const seen = new Set();
@@ -99,6 +100,8 @@ test('"One thing to consider" follows the wording rules for health text', () => 
   assert.equal(seen.size, cases.length, 'each situation gets its own consideration');
   assert.match(weekreview.considerNext(cases[2], ''), /physio or GP/);
   assert.match(weekreview.considerNext(cases[3], ''), /dietitian or GP/);
+  assert.match(weekreview.considerNext(cases[6], ''), /^You said you were unwell for 2 meals.*GP or pharmacist/, 'being unwell comes before missed sessions');
+  assert.match(weekreview.considerNext(cases[6], 'Sam'), /^Sam said they were unwell/);
 });
 
 test('the route: your own week, a cardio step and a food tried show up, unknown people are refused', async t => {
@@ -179,4 +182,20 @@ test('the working out (api/weeksummary.js) loads on its own, the way the phone a
   assert.equal(out.week.monday, '2026-11-16');
   assert.deepEqual(out.week.reasons, [{ key: 'missing', label: 'Missing ingredients', n: 1 }]);
   assert.equal(out.before.skipped, 0);
+});
+
+test('a day someone was unwell: its planned sessions aren’t counted as missed', () => {
+  const plan = Object.assign({}, PLAN, { id: 'sick', people: { flu: { name: 'Flu', portion: 1 } },
+    weeks: [Object.assign({}, PLAN.weeks[0], { exercise: { flu: PLAN.weeks[0].exercise.sam } })] });
+  const ctx2 = { readPlan: () => plan, people: () => ['flu'] };
+  const ins = db.open().prepare(`INSERT INTO meal_log (person, plan_id, round, week, week_name, day, slot, dish, eaten, eaten_at, skip_reason, updated_at)
+    VALUES ('flu', 'sick', 0, 0, 'Week 1', ?, ?, ?, ?, ?, ?, ?)`);
+  ins.run('Mon', 'Breakfast', 'Oats', 1, lastWeek(0), null, lastWeek(0));
+  ins.run('Wed', 'Lunch', 'Salad', 0, null, 'unwell', lastWeek(2));
+  ins.run('Wed', 'Dinner', 'Stew', 0, null, 'unwell', lastWeek(2));
+  const w = weekreview.review('flu', 'last', TZ, ctx2).week;
+  assert.equal(w.unwellDays, 1, 'two Unwell meals on Wednesday are one day');
+  assert.equal(w.restedSessions, 1, 'Wednesday’s strength session');
+  assert.equal(w.planned, 1, 'only Monday’s walk is still counted');
+  assert.deepEqual(w.reasons, [{ key: 'unwell', label: 'Unwell', n: 2 }]);
 });
