@@ -5,7 +5,12 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const { startServer } = require('./helpers');
+
+// This file loads familyremove.js itself too, so it gets its own empty data folder (never /data).
+process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'fhp-remove-'));
+test.after(() => fs.rmSync(process.env.DATA_DIR, { recursive: true, force: true }));
 const familyRemove = require('../api/familyremove');
 
 let server;
