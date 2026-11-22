@@ -16,6 +16,7 @@
     ["mood", "Didn’t feel like it"],
     ["refused", "Didn’t want to eat it"],
     ["hungry", "Not hungry"],
+    ["unwell", "Unwell"],
     ["other", "Something else"],
   ];
 

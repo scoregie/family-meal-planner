@@ -144,6 +144,7 @@ function drawHard(w, b) {
       list.lastChild.insertBefore(ul, list.lastChild.querySelector(".was"));
     }
   }
+  if (w.unwellDays) item(list, "Unwell on " + count(w.unwellDays, "day", "days"), null, w.restedSessions ? count(w.restedSessions, "planned session", "planned sessions") + " on those days aren’t counted as missed. Rest is part of the plan." : "Rest is part of the plan.");
   if (w.shortVeg) item(list, count(w.shortVeg, "day", "days") + " under the vegetable serves", before(b.shortVeg), "Out of " + count(w.daysCounted, "day", "days") + " with two or more meals ticked.");
   if (w.shortFruit) item(list, count(w.shortFruit, "day", "days") + " under the fruit serves", before(b.shortFruit), "Out of " + count(w.daysCounted, "day", "days") + " with two or more meals ticked.");
   if (w.planned && w.sessions < w.planned) item(list, count(w.planned - w.sessions, "planned session", "planned sessions") + " not ticked", before(b.planned ? b.sessions + " of " + b.planned + " done" : b.sessions + " done"));

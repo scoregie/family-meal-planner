@@ -42,12 +42,14 @@ function weekSpan(today, which) {
 }
 
 // The plan's exercise sessions for one person in one plan week (not optional ones, not rest days).
-function plannedSessions(plan, weekIndex, planKey) {
+// `leaveOut` is an optional list of days, like ["Wed", "Thu"], whose sessions aren't counted.
+function plannedSessions(plan, weekIndex, planKey, leaveOut) {
   const week = plan && plan.weeks && plan.weeks[weekIndex];
   const mine = week && week.exercise && planKey && week.exercise[planKey];
   if (!mine || !Array.isArray(mine.days)) return 0;
   let n = 0;
   for (const day of mine.days) {
+    if (leaveOut && day && leaveOut.includes(day.day)) continue;
     for (const k of Object.keys(day || {})) {
       if (k !== 'day' && typeof day[k] === 'string' && day[k].trim() && !/^(optional|rest)/i.test(day[k])) n++;
     }
@@ -134,7 +136,10 @@ function oneWeek(data, monday) {
 
   const thisPlan = r => String(r.plan_id) === String((plan && plan.id) || 'default');
   const planWeek = mostCommon(rows.filter(r => thisPlan(r) && (inWeek(r.updated_at) || (r.eaten && inWeek(r.eaten_at)))).map(r => r.week));
-  const planned = plan && planWeek != null ? plannedSessions(plan, planWeek, planKey) : 0;
+  // Days they said they were unwell ("Unwell" on a meal): that day's sessions aren't counted as missed.
+  const unwellDays = [...new Set(skipped.filter(r => r.skip_reason === 'unwell' && thisPlan(r) && r.week === planWeek).map(r => r.day))];
+  const allPlanned = plan && planWeek != null ? plannedSessions(plan, planWeek, planKey) : 0;
+  const planned = plan && planWeek != null ? plannedSessions(plan, planWeek, planKey, unwellDays) : 0;
 
   const reasons = {};
   for (const r of skipped) reasons[r.skip_reason] = (reasons[r.skip_reason] || 0) + 1;
@@ -147,6 +152,8 @@ function oneWeek(data, monday) {
     low: scored.filter(r => r.score <= 4).sort((a, b) => a.score - b.score).slice(0, 3).map(r => ({ dish: r.dish, score: r.score })),
     sessions: sessions.length,
     planned,
+    unwellDays: unwellDays.length,
+    restedSessions: allPlanned - planned,
     cardio: log.filter(e => e.kind === 'cardio' && e.moved).map(e => ({ moved: e.moved, level: e.level })),
     tried: newestPerFood(log.filter(e => e.kind === 'tried' && (e.result === 'tried' || e.result === 'liked'))),
     skipped: skipped.length,
@@ -165,6 +172,11 @@ function considerNext(w, name) {
   const said = key => (w.reasons.find(r => r.key === key) || { n: 0 }).n;
   const you = name ? name + ' said' : 'You said';
   const rushed = said('time') + said('effort');
+  if (said('unwell')) {
+    return (name ? name + ' said they were' : 'You said you were') + ' unwell for ' + said('unwell') + (said('unwell') === 1 ? ' meal' : ' meals') + ', so sessions planned on those days aren’t counted as missed. '
+      + 'Something to consider: easing back in with shorter, easier sessions and simple meals until you feel like yourself again. '
+      + 'If you’re still unwell, or it keeps coming back, your GP or pharmacist can help, including with any medicines while you’re sick.';
+  }
   if (rushed >= 2) {
     return you + ' “No time” or “Too much effort” for ' + rushed + ' meals. Something to consider: cooking a double batch on a quieter day, '
       + 'so a busy night is reheat-and-serve. The next plan leans towards quicker dinners from what was said.';

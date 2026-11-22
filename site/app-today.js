@@ -124,6 +124,7 @@ function todayWeekCard(person4) {
     if (w.best.length) well.push("best: " + w.best[0].dish);
     var hard = [];
     if (w.skipped) hard.push(w.skipped + (w.skipped === 1 ? " meal" : " meals") + " skipped" + (w.reasons.length ? " (mostly “" + w.reasons[0].label + "”)" : ""));
+    if (w.unwellDays) hard.push("unwell " + w.unwellDays + (w.unwellDays === 1 ? " day" : " days"));
     if (w.shortVeg) hard.push(w.shortVeg + (w.shortVeg === 1 ? " day" : " days") + " light on veg");
     if (w.planned && w.sessions < w.planned) hard.push((w.planned - w.sessions) + " sessions not ticked");
     if (!well.length && !hard.length) {
