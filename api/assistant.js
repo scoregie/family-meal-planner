@@ -9,7 +9,7 @@
 //   GET    /api/requests                     requests for changes (admins: everyone's; others: their own)
 //   POST   /api/requests/<id>/send           send your draft to the admins
 //   POST   /api/requests/<id>/withdraw       take back your own draft or request
-//   POST   /api/requests/<id>/approve        admins: apply it to the plan
+//   POST   /api/requests/<id>/approve        admins: apply it to the plan (a whole new plan: {startDate}, its first Monday)
 //   POST   /api/requests/<id>/decline        admins: say no, with an optional reply {reply}
 //
 // Set ANTHROPIC_API_KEY in .env to turn it on. Optional: ASSISTANT_MODEL (default claude-opus-5-5),
@@ -23,6 +23,8 @@ const path = require('path');
 const db = require('./db');
 const rules = require('./sharedrules');   // rules the phone app follows too
 const planchange = require('./planchange');
+// The plan's dates (site/plandates.js, which the pages use too): a new plan's start date is set when it is approved.
+const PlanDates = require(path.join(path.dirname(process.env.PLAN_FILE || '/site/plan.json'), 'plandates.js'));
 const secrets = require('./secrets');
 const progress = require('./progress');
 
@@ -658,9 +660,18 @@ function requestAction(res, me, id, action, b, ctx) {
     if (!plan) return send(res, 500, { error: 'plan.json could not be read.' });
     // Apply the steps to the plan as it is now (it may have changed since the draft was made).
     // A whole-plan draft (from Plan setup) was written by the server, so it may be bigger.
-    const opts = r.change && r.change.kind === 'full-plan' ? { maxValue: planchange.FULL_PLAN_MAX } : undefined;
+    const whole = r.change && r.change.kind === 'full-plan';
+    // A whole new plan starts on the Monday picked on Plan setup (or has no dates if none was).
+    const startDate = whole && b.startDate ? String(b.startDate) : null;
+    if (startDate && !PlanDates.isMonday(startDate)) return send(res, 400, { error: 'Pick a Monday for the plan to start on.' });
+    const opts = whole ? { maxValue: planchange.FULL_PLAN_MAX } : undefined;
     const tried = planchange.apply(plan, r.change && r.change.steps, ctx.checkPlan, opts);
     if (tried.error) return send(res, 409, { error: 'This change no longer fits the plan (it may have been edited since). ' + tried.error + ' Ask the assistant to suggest it again.' });
+    if (whole) {
+      // The old plan's start date doesn't carry over to the new one.
+      if (startDate) tried.plan.startDate = startDate;
+      else delete tried.plan.startDate;
+    }
     ctx.savePlan(tried.plan);
     db.setRequestStatus(id, 'done', me.user, String(b.reply || '').slice(0, 1000) || null);
   } else {

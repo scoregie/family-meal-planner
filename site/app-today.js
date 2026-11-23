@@ -223,6 +223,35 @@ function todayShoppingCard() {
   return shop.card;
 }
 
+// With a dated plan: a line saying it hasn't started yet, has finished, or that the week shown
+// isn't the one today is in (with a button to go there). Null when there is nothing to say.
+function datesNote() {
+  var here = PlanDates.locate(PLAN, localToday());
+  if (!here) return null;
+  var box = el("p", "note2 td-when");
+  if (here.state === "before") {
+    box.textContent = "This plan starts on " + dateText(PlanDates.start(PLAN), true) + ".";
+  } else if (here.state === "after") {
+    box.textContent = "This plan finished on " + dateText(PlanDates.end(PLAN), true) + ". ";
+    if (isAdmin() && !window.PHONE) {
+      var a = el("a", null, "Draft the next one in Plan setup");
+      a.href = "setup.html";
+      box.appendChild(a);
+    } else {
+      box.appendChild(document.createTextNode(isAdmin() ? "Draft the next one in Family and plan." : "An admin can draft the next one."));
+    }
+  } else if (here.index !== week) {
+    box.textContent = "This is " + weekName(week) + ". Today is in " + weekName(here.index) + ". ";
+    var b = el("button", "btn small", "Go to " + weekName(here.index));
+    b.type = "button";
+    b.onclick = function () { go(here.index, "today"); };
+    box.appendChild(b);
+  } else {
+    return null;
+  }
+  return box;
+}
+
 // The Today view: today's meals and snacks to tick (with energy), today's exercise to tick,
 // the newest numbers from the phone, and what is left to buy this week.
 function renderToday() {
@@ -236,8 +265,10 @@ function renderToday() {
 
   var top = el("div", "td-date");
   top.appendChild(el("h2", null, now.toLocaleDateString(Appearance.locale(), { weekday: "long", day: "numeric", month: "long" })));
-  top.appendChild(el("span", null, (USER ? "For " + USER + " · " : "") + weekName(week)));
+  top.appendChild(el("span", null, (USER ? "For " + USER + " · " : "") + weekTitle(week)));
   panel.appendChild(top);
+  var when = datesNote();
+  if (when) panel.appendChild(when);
 
   // Meals: today's rows for this person.
   var dayIndex = -1;

@@ -139,7 +139,7 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 | `account.html` | Your account. |
 | `admin.html` | Editing the plan by hand (admins). |
 
-Shared by every page: `page.js` (the small helpers every page's script uses: `$`, `el`, `api` for talking to the server, `status` for short messages, and `toLogin`), `appearance.js` (the look, country, money and dates), `energy.js` (the kJ in a serve, worked out from its macros; the server's Progress numbers use it too), `skipreasons.js` (the reasons for “Didn't have it?” on a meal; the server checks against the same list) and `regions.js`
+Shared by every page: `page.js` (the small helpers every page's script uses: `$`, `el`, `api` for talking to the server, `status` for short messages, and `toLogin`), `appearance.js` (the look, country, money and dates), `energy.js` (the kJ in a serve, worked out from its macros; the server's Progress numbers use it too), `skipreasons.js` (the reasons for “Didn't have it?” on a meal; the server checks against the same list), `plandates.js` (the plan's dates: each week's and day's date from the Monday it starts on, and which week today is in; the server uses it to check and save the start date) and `regions.js`
 (countries and their stores). Also used: `page.css` (styles shared by a few pages),
 `guidelines.js` and `guidelines.json` (the healthy-eating guidelines on Meals → Macros),
 `questions.json` (the About me questions), and `sw.js`, the "service worker" that keeps a copy of the app so it
@@ -150,8 +150,8 @@ still opens without a signal.
 The phone app (github.com/scoregie/family-health-planner-app) uses these same pages, unchanged:
 `index.html` and its `app-*.js` files, `profile.html`, `progress.html`, `week.html`, `settings.html`, `setup.html`,
 `exercises.html` and `food.html`. It also loads some of the server's rules from the same files, so the
-two can't drift apart: `api/sharedrules.js`, `api/weeksummary.js` (how the week went), `site/energy.js`
-and `site/skipreasons.js`. Two small files let one page work in both places:
+two can't drift apart: `api/sharedrules.js`, `api/weeksummary.js` (how the week went), `site/energy.js`,
+`site/skipreasons.js` and `site/plandates.js`. Two small files let one page work in both places:
 
 - `local-api.js` is loaded first. On the web it only sets `window.PHONE = null`. The app has its own
   file with this name, which answers the pages' `/api` calls on the phone and sets `window.PHONE`.

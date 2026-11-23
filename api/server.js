@@ -37,6 +37,7 @@ const MAX_BODY = 1e6;                              // largest request body we re
 const PLAN_FILE = process.env.PLAN_FILE || '/site/plan.json';
 // Why someone didn't have a meal (site/skipreasons.js, which the Meals tab uses too).
 const SkipReasons = require(path.join(path.dirname(PLAN_FILE), 'skipreasons.js'));
+const PlanDates = require(path.join(path.dirname(PLAN_FILE), 'plandates.js'));   // the plan's start date
 const PLAN_EXAMPLE = PLAN_FILE.replace(/plan\.json$/, 'plan.example.json');
 const BACKUPS_DIR = path.join(DATA_DIR, 'plan-backups');
 const BACKUPS_TO_KEEP = 30;
@@ -181,6 +182,7 @@ function checkPlan(plan) {
     }
   }
   if (plan.macros !== undefined && !isObj(plan.macros)) return '"macros" must be an object.';
+  if (plan.startDate !== undefined && !PlanDates.isMonday(plan.startDate)) return '"startDate" must be a Monday, written like 2026-11-23.';
   return '';
 }
 
@@ -280,7 +282,7 @@ function backups() {
 // Answers /api/plan... requests. Returns true if it handled the request.
 async function handlePlan(req, res, urlPath, me) {
   if (!urlPath.startsWith('/api/plan')) return false;
-  if (['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;   // plandraft.js
+  if (['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/dates'].includes(urlPath)) return false;   // plandraft.js
   if (!me.admin) {
     send(res, 403, { error: 'only an admin can edit the plan' });
     return true;

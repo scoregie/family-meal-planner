@@ -36,6 +36,7 @@ If the file has a mistake, the app shows a red message saying what is wrong and 
 | `id` | Yes | A name for this version of the plan. Ticks are saved against it, so **change it when you load a brand new plan** and everyone starts with clean ticks. Keep it the same when you only make small edits. |
 | `title` | No | The big heading at the top of the page and the browser tab name. |
 | `subtitle` | No | The line under the title, often the cost summary. |
+| `startDate` | No | The Monday that Week 1 starts on, written like `"2026-11-23"`. With it, the week tabs show their dates (“23–29 Nov”), each day shows its date, the app opens at the week today is in, and calendar reminders stop when the plan finishes. Stock-up weeks share the dates of the week after them. Plan setup sets it when you approve a plan, and its **Plan dates** card changes it. Leave it out for a plan without dates. |
 | `currency` | No | The currency of the prices, as a three-letter code like `"AUD"`, `"GBP"` or `"EUR"`. Leave it out for Australian dollars. Prices are shown in this currency. |
 | `weeks` | Yes | The weeks, in the order they appear along the top. See [Weeks](#weeks). |
 | `people` | No | Who is in the household and how much they eat. See [People](#people). |
