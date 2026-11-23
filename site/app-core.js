@@ -39,6 +39,7 @@ var openRate = "";  // which meal's rating box is open, as "week|Day|Meal"
 
 // The localStorage key for each of those. They include the plan id, so a new plan starts clean.
 var HAVE_KEY = "coles-plan-have-v1";
+var OPENED_BARE = !location.hash;   // opened with no #week-... (a dated plan then opens at this week)
 var PLACE_KEY = "plan-place";   // the week and view last shown on this device (#week-1-meals).
                                 // (Before v1.10.2 it was "coles-plan-place", counting stock-up weeks.)
 var TICKS_KEY = "", EX_KEY = "", EATEN_KEY = "", RATES_KEY = "";
@@ -437,6 +438,10 @@ function showErr(message) {
 // Starts using a plan: reads its people, works out the storage keys, and draws the page.
 function usePlan(p) {
   PLAN = p;
+  // Opened with no week in the address: a plan with dates opens at the week today is in.
+  var here = OPENED_BARE && PlanDates.locate(p, localToday());
+  OPENED_BARE = false;
+  if (here) history.replaceState(null, "", "#week-" + weekNumber(here.index));
   initPeople(p);
   var id = p.id || "default";
   TICKS_BASE = "coles-plan-ticks-v2-" + id;
@@ -498,6 +503,8 @@ function renderTabs() {
     // Plain buttons: the chosen week is marked "current" (they aren't full tabs with panels).
     if (i === week) tab.setAttribute("aria-current", "true");
     tab.appendChild(el("b", null, weekName(i)));
+    var dates = weekDates(i);
+    if (dates) tab.appendChild(el("span", "tab-dates", dates));
     tab.appendChild(el("span", null, "~" + Appearance.money(total(i), PLAN && PLAN.currency, true)));
     tab.onclick = function () { go(i, view); };
     row.appendChild(tab);
@@ -518,9 +525,51 @@ function renderTabs() {
 var TODAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
 var scrollToday = false;   // scroll to today's card once, after opening Meals or Exercise
 
+// ---------- the plan's dates (plandates.js) ----------
+
+// Today's date on this device: "2026-11-23".
+function localToday() {
+  return localYmd(new Date());
+}
+
+// The way dates are written on this page: "23 Nov" (or "Mon 23 Nov" with the weekday), in the
+// household's country's style.
+function dateFormat(withDay) {
+  var opts = { day: "numeric", month: "short", timeZone: "UTC" };
+  if (withDay) opts.weekday = "short";
+  return new Intl.DateTimeFormat(Appearance.locale(), opts);
+}
+
+// A "YYYY-MM-DD" date as words: "23 Nov", or "Mon 23 Nov" with the weekday. "" for no date.
+function dateText(date, withDay) {
+  return date ? dateFormat(withDay).format(new Date(date + "T00:00:00Z")) : "";
+}
+
+// A week's dates as words ("23–29 Nov"), or "" if the plan has no start date.
+function weekDates(index) {
+  var r = PlanDates.weekRange(PLAN, index);
+  if (!r) return "";
+  var f = dateFormat(false), a = new Date(r.from + "T00:00:00Z"), b = new Date(r.to + "T00:00:00Z");
+  return f.formatRange ? f.formatRange(a, b) : f.format(a) + " – " + f.format(b);
+}
+
+// A week's name with its dates when the plan has them: "Week 1 · 23–29 Nov".
+function weekTitle(index) {
+  var dates = weekDates(index);
+  return weekName(index) + (dates ? " · " + dates : "");
+}
+
+// Is this day ("Mon") in the week at `weekIndex` today? With dates, only in the week today is
+// in; without them, the same weekday in any week.
+function isToday(weekIndex, day) {
+  var date = PlanDates.dayDate(PLAN, weekIndex, day);
+  if (PlanDates.start(PLAN)) return date === localToday();
+  return short(day) === TODAY;
+}
+
 // Highlights today's day card with a "Today" tag (and scrolls to it if asked).
 function markToday(card, heading, day) {
-  if (String(day || "").slice(0, 3) !== TODAY) return;
+  if (!isToday(week, day)) return;
   card.classList.add("today");
   heading.appendChild(el("span", "today-tag", "Today"));
   if (scrollToday) {
@@ -679,9 +728,10 @@ function dayNav(days, rerender) {
   prev.onclick = function () { step(-1); };
   var title = el("div", "daynav-title");
   var h = el("h2", null, FULLDAY[names[at]] || names[at] || "");
-  if (names[at] === TODAY) h.appendChild(el("span", "today-tag", "Today"));
+  if (isToday(week, names[at])) h.appendChild(el("span", "today-tag", "Today"));
   title.appendChild(h);
-  title.appendChild(el("span", null, weekName(week)));
+  var date = dateText(PlanDates.dayDate(PLAN, week, names[at]));
+  title.appendChild(el("span", null, weekName(week) + (date ? " · " + date : "")));
   var next = el("button", "btn arrow", "›");
   next.type = "button";
   next.setAttribute("aria-label", "Next day");
@@ -697,7 +747,7 @@ function dayNav(days, rerender) {
     b.type = "button";
     b.setAttribute("aria-label", FULLDAY[n] || n);
     b.setAttribute("aria-pressed", i === at);
-    if (n === TODAY) b.className = "is-today";
+    if (isToday(week, n)) b.className = "is-today";
     b.onclick = function () { dayName = n; rerender(); };
     chips.appendChild(b);
   });

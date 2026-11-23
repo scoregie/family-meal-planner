@@ -84,10 +84,16 @@ test('the built-in builder drafts a plan, and approving it makes it the plan', a
   const health = setup.json.draft.people[0].health;
   assert.ok(health && health.veg > 0 && health.target.veg >= 5, JSON.stringify(health));
   assert.deepEqual(health.short, []);
-  const approve = await server.request('POST', '/api/requests/' + setup.json.draft.id + '/approve', {});
+  // The start date has to be a Monday.
+  const wednesday = await server.request('POST', '/api/requests/' + setup.json.draft.id + '/approve', { startDate: '2026-11-25' });
+  assert.equal(wednesday.status, 400, wednesday.text);
+  const approve = await server.request('POST', '/api/requests/' + setup.json.draft.id + '/approve', { startDate: '2026-11-23' });
   assert.equal(approve.status, 200, approve.text);
 
   const plan = JSON.parse(fs.readFileSync(path.join(server.dir, 'site', 'plan.json'), 'utf8'));
+  assert.equal(plan.startDate, '2026-11-23', 'Week 1 starts on the Monday picked');
+  const dated = await server.request('GET', '/api/plan/setup');
+  assert.deepEqual(dated.json.current, { startDate: '2026-11-23', end: '2026-12-20', weeks: 4 });
   assert.equal(plan.currency, 'NZD', 'priced in the household’s country');
   assert.ok(plan.weeks.length >= 4);
   assert.ok(plan.people['alex-smith'] || Object.values(plan.people).some(p => p.name === 'Alex Smith'));
@@ -317,6 +323,7 @@ test('fasting answers are saved, and a plan with fast days and foods given up is
   const approve = await server.request('POST', '/api/requests/' + setup.json.draft.id + '/approve', {});
   assert.equal(approve.status, 200, approve.text);
   const plan = JSON.parse(fs.readFileSync(path.join(server.dir, 'site', 'plan.json'), 'utf8'));
+  assert.equal(plan.startDate, undefined, 'the last plan’s start date doesn’t carry over to a new one');
   const key = Object.keys(plan.people)[0];
   const monday = plan.weeks.find(w => w.meals).meals.find(m => m.day === 'Mon');
   assert.equal(monday.people[key].breakfast, 'Fasting');
@@ -325,6 +332,28 @@ test('fasting answers are saved, and a plan with fast days and foods given up is
   const cal = await server.request('GET', '/api/calendar/' + key + '.json');
   assert.equal(cal.status, 200, cal.text);
   assert.doesNotMatch(cal.text, /Before dawn|At sunset/);
+});
+
+test('Plan dates: the current plan’s start date can be changed or cleared, and the calendar follows it', async () => {
+  const bad = await server.request('PUT', '/api/plan/dates', { startDate: '2026-12-02' });
+  assert.equal(bad.status, 400, bad.text);
+  const set = await server.request('PUT', '/api/plan/dates', { startDate: '2099-01-05' });
+  assert.equal(set.status, 200, set.text);
+  assert.equal(set.json.current.startDate, '2099-01-05');
+  const plan = JSON.parse(fs.readFileSync(path.join(server.dir, 'site', 'plan.json'), 'utf8'));
+  assert.equal(plan.startDate, '2099-01-05');
+  // Reminders start on Week 1 and stop on the plan's last day (4 weeks: Sunday 1 February).
+  const key = Object.keys(plan.people)[0];
+  const cal = await server.request('GET', '/api/calendar/' + key + '.json');
+  assert.equal(cal.status, 200, cal.text);
+  for (const e of cal.json.events) {
+    assert.ok(e.date >= '20990105', e.date);
+    assert.match(e.rrule, /UNTIL=20990201T235959/);
+  }
+  const cleared = await server.request('PUT', '/api/plan/dates', { startDate: null });
+  assert.equal(cleared.status, 200, cleared.text);
+  assert.equal(cleared.json.current.startDate, null);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(server.dir, 'site', 'plan.json'), 'utf8')).startDate, undefined);
 });
 
 test('a tick on the shopping list is saved for everyone', async () => {

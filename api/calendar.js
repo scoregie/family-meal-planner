@@ -3,9 +3,11 @@
 //   GET /api/calendar/<person>.json?start=...        -> the same events as JSON (the page builds Google links from it)
 // Times are "floating" (no time zone), so each calendar uses the phone's own time zone.
 const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 
 const PLAN_FILE = process.env.PLAN_FILE || '/site/plan.json';
+const PlanDates = require(path.join(path.dirname(PLAN_FILE), 'plandates.js'));   // the plan's start and end dates
 const WEEKS = 4;        // how many weeks the repeating events last
 const REMIND_MIN = 10;  // reminder, in minutes before each event
 
@@ -51,16 +53,23 @@ const ymd = d => d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDat
 const hm = minutes => pad(Math.floor(minutes / 60)) + pad(minutes % 60) + '00';      // 390 -> "063000"
 
 // Builds the list of events for one person, starting on `startDate` (YYYY-MM-DD) or tomorrow.
-// Returns {name, events} or null if that person has no suggested times.
+// With a dated plan, they start no earlier than its Week 1 and stop when it finishes; otherwise
+// they last 4 weeks. Returns {name, events} or null if that person has no suggested times.
 function events(personKey, startDate) {
   const file = fs.existsSync(PLAN_FILE) ? PLAN_FILE : PLAN_FILE.replace(/plan\.json$/, 'plan.example.json');
   const plan = JSON.parse(fs.readFileSync(file, 'utf8'));
   const person = (plan.people || {})[personKey];
   if (!person || !Array.isArray(person.times) || !person.times.length) return null;
 
-  const base = /^\d{4}-\d{2}-\d{2}$/.test(startDate || '')
+  let base = /^\d{4}-\d{2}-\d{2}$/.test(startDate || '')
     ? new Date(startDate + 'T00:00:00Z')
     : new Date(Date.now() + 864e5);   // tomorrow
+  const planStart = PlanDates.start(plan), planEnd = PlanDates.end(plan);
+  let last = null;   // the last day of reminders, if the plan's dates set it
+  if (planStart && planEnd && base.toISOString().slice(0, 10) <= planEnd) {
+    if (base.toISOString().slice(0, 10) < planStart) base = new Date(planStart + 'T00:00:00Z');
+    last = new Date(planEnd + 'T00:00:00Z');
+  }
   const out = [];
   for (const t of person.times) {
     const time = parseWhen(t.when);
@@ -73,8 +82,8 @@ function events(personKey, startDate) {
     if (weekdays) {
       while ([0, 6].includes(first.getUTCDay())) first.setUTCDate(first.getUTCDate() + 1);
     }
-    const until = new Date(base);
-    until.setUTCDate(until.getUTCDate() + WEEKS * 7 - 1);
+    const until = last ? new Date(last) : new Date(base);
+    if (!last) until.setUTCDate(until.getUTCDate() + WEEKS * 7 - 1);
 
     // RRULE is the calendar-file way of saying how an event repeats.
     const repeat = weekdays ? 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR' : 'FREQ=DAILY';

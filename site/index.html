@@ -39,6 +39,7 @@ h1{font-size:1.6rem;line-height:1.15;margin:0 0 .25rem}
 .tab{font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:.6rem;padding:.55rem .2rem;cursor:pointer;text-align:center;line-height:1.2;min-height:2.75rem}
 .tab b{display:block;font-size:1rem}
 .tab span{font-size:.8rem;color:var(--mute)}
+.tab .tab-dates{display:block;white-space:nowrap}
 .tab[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .tab[aria-current="true"] span{color:var(--on-accent);opacity:.85}
 .sum{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:.8rem 1rem;margin-bottom:1rem}
@@ -597,6 +598,7 @@ body:not([data-view="today"]) .ask{display:none}   /* notices show on Today only
 <script src="guidelines.js"></script>
 <script src="energy.js"></script>
 <script src="skipreasons.js"></script>
+<script src="plandates.js"></script>
 <!-- The page's script is in six files (app-core.js lists what each one holds). -->
 <script src="app-core.js"></script>
 <script src="app-shopping.js"></script>

@@ -13,6 +13,7 @@
 //   DELETE /api/plan/draft  admins: stop the draft the AI is writing
 //   POST /api/plan/handoff   admins: {plan} written that way, checked and saved as a draft.
 //                            Answers {ok, problems}: what the app's checks found, if anything
+//   PUT  /api/plan/dates     admins: {startDate} the Monday the current plan starts on (null for no dates)
 //
 // A plan an AI writes is checked by the app and sent back to the AI once for corrections
 // (plancheck.js) before it is saved.
@@ -32,6 +33,8 @@ const ai = require('./ai');
 const planbuilder = require('./planbuilder');
 // Why someone didn't have a meal (site/skipreasons.js, which the Meals tab uses too).
 const SkipReasons = require(path.join(path.dirname(process.env.PLAN_FILE || '/site/plan.json'), 'skipreasons.js'));
+// The plan's dates (site/plandates.js): Plan setup shows and changes the Monday the plan starts on.
+const PlanDates = require(path.join(path.dirname(process.env.PLAN_FILE || '/site/plan.json'), 'plandates.js'));
 const healthtargets = require('./healthtargets');
 const planextras = require('./planextras');
 const plancheck = require('./plancheck');
@@ -653,7 +656,31 @@ function sendSetup(res, me, ctx) {
     draft: pending ? draftPreview(pending) : null,
     kitchen: kitchenList().map(item => item.text),   // just the names, for the count on Plan setup
     isExample: isExamplePlan(ctx.readPlan()),
+    current: currentDates(ctx.readPlan()),
   });
+}
+
+// The current plan's dates for Plan setup: {startDate, end, weeks} (the dates are null if it has none).
+function currentDates(plan) {
+  if (!plan || !Array.isArray(plan.weeks)) return null;
+  return { startDate: PlanDates.start(plan), end: PlanDates.end(plan), weeks: plan.weeks.filter(w => w && w.kind !== 'stockup').length };
+}
+
+// PUT /api/plan/dates {startDate: "2026-11-23" or null}: sets or clears the Monday the current
+// plan's Week 1 starts on. Nothing else in the plan changes, and ticks are kept.
+async function saveDates(req, res, ctx) {
+  let b;
+  try { b = await readBody(req); } catch (e) { return send(res, 400, { error: 'bad request' }); }
+  const plan = ctx.readPlan();
+  if (!plan) return send(res, 500, { error: 'plan.json could not be read.' });
+  if (b.startDate) {
+    if (!PlanDates.isMonday(String(b.startDate))) return send(res, 400, { error: 'Pick a Monday for the plan to start on.' });
+    plan.startDate = String(b.startDate);
+  } else {
+    delete plan.startDate;
+  }
+  ctx.savePlan(plan);
+  send(res, 200, { ok: true, current: currentDates(plan) });
 }
 
 // GET /api/plan/handoff?note=: the drafting instructions, for a Claude Code session (on the user's
@@ -723,7 +750,7 @@ async function startDraft(req, res, me, ctx) {
 
 // Answers Plan setup's requests. Returns true if it answered, false to let the next file try.
 async function handle(req, res, urlPath, url, me, ctx) {
-  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff'].includes(urlPath)) return false;
+  if (!['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/dates'].includes(urlPath)) return false;
   const what = req.method + ' ' + urlPath;
   if (!me.admin) send(res, 403, { error: 'Only an admin can set up the family’s plan.' });
   else if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'app') send(res, 403, { error: 'bad request' });
@@ -732,6 +759,7 @@ async function handle(req, res, urlPath, url, me, ctx) {
   else if (what === 'GET /api/plan/setup') sendSetup(res, me, ctx);
   else if (what === 'GET /api/plan/handoff') sendHandoff(res, url, ctx);
   else if (what === 'POST /api/plan/handoff') await takeHandoff(req, res, me, ctx);
+  else if (what === 'PUT /api/plan/dates') await saveDates(req, res, ctx);
   else if (what === 'DELETE /api/plan/draft') cancelDraft(res);
   else if (what === 'POST /api/plan/draft') await startDraft(req, res, me, ctx);
   else send(res, 404, { error: 'not found' });

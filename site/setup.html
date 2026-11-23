@@ -55,6 +55,7 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid color
 </style>
 <script src="regions.js"></script>
 <script src="appearance.js"></script>
+<script src="plandates.js"></script>
 </head>
 <body>
 <main>
@@ -108,6 +109,14 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid color
     <section class="card" id="reviewCard" hidden>
       <h2><span class="step" data-phone="3">4</span>Review and approve</h2>
       <div id="review"></div>
+    </section>
+
+    <section class="card" id="datesCard" hidden>
+      <h2>Plan dates</h2>
+      <p class="note" id="datesNow"></p>
+      <div><label class="f" for="datesPick">Week 1 starts on</label><select id="datesPick"></select></div>
+      <div class="row"><button class="btn" type="button" id="datesSave">Save dates</button></div>
+      <p class="note">The week tabs, the days and Today use these dates. Changing them keeps everyone’s ticks.</p>
     </section>
 
     <p class="note"><span data-phone="The country is now in">The household’s country, and new meals and exercises for the plan builder, are now in</span> <a href="settings.html">Settings</a>.</p>
@@ -469,15 +478,81 @@ function reviewPerson(p) {
   return wk;
 }
 
-// The Approve and Discard buttons under a waiting draft (`d`).
+// ---------- the plan's dates (plandates.js) ----------
+
+// Today's date on this device: "2026-11-23".
+function localToday() {
+  var d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+// A "YYYY-MM-DD" date as words: "Mon 23 Nov".
+function dateText(date) {
+  return new Intl.DateTimeFormat(Appearance.locale(), { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .format(new Date(date + "T00:00:00Z"));
+}
+
+// Fills a list of Mondays to start on: from `back` weeks ago to 5 weeks ahead, then "No dates".
+// `chosen` is picked ("" for no dates); it is added if it is outside that range.
+function fillMondays(select, chosen, back) {
+  select.textContent = "";
+  var thisWeek = PlanDates.mondayOf(localToday());
+  var mondays = [];
+  for (var i = -back; i <= 5; i++) mondays.push(PlanDates.addDays(thisWeek, 7 * i));
+  if (chosen && mondays.indexOf(chosen) < 0) mondays.push(chosen);
+  mondays.sort();
+  mondays.forEach(function (m) {
+    var o = el("option", null, dateText(m) + (m === thisWeek ? " (this week)" : ""));
+    o.value = m;
+    select.appendChild(o);
+  });
+  var none = el("option", null, "No dates");
+  none.value = "";
+  select.appendChild(none);
+  select.value = chosen || "";
+}
+
+// The Plan dates card: when the current plan starts and ends, and a list to change it.
+function renderDates() {
+  var c = DATA.current;
+  $("datesCard").hidden = !c || DATA.isExample;
+  if ($("datesCard").hidden) return;
+  $("datesNow").textContent = c.startDate
+    ? "Week 1 starts on " + dateText(c.startDate) + ", and the plan finishes on " + dateText(c.end) + "."
+    : "The current plan has no dates, so the app shows Week 1 to " + c.weeks + " without them.";
+  fillMondays($("datesPick"), c.startDate || "", 8);
+}
+
+$("datesSave").addEventListener("click", function () {
+  var button = this;
+  button.disabled = true;
+  api("PUT", "/api/plan/dates", { startDate: $("datesPick").value || null }).then(function (r) {
+    DATA.current = r.current;
+    renderDates();
+    status(r.current.startDate ? "Saved: Week 1 starts on " + dateText(r.current.startDate) + "." : "Saved: the plan has no dates now.");
+  }).catch(function (e) { status(e.message, true); }).then(function () { button.disabled = false; });
+});
+
+// The Approve and Discard buttons under a waiting draft (`d`), with the Monday it starts on.
 function reviewButtons(d) {
+  var wrap = el("div");
+  var pick = el("select");
+  pick.id = "startPick";
+  fillMondays(pick, PlanDates.nextMonday(localToday()), 1);
+  var label = el("label", "f", "Week 1 starts on");
+  label.htmlFor = "startPick";
+  var field = el("div");
+  field.appendChild(label);
+  field.appendChild(pick);
+  wrap.appendChild(field);
   var row = el("div", "row");
+  wrap.appendChild(row);
   var ok = el("button", "btn primary", "Approve and use this plan");
   ok.type = "button";
   ok.onclick = function () {
     if (!confirm("Replace the current plan with this one? The current plan is backed up first, and everyone’s ticks start fresh.")) return;
     ok.disabled = true;
-    api("POST", "/api/requests/" + d.id + "/approve", {}).then(function () {
+    api("POST", "/api/requests/" + d.id + "/approve", { startDate: pick.value || null }).then(function () {
       $("msg").textContent = "";
       var done = el("div", "msg ok", "Your new plan is ready. ");
       var a = el("a", null, "Open the app →");
@@ -499,7 +574,7 @@ function reviewButtons(d) {
   };
   row.appendChild(ok);
   row.appendChild(no);
-  return row;
+  return wrap;
 }
 
 // Step 3: a waiting draft, with enough detail to decide, and Approve or Discard.
@@ -539,6 +614,7 @@ function load() {
     renderAI();
     renderDraft();
     renderReview();
+    renderDates();
   }).catch(function (e) {
     $("msg").textContent = "";
     $("msg").appendChild(el("div", "msg err", e.message));

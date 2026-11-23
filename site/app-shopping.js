@@ -467,7 +467,7 @@ function updateSummary() {
 
 // The items still to buy as plain text, grouped by aisle, for "Copy list".
 function leftText() {
-  var out = [weekName(week) + " shopping list"];
+  var out = [weekTitle(week) + " shopping list"];
   grouped(shownItems()).forEach(function (group) {
     var lines = group[1].filter(function (it) { return !isHome(it.name) && !isTicked(it); })
       .map(function (it) { return "- " + it.name; });
