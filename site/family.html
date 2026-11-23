@@ -198,6 +198,18 @@ function render() {
     text.appendChild(h);
     text.appendChild(el("small", null, "Logs in as “" + o.username + "”" + (o.source === ".env" ? " (set in .env on the server)" : "") + ". When they log in, the app asks them to add their email."));
     row.appendChild(text);
+    // A username added in the app can be removed here (one in .env is removed on the server).
+    if (o.source === "app" && o.username !== DATA.me.user) {
+      var acts = el("div", "acts");
+      var b = el("button", "btn small danger", "Remove");
+      b.type = "button";
+      b.addEventListener("click", function () {
+        if (!confirm("Remove " + (o.name || o.username) + "’s login? Their history stays, and you can give them a login again in Plan setup.")) return;
+        api("DELETE", "/api/family/login/" + encodeURIComponent(o.username)).then(load).catch(function (e) { status(e.message, true); });
+      });
+      acts.appendChild(b);
+      row.appendChild(acts);
+    }
     box.appendChild(row);
   });
   if (!DATA.accounts.length && !DATA.older.length) box.appendChild(el("p", "note", "No logins yet."));

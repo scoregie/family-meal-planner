@@ -47,8 +47,10 @@ function theirSettings(person) {
 function blockedBecause(person, name, me, plan) {
   if (person === me.person) return 'You can’t remove yourself here. To leave, use Delete my account on the Account page.';
   if (db.listAccounts().some(a => a.person === person)) return name + ' has a login. Remove it under Logins first, then remove them from the family.';
-  const older = auth.users().concat(db.listLogins().map(l => l.username)).some(u => auth.describe(u).person === person);
-  if (older) return name + ' still has an older username login. Remove it on the Edit plan page first.';
+  // Username logins: one in .env is removed on the server; one added in the app, on the Family page.
+  const envLogin = auth.users().find(u => auth.describe(u).person === person);
+  if (envLogin) return name + ' still logs in with the username “' + envLogin + '”, set in .env on the server. Delete its LOGIN_' + envLogin.toUpperCase() + ' line there, restart the api (docker compose restart api), then remove them.';
+  if (db.listLogins().some(l => auth.describe(l.username).person === person)) return name + ' has a username login. Remove it under Logins first, then remove them from the family.';
   if (db.listInvites().some(i => i.person === person)) return name + ' has an invite waiting. Cancel it first.';
   if (Object.keys(plan.people || {}).length <= 1) return name + ' is the only person in the plan.';
   return '';

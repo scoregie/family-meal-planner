@@ -609,6 +609,12 @@ function listLogins() {
   return open().prepare('SELECT username, person, admin, created_at, created_by FROM logins ORDER BY username').all();
 }
 
+// Removes a username login added from the app. Its login cookies stop working too (they are
+// signed with its password hash, which is gone).
+function deleteLogin(username) {
+  open().prepare('DELETE FROM logins WHERE username = ?').run(username);
+}
+
 // Adds a login. `hash` is already scrambled (auth.hash).
 function addLogin(username, hash, person, admin, createdBy) {
   open().prepare('INSERT INTO logins (username, hash, person, admin, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)')
@@ -807,7 +813,7 @@ module.exports = {
   setProfileFinished, addSignup, listSignups, getSignup, deleteSignup, countSignups,
   open, transaction, syncMeals, syncExercise, rememberDishes, history, dishes, DB_FILE,
   saveMeasurement, saveMeasurements, measurements, deleteMeasurement, eatenMeals, mealsBetween, ratingsSince, mealFeedback, sessionsSince, getSetting, setSetting, deleteSetting,
-  getLogin, listLogins, addLogin, setPassword, getProfile, saveProfile,
+  getLogin, listLogins, deleteLogin, addLogin, setPassword, getProfile, saveProfile,
   getAccount, accountByEmail, accountByLegacy, listAccounts, countAccounts, addAccount, updateAccount, deleteAccount, setAiKey, getAiKey, forgetPerson,
   addInvite, inviteByToken, listInvites, useInvite, deleteInvite, deleteInvitesFor, addReset, resetByToken, useReset,
   getChat, listChats, saveChat, deleteChat, addRequest, getRequest, listRequests, setRequestChat, setRequestStatus, countUsage, usage,
