@@ -3,6 +3,26 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.14.0 (2026-11-23)
+
+Dates on the plan, and clearer steps for removing someone who still has an older login.
+
+- **Plan dates.** When you approve a plan on Plan setup, pick the Monday Week 1 starts on (the
+  coming Monday by default). The week tabs then show their dates ("23–29 Nov"), each day shows its
+  date, "Today" is only marked in the week you're in, and the app opens at this week. Today says
+  when a plan hasn't started yet or has finished (with a link to draft the next one). A new
+  **Plan dates** card on Plan setup changes or clears the current plan's dates without losing
+  ticks, and calendar reminders stop when the plan finishes. A new plan never keeps the old
+  plan's date. Plans without a date look as before. For a plan written by hand, see `startDate`
+  in docs/plan-format.md.
+- **Removing someone with an older login.** If they log in with a username set in `.env`, the
+  message names the `LOGIN_` line to delete and says to restart the api (it used to point at the
+  Edit plan page, which can't remove one). Username logins saved in the app, from before email
+  accounts, now have a **Remove** button on the Family page.
+
+After updating, restart the api (`docker compose restart api`). Your current plan has no dates
+until you pick its first Monday under **Plan setup > Plan dates**.
+
 ## v1.13.0 (2026-11-23)
 
 Say when you were sick, remove someone from the family, and better vegetable counts for plans.
