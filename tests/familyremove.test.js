@@ -95,6 +95,29 @@ test('yourself, someone with an invite, and someone not in the plan can’t be r
   assert.equal((await server.request('POST', '/api/family/removed/2026-01-01-nobody/restore', {})).status, 404);
 });
 
+test('someone with an older username login (from before email accounts): remove it on the Family page, then them', async () => {
+  await asOwner();
+  assert.equal((await server.request('POST', '/api/family/person', { name: 'Kit', portion: '0.7' })).status, 200);
+  // Older versions saved username logins in their own table. Put one there the way they did.
+  const { DatabaseSync } = require('node:sqlite');
+  const sql = new DatabaseSync(path.join(server.dir, 'data', 'app.db'));
+  sql.prepare('INSERT INTO logins (username, hash, person, admin, created_at, created_by) VALUES (?, ?, ?, 0, ?, ?)')
+    .run('kit', require('../api/auth').hash('kit password 123'), 'kit', Date.now(), 'test');
+  sql.close();
+
+  const blocked = await server.request('POST', '/api/family/person/kit/remove', {});
+  assert.equal(blocked.status, 409, blocked.text);
+  assert.match(blocked.json.error, /username login\. Remove it under Logins first/);
+  assert.ok((await server.request('GET', '/api/family')).json.older.some(o => o.username === 'kit' && o.source === 'app'));
+
+  assert.equal((await server.request('DELETE', '/api/family/login/nobody', {})).status, 404);
+  const gone = await server.request('DELETE', '/api/family/login/kit', {});
+  assert.equal(gone.status, 200, gone.text);
+  assert.ok(!(await server.request('GET', '/api/family')).json.older.some(o => o.username === 'kit'));
+  const removed = await server.request('POST', '/api/family/person/kit/remove', {});
+  assert.equal(removed.status, 200, removed.text);
+});
+
 test('only admins can remove people', async () => {
   server.forgetCookie();
   assert.notEqual((await server.request('POST', '/api/family/person/juno/remove', {})).status, 200);

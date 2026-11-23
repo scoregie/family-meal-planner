@@ -36,6 +36,7 @@
 //   POST /api/family/member/<id>   {role}: change a role ("owner" hands over ownership)
 //   POST /api/family/member/<id>/reset   admins: make a password-reset link for someone
 //   DELETE /api/family/member/<id> admins: remove someone's login
+//   DELETE /api/family/login/<username>  admins: remove a username login added in the app
 //   POST /api/family/person/<person>/remove, POST /api/family/removed/<id>/restore   (familyremove.js)
 const crypto = require('crypto');
 const fs = require('fs');
@@ -386,10 +387,27 @@ async function setEmail(req, res, me) {
   return send(res, 200, { ok: true, email, role }, auth.loginCookie(req, 'acct-' + id));
 }
 
+// DELETE /api/family/login/<username>: removes a username login added from the app. Only the
+// owner can remove an admin's, and nobody can remove the one they are logged in with.
+function removeUsernameLogin(res, me, username) {
+  const login = db.listLogins().find(l => l.username === username);
+  if (!login) {
+    if (auth.users().includes(username)) return send(res, 400, { error: 'That username is set in .env on the server. Delete its LOGIN_' + username.toUpperCase() + ' line there and restart the api.' });
+    return send(res, 404, { error: 'That login was not found.' });
+  }
+  if (me.user === username) return send(res, 400, { error: 'You can’t remove the login you are using.' });
+  if (login.admin && me.role !== 'owner') return send(res, 403, { error: 'Only the owner can remove an admin’s login.' });
+  const person = auth.describe(username).person;
+  db.deleteLogin(username);
+  stopHealthSync(person);   // their phone can't keep sending health numbers either
+  send(res, 200, { ok: true });
+}
+
 // Stops a person's Health sync key from working (when their login is removed), unless another
 // login still belongs to them.
 function stopHealthSync(person) {
   if (!person || db.listAccounts().some(a => a.person === person)) return;
+  if (auth.users().concat(db.listLogins().map(l => l.username)).some(u => auth.describe(u).person === person)) return;
   const syncHash = db.getSetting('healthsync-person:' + person);
   if (syncHash) db.deleteSetting('healthsync:' + syncHash);
   db.deleteSetting('healthsync-person:' + person);
@@ -487,7 +505,7 @@ function family(res, me, ctx) {
     .map(l => Object.assign(l, { person: auth.describe(l.username).person, name: nameOf(auth.describe(l.username).person, ctx) }));
   const plan = ctx.readPlan() || {};
   const people = Object.values(plan.people || {}).filter(p => p && p.name).map(p => ({ person: ctx.toKey(p.name), name: p.name }));
-  send(res, 200, { me: { accountId: me.accountId || null, role: me.role }, accounts, older, invites: db.listInvites(), signups: db.listSignups(), people, removed: familyRemove.list(), mail: mailer.configured() });
+  send(res, 200, { me: { accountId: me.accountId || null, role: me.role, user: me.user }, accounts, older, invites: db.listInvites(), signups: db.listSignups(), people, removed: familyRemove.list(), mail: mailer.configured() });
 }
 
 // An admin inviting someone: makes an invite link (emailed if email is set up, else shown to copy).
@@ -648,6 +666,12 @@ async function handle(req, res, urlPath, url, me, ctx) {
   if (urlPath === '/api/family/invite' && req.method === 'DELETE') {
     db.deleteInvite(Number(url.searchParams.get('id')));
     send(res, 200, { ok: true });
+    return true;
+  }
+  // Removing a username login added from the app (one in .env is removed on the server).
+  const u = urlPath.match(/^\/api\/family\/login\/([a-z0-9._-]+)$/);
+  if (u && req.method === 'DELETE') {
+    removeUsernameLogin(res, me, u[1]);
     return true;
   }
   const m = urlPath.match(/^\/api\/family\/member\/(\d+)(\/reset)?$/);
