@@ -3,6 +3,32 @@
 Each release is tagged on GitHub (see Releases) with these notes. To update a server, see
 "Updating" in the README.
 
+## v1.15.0 (2026-11-26)
+
+Set your own exercise week and have meals built around it, and approve the next plan before it starts.
+
+- **Your exercise week (About me).** A day-by-day grid with a morning and an afternoon slot.
+  Each slot can be Cardio, Swimming, Strength, or Stretch and mobility, with minutes, and for
+  strength the part of the body (full body, chest, back, shoulders, arms, legs or core).
+  - Every plan writer (the built-in builder, the family's AI and Claude Code) keeps these
+    sessions on the days and at the times set, every week.
+  - Strength days get their own workouts for that part of the body, harder in weeks 3 and 4.
+  - The plan checks send back a draft that leaves a session out.
+  - Seven new exercises (101 in all) cover chest, shoulders and arms.
+- **What should your plan be built around? (About me).** Pick your exercise or your meals.
+  - With exercise first, food follows the sessions: a snack before a long morning session, one
+    after it, and one after afternoon strength, each on the right days, with eating times to match.
+  - Serves count the energy your sessions use.
+  - For someone losing weight, the deficit stays at the pace they chose, and rest days get a
+    little less.
+- **Approving a plan for a later Monday.** If the Monday you pick on Plan setup is still to come,
+  the new plan waits. The current plan and everyone's ticks carry on until then, and the new plan
+  takes over by itself that morning, in your time zone. A **Next plan** card on Plan setup shows
+  it, with **Start it now** and **Cancel it**. Before this, approving replaced the current plan
+  straight away.
+
+After updating, restart the api (`docker compose restart api`). The phone app doesn't have these yet.
+
 ## v1.14.0 (2026-11-23)
 
 Dates on the plan, and clearer steps for removing someone who still has an older login.
