@@ -111,6 +111,12 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid color
       <div id="review"></div>
     </section>
 
+    <section class="card" id="nextCard" hidden>
+      <h2>Next plan</h2>
+      <p class="note" id="nextNow"></p>
+      <div class="row"><button class="btn" type="button" id="nextStart">Start it now</button><button class="btn" type="button" id="nextCancel">Cancel it</button></div>
+    </section>
+
     <section class="card" id="datesCard" hidden>
       <h2>Plan dates</h2>
       <p class="note" id="datesNow"></p>
@@ -533,6 +539,26 @@ $("datesSave").addEventListener("click", function () {
   }).catch(function (e) { status(e.message, true); }).then(function () { button.disabled = false; });
 });
 
+// The Next plan card: a plan approved to start on a Monday still to come, while the current one carries on.
+function renderNext() {
+  var n = DATA.next;
+  $("nextCard").hidden = !n;
+  if (!n) return;
+  $("nextNow").textContent = "A new plan is approved and starts on " + dateText(n.startDate) + ". Until then everyone keeps the current plan; it changes over by itself that morning.";
+}
+
+$("nextStart").addEventListener("click", function () {
+  if (!confirm("Start the next plan now, instead of on " + dateText(DATA.next.startDate) + "? The current plan is backed up first, and everyone’s ticks start fresh.")) return;
+  api("POST", "/api/plan/next/start", {}).then(function () { status("The next plan is now the current plan."); return load(); })
+    .catch(function (e) { status(e.message, true); });
+});
+
+$("nextCancel").addEventListener("click", function () {
+  if (!confirm("Cancel the plan waiting to start on " + dateText(DATA.next.startDate) + "? The current plan carries on.")) return;
+  api("DELETE", "/api/plan/next").then(function () { status("Cancelled. The current plan carries on."); return load(); })
+    .catch(function (e) { status(e.message, true); });
+});
+
 // The Approve and Discard buttons under a waiting draft (`d`), with the Monday it starts on.
 function reviewButtons(d) {
   var wrap = el("div");
@@ -550,11 +576,18 @@ function reviewButtons(d) {
   var ok = el("button", "btn primary", "Approve and use this plan");
   ok.type = "button";
   ok.onclick = function () {
-    if (!confirm("Replace the current plan with this one? The current plan is backed up first, and everyone’s ticks start fresh.")) return;
+    // A Monday still to come: the new plan waits, and the current plan carries on until then.
+    var later = !!pick.value && pick.value > localToday();
+    var question = later
+      ? "Use this plan from " + dateText(pick.value) + "? The current plan carries on until then, and the new one takes over by itself that morning."
+      : "Replace the current plan with this one now? The current plan is backed up first, and everyone’s ticks start fresh.";
+    if (!confirm(question)) return;
     ok.disabled = true;
-    api("POST", "/api/requests/" + d.id + "/approve", { startDate: pick.value || null }).then(function () {
+    var tz = "";
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { /* the server's own time zone is used */ }
+    api("POST", "/api/requests/" + d.id + "/approve", { startDate: pick.value || null, tz: tz }).then(function () {
       $("msg").textContent = "";
-      var done = el("div", "msg ok", "Your new plan is ready. ");
+      var done = el("div", "msg ok", later ? "Approved. Your new plan starts on " + dateText(pick.value) + "; until then the current plan carries on. " : "Your new plan is ready. ");
       var a = el("a", null, "Open the app →");
       a.href = "./";
       done.appendChild(a);
@@ -614,6 +647,7 @@ function load() {
     renderAI();
     renderDraft();
     renderReview();
+    renderNext();
     renderDates();
   }).catch(function (e) {
     $("msg").textContent = "";

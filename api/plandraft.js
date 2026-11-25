@@ -39,6 +39,7 @@ const healthtargets = require('./healthtargets');
 const planextras = require('./planextras');
 const plancheck = require('./plancheck');
 const currentFood = require('./currentfood');   // the food the family already has
+const nextplan = require('./nextplan');         // a new plan waiting for its start date
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
 const QUESTIONS_FILE = process.env.QUESTIONS_FILE || '/site/questions.json';
@@ -662,6 +663,7 @@ function sendSetup(res, me, ctx) {
     kitchen: kitchenList().map(item => item.text),   // just the names, for the count on Plan setup
     isExample: isExamplePlan(ctx.readPlan()),
     current: currentDates(ctx.readPlan()),
+    next: nextplan.summary(),   // {startDate, title, approvedAt} of a plan waiting to start, or null
   });
 }
 

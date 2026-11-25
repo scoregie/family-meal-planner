@@ -9,7 +9,8 @@
 //   GET    /api/requests                     requests for changes (admins: everyone's; others: their own)
 //   POST   /api/requests/<id>/send           send your draft to the admins
 //   POST   /api/requests/<id>/withdraw       take back your own draft or request
-//   POST   /api/requests/<id>/approve        admins: apply it to the plan (a whole new plan: {startDate}, its first Monday)
+//   POST   /api/requests/<id>/approve        admins: apply it to the plan (a whole new plan: {startDate}, its first Monday,
+//                                             and {tz}; a start date still to come waits as the next plan)
 //   POST   /api/requests/<id>/decline        admins: say no, with an optional reply {reply}
 //
 // Set ANTHROPIC_API_KEY in .env to turn it on. Optional: ASSISTANT_MODEL (default claude-opus-5-5),
@@ -27,6 +28,7 @@ const planchange = require('./planchange');
 const PlanDates = require(path.join(path.dirname(process.env.PLAN_FILE || '/site/plan.json'), 'plandates.js'));
 const secrets = require('./secrets');
 const progress = require('./progress');
+const nextplan = require('./nextplan');   // a new plan waiting for its start date
 
 const MODEL = process.env.ASSISTANT_MODEL || 'claude-opus-5-5';
 const EFFORT = ['low', 'medium', 'high'].includes(process.env.ASSISTANT_EFFORT) ? process.env.ASSISTANT_EFFORT : 'medium';
@@ -672,7 +674,10 @@ function requestAction(res, me, id, action, b, ctx) {
       if (startDate) tried.plan.startDate = startDate;
       else delete tried.plan.startDate;
     }
-    ctx.savePlan(tried.plan);
+    // A new plan starting on a Monday still to come waits, and the current plan carries on until then.
+    const tz = progress.zoneOrDefault(b.tz);
+    if (whole && startDate && nextplan.isLater(startDate, tz)) nextplan.wait(tried.plan, startDate, tz, me.user);
+    else ctx.savePlan(tried.plan);
     db.setRequestStatus(id, 'done', me.user, String(b.reply || '').slice(0, 1000) || null);
   } else {
     return send(res, 404, { error: 'not found' });
