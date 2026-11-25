@@ -15,6 +15,7 @@ an empty data folder in a temporary folder, and deletes it afterwards.
 | --- | --- |
 | `server.test.js` | The server end to end: the first account, logins, the wrong-password limit, safe redirects, About me, building and approving a plan, ticks. |
 | `planbuilder.test.js` | The built-in plan builder: allergies, diets, children's portions, vegetable and fruit targets, exercise for injuries and pregnancy, every country's prices. |
+| `exerciseweek.test.js` | Your exercise week (About me): the server keeps only sessions that fit, every plan keeps them in their part of the day, each part of the body gets workouts, and a plan built around exercise fits snacks and serves to the sessions. |
 | `currentfood.test.js` | The Current food lists: an older kitchen list is sorted into places; spices and the fruit bowl have their own lists. (Photo links and clearing are in `server.test.js`.) |
 | `themetoggle.test.js` | The light or dark button at the top of the page: it is added, swaps the look, and remembers the choice. |
 | `names.test.js` | People's keys are the same in the browser and on the server. |

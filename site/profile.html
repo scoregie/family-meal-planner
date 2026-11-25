@@ -79,6 +79,14 @@ textarea{width:100%;min-height:4.2rem;resize:vertical}
 .finish.later{display:none}
 [hidden]{display:none!important}
 .pwlink{color:var(--mute);margin:1rem 0}
+.week{display:grid;gap:.4rem}
+.wday{border:1px solid var(--line);border-radius:.6rem;padding:.45rem .6rem;margin:0;min-width:0}
+.wday legend{font-weight:700;font-size:.9rem;padding:0 .25rem}
+.wslot{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem;margin:.2rem 0}
+.wslot>span{width:5.5rem;color:var(--mute);font-size:.85rem}
+.wslot select{font:inherit;font-size:.9rem;color:var(--ink);background:var(--bg);border:1px solid color-mix(in srgb,var(--mute) 70%,var(--card));border-radius:.5rem;padding:.35rem .4rem;min-height:2.3rem;max-width:100%}
+.wslot select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wclear{margin-top:.3rem}
 </style>
 <script src="regions.js"></script>
 <script src="appearance.js"></script>
@@ -255,13 +263,98 @@ function addTextBox(wrap, q, inputId) {
   wrap.appendChild(text);
 }
 
-// Makes the input for one question: chips for choices, a number box, or a text box.
+// A "week" question (Your exercise week): a box for each day, with a line for each part of the
+// day (morning, afternoon). Each line has a drop-down for the kind of session, then its minutes,
+// and for strength the part of the body. The answer is saved as
+// {Mon: {morning: {kind, minutes, area}}, ...}; a line set to "Nothing" is left out.
+function weekQuestion(q, help) {
+  var wrap = el("fieldset", "q");
+  var legend = el("legend", null, q.label);
+  if (help) legend.appendChild(help);
+  wrap.appendChild(legend);
+  var week = el("div", "week");
+  var DAYS = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
+  // The answer now, as a fresh copy that the drop-downs change.
+  var value = JSON.parse(JSON.stringify(ANSWERS[q.id] || {}));
+
+  // A drop-down with a first "nothing" choice and the given [value, words] choices.
+  function dropdown(label, empty, choices, current) {
+    var select = el("select");
+    select.setAttribute("aria-label", label);
+    select.appendChild(new Option(empty, ""));
+    choices.forEach(function (c) { select.appendChild(new Option(c[1], c[0])); });
+    select.value = current == null ? "" : String(current);
+    return select;
+  }
+
+  // Saves what the drop-downs say now (an empty week clears the answer).
+  function save() {
+    Object.keys(value).forEach(function (day) { if (!Object.keys(value[day]).length) delete value[day]; });
+    setAnswer(q.id, Object.keys(value).length ? JSON.parse(JSON.stringify(value)) : "");
+  }
+
+  Object.keys(DAYS).forEach(function (day) {
+    var box = el("fieldset", "wday");
+    box.appendChild(el("legend", null, DAYS[day]));
+    q.slots.forEach(function (slotPair) {
+      var slot = slotPair[0], slotName = slotPair[1];
+      var row = el("div", "wslot");
+      row.appendChild(el("span", null, slotName));
+      var now = (value[day] || {})[slot] || {};
+      var kind = dropdown(DAYS[day] + " " + slotName.toLowerCase() + ": session", "Nothing",
+        q.kinds.map(function (k) { return [k, k]; }), now.kind);
+      var mins = dropdown(DAYS[day] + " " + slotName.toLowerCase() + ": minutes", "Minutes",
+        q.minutes.map(function (m) { return [m, m + " min"]; }), now.minutes);
+      var area = dropdown(DAYS[day] + " " + slotName.toLowerCase() + ": part of the body", "Part of the body",
+        q.areas.map(function (a) { return [a, a]; }), now.area);
+      // Minutes show once a session is picked; the part of the body only for strength.
+      function show() {
+        mins.hidden = !kind.value;
+        area.hidden = kind.value !== "Strength";
+      }
+      // Copies this line's drop-downs into the answer and saves it.
+      function changed() {
+        show();
+        value[day] = value[day] || {};
+        if (!kind.value) delete value[day][slot];
+        else {
+          var s = { kind: kind.value };
+          if (mins.value) s.minutes = Number(mins.value);
+          if (kind.value === "Strength" && area.value) s.area = area.value;
+          value[day][slot] = s;
+        }
+        save();
+      }
+      kind.onchange = mins.onchange = area.onchange = changed;
+      show();
+      row.appendChild(kind);
+      row.appendChild(mins);
+      row.appendChild(area);
+      box.appendChild(row);
+    });
+    week.appendChild(box);
+  });
+  wrap.appendChild(week);
+  // Clearing the whole week hands the choice of sessions back to the plan.
+  var clear = el("button", "linkish wclear", "Clear the whole week");
+  clear.type = "button";
+  clear.onclick = function () {
+    value = {};
+    save();
+    wrap.replaceWith(weekQuestion(q, help));
+  };
+  wrap.appendChild(clear);
+  return wrap;
+}
+
+// Makes the input for one question: chips for choices, a week of sessions, a number box, or a text box.
 function questionField(q) {
   var inputId = "q-" + q.id;
   // A question can have "helpPhone": its help as worded for the phone app (no admins there).
   var helpText = (window.PHONE && q.helpPhone) || q.help;
   var help = helpText ? el("span", "help", helpText) : null;
   if (q.type === "choice" || q.type === "multi") return chipsQuestion(q, inputId, help);
+  if (q.type === "week") return weekQuestion(q, help);
 
   var wrap = el("div", "q");
   var title = el("label", null, q.label);

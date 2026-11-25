@@ -49,9 +49,34 @@ function cleanAnswers(answers) {
       const list = typeof value === 'string' ? [value] : value;
       const picked = Array.isArray(list) ? q.options.filter(o => list.includes(o)) : [];
       if (picked.length) out[id] = picked;
+    } else if (q.type === 'week') {
+      const week = cleanWeek(q, value);
+      if (week) out[id] = week;
     }
   }
   return out;
+}
+
+// Keeps only the parts of a "week" answer (Your exercise week) that fit its question:
+// {Mon: {morning: {kind: "Cardio", minutes: 30}, afternoon: {kind: "Strength", minutes: 45, area: "Chest"}}, ...}.
+// A slot needs a kind from the list; minutes and (for strength) the body area are kept when they
+// are from the lists too. Gives null when no slot is left.
+function cleanWeek(q, value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const out = {};
+  for (const day of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']) {
+    const given = value[day];
+    if (!given || typeof given !== 'object') continue;
+    for (const [slot] of q.slots) {
+      const s = given[slot];
+      if (!s || typeof s !== 'object' || !q.kinds.includes(s.kind)) continue;
+      const kept = { kind: s.kind };
+      if (q.minutes.includes(Number(s.minutes))) kept.minutes = Number(s.minutes);
+      if (s.kind === 'Strength' && q.areas.includes(s.area)) kept.area = s.area;
+      (out[day] = out[day] || {})[slot] = kept;
+    }
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 // Works out whose profile a request is for, and refuses anyone else's unless you are an admin.
