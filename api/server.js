@@ -25,6 +25,7 @@ const healthsync = require('./healthsync'); // daily numbers from an iPhone Shor
 const exercises = require('./exercises');   // the exercise library: browse, leave out, swap
 const libraryUpdates = require('./libraryupdates'); // new meals and exercises every 2 weeks
 const currentFood = require('./currentfood');       // the food the family already has (pantry, fridge, freezer)
+const nextplan = require('./nextplan');             // a new plan waiting for its start date
 const { toKey } = require('./sharedrules');       // "Alex Smith" -> "alex-smith"
 const { send, readBody } = require('./requests');   // reading what a page sent, and sending JSON back
 
@@ -282,7 +283,7 @@ function backups() {
 // Answers /api/plan... requests. Returns true if it handled the request.
 async function handlePlan(req, res, urlPath, me) {
   if (!urlPath.startsWith('/api/plan')) return false;
-  if (['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/dates'].includes(urlPath)) return false;   // plandraft.js
+  if (['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/dates', '/api/plan/next', '/api/plan/next/start'].includes(urlPath)) return false;   // plandraft.js
   if (!me.admin) {
     send(res, 403, { error: 'only an admin can edit the plan' });
     return true;
@@ -538,6 +539,7 @@ async function handleRequest(req, res) {
     if (await accounts.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
     if (await plandraft.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, toKey, people })) return;
+    if (nextplan.handle(req, res, urlPath, me, { savePlan })) return;
     if (await planextras.handle(req, res, urlPath, url, me, { people })) return;
     if (await currentFood.handle(req, res, urlPath, me)) return;
     if (healthsync.handle(req, res, urlPath, url, me, { people })) return;
@@ -566,6 +568,7 @@ async function handleRequest(req, res) {
 
 startDatabase();
 libraryUpdates.start({ readPlan, toKey, people });
+nextplan.start({ savePlan });
 
 http.createServer(handleRequest)
   // Long enough for a big Apple Health export over slow Wi-Fi (Node's default is 5 minutes).
