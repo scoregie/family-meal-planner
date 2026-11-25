@@ -576,6 +576,55 @@
    ]
   },
   {
+   "id": "dumbbell-chest-fly",
+   "name": "Dumbbell chest fly",
+   "type": "push",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Lie on a bench or the floor with a light dumbbell in each hand above your chest, elbows a little bent. Open your arms out wide in a slow arc until you feel a stretch across your chest, then bring them back up together.",
+   "flags": [
+    "supine",
+    "shoulders"
+   ]
+  },
+  {
+   "id": "band-chest-fly",
+   "name": "Band chest fly",
+   "type": "push",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 12",
+   "how": "Loop a band behind you at chest height (round a post or door anchor) and hold an end in each hand, arms out wide. Bring your hands together in front of your chest in a hugging arc, then let them open slowly.",
+   "flags": [
+    "shoulders"
+   ]
+  },
+  {
+   "id": "dumbbell-lateral-raise",
+   "name": "Dumbbell lateral raise",
+   "type": "push",
+   "equipment": "dumbbells",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Stand tall with a light dumbbell in each hand by your sides. Lift your arms out to the side until they are level with your shoulders, elbows soft, then lower slowly.",
+   "flags": [
+    "shoulders"
+   ]
+  },
+  {
+   "id": "band-lateral-raise",
+   "name": "Band lateral raise",
+   "type": "push",
+   "equipment": "bands",
+   "level": 1,
+   "dose": "3 × 12",
+   "how": "Stand on the middle of a band and hold an end in each hand by your sides. Lift your arms out to the side to shoulder height, then lower slowly.",
+   "flags": [
+    "shoulders"
+   ]
+  },
+  {
    "id": "doorway-row",
    "name": "Doorway row",
    "type": "pull",
@@ -1005,6 +1054,42 @@
    "flags": [
     "shoulders",
     "seated"
+   ]
+  },
+  {
+   "id": "dumbbell-hammer-curl",
+   "name": "Dumbbell hammer curl",
+   "type": "arms",
+   "equipment": "dumbbells",
+   "level": 1,
+   "dose": "3 × 10",
+   "how": "Stand with a dumbbell in each hand, palms facing your sides. Keep your elbows by your ribs and curl the weights up with your thumbs pointing up, then lower slowly.",
+   "flags": [
+    "seated"
+   ]
+  },
+  {
+   "id": "dumbbell-triceps-kickback",
+   "name": "Dumbbell triceps kickback",
+   "type": "arms",
+   "equipment": "dumbbells",
+   "level": 2,
+   "dose": "3 × 10",
+   "how": "Put one hand and knee on a bench, back flat, with a dumbbell in the other hand. Keep that elbow tucked by your side and straighten your arm behind you, then bend it back slowly. Swap sides.",
+   "flags": []
+  },
+  {
+   "id": "close-grip-knee-push-up",
+   "name": "Close-grip knee push-up",
+   "type": "arms",
+   "equipment": "none",
+   "level": 2,
+   "dose": "3 × 8",
+   "how": "Like a knee push-up, but with your hands just under your shoulders and elbows brushing your sides as you lower. It works the backs of your arms.",
+   "flags": [
+    "floor",
+    "wrists",
+    "knees"
    ]
   },
   {

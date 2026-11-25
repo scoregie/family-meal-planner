@@ -9,7 +9,7 @@
 //      checks and measures no worse than before (improve).
 // Nothing here approves anything: the corrected draft still waits for an admin.
 const healthtargets = require('./healthtargets');
-const { HOW_MUCH } = require('./planbuilder');   // tells "2 jars, opened" from the name of a food
+const { HOW_MUCH, weekSessions } = require('./planbuilder');   // tells "2 jars, opened" from the name of a food; reads an exercise week
 
 const WORDS = { veg: 'vegetables', fruit: 'fruit' };
 const ABSOLUTES = /\b(always|never|must)\b/i;
@@ -158,6 +158,23 @@ function absoluteWords(plan, p) {
   return out;
 }
 
+// Sessions from someone's exercise week (About me) that a plan leaves out, as sentences: each
+// one has to be on its day, in the part of the day they chose, in every meal week.
+function exerciseWeek(plan, p) {
+  const sessions = weekSessions((p.answers || {}).exercise_week);
+  if (!sessions.length) return [];
+  const missing = new Set();
+  weeksWithMeals(plan).forEach(week => {
+    const ex = week.exercise && (week.exercise[p.key] || (week.exercise.days ? week.exercise : null));
+    for (const s of sessions) {
+      const day = ex && Array.isArray(ex.days) ? ex.days.find(d => d.day === s.day) : null;
+      const text = day ? String(day[s.slot] || '') : '';
+      if (!text || (s.kind === 'Strength' && !/strength/i.test(text))) missing.add(s.day + ' ' + s.slot + ' (' + s.kind + (s.area ? ', ' + s.area : '') + ', ' + s.minutes + ' minutes)');
+    }
+  });
+  return missing.size ? [p.name + ' set their own exercise week in About me, but these sessions are missing from some weeks, or aren’t in that part of the day: ' + [...missing].join('; ') + '. Put each one in that day’s "morning" or "afternoon" slot in every week, as they set it.'] : [];
+}
+
 // Protein powder that isn't where the person's answers say it should be, as sentences. An adult
 // who has it on set days gets it as a counted snack; anyone under 18 gets none.
 function proteinPowder(plan, p) {
@@ -294,7 +311,7 @@ function problems(plan, people, food) {
   const out = [];
   for (const p of people) {
     if (!plan.people || !plan.people[p.key]) continue;
-    out.push(...allergyFoods(plan, p), ...shortWeeks(plan, p), ...dislikedFoods(plan, p), ...absoluteWords(plan, p), ...proteinPowder(plan, p));
+    out.push(...allergyFoods(plan, p), ...shortWeeks(plan, p), ...dislikedFoods(plan, p), ...absoluteWords(plan, p), ...proteinPowder(plan, p), ...exerciseWeek(plan, p));
   }
   out.push(...foodProblems(plan, food));
   return out;

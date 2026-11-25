@@ -34,7 +34,12 @@
 //     counted as a snack in place of another one. The builder never suggests starting any.
 //   - Outside Australia, shop names, pack sizes and prices come from library-prices.json
 //     (opts.country), and recipe words change to the local ones ("capsicum" to "pepper").
-//   - Exercise builds gently over the 4 weeks from each person's time, equipment and health notes.
+//   - Exercise builds gently over the 4 weeks from each person's time, equipment and health notes,
+//     unless they set their own exercise week in About me: then every week has exactly those
+//     sessions, with a strength workout for each part of the body they picked.
+//   - "What should your plan be built around?": with exercise first, snacks are timed and fuelled
+//     around their sessions and their serves count the energy the sessions use. Losing weight
+//     keeps the pace they chose: rest days get a little less, so the deficit doesn't grow.
 //
 // The result goes through the same review and approval as a plan drafted by AI (plandraft.js).
 // The data files. On the server they're loaded here with require(). The phone app has no
@@ -326,6 +331,58 @@ function providedDays(a) {
 // Whether they can get to a pool (at home or a public one; "Pool" is the older answer).
 const hasPool = equipment => ['Pool', 'Pool at home', 'Public pool or swim centre'].some(p => equipment.has(p));
 
+// ---------------------------------------------------------------------------
+// Your exercise week (About me): the sessions someone set for themselves
+// ---------------------------------------------------------------------------
+
+// The parts of the day a session can go in, in order, as saved in the answer and as plan slots.
+const WEEK_SLOTS = ['morning', 'afternoon'];
+// How long a session is when they picked the kind but not the minutes.
+const WEEK_MINUTES = { Cardio: 30, Swimming: 30, Strength: 40, 'Stretch and mobility': 15 };
+// Roughly how hard each kind of session is (METs: 1 is sitting still), for the energy it uses.
+const WEEK_METS = { Cardio: 5.5, Swimming: 6, Strength: 4.5, 'Stretch and mobility': 2.5 };
+
+// The sessions in someone's exercise week, in order: [{day, slot, kind, minutes, area}].
+// Empty when they didn't set one.
+function weekSessions(answer) {
+  const out = [];
+  if (!answer || typeof answer !== 'object') return out;
+  for (const day of DAYS) {
+    for (const slot of WEEK_SLOTS) {
+      const s = answer[day] && answer[day][slot];
+      if (!s || !WEEK_MINUTES[s.kind]) continue;
+      out.push({ day, slot, kind: s.kind, minutes: num(s.minutes) || WEEK_MINUTES[s.kind], area: s.kind === 'Strength' ? s.area || 'Full body' : null });
+    }
+  }
+  return out;
+}
+
+// An exercise week as plain lines for a plan writer: "Mon morning: Cardio, 30 minutes".
+function weekText(answer) {
+  return weekSessions(answer).map(s => s.day + ' ' + s.slot + ': ' + s.kind + (s.area ? ' (' + s.area + ')' : '') + ', ' + s.minutes + ' minutes');
+}
+
+// Whether a session is cardio or a swim (the kinds that get fuel before and after).
+const isCardioKind = s => s.kind === 'Cardio' || s.kind === 'Swimming';
+
+// The days that get extra food in a plan built around exercise: `before` (a long morning cardio
+// or swim, 45 minutes or more), `after` (60 minutes or more of cardio and swimming that day) and
+// `rest` (no sessions at all).
+function fuelDays(sessions) {
+  const cardioMinutes = day => sessions.filter(s => s.day === day && isCardioKind(s)).reduce((n, s) => n + s.minutes, 0);
+  return {
+    before: DAYS.filter(day => sessions.some(s => s.day === day && s.slot === 'morning' && isCardioKind(s) && s.minutes >= 45)),
+    after: DAYS.filter(day => cardioMinutes(day) >= 60),
+    rest: DAYS.filter(day => !sessions.some(s => s.day === day)),
+  };
+}
+
+// About how many kilocalories a week of sessions uses on top of resting, for someone weighing
+// `kg`: each session's minutes times how hard it is (METs above resting).
+function weekKcal(sessions, kg) {
+  return sessions.reduce((n, s) => n + s.minutes / 60 * (WEEK_METS[s.kind] - 1) * kg, 0);
+}
+
 // A dislike that names a whole food group rather than a food, after words() has tidied it:
 // "most veggy" (from "most veggies"), "vegetable", "fruit", "greens".
 const BROAD_DISLIKE = /^(most |all |any )?(veg|veggy|vegy|veggie|vegie|vegetable|fruit|green|salad stuff|healthy food)$/;
@@ -441,6 +498,12 @@ function rulesFor(p) {
     budget: num(a.budget),
     notes: [],
   };
+  // The exercise week they set in About me (empty if they didn't), and whether they want the
+  // plan built around it: their meals and snacks then follow their sessions. Not for children,
+  // whose exercise is play.
+  r.week = r.kid ? [] : weekSessions(a.exercise_week);
+  r.exerciseFirst = r.week.length > 0 && /^My exercise/.test(String(a.plan_priority || ''));
+  r.losing = list(a.goal).includes('Lose weight');
   for (const x of list(a.allergies)) if (ALLERGY[x]) r.hard.add(ALLERGY[x]);
   if (r.conditions.has('Coeliac disease')) r.hard.add('gluten');
   // An adult's protein powder: how it's tied to their days ("daily", "active", "strength" or
@@ -503,6 +566,15 @@ function portionFor(p, r) {
   if (steps >= 12000) activity = Math.max(activity, 1.65);
   else if (steps >= 9000) activity = Math.max(activity, 1.5);
   let kcal = bmr * activity;
+  // A plan built around their exercise week counts the energy their sessions use, less what the
+  // extra snacks on long-session days give, so a goal to lose weight keeps the pace they chose
+  // (the deficit below) rather than growing with every session they add.
+  r.exerciseKcal = 0;
+  if (r.exerciseFirst) {
+    const fuel = fuelDays(r.week);
+    r.exerciseKcal = Math.max(0, (weekKcal(r.week, w) - fuel.before.length * 100 - fuel.after.length * 180) / 7);
+    kcal += r.exerciseKcal;
+  }
   const goals = new Set(list(a.goal));
   const pregnant = r.conditions.has('Pregnant or breastfeeding');
   if (goals.has('Lose weight') && !pregnant) kcal *= { 'Slow and steady': 0.9, 'A moderate pace': 0.85, 'As fast as is safe': 0.8 }[a.pace] || 0.85;
@@ -795,7 +867,9 @@ function cardioFor(a, equipment, seated) {
   }
   // What the other cardio days are when the pool is only some days.
   const otherCardio = lowerBody && canRide ? 'Ride' : 'Walk';
-  return { cardio, otherCardio, poolDays };
+  // What a swim is called: at home, or a trip to the pool.
+  const swim = equipment.has('Pool at home') ? 'Swim' : 'Swim at the pool';
+  return { cardio, otherCardio, poolDays, swim };
 }
 
 // The highest cardio level (see cardio.js) that suits someone, and why it is lower than the top:
@@ -933,6 +1007,46 @@ function exerciseWeek(w, sessions, minutes, c) {
   };
 }
 
+// One week (w is 0 to 3) of the exercise week someone set in About me: each session in the part of
+// the day they chose. Cardio is at their level (`c` from cardioFor and cardioNow), swims say
+// where, and strength names the workout for that part of the body (`names`: {area: [weeks 1 and 2
+// workout, weeks 3 and 4 workout]}). Days without a session are rest days.
+function setWeek(w, sessions, c, names) {
+  const focus = ['Settle into your week', 'Same sessions, getting easier', 'Harder strength workouts from this week', 'Keep it going'];
+  const lower = text => text.charAt(0).toLowerCase() + text.slice(1);
+  // What a cardio or swim session is called ("Ride", "Swim at the pool"): a swim chosen as their
+  // usual cardio is swapped for their other cardio, because swims have their own choice.
+  const kindOf = s => s.kind === 'Swimming' ? c.swim : /^Swim/.test(c.cardio) ? c.otherCardio : c.cardio;
+  const cardioLine = (kind, mins) => c.level == null ? kind + ' ' + mins + ' minutes' : CARDIO.session(kind, c.level, mins, c.walkCap);
+  const lineFor = s => {
+    if (isCardioKind(s)) return cardioLine(kindOf(s), s.minutes);
+    if (s.kind === 'Strength') return 'Strength: ' + names[s.area][w < 2 ? 0 : 1] + ', ' + s.minutes + ' minutes';
+    return 'Stretch routine, ' + s.minutes + ' minutes';
+  };
+  // The week's targets: "3 × ride 30 minutes", "3 strength sessions: chest, arms and core".
+  const counts = new Map();
+  for (const s of sessions.filter(isCardioKind)) {
+    const what = lower(kindOf(s)) + ' ' + s.minutes + ' minutes';
+    counts.set(what, (counts.get(what) || 0) + 1);
+  }
+  const targets = [...counts].map(([what, n]) => n + ' × ' + what);
+  const strength = sessions.filter(s => s.kind === 'Strength');
+  if (strength.length) targets.push(strength.length + ' strength session' + (strength.length > 1 ? 's' : '') + ': ' + andList([...new Set(strength.map(s => s.area.toLowerCase()))]));
+  const stretch = sessions.filter(s => s.kind === 'Stretch and mobility').length;
+  if (stretch) targets.push(stretch + ' stretch session' + (stretch > 1 ? 's' : ''));
+  return {
+    focus: focus[w],
+    targets,
+    days: DAYS.map(day => {
+      const o = { day };
+      const today = sessions.filter(s => s.day === day);
+      for (const s of today) o[s.slot] = lineFor(s);
+      if (!today.length) o.mobility = 'Rest, or a gentle stretch';
+      return o;
+    }),
+  };
+}
+
 // One person's exercise for the 4 weeks: their workouts, each week's days and targets, notes and medical considerations.
 function exerciseFor(p, r, rnd) {
   const a = p.answers || {};
@@ -966,9 +1080,17 @@ function exerciseFor(p, r, rnd) {
     notes[1] = 'Warm up for 5 minutes first. How hard your cardio should feel: ' + how.charAt(0).toLowerCase() + how.slice(1);
     if (now.why) notes.push(now.why);
   }
+  const injuries = String(a.injuries || '').trim() + ' ' + String(a.gp || '').trim();
+  // They set their own exercise week in About me: the same sessions every week, as they set them.
+  if (r.week.length) {
+    const made = strengthWorkouts(p, r, { level, gentle, pregnant, seated, injuries }, rnd || Math.random, r.week);
+    notes[0] = 'These are the sessions you set in About me (Your exercise week), the same each week. If a session feels too hard, do less rather than skipping it, and change your week in About me whenever you like.';
+    if (made.note) notes.push(made.note);
+    const weeks = [0, 1, 2, 3].map(w => setWeek(w, r.week, cardio, made.names));
+    return { weeks, top: { workouts: made.workouts, notes, medical } };
+  }
   const weeks = [];
   for (let w = 0; w < 4; w++) weeks.push(exerciseWeek(w, plan[w], minutes, cardio));
-  const injuries = String(a.injuries || '').trim() + ' ' + String(a.gp || '').trim();
   const made = strengthWorkouts(p, r, { level, gentle, pregnant, seated, injuries }, rnd || Math.random);
   if (made.note) notes.push(made.note);
   return { weeks, top: { workouts: made.workouts, notes, medical } };
@@ -1039,10 +1161,38 @@ function exerciseFits(p) {
   return EXERCISES.filter(e => usable(e) && (o.seated || !e.flags.includes('chair'))).map(e => e.id);
 }
 
+// Which part of the body an exercise works most, for workouts that focus on one part (Your
+// exercise week): chest, shoulders, back, rear (the backs of the shoulders), biceps, triceps,
+// or the exercise's type for legs and core (squat, hinge, lunge, calf, core).
+function muscleOf(e) {
+  if (e.type === 'push') return /overhead|shoulder|lateral|arm-raises/.test(e.id) ? 'shoulders' : 'chest';
+  if (e.type === 'pull') return /pull-apart|y-raise/.test(e.id) ? 'rear' : 'back';
+  if (e.type === 'arms') return /curl/.test(e.id) ? 'biceps' : 'triceps';
+  return e.type;
+}
+// For each part of the body someone can pick, the muscles its workout works, in order. A workout
+// takes as many as fit its minutes, so the first ones matter most.
+const AREA_PICKS = {
+  'Full body': ['squat', 'chest', 'hinge', 'back', 'core', 'lunge', 'shoulders'],
+  Chest: ['chest', 'chest', 'shoulders', 'chest', 'triceps', 'chest', 'core'],
+  Back: ['back', 'back', 'rear', 'back', 'biceps', 'hinge', 'core'],
+  Shoulders: ['shoulders', 'shoulders', 'rear', 'shoulders', 'triceps', 'rear', 'core'],
+  Arms: ['biceps', 'triceps', 'biceps', 'triceps', 'biceps', 'triceps', 'core'],
+  Legs: ['squat', 'hinge', 'lunge', 'hinge', 'calf', 'squat', 'core'],
+  Core: ['core', 'core', 'core', 'core', 'core', 'core', 'core'],
+};
+// When nothing suits for a muscle (an injury, or no equipment for it), the one to use instead.
+const MUSCLE_FALLBACK = { lunge: 'squat', calf: 'balance', rear: 'back', shoulders: 'chest', biceps: 'back', triceps: 'chest' };
+
 // Two strength workouts (A and B) for weeks 1 and 2, and a harder pair for weeks 3 and 4, picked
 // from exercises.json to suit the person's equipment, injuries, pregnancy, mobility and dislikes.
 // Returns {workouts, note}.
-function strengthWorkouts(p, r, o, rnd) {
+//
+// With `sessions` (their exercise week from About me), it makes a workout for each part of the
+// body they picked instead ("Chest 1" for weeks 1 and 2, a harder "Chest 2" for weeks 3 and 4),
+// as long as their longest session for it, and a stretch routine if they set stretch sessions.
+// It then also returns `names`: {area: ["Chest 1", "Chest 2"]}.
+function strengthWorkouts(p, r, o, rnd, sessions) {
   const { usable, why } = exerciseRules(p, o);
   const best = o.level === 'seated' ? 'none' : o.level;
   const caps = (o.gentle || o.pregnant || o.seated || r.teen) ? [1, 2] : [2, 3];
@@ -1052,8 +1202,8 @@ function strengthWorkouts(p, r, o, rnd) {
   // first, something not used yet, with a little randomness so plans differ. One level harder
   // is allowed when nothing else fits. Sitting-only exercises are for people who exercise seated,
   // or a last resort (`chair`).
-  function choose(type, cap, chair) {
-    const pool = EXERCISES.filter(e => e.type === type && e.level <= cap + 1 && usable(e)
+  function choose(type, cap, chair, muscle) {
+    const pool = EXERCISES.filter(e => (muscle ? muscleOf(e) === muscle : e.type === type) && e.level <= cap + 1 && usable(e)
       && (o.seated || chair || !e.flags.includes('chair')));
     if (!pool.length) return null;
     let top = null, topScore = -Infinity;
@@ -1072,6 +1222,13 @@ function strengthWorkouts(p, r, o, rnd) {
   const warm = o.seated ? [byId('seated-warm-up')] : [byId('march-on-the-spot'), byId('arm-circles-and-leg-swings')];
   const coolPool = EXERCISES.filter(e => e.type === 'mobility' && usable(e) && !e.flags.includes('floor'));
   const cool = o.seated ? [byId('seated-stretches')] : coolPool.slice(0, 3);
+  if (sessions && sessions.length) {
+    const made = areaWorkouts(sessions, o, { line, warm, cool, caps, usable, choose, used });
+    const note = why.length
+      ? 'You mentioned your ' + why.join(' and ') + ', so the exercises that put the most load there are left out. Swap anything that still doesn’t feel right from the Exercise library.'
+      : '';
+    return { workouts: made.workouts, names: made.names, note };
+  }
   const SLOTS = {
     A: ['squat', 'push', 'hinge', 'pull', 'core'],
     B: ['lunge', 'pull', 'push', 'hinge', o.seated ? 'arms' : 'calf', 'core'],
@@ -1101,6 +1258,48 @@ function strengthWorkouts(p, r, o, rnd) {
     ? 'You mentioned your ' + why.join(' and ') + ', so the exercises that put the most load there are left out. Swap anything that still doesn’t feel right from the Exercise library.'
     : '';
   return { workouts, note };
+}
+
+// The workouts for an exercise week (see strengthWorkouts): one pair per part of the body, and a
+// stretch routine. `line`, `warm`, `cool`, `caps`, `usable` and `choose` are strengthWorkouts' own.
+function areaWorkouts(sessions, o, parts) {
+  const { line, warm, cool, caps, usable, choose, used } = parts;
+  const workouts = [];
+  const names = {};
+  const areas = [...new Set(sessions.filter(s => s.kind === 'Strength').map(s => s.area))];
+  for (const area of areas) {
+    const minutes = Math.max(...sessions.filter(s => s.area === area).map(s => s.minutes));
+    // About 7 minutes an exercise (3 sets and rests), after 10 minutes of warm-up and cool-down.
+    const count = Math.max(3, Math.min(7, Math.round((minutes - 10) / 7)));
+    names[area] = [];
+    [0, 1].forEach(block => {
+      used.clear();
+      const picked = [];
+      for (const muscle of AREA_PICKS[area]) {
+        if (picked.length >= count) break;
+        const e = choose(null, caps[block], false, muscle) || (MUSCLE_FALLBACK[muscle] && choose(null, caps[block], false, MUSCLE_FALLBACK[muscle]))
+          || choose(muscle, caps[block], false);
+        if (e && !picked.includes(e)) picked.push(e);   // the same exercise only once a workout
+      }
+      const name = area + ' ' + (block + 1);
+      names[area].push(name);
+      workouts.push({
+        name: name + ': ' + picked.slice(0, 3).map(e => e.name.toLowerCase()).join(', ') + ' (weeks ' + (block ? '3 and 4' : '1 and 2') + ')',
+        time: 'About ' + minutes + ' minutes',
+        items: [].concat(
+          warm.filter(Boolean).map(e => 'Warm-up: ' + line(e)),
+          picked.map(e => line(e, block === 0 && o.gentle)),
+          cool.filter(Boolean).map(e => 'Cool-down: ' + line(e)),
+        ),
+      });
+    });
+  }
+  // A stretch routine for "Stretch and mobility" sessions: the mobility exercises that suit them.
+  if (sessions.some(s => s.kind === 'Stretch and mobility')) {
+    const stretches = EXERCISES.filter(e => e.type === 'mobility' && usable(e) && (o.seated ? e.flags.includes('seated') : !e.flags.includes('chair')));
+    workouts.push({ name: 'Stretch routine: ' + stretches.slice(0, 3).map(e => e.name.toLowerCase()).join(', '), time: 'As long as you set', items: stretches.map(e => line(e)) });
+  }
+  return { workouts, names };
 }
 
 // ---------------------------------------------------------------------------
@@ -1537,6 +1736,17 @@ function chooseSnacks(job, r, key, planPeople, weeks, exWeeks) {
   }
 }
 
+// Whether a day of exercise has strength: the "strength" slot, or a morning or afternoon session
+// that says "Strength" (as an exercise week from About me does). The Exercise tab checks the same way.
+function strengthDay(exDay) {
+  return !!exDay.strength || ['morning', 'afternoon'].some(k => /^Strength/.test(exDay[k] || ''));
+}
+
+// Whether a day of exercise has any session (a rest day or an optional one doesn't count).
+function activeDay(exDay) {
+  return ['morning', 'afternoon', 'cardio', 'strength', 'session'].some(k => exDay[k] && !/^(optional|rest)/i.test(exDay[k]));
+}
+
 // Adds one person's snacks to each week's ingredient totals, counting only the days they have
 // each snack (some are only for certain days, weeks, or days with exercise).
 function addSnackNeeds(snacks, exWeeks, needs) {
@@ -1548,10 +1758,10 @@ function addSnackNeeds(snacks, exWeeks, needs) {
         if (s.days && !s.days.includes(d)) return false;
         if (s.weeks && !s.weeks.includes(w + 1)) return false;
         const exDay = exWeeks[w].days.find(x => x.day === d) || {};
-        if (s.exercise === 'strength') return !!exDay.strength;
-        if (s.exercise === 'rest') return !exDay.strength;
-        if (s.exercise === 'active') return !!(exDay.strength || exDay.cardio);
-        if (s.exercise === 'inactive') return !(exDay.strength || exDay.cardio);
+        if (s.exercise === 'strength') return strengthDay(exDay);
+        if (s.exercise === 'rest') return !strengthDay(exDay);
+        if (s.exercise === 'active') return activeDay(exDay);
+        if (s.exercise === 'inactive') return !activeDay(exDay);
         return true;
       }).length;
       // A snack marked optional is bought for half the days.
@@ -1570,6 +1780,11 @@ function addEatingTimes(p, r) {
   } else if (r.remind) {
     p.times = timesFor(p.snacks);
     p.timesNote = 'You asked for eating reminders, so these are ordinary times to start from. Shift them to suit your day.';
+  }
+  // A plan built around their exercise week: the snacks for their sessions, on the days they go with.
+  if (r.exerciseFirst) {
+    p.times = (p.times || timesFor(p.snacks, r.fast)).concat(sessionSnackTimes(p.snacks, r.fast));
+    if (!p.timesNote) p.timesNote = 'Your plan is built around your exercise week, so the snacks for your sessions go on the days you set. Shift the times to suit your day.';
   }
   // Weeks of fasting from sunrise to sunset: in place of the usual times when it's the whole
   // plan, or listed after them when it's only some weeks.
@@ -1775,7 +1990,7 @@ function snacksFor(r, exWeeks, rnd) {
   const by = kind => ok.filter(s => s.kind === kind);
   const protein = by('protein'), fruit = gentleFirst(by('fruit'), r.gentleFruit), other = ok.filter(s => s.kind === 'other' || s.kind === 'veg');
   const out = [];
-  const lifts = exWeeks.some(w => w.days.some(d => d.strength));
+  const lifts = exWeeks.some(w => w.days.some(strengthDay));
   if (r.kid) {
     if (fruit[0]) out.push({ when: 'After school', what: fruit[0].what, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] });
     if (other[0] || fruit[1]) out.push({ when: 'Afternoon', what: (other[0] || fruit[1]).what, days: ['Sat', 'Sun'] });
@@ -1801,7 +2016,35 @@ function snacksFor(r, exWeeks, rnd) {
   }
   // Now and then: listed as "if you have it", which the Macros totals leave out.
   if (shake === 'sometimes') out.push({ when: 'If you have it', what: SHAKE, optional: true });
+  if (r.exerciseFirst) fuelSnacks(r, out, fruit, protein, other);
   return out;
+}
+
+// A plan built around someone's exercise week: food fitted to their sessions. A small snack before
+// a long morning cardio or swim, and carbs with protein after 60 minutes or more of it in a day.
+// The after-strength snack says when their strength is. To lose weight, the afternoon snack is
+// left off rest days, so harder days get more food and easier days a little less.
+// `out` is their snacks so far (changed here); fruit, protein and other are the snacks that suit them.
+function fuelSnacks(r, out, fruit, protein, other) {
+  const fuel = fuelDays(r.week);
+  const taken = new Set(out.map(s => s.what));
+  const fresh = list => list.find(s => !taken.has(s.what)) || list[0];
+  const before = fruit.find(s => /banana/i.test(s.what) && !taken.has(s.what)) || fresh(fruit);
+  if (fuel.before.length && before) {
+    out.push({ when: 'Before your morning session', what: before.what, days: fuel.before });
+    taken.add(before.what);
+  }
+  const after = protein.find(s => /yoghurt|milk/i.test(s.what) && !taken.has(s.what)) || fresh(protein) || fresh(other);
+  if (fuel.after.length && after) out.push({ when: 'After your long session', what: after.what, days: fuel.after });
+  // Strength in the afternoon (or the morning) every time: say so.
+  const slots = new Set(r.week.filter(s => s.kind === 'Strength').map(s => s.slot));
+  const strengthSnack = out.find(s => s.exercise === 'strength');
+  if (strengthSnack && slots.size === 1) strengthSnack.when = 'After your ' + [...slots][0] + ' strength session';
+  if (strengthSnack) strengthSnack.days = DAYS.filter(d => r.week.some(s => s.day === d && s.kind === 'Strength'));
+  if (r.losing && fuel.rest.length) {
+    const easy = out.find(s => /^Afternoon/.test(s.when) && !s.days);
+    if (easy) easy.days = DAYS.filter(d => !fuel.rest.includes(d));
+  }
 }
 
 // Suggested eating times for someone who asked for eating reminders in About me, so the
@@ -1815,7 +2058,7 @@ function timesFor(snacks, fast) {
   const steady = s => !s.exercise && !s.optional && !s.weeks && !/^With /.test(s.when);
   const morning = snacks.find(s => steady(s) && /morning/i.test(s.when));
   const afternoon = snacks.find(s => steady(s) && /afternoon|after school/i.test(s.when));
-  const days = s => (s.days && s.days.join() === 'Mon,Tue,Wed,Thu,Fri' ? ' (Mon to Fri)' : '');
+  const days = s => !s.days || s.days.length === 7 ? '' : s.days.join() === 'Mon,Tue,Wed,Thu,Fri' ? ' (Mon to Fri)' : ' (' + s.days.join(', ') + ')';
   // Hours on a 24-hour clock: 7.5 is 7:30 am.
   const breakfast = fast ? fast.open : 7.5;
   const dinner = fast ? fast.close - 1 : 18.5;
@@ -1889,6 +2132,14 @@ function sunTimes(weeks) {
     { when: 'At sunset', what: lead + 'the plan’s dinner.' },
     { when: 'Later in the evening', what: lead + 'the plan’s lunch, and your snacks.' },
   ];
+}
+
+// Lines for the snacks that go with the sessions in someone's exercise week (fuelSnacks), with the
+// days they're on. With a daily eating window (`fast`), they stay inside it.
+function sessionSnackTimes(snacks, fast) {
+  const inside = fast ? ', inside your eating window (with the nearest meal if the session is outside it)' : '';
+  return snacks.filter(s => /^(Before|After) your/.test(s.when))
+    .map(s => ({ when: s.when + (s.days ? ' (' + s.days.join(', ') + ')' : ''), what: s.what + inside + '.' }));
 }
 
 // Lines for someone's snacks that are tied to exercise, for a person with a daily eating window:
@@ -1974,6 +2225,11 @@ function guideFor(r, p) {
   if (r.kid) bits.push('Child-sized serves (about ' + Math.round(r.portion * 100) + '% of an adult serve). Children aren’t put on diets: regular meals and plenty of play is the goal.');
   else if (Math.abs(r.portion - 1) >= 0.05) bits.push('Serves are about ' + Math.round(Math.abs(r.portion - 1) * 100) + '% ' + (r.portion > 1 ? 'bigger' : 'smaller') + ' than average, worked out from your age, size, activity and goal.');
   else bits.push('Serves are about average for your age, size, activity and goal.');
+  if (r.exerciseFirst) {
+    const kj = Math.round((r.exerciseKcal || 0) * 4.184 / 50) * 50;
+    bits.push('Your plan is built around your exercise week' + (kj ? ': serves include about ' + kj.toLocaleString('en') + ' kJ a day for your sessions' : '') + ', with snacks timed to them.' +
+      (r.losing ? ' You want to lose weight, so the week still adds up to the pace you chose: days with sessions get more food and rest days a little less.' : ''));
+  }
   if (!r.kid && p.measured && p.measured.weight) bits.push('This uses your latest logged weight (' + p.measured.weight + ' kg on ' + p.measured.weightDate + ').');
   const left = [...r.hard].map(t => ALLERGY_WORDS[t] || t);
   if (left.length) bits.push('Your meals leave out ' + left.join(', ') + '. Check labels too.');
@@ -2084,7 +2340,7 @@ function useData(data) {
 }
 
 const PlanBuilder = {
-  build, rulesFor, portionFor, allowed, exerciseFits, cardioNow, cardioSession, useData, kitchenStock, kitchenPlace, HOW_MUCH,
+  build, rulesFor, portionFor, allowed, exerciseFits, cardioNow, cardioSession, weekText, weekSessions, useData, kitchenStock, kitchenPlace, HOW_MUCH,
   get EXERCISES() { return EXERCISES; },
   get LIB() { return LIB; },
 };

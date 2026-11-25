@@ -125,7 +125,7 @@ Data files: `library.json` (the builder's ingredients, meals and snacks), `libra
 | `app-shopping.js`, `app-meals.js`, `app-exercise.js`, `app-today.js` | One file for each tab of the main app. |
 | `app-start.js` | Shows the chosen view, wires up the buttons and starts the main app. Loaded last. |
 | `login.html` | Logging in, the first account, invites, sign-ups and password resets. |
-| `profile.html` | About me, one section at a time. The questions come from `questions.json`. |
+| `profile.html` | About me, one section at a time. The questions come from `questions.json`. Most are chips, number boxes or text boxes; "Your exercise week" (`"type": "week"`) is a box for each day with drop-downs for the morning and afternoon sessions. |
 | `setup.html` | Plan setup (admins). |
 | `settings.html` | Settings. For admins it also has the country and the plan builder's new meals and exercises. |
 | `assistant.html` | Ask AI. |
