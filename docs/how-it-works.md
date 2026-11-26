@@ -86,7 +86,7 @@ ticks and files are all stored under that key (`toKey` in `api/sharedrules.js`).
 | `db.js` | Every database read and write. Each function does one small job, like "get this account". |
 | `appearance.js` | The household's look, country, stores, energy unit and pinned products. |
 | `plandraft.js` | Plan setup: who has finished About me, which AI to use, and drafting a new plan. |
-| `nextplan.js` | The next plan: a new plan approved to start on a later Monday waits in `data/next-plan.json`, and takes over on that date (checked every minute). |
+| `nextplan.js` | The next plan: a new plan approved to start on a later Monday waits in `data/next-plan.json`, and takes over on that date (checked every minute). Its first shopping lists can be shopped before then; their ticks are saved as `n1` and so on, and move to the new plan's weeks when it starts. |
 | `currentfood.js` | Current food: the food the family already has, sorted by where it is kept (pantry, spices and seasonings, fridge, freezer, fruit bowl and bench, other). The next plan uses it first. |
 | `planbuilder.js` | The built-in plan builder: makes a whole plan from everyone's answers, with no AI. |
 | `plancheck.js` | Checks a plan an AI has just written (serves of vegetables and fruit, foods someone won't eat, wording) and sends the AI back to correct it before the draft is saved. |
