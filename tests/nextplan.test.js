@@ -1,6 +1,7 @@
 // Checks the next plan: a new plan approved to start on a Monday still to come waits, and the
 // current plan carries on until that date. Then it takes over by itself, or straight away with
-// "Start it now", or not at all with "Cancel it".
+// "Start it now", or not at all with "Cancel it". Its first lists can be shopped (and ticked)
+// before it starts.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -36,11 +37,23 @@ test('a plan starting on a later Monday waits, and the current plan carries on',
     assert.equal(setup.next.startDate, LATER);
     assert.equal(setup.draft, null, 'the draft is no longer waiting for approval');
 
+    // Its first lists can be shopped now: the stock-up and Week 1, but no later weeks.
+    const shop = (await server.request('GET', '/api/plan/next/shopping')).json.next;
+    assert.equal(shop.startDate, LATER);
+    assert.equal(shop.weeks[shop.first].name, 'Week 1');
+    assert.ok(shop.weeks.length === shop.first + 1 && Object.keys(shop.weeks[shop.first].shopping).length);
+    // Ticks on this plan's list and the next plan's are saved side by side.
+    const ticked = await server.request('PUT', '/api/shared', { ticks: { 0: ['0-0'], ['n' + shop.first]: ['0-0', '0-1'] } });
+    assert.equal(ticked.status, 200, ticked.text);
+
     // "Start it now" swaps it in, with its start date.
     const started = await server.request('POST', '/api/plan/next/start', {});
     assert.equal(started.status, 200, started.text);
     assert.notEqual(livePlan(server).id, before.id);
     assert.equal(livePlan(server).startDate, LATER);
+    // What was ticked on its list stays ticked, now under its own week; the old plan's ticks are gone.
+    const state = (await server.request('GET', '/api/state')).json;
+    assert.deepEqual(state.shared.ticks, { [shop.first]: ['0-0', '0-1'] });
     assert.equal((await server.request('GET', '/api/plan/setup')).json.next, null);
     assert.equal((await server.request('POST', '/api/plan/next/start', {})).status, 404, 'nothing left to start');
   } finally {
@@ -53,10 +66,12 @@ test('a waiting plan can be cancelled, and a start date already here is used str
   try {
     const before = livePlan(server);
     await server.request('POST', '/api/requests/' + draftId + '/approve', { startDate: LATER });
+    await server.request('PUT', '/api/shared', { ticks: { 0: ['0-0'], n1: ['0-0'] } });
     const cancel = await server.request('DELETE', '/api/plan/next', null, { 'X-Requested-With': 'app' });
     assert.equal(cancel.status, 200, cancel.text);
     assert.equal((await server.request('GET', '/api/plan/setup')).json.next, null);
     assert.equal(livePlan(server).id, before.id, 'the current plan carries on');
+    assert.deepEqual((await server.request('GET', '/api/state')).json.shared.ticks, { 0: ['0-0'] }, 'only the next plan’s ticks go');
   } finally {
     await server.stop();
   }

@@ -139,11 +139,46 @@ function isHome(name) {
   return have.indexOf(query(name).toLowerCase()) > -1;
 }
 
+// ---------- the next plan's list ----------
+// When a new plan is approved to start on a later Monday, its first lists (its stock-up and Week 1)
+// can be shopped before it starts. NEXT is {startDate, first, weeks} from the server (null if no plan
+// is waiting), and shopNext is true while that list is shown. Its ticks are saved under "n" and the
+// week's place ("n1"), and move to the new plan's own weeks when it starts.
+var NEXT = null;
+var shopNext = false;
+
+// Asks the server whether a plan is waiting to start, and redraws the list if that changed.
+function loadNext() {
+  api("GET", "api/plan/next/shopping").then(function (d) {
+    var was = JSON.stringify(NEXT);
+    NEXT = d && d.next && Array.isArray(d.next.weeks) && d.next.weeks.length ? d.next : null;
+    if (!NEXT) shopNext = false;
+    if (JSON.stringify(NEXT) !== was && document.body.dataset.view === "shop") show();
+  }).catch(function () { /* no waiting plan here (or offline): just this plan's list */ });
+}
+
+// The weeks a list comes from: the next plan's first weeks, or this plan's.
+function weeksOf(next) {
+  return next ? NEXT.weeks : PLAN.weeks;
+}
+
+// The week whose list is shown: the next plan's Week 1, or the week picked in the tabs.
+function shopWeek() {
+  return shopNext ? NEXT.first : week;
+}
+
+// A "Mon 30 Nov" date for the next plan's start.
+function nextStartText() {
+  return new Intl.DateTimeFormat(Appearance.locale(), { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .format(new Date(NEXT.startDate + "T00:00:00Z"));
+}
+
 // The stock-up week (pantry and freezer, bought every 2 weeks) that is shopped with a meal week:
-// the stock-up just before it. -1 if there isn't one.
-function stockFor(weekIndex) {
-  var before = PLAN.weeks[weekIndex - 1];
-  return before && before.kind === "stockup" && PLAN.weeks[weekIndex].kind !== "stockup" ? weekIndex - 1 : -1;
+// the stock-up just before it. -1 if there isn't one. `next` looks in the next plan's weeks.
+function stockFor(weekIndex, next) {
+  var weeks = weeksOf(next);
+  var before = weeks[weekIndex - 1];
+  return before && before.kind === "stockup" && weeks[weekIndex].kind !== "stockup" ? weekIndex - 1 : -1;
 }
 
 // Which part of the list is shown when a week includes a stock-up: "all", "week" or "stock".
@@ -176,24 +211,25 @@ function catOf(name, section) {
 
 // Every item on a week's list: {name, price, src (the plan week it comes from), id ("section-item",
 // how its tick is saved), cat, stock (true for stock-up items)}. `part` picks all, the week only,
-// or the stock-up only.
-function shopItems(weekIndex, part) {
+// or the stock-up only. `next` takes them from the next plan's weeks (their src starts with "n").
+function shopItems(weekIndex, part, next) {
+  var weeks = weeksOf(next);
   var sources = [];
-  var stock = stockFor(weekIndex);
+  var stock = stockFor(weekIndex, next);
   if (part !== "stock" || stock < 0) sources.push(weekIndex);
   if (stock > -1 && part !== "week") sources.push(stock);
   var out = [];
   sources.forEach(function (src) {
-    var shopping = PLAN.weeks[src].shopping;
+    var shopping = weeks[src].shopping;
     Object.keys(shopping).forEach(function (section, sectionIndex) {
       shopping[section].forEach(function (item, itemIndex) {
         out.push({
           name: item[0],
           price: item[1],
-          src: src,
+          src: next ? "n" + src : src,
           id: sectionIndex + "-" + itemIndex,
           cat: catOf(item[0], section),
-          stock: PLAN.weeks[src].kind === "stockup",
+          stock: weeks[src].kind === "stockup",
         });
       });
     });
@@ -273,9 +309,29 @@ function renderList() {
   box.textContent = "";
   box.className = hideDone ? "hide-done" : "";
 
+  // With a plan waiting to start: "This plan" or "Next plan", and a line saying when it starts.
+  var which = $("shopWhich");
+  which.textContent = "";
+  which.hidden = !NEXT;
+  $("shopNextNote").hidden = !shopNext;
+  if (NEXT) {
+    [[false, "This plan"], [true, "Next plan, from " + nextStartText()]].forEach(function (option) {
+      var b = el("button", "btn", option[1]);
+      b.type = "button";
+      b.setAttribute("aria-pressed", shopNext === option[0]);
+      b.onclick = function () {
+        shopNext = option[0];
+        show();
+      };
+      which.appendChild(b);
+    });
+    $("shopNextNote").textContent = "Your next plan starts on " + nextStartText() + ". Shop for it here: what you tick stays ticked when it starts, and “At home” marks count for both plans.";
+  }
+
+  var at = shopWeek();
   var partBox = $("shopPart");
   partBox.textContent = "";
-  var hasStock = stockFor(week) > -1;
+  var hasStock = stockFor(at, shopNext) > -1;
   partBox.hidden = !hasStock;
   if (hasStock) {
     [["all", "Everything"], ["week", "This week"], ["stock", "2-week stock-up"]].forEach(function (option) {
@@ -291,7 +347,7 @@ function renderList() {
     });
   }
 
-  grouped(shopItems(week, hasStock ? shopPart : "all")).forEach(function (group) {
+  grouped(shopItems(at, hasStock ? shopPart : "all", shopNext)).forEach(function (group) {
     var sectionEl = el("section");
     var heading = el("h2", null, group[0]);
     var subtotal = 0;
@@ -308,7 +364,7 @@ function renderList() {
     box.appendChild(sectionEl);
   });
   // "Use it up": fresh food the plan expects to be left at the end of this week.
-  var useUp = PLAN.weeks[week] && PLAN.weeks[week].useUp;
+  var useUp = weeksOf(shopNext)[at] && weeksOf(shopNext)[at].useUp;
   if (Array.isArray(useUp) && useUp.length && shopPart !== "stock") {
     var left = el("section");
     left.appendChild(el("h2", null, "Likely left over this week"));
@@ -442,7 +498,8 @@ function toggleHome(name) {
 
 // The items on the list as it is shown now (all, this week, or the stock-up).
 function shownItems() {
-  return shopItems(week, stockFor(week) > -1 ? shopPart : "all");
+  var at = shopWeek();
+  return shopItems(at, stockFor(at, shopNext) > -1 ? shopPart : "all", shopNext);
 }
 
 // Updates the summary above the list: "$120.00 left", "3 of 25 ticked", the progress bar,
@@ -467,7 +524,7 @@ function updateSummary() {
 
 // The items still to buy as plain text, grouped by aisle, for "Copy list".
 function leftText() {
-  var out = [weekTitle(week) + " shopping list"];
+  var out = [(shopNext ? "Next plan (from " + nextStartText() + "): " + NEXT.weeks[NEXT.first].name : weekTitle(week)) + " shopping list"];
   grouped(shownItems()).forEach(function (group) {
     var lines = group[1].filter(function (it) { return !isHome(it.name) && !isTicked(it); })
       .map(function (it) { return "- " + it.name; });

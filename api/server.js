@@ -209,6 +209,11 @@ function remapTicks(oldPlan, newPlan) {
   const oldBy = state.shared.by || {};
 
   for (const [week, tickedIds] of Object.entries(state.shared.ticks)) {
+    if (week.startsWith('n')) {   // ticks on the next plan's lists stay as they are
+      newTicks[week] = tickedIds;
+      for (const [key, who] of Object.entries(oldBy)) if (key.startsWith(week + '|')) newBy[key] = who;
+      continue;
+    }
     const oldNames = itemNamesByPosition(oldPlan.weeks[week]);
     const newNames = itemNamesByPosition(newPlan.weeks[week]);
 
@@ -264,11 +269,38 @@ function savePlan(plan) {
     persist();
   } else if (oldPlan && oldPlan.id !== plan.id) {
     // A brand new plan: ticks point at the old plan's items and meals, so everyone starts fresh,
-    // the same as "Reset all". "At home" marks are kept: they go by ingredient name.
-    state = { users: {}, shared: null, have: state.have || [], updated: {}, epoch: Date.now() };
+    // the same as "Reset all". "At home" marks are kept: they go by ingredient name. If it is the
+    // plan that was waiting (nextplan.js), what was ticked on its lists beforehand is kept.
+    const next = nextplan.get();
+    const carried = next && next.plan.id === plan.id ? nextTicks() : null;
+    state = { users: {}, shared: carried, have: state.have || [], updated: {}, epoch: Date.now() };
+    if (carried) state.updated.shared = Date.now();
     persist();
   }
   safely('remember dishes', () => db.rememberDishes(plan));
+}
+
+// The shopping ticks made on the next plan's lists ("n0", "n1", ...) under its own weeks' places
+// ("0", "1", ...), with who ticked them: {ticks, by}, or null if there are none.
+function nextTicks() {
+  const shared = state.shared || {};
+  const ticks = {}, by = {};
+  for (const [week, ids] of Object.entries(isObj(shared.ticks) ? shared.ticks : {})) {
+    if (/^n\d+$/.test(week) && Array.isArray(ids) && ids.length) ticks[week.slice(1)] = ids;
+  }
+  for (const [key, who] of Object.entries(isObj(shared.by) ? shared.by : {})) {
+    if (/^n\d+\|/.test(key)) by[key.slice(1)] = who;
+  }
+  return Object.keys(ticks).length ? { ticks, by } : null;
+}
+
+// Forgets the ticks on the next plan's lists (when it is cancelled).
+function dropNextTicks() {
+  if (!state.shared || !isObj(state.shared.ticks)) return;
+  for (const week of Object.keys(state.shared.ticks)) if (week.startsWith('n')) delete state.shared.ticks[week];
+  for (const key of Object.keys(state.shared.by || {})) if (key.startsWith('n')) delete state.shared.by[key];
+  state.updated.shared = Date.now();
+  persist();
 }
 
 // The backup file names, newest first.
@@ -283,7 +315,7 @@ function backups() {
 // Answers /api/plan... requests. Returns true if it handled the request.
 async function handlePlan(req, res, urlPath, me) {
   if (!urlPath.startsWith('/api/plan')) return false;
-  if (['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/dates', '/api/plan/next', '/api/plan/next/start'].includes(urlPath)) return false;   // plandraft.js
+  if (['/api/plan/setup', '/api/plan/draft', '/api/plan/ai', '/api/plan/ai/models', '/api/plan/handoff', '/api/plan/dates', '/api/plan/next', '/api/plan/next/start', '/api/plan/next/shopping'].includes(urlPath)) return false;   // plandraft.js
   if (!me.admin) {
     send(res, 403, { error: 'only an admin can edit the plan' });
     return true;
@@ -539,7 +571,7 @@ async function handleRequest(req, res) {
     if (await accounts.handle(req, res, urlPath, url, me, { readPlan, savePlan, toKey, people })) return;
     if (await assistant.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, planVersion, toKey, people })) return;
     if (await plandraft.handle(req, res, urlPath, url, me, { readPlan, savePlan, checkPlan, toKey, people })) return;
-    if (nextplan.handle(req, res, urlPath, me, { savePlan })) return;
+    if (nextplan.handle(req, res, urlPath, me, { savePlan, dropNextTicks })) return;
     if (await planextras.handle(req, res, urlPath, url, me, { people })) return;
     if (await currentFood.handle(req, res, urlPath, me)) return;
     if (healthsync.handle(req, res, urlPath, url, me, { people })) return;

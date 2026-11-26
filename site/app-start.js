@@ -24,7 +24,7 @@ function drawView() {
   try { localStorage.setItem(PLACE_KEY, location.hash); } catch (e) {}   // reopen this week next time
 
   renderTabs();
-  $("tabs").hidden = view === "more";
+  $("tabs").hidden = view === "more" || (view === "shop" && shopNext);   // the next plan's list has no week tabs
   $("todayView").hidden = view !== "today";
   $("shopView").hidden = view !== "shop";
   $("meals").hidden = view !== "meals";
@@ -223,6 +223,7 @@ window.addEventListener("hashchange", function () {
       var problem = validate(p);
       if (problem) throw { msg: "plan.json problem: " + problem + " Showing the built-in plan." };
       usePlan(p);
+      loadNext();   // a plan waiting to start: its first lists can be shopped now
     })
     .catch(function (e) {
       usePlan(defaultPlan);

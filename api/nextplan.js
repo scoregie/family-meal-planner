@@ -3,8 +3,13 @@
 // start date (checked every minute, in the family's time zone). Until then an admin can start it
 // straight away or cancel it on Plan setup.
 //
+//   GET    /api/plan/next/shopping   everyone: the waiting plan's first shopping lists (its stock-up
+//                                     and Week 1), so the family can shop for it before it starts
 //   DELETE /api/plan/next         admins: cancel the waiting plan (the current one carries on)
 //   POST   /api/plan/next/start   admins: use the waiting plan now, instead of on its start date
+//
+// Ticks on those lists are saved with the shopping ticks under "n" and the week's place ("n1"), and
+// move to the new plan's own weeks when it starts (see savePlan in server.js).
 //
 // Only one plan waits at a time: approving another future plan replaces it.
 const fs = require('fs');
@@ -74,6 +79,19 @@ function summary() {
   return next ? { startDate: next.startDate, title: next.plan.title || null, approvedAt: next.approvedAt } : null;
 }
 
+// The waiting plan's lists to shop before it starts: {startDate, first, weeks}. `weeks` runs from the
+// start of the plan to its first week with meals (`first`, its place in `weeks`), each with just
+// {name, kind, cost, shopping, useUp}. Null if no plan is waiting.
+function shopping() {
+  const next = get();
+  if (!next || !Array.isArray(next.plan.weeks)) return null;
+  const all = next.plan.weeks;
+  let first = all.findIndex(w => w && w.kind !== 'stockup');
+  if (first < 0) first = all.length - 1;
+  const weeks = all.slice(0, first + 1).map(w => ({ name: w.name, kind: w.kind, cost: w.cost, shopping: w.shopping || {}, useUp: w.useUp }));
+  return { startDate: next.startDate, currency: next.plan.currency || null, first, weeks };
+}
+
 // Starts the once-a-minute check (and checks once now, in case the server was off on the day).
 function start(ctx) {
   const check = () => {
@@ -89,11 +107,16 @@ function start(ctx) {
 
 // Answers /api/plan/next requests. Returns true if it handled one.
 function handle(req, res, urlPath, me, ctx) {
+  if (urlPath === '/api/plan/next/shopping' && req.method === 'GET') {
+    send(res, 200, { next: shopping() });   // everyone shops, so everyone can see it
+    return true;
+  }
   if (urlPath !== '/api/plan/next' && urlPath !== '/api/plan/next/start') return false;
   if (!me.admin) send(res, 403, { error: 'Only an admin can change the plan.' });
   else if (req.headers['x-requested-with'] !== 'app') send(res, 403, { error: 'bad request' });
   else if (urlPath === '/api/plan/next' && req.method === 'DELETE') {
     cancel();
+    ctx.dropNextTicks();   // ticks on its lists have nothing to go to now
     send(res, 200, { ok: true });
   } else if (urlPath === '/api/plan/next/start' && req.method === 'POST') {
     if (!use(ctx.savePlan)) send(res, 404, { error: 'There’s no plan waiting.' });
@@ -102,4 +125,4 @@ function handle(req, res, urlPath, me, ctx) {
   return true;
 }
 
-module.exports = { get, wait, cancel, isLater, switchIfDue, summary, start, handle };
+module.exports = { get, wait, cancel, isLater, switchIfDue, summary, shopping, start, handle };
